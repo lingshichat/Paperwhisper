@@ -9,7 +9,7 @@ import json
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 
 # --- 1. 资源路径处理 ---
-CURRENT_VERSION = "1.2.0"
+CURRENT_VERSION = "1.3.0"
 
 def resource_path(relative_path):
     if hasattr(sys, '_MEIPASS'):
