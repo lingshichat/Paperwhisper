@@ -1,0 +1,4 @@
+小重山
+META|weather:rainy|mood:tired
+
+欲将心事付瑶琴，知音少，弦断有谁听？
