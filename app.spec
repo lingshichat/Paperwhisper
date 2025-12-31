@@ -6,7 +6,12 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=[('templates', 'templates'), ('static', 'static')],
-    hiddenimports=[],
+    hiddenimports=[
+        'flask',
+        'webview',
+        'webview.platforms.winforms',
+        'clr',
+    ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

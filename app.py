@@ -64,7 +64,13 @@ def save_image():
         with open(filepath, "wb") as fh:
             fh.write(base64.b64decode(image_data))
         
-        return jsonify({'status': 'success', 'path': filepath})
+        # 返回绝对路径和友好的相对路径提示
+        relative_display = os.path.join('exports', filename)
+        return jsonify({
+            'status': 'success', 
+            'path': filepath,
+            'display_path': relative_display
+        })
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
