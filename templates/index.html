@@ -1948,7 +1948,7 @@
                 <div class="theme-card" onclick="setTheme('sea_flower')" id="card-sea_flower">
                     <div class="theme-preview-box preview-sea_flower"></div>
                     <div class="theme-name">海底花海</div>
-                    <div class="theme-desc">粉色渐变色<br>适用于清新手帐制作</div>
+                    <div class="theme-desc">深邃梦境，繁花相拥</div>
                 </div>
 
                 <!-- 4. Midnight -->
@@ -2081,15 +2081,19 @@
                                             style="margin-right: 8px; display: flex;"></span>
                                         <select id="weather-select" name="weather" class="select-clean"
                                             onchange="updateIcon('weather')">
-                                            <option value="sunny" {% if data.weather=='sunny' %}selected{% endif %}>晴
+                                            <option value="sunny" {% if data.weather=='sunny' %}selected{% endif %}>
+                                                晴
                                             </option>
                                             <option value="cloudy" {% if data.weather=='cloudy' %}selected{% endif %}>多云
                                             </option>
-                                            <option value="rainy" {% if data.weather=='rainy' %}selected{% endif %}>雨
+                                            <option value="rainy" {% if data.weather=='rainy' %}selected{% endif %}>
+                                                雨
                                             </option>
-                                            <option value="snowy" {% if data.weather=='snowy' %}selected{% endif %}>雪
+                                            <option value="snowy" {% if data.weather=='snowy' %}selected{% endif %}>
+                                                雪
                                             </option>
-                                            <option value="windy" {% if data.weather=='windy' %}selected{% endif %}>风
+                                            <option value="windy" {% if data.weather=='windy' %}selected{% endif %}>
+                                                风
                                             </option>
                                         </select>
                                     </div>
@@ -2107,7 +2111,8 @@
                                             </option>
                                             <option value="excited" {% if data.mood=='excited' %}selected{% endif %}>激动
                                             </option>
-                                            <option value="sad" {% if data.mood=='sad' %}selected{% endif %}>忧郁</option>
+                                            <option value="sad" {% if data.mood=='sad' %}selected{% endif %}>忧郁
+                                            </option>
                                             <option value="tired" {% if data.mood=='tired' %}selected{% endif %}>疲惫
                                             </option>
                                         </select>

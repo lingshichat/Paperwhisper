@@ -77,21 +77,24 @@ MyDiary/
 
 ## 📸 应用截图
 
-### 主界面展示
+### 主题风格
 
-**日记列表** - 简洁优雅的卡片式布局,一目了然
-![日记列表](screenshots/diary_list.png)
+**经典木纹** - 深色圆木,温润如玉
+![经典木纹主题](screenshots/经典木纹.png)
 
-**日记详情** - 拟物化纸质风格,沉浸式书写体验
-![日记详情](screenshots/diary_detail.png)
+**时光旧物** - 泛黄羊皮,怀旧岁月
+![时光旧物主题](screenshots/时光旧物.png)
 
-### 主题效果
+**海底花海** - 深邃梦境,繁花相拥
+![海底花海主题](screenshots/海底花海.png)
 
-**午夜星尘** - 深邃夜空,繁星点点,宁静致远
-![午夜星尘主题](screenshots/theme_midnight.png)
+**午夜星尘** - 静谧深夜,独处时光
+![午夜星尘主题](screenshots/午夜星尘.png)
 
-**海底花海** - 粉紫梦幻,花瓣飘落,浪漫温柔
-![海底花海主题](screenshots/theme_sea_flower.png)
+### 功能特性
+
+**Markdown 支持** - 实时预览,格式自由
+![Markdown支持](screenshots/markdown支持.png)
 
 ## 📄 许可证
 
