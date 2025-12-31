@@ -75,9 +75,23 @@ MyDiary/
 - **桌面**: pywebview
 - **打包**: PyInstaller
 
-## 📸 截图
+## 📸 应用截图
 
-> 待添加应用截图
+### 主界面展示
+
+**日记列表** - 简洁优雅的卡片式布局,一目了然
+![日记列表](screenshots/diary_list.png)
+
+**日记详情** - 拟物化纸质风格,沉浸式书写体验
+![日记详情](screenshots/diary_detail.png)
+
+### 主题效果
+
+**午夜星尘** - 深邃夜空,繁星点点,宁静致远
+![午夜星尘主题](screenshots/theme_midnight.png)
+
+**海底花海** - 粉紫梦幻,花瓣飘落,浪漫温柔
+![海底花海主题](screenshots/theme_sea_flower.png)
 
 ## 📄 许可证
 

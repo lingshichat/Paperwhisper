@@ -27,7 +27,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='app',
+    name='Paperwhisper_v1.3.0',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
