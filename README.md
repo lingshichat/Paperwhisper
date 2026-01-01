@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="icon.svg" alt="PaperWhisper Icon" width="128" height="128">
+</div>
+
 # 纸语 PaperWhisper 📖
 
 一款优雅的桌面日记应用,专注于书写体验与视觉美学。
@@ -60,6 +64,8 @@ pyinstaller app.spec
 MyDiary/
 ├── app.py              # 主程序
 ├── app.spec            # PyInstaller配置
+├── icon.svg            # 应用图标(矢量源文件)
+├── icon.png            # 应用图标(PNG格式)
 ├── templates/
 │   └── index.html      # 前端页面
 ├── static/             # 静态资源(如有)

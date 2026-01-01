@@ -188,6 +188,12 @@ def delete_diary():
     if f and os.path.exists(os.path.join(DATA_DIR, f)): os.remove(os.path.join(DATA_DIR, f))
     return redirect('/')
 
+@app.route('/favicon.ico')
+def favicon():
+    from flask import send_from_directory
+    icon_path = resource_path('')
+    return send_from_directory(icon_path, 'icon.ico', mimetype='image/vnd.microsoft.icon')
+
 # --- 4. 启动逻辑 ---
 def start_server():
     app.run(host='127.0.0.1', port=54321, debug=False)
@@ -201,6 +207,9 @@ if __name__ == '__main__':
     CACHE_DIR = os.path.join(BASE_DIR, 'webview_cache')
     if not os.path.exists(CACHE_DIR):
         os.makedirs(CACHE_DIR)
+    
+    # 窗口图标路径（打包时使用）- Windows上图标通过PyInstaller的icon参数设置
+    ICON_PATH = resource_path('icon.ico')
 
     webview.create_window('纸语 PaperWhisper', 'http://127.0.0.1:54321', width=1280, height=850, min_size=(900, 600))
     webview.start(storage_path=CACHE_DIR, private_mode=False)

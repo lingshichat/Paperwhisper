@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- 日记本主体渐变（米黄色卡片色） -->
+    <linearGradient id="pageGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#F8F3EB;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#F5EFE7;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- 书脊渐变（深褐色） -->
+    <linearGradient id="spineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#5D4A3C;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#4A3A2D;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#5D4A3C;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- 阴影 -->
+    <filter id="softShadow">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="8"/>
+      <feOffset dx="0" dy="8" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.2"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- 主页面组 -->
+  <g filter="url(#softShadow)">
+    <!-- 书脊 -->
+    <rect x="80" y="80" width="56" height="352" rx="8" fill="url(#spineGradient)"/>
+    
+    <!-- 主页面 -->
+    <rect x="128" y="80" width="304" height="352" rx="12" fill="url(#pageGradient)"/>
+    
+    <!-- 红色书签（右上角，避开圆角） -->
+    <rect x="420" y="96" width="12" height="150" rx="6" fill="#D4524D"/>
+    
+    <!-- 花体文字 PaperWhisper -->
+    <text x="280" y="270" font-family="Georgia, 'Times New Roman', serif" font-size="26" fill="#8A7060" text-anchor="middle" opacity="0.7" letter-spacing="-2">𝓟𝓪𝓹𝓮𝓻𝓦𝓱𝓲𝓼𝓹𝓮𝓻</text>
+    
+    <!-- 页面横线 -->
+    <line x1="160" y1="290" x2="400" y2="290" stroke="#D4C4B0" stroke-width="2" opacity="0.3"/>
+    <line x1="160" y1="330" x2="400" y2="330" stroke="#D4C4B0" stroke-width="2" opacity="0.3"/>
+    <line x1="160" y1="370" x2="340" y2="370" stroke="#D4C4B0" stroke-width="2" opacity="0.3"/>
+  </g>
+</svg>
