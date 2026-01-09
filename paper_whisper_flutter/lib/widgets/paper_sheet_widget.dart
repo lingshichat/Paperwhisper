@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../config/app_theme.dart';
 import 'package:provider/provider.dart';
@@ -14,43 +15,94 @@ class PaperSheetWidget extends StatelessWidget {
     required this.child,
     this.width = 700,
     this.padding = const EdgeInsets.all(0),
-    this.showRibbon = true, // Default to true for legacy feel
+    this.showRibbon = true,
   });
 
   @override
   Widget build(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context);
     final theme = settings.currentTheme;
-    final paperColor = AppTheme.getPaperColor(theme);
+    final bool isSeaFlower = theme == AppTheme.themeSeaFlower;
     
-    // Legacy Red Accent for Sticky Tape / Ribbon
-    final accentColor = const Color(0xFFC0392B); 
+    // Theme-based colors
+    final Color paperColor = isSeaFlower 
+        ? Colors.white.withValues(alpha: 0.55) // Sea Flower: Glassy white
+        : AppTheme.getPaperColor(theme);
+        
+    final Color accentColor;
+    if (isSeaFlower) {
+      accentColor = const Color(0xFFEC407A); // Pink Ribbon
+    } else if (theme == AppTheme.themeMidnight) {
+      accentColor = const Color(0xFF7986cb); // Indigo Ribbon for Midnight
+    } else {
+      accentColor = const Color(0xFFC0392B); // Default Red Ribbon
+    }
+        
+    final Border? border;
+    if (isSeaFlower) {
+      border = Border.all(color: Colors.white.withValues(alpha: 0.6), width: 1);
+    } else if (theme == AppTheme.themeMidnight) {
+      border = Border.all(color: const Color(0xFF30363d), width: 1); // Subtle dark border
+    } else {
+      border = const Border(top: BorderSide(color: Color(0xFFC0392B), width: 8)); // Default Red Top
+    }
+
+    final List<BoxShadow> shadows;
+    if (isSeaFlower) {
+      shadows = [
+        const BoxShadow(
+          color: Color.fromRGBO(200, 150, 200, 0.2),
+          offset: Offset(0, 8),
+          blurRadius: 32,
+        )
+      ];
+    } else if (theme == AppTheme.themeMidnight) {
+      shadows = [
+        const BoxShadow(
+          color: Colors.black, // Deep black shadow
+          offset: Offset(0, 4),
+          blurRadius: 20,
+        )
+      ];
+    } else {
+      shadows = AppTheme.paperShadow;
+    }
+
+    Widget paperContent = Container(
+      width: width,
+      constraints: const BoxConstraints(minHeight: 800),
+      padding: padding,
+      decoration: BoxDecoration(
+        color: paperColor,
+        borderRadius: BorderRadius.circular(isSeaFlower ? 16 : 2),
+        boxShadow: shadows,
+        border: border,
+      ),
+      child: child,
+    );
+
+    // Apply Blur for Sea Flower
+    if (isSeaFlower) {
+      paperContent = ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: paperContent,
+        ),
+      );
+    }
 
     return Center(
       child: RepaintBoundary(
         child: Stack(
-          clipBehavior: Clip.none, // Allow ribbon to overflow top
+          clipBehavior: Clip.none,
           children: [
-            Container(
-              width: width,
-              constraints: const BoxConstraints(minHeight: 800),
-              padding: padding,
-              decoration: BoxDecoration(
-                color: paperColor,
-                borderRadius: BorderRadius.circular(2), // Slight radius
-                boxShadow: AppTheme.paperShadow, // Defined in AppTheme
-                // Red Top Bar (Border)
-                border: const Border(
-                  top: BorderSide(color: Color(0xFFC0392B), width: 8),
-                ),
-              ),
-              child: child,
-            ),
+            paperContent,
             
             if (showRibbon)
               Positioned(
                 right: 40,
-                top: -8, // Slight overlap
+                top: -8,
                 child: _buildRibbon(accentColor),
               ),
           ],

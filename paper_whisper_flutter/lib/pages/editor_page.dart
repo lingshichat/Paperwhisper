@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart'; // Added
@@ -91,6 +92,7 @@ class _EditorPageState extends State<EditorPage> {
     final theme = Provider.of<SettingsProvider>(context).currentTheme;
     final textColor = AppTheme.getTextColor(theme);
     final secondaryColor = AppTheme.getTextSecondaryColor(theme);
+    final bool isSeaFlower = theme == AppTheme.themeSeaFlower;
     
     // 700px width constraint handled by PaperSheetWidget
     return Scaffold(
@@ -127,13 +129,15 @@ class _EditorPageState extends State<EditorPage> {
                             child: Container(
                               width: 60,
                               height: 2, 
-                              color: const Color(0xFFC0392B).withValues(alpha: 0.5),
+                              color: (isSeaFlower
+                                  ? const Color(0xFFEC407A) 
+                                  : (theme == AppTheme.themeMidnight ? const Color(0xFF7986cb) : const Color(0xFFC0392B))).withValues(alpha: 0.5),
                             ),
                           ),
                           const SizedBox(height: 30),
 
                           // 3. Content Area
-                          _buildContentArea(textColor),
+                          _buildContentArea(textColor, theme),
 
                           // 4. Footer
                           const SizedBox(height: 60),
@@ -173,25 +177,44 @@ class _EditorPageState extends State<EditorPage> {
   }
 
   Widget _buildTopBar(BuildContext context, String theme, Color textColor) {
-    return Container(
+    final bool isSeaFlower = theme == AppTheme.themeSeaFlower;
+    
+    final Color barBg;
+    if (isSeaFlower) {
+      barBg = Colors.white.withOpacity(0.2);
+    } else if (theme == AppTheme.themeMidnight) {
+      barBg = const Color(0xFF0D1117).withValues(alpha: 0.9);
+    } else {
+      barBg = const Color(0xFF281815).withValues(alpha: 0.75);
+    }
+        
+    final Color iconColor = isSeaFlower || theme == AppTheme.themeMidnight
+        ? (isSeaFlower ? const Color(0xFF880E4F) : const Color(0xFFc9d1d9))
+        : const Color(0xFFD7CCC8);
+        
+    final Border? border = isSeaFlower
+        ? Border(bottom: BorderSide(color: Colors.white.withValues(alpha: 0.3)))
+        : null;
+
+    Widget barContent = Container(
       height: 60,
       padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top, left: 10, right: 20),
       decoration: BoxDecoration(
-        color: const Color(0xFF281815).withValues(alpha: 0.75), // Legacy Bar Color
-        // For other themes we might want adjustment, but Legacy bar was dark across themes mostly
+        color: barBg,
+        border: border,
       ),
       child: Row(
         children: [
           TextButton.icon(
-             icon: const Icon(Icons.arrow_back, color: Color(0xFFD7CCC8), size: 18),
-             label: const Text('返回列表', style: TextStyle(color: Color(0xFFD7CCC8))),
+             icon: Icon(Icons.arrow_back, color: iconColor, size: 18),
+             label: Text('返回列表', style: TextStyle(color: iconColor)),
              onPressed: () => Navigator.pop(context),
           ),
           const Spacer(),
           // Action Buttons
           if (!_isEditing && widget.entry != null) ...[
              IconButton(
-               icon: const Icon(Icons.delete_outline, color: Color(0xFFD7CCC8)), 
+               icon: Icon(Icons.delete_outline, color: iconColor), 
                onPressed: _delete,
                tooltip: '撕毁',
              ),
@@ -200,26 +223,47 @@ class _EditorPageState extends State<EditorPage> {
           
           if (_isEditing)
              ElevatedButton.icon(
-               icon: const Text('✓', style: TextStyle(color: Color(0xFFC0392B), fontWeight: FontWeight.bold)), // Red Check
-               label: const Text('完成', style: TextStyle(color: Color(0xFF5D4037), fontWeight: FontWeight.bold)),
+               icon: Text('✓', style: TextStyle(
+                 color: isSeaFlower ? const Color(0xFFC2185B) : const Color(0xFFC0392B), 
+                 fontWeight: FontWeight.bold
+               )),
+               label: Text('完成', style: TextStyle(
+                 color: isSeaFlower ? const Color(0xFF880E4F) : const Color(0xFF5D4037), 
+                 fontWeight: FontWeight.bold
+               )),
                style: ElevatedButton.styleFrom(
-                 backgroundColor: const Color(0xFFF7F1E3), // Paper color button
+                 backgroundColor: isSeaFlower ? Colors.white.withValues(alpha: 0.9) : const Color(0xFFF7F1E3),
                  elevation: 4,
                ),
                onPressed: _save,
              )
           else
              IconButton(
-               icon: const Icon(Icons.edit_outlined, color: Color(0xFFD7CCC8)),
+               icon: Icon(Icons.edit_outlined, color: iconColor),
                onPressed: () => setState(() => _isEditing = true),
                tooltip: '编辑',
              ),
         ],
       ),
     );
+    
+    // Apply blur for Sea Flower
+    if (isSeaFlower) {
+      return ClipRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+          child: barContent,
+        ),
+      );
+    }
+    
+    return barContent;
   }
 
   Widget _buildHeader(Color textColor, Color secondaryColor) {
+    // Need theme context here for cursor color check
+    final theme = Provider.of<SettingsProvider>(context).currentTheme;
+    final bool isSeaFlower = theme == AppTheme.themeSeaFlower; // Re-declare for snippet context or use theme check directly
     return Column(
       children: [
          if (_isEditing)
@@ -229,11 +273,12 @@ class _EditorPageState extends State<EditorPage> {
              style: GoogleFonts.notoSerifSc(
                 fontSize: 36, 
                 fontWeight: FontWeight.bold, 
-                color: const Color(0xFF2C241B)
+                color: textColor // Use dynamic theme color
              ),
-             decoration: const InputDecoration(
+             cursorColor: theme == AppTheme.themeMidnight ? const Color(0xFF7986cb) : const Color(0xFFC0392B),
+             decoration: InputDecoration(
                hintText: '在此输入标题...',
-               hintStyle: TextStyle(color: Colors.black26),
+               hintStyle: TextStyle(color: theme == AppTheme.themeMidnight ? Colors.white24 : Colors.black26),
                border: InputBorder.none,
              ),
            )
@@ -243,7 +288,7 @@ class _EditorPageState extends State<EditorPage> {
              style: GoogleFonts.notoSerifSc(
                 fontSize: 36, 
                 fontWeight: FontWeight.bold, 
-                color: const Color(0xFF2C241B)
+                color: textColor // Use dynamic theme color
              ),
              textAlign: TextAlign.center,
            ),
@@ -264,7 +309,7 @@ class _EditorPageState extends State<EditorPage> {
     );
   }
 
-  Widget _buildContentArea(Color textColor) {
+  Widget _buildContentArea(Color textColor, String theme) {
     const double fontSize = 18.0;
     const double lineHeight = 32.0;
     
@@ -272,7 +317,9 @@ class _EditorPageState extends State<EditorPage> {
     
     return CustomPaint(
       foregroundPainter: LinedPaperPainter(
-         lineColor: const Color(0xFF5D4037).withValues(alpha: 0.12), // Legacy opacity
+         lineColor: theme == AppTheme.themeMidnight 
+            ? Colors.white.withValues(alpha: 0.08) 
+            : const Color(0xFF5D4037).withValues(alpha: 0.12),
          lineHeight: lineHeight,
       ),
       child: Container(
@@ -294,7 +341,7 @@ class _EditorPageState extends State<EditorPage> {
                  forceStrutHeight: true,
                  leadingDistribution: TextLeadingDistribution.even,
                ),
-               cursorColor: const Color(0xFFC0392B),
+               cursorColor: theme == AppTheme.themeMidnight ? const Color(0xFF7986cb) : const Color(0xFFC0392B),
                cursorHeight: 20, // 稍大于字体高度，小于行高
                decoration: const InputDecoration(
                  border: InputBorder.none,

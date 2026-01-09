@@ -98,9 +98,11 @@ class AppTheme {
            ],
          );
       case themeSeaFlower:
+         // 海底花海主题 - 毛玻璃效果（白色半透明）
+         // 参考web端: background: rgba(255, 255, 255, 0.15)
          return BoxDecoration(
-           color: const Color(0xFF880E4F).withValues(alpha: 0.85),
-           border: const Border(right: BorderSide(color: Color(0x4DFFFFFF))),
+           color: Colors.white.withOpacity(0.15),
+           border: const Border(right: BorderSide(color: Color(0x4DFFFFFF), width: 1)),
          );
       case themeDefault:
       default:
@@ -156,6 +158,37 @@ class AppTheme {
       case themeMidnight: return _midnightAccent;
       case themeSeaFlower: return const Color(0xFFF50057);
       default: return _vintageAccent;
+    }
+  }
+
+  // 移动端顶栏颜色配置
+  static Map<String, Color> getMobileHeaderColors(String theme) {
+    switch (theme) {
+      case themeMidnight:
+        return {
+          'background': const Color(0xFF0D1117).withOpacity(0.9),
+          'border': const Color(0xFF21262d),
+          'iconColor': const Color(0xFFc9d1d9),
+          'titleColor': const Color(0xFFe6edf3),
+          'subtitleColor': const Color(0xFF8b949e),
+        };
+      case themeSeaFlower:
+        // 海底花海 - 毛玻璃效果，深色文字
+        return {
+          'background': const Color(0xFFFFFFFF).withOpacity(0.15), // Light glass matches sidebar
+          'border': const Color(0x7FFFFFFF), // White semi-transparent border
+          'iconColor': const Color(0xFF880E4F), // Deep Pink
+          'titleColor': const Color(0xFF880E4F), // Deep Pink
+          'subtitleColor': const Color(0xCC880E4F), // Deep Pink opacity
+        };
+      default: // vintage/default
+        return {
+          'background': const Color(0xFF3e2723).withOpacity(0.85),
+          'border': const Color(0xFF1a100d),
+          'iconColor': const Color(0xFFD7CCC8),
+          'titleColor': const Color(0xFFEEFFEB),
+          'subtitleColor': const Color(0xFFD7CCC8).withOpacity(0.8),
+        };
     }
   }
 }

@@ -1,0 +1,28 @@
+﻿Analyzing paper_whisper_flutter...                              
+
+warning - The value of the field '_vintageSidebarStart' isn't used - lib\config\app_theme.dart:13:22 - unused_field
+warning - The value of the field '_vintageSidebarMid' isn't used - lib\config\app_theme.dart:14:22 - unused_field
+warning - The value of the field '_vintageSidebarEnd' isn't used - lib\config\app_theme.dart:15:22 - unused_field
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\config\app_theme.dart:104:32 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\config\app_theme.dart:169:49 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\config\app_theme.dart:178:49 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\config\app_theme.dart:186:49 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\config\app_theme.dart:190:52 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\diary_card.dart:135:30 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\diary_card.dart:151:47 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\diary_card.dart:153:41 - deprecated_member_use
+   info - 'translate' is deprecated and shouldn't be used. Use translateByVector3, translateByVector4, or translateByDouble instead - lib\pages\diary_card.dart:254:15 - deprecated_member_use
+   info - 'scale' is deprecated and shouldn't be used. Use scaleByVector3, scaleByVector4, or scaleByDouble instead - lib\pages\diary_card.dart:255:15 - deprecated_member_use
+   info - 'translate' is deprecated and shouldn't be used. Use translateByVector3, translateByVector4, or translateByDouble instead - lib\pages\diary_card.dart:276:35 - deprecated_member_use
+   info - 'scale' is deprecated and shouldn't be used. Use scaleByVector3, scaleByVector4, or scaleByDouble instead - lib\pages\diary_card.dart:345:37 - deprecated_member_use
+warning - Unused import: '../widgets/skeuomorphic_container.dart' - lib\pages\diary_list_page.dart:9:8 - unused_import
+   info - The private field _isSidebarCollapsed could be 'final' - lib\pages\diary_list_page.dart:25:8 - prefer_final_fields
+warning - The value of the field '_isSidebarCollapsed' isn't used - lib\pages\diary_list_page.dart:25:8 - unused_field
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\editor_page.dart:184:28 - deprecated_member_use
+warning - The value of the local variable 'isSeaFlower' isn't used - lib\pages\editor_page.dart:266:16 - unused_local_variable
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\sidebar_widget.dart:117:35 - deprecated_member_use
+   info - Statements in an if should be enclosed in a block - lib\widgets\sidebar_widget.dart:491:25 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\widgets\sidebar_widget.dart:492:29 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\widgets\sidebar_widget.dart:493:13 - curly_braces_in_flow_control_structures
+  error - Undefined class 'Ticker' - lib\widgets\visual_effects.dart:234:8 - undefined_class
+

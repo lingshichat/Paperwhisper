@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -7,8 +8,10 @@ import '../models/diary_entry.dart';
 import '../config/app_theme.dart';
 import '../widgets/skeuomorphic_container.dart';
 import '../widgets/sidebar_widget.dart';
-import '../widgets/visual_effects.dart'; // Added
+import '../widgets/visual_effects.dart';
+import '../widgets/dashed_line_painter.dart';
 import 'editor_page.dart';
+import 'diary_card.dart'; // Added
 
 class DiaryListPage extends StatefulWidget {
   const DiaryListPage({super.key});
@@ -61,7 +64,7 @@ class _DiaryListPageState extends State<DiaryListPage> {
                  Row(
                     children: [
                        SidebarWidget(
-                         width: 260,
+                         width: 300, // Fixed: 260 width + 40 padding = 300 actual width
                          onWritePressed: () => _openEditor(null),
                          onSearch: (val) => setState(() => _searchQuery = val),
                        ),
@@ -75,17 +78,25 @@ class _DiaryListPageState extends State<DiaryListPage> {
           );
         } else {
           // Mobile: Drawer + Content
+          final bool isSeaFlower = theme == AppTheme.themeSeaFlower;
+          
           return Scaffold(
-            drawer: SidebarWidget(
-              width: 260,
-              showWriteButton: false, // 移动端不显示"写一篇"按钮，因为有悬浮按钮
-              onWritePressed: () {
-                Navigator.pop(context);
-                _openEditor(null);
-              },
-              onSearch: (val) {
-                 setState(() => _searchQuery = val);
-              },
+            drawerScrimColor: isSeaFlower ? Colors.transparent : Colors.black54, // 海底花海去遮罩，透出背景
+            drawer: Drawer(
+              width: 300,
+              elevation: 0, // Remove elevation shadow
+              backgroundColor: Colors.transparent, 
+              child: SidebarWidget(
+                width: 300, 
+                showWriteButton: false, 
+                onWritePressed: () {
+                  Navigator.pop(context);
+                  _openEditor(null);
+                },
+                onSearch: (val) {
+                   setState(() => _searchQuery = val);
+                },
+              ),
             ),
             // Mobile Body
             body: Stack(
@@ -97,9 +108,51 @@ class _DiaryListPageState extends State<DiaryListPage> {
               ],
             ),
              floatingActionButton: FloatingActionButton(
-               backgroundColor: const Color(0xFFC0392B),
+               backgroundColor: isSeaFlower || theme == AppTheme.themeMidnight ? Colors.transparent : const Color(0xFFC0392B),
+               elevation: (isSeaFlower || theme == AppTheme.themeMidnight) ? 0 : 6, 
+               focusElevation: (isSeaFlower || theme == AppTheme.themeMidnight) ? 0 : 6,
+               hoverElevation: (isSeaFlower || theme == AppTheme.themeMidnight) ? 0 : 8,
+               highlightElevation: (isSeaFlower || theme == AppTheme.themeMidnight) ? 0 : 12,
                onPressed: () => _openEditor(null),
-               child: const Icon(Icons.edit, color: Colors.white),
+               child: Container(
+                 width: 56, 
+                 height: 56,
+                 decoration: isSeaFlower 
+                   ? const BoxDecoration(
+                       shape: BoxShape.circle,
+                       gradient: LinearGradient(
+                         begin: Alignment.topLeft,
+                         end: Alignment.bottomRight,
+                         colors: [Color(0xFFF8BBD0), Color(0xFFF06292)],
+                       ),
+                       boxShadow: [
+                         BoxShadow(
+                           color: Color.fromRGBO(240, 98, 146, 0.5),
+                           blurRadius: 12,
+                           offset: Offset(0, 4),
+                         )
+                       ]
+                     )
+                   : (theme == AppTheme.themeMidnight 
+                       ? const BoxDecoration(
+                           shape: BoxShape.circle,
+                           gradient: LinearGradient(
+                             begin: Alignment.topLeft,
+                             end: Alignment.bottomRight,
+                             colors: [Color(0xFF7986cb), Color(0xFF303f9f)],
+                           ),
+                           boxShadow: [
+                             BoxShadow(
+                               color: Color.fromRGBO(121, 134, 203, 0.5), // Indigo Glow
+                               blurRadius: 15,
+                               offset: Offset(0, 0),
+                               spreadRadius: 2,
+                             )
+                           ]
+                         )
+                       : null),
+                 child: Icon(Icons.edit, color: Colors.white, size: (isSeaFlower || theme == AppTheme.themeMidnight) ? 28 : 24),
+               ),
              ),
           );
         }
@@ -118,98 +171,86 @@ class _DiaryListPageState extends State<DiaryListPage> {
 
     return Column(
       children: [
-        // Mobile Header - 优化设计：增加应用名和装饰元素
+        // Mobile Header
         if (isMobile)
            Builder(
-             builder: (scaffoldContext) => Stack(
-               children: [
-                 // 主顶栏
-                 Container(
-                   height: 56 + MediaQuery.of(scaffoldContext).padding.top,
-                   padding: EdgeInsets.only(top: MediaQuery.of(scaffoldContext).padding.top),
-                   decoration: BoxDecoration(
-                     // 半透明毛玻璃效果背景
-                     color: const Color(0xFF3e2723).withValues(alpha: 0.85),
-                     border: const Border(
-                       bottom: BorderSide(color: Color(0xFF1a100d), width: 1),
-                     ),
-                     boxShadow: [
-                       BoxShadow(
-                         color: Colors.black.withValues(alpha: 0.3),
-                         blurRadius: 8,
-                         offset: const Offset(0, 2),
+             builder: (scaffoldContext) {
+               final headerColors = AppTheme.getMobileHeaderColors(theme);
+               final bool isSeaFlower = theme == AppTheme.themeSeaFlower;
+               
+               Widget headerContent = Container(
+                     height: 56 + MediaQuery.of(scaffoldContext).padding.top,
+                     padding: EdgeInsets.only(top: MediaQuery.of(scaffoldContext).padding.top),
+                     decoration: BoxDecoration(
+                       color: headerColors['background'],
+                       border: Border(
+                         bottom: BorderSide(color: headerColors['border']!, width: 1),
                        ),
-                     ],
-                   ),
-                   child: Row(
-                     children: [
-                       // 汉堡包菜单按钮
-                       IconButton(
-                         icon: const Icon(Icons.menu, color: Color(0xFFD7CCC8)),
-                         onPressed: () => Scaffold.of(scaffoldContext).openDrawer(),
-                       ),
-                       // 应用名称 - 与侧边栏logo样式一致但更紧凑
-                       Expanded(
-                         child: Row(
-                           mainAxisAlignment: MainAxisAlignment.center,
-                           crossAxisAlignment: CrossAxisAlignment.baseline,
-                           textBaseline: TextBaseline.alphabetic,
-                           children: [
-                             Text(
-                               '纸语',
-                               style: GoogleFonts.notoSerifSc(
-                                 fontSize: 18,
-                                 fontWeight: FontWeight.bold,
-                                 color: const Color(0xFFEEFFEB),
-                                 shadows: const [
-                                   Shadow(
-                                     color: Color.fromRGBO(0, 0, 0, 0.3),
-                                     offset: Offset(0, 1),
-                                     blurRadius: 2,
-                                   ),
-                                 ],
-                               ),
-                             ),
-                             const SizedBox(width: 6),
-                             Text(
-                               'PaperWhisper',
-                               style: GoogleFonts.notoSerifSc(
-                                 fontSize: 10,
-                                 color: const Color(0xFFD7CCC8).withValues(alpha: 0.8),
-                               ),
-                             ),
-                           ],
+                       boxShadow: [
+                         BoxShadow(
+                           color: Colors.black.withValues(alpha: 0.1), // Lighter shadow
+                           blurRadius: 4,
+                           offset: const Offset(0, 2),
                          ),
-                       ),
-                       // 右侧占位保持标题居中
-                       const SizedBox(width: 48),
-                     ],
-                   ),
-                 ),
-                 // 底部渐变遮罩 - 实现与主背景的柔和过渡
-                 Positioned(
-                   left: 0,
-                   right: 0,
-                   bottom: -10,
-                   child: IgnorePointer(
-                     child: Container(
-                       height: 15,
-                       decoration: BoxDecoration(
-                         gradient: LinearGradient(
-                           begin: Alignment.topCenter,
-                           end: Alignment.bottomCenter,
-                           colors: [
-                             Colors.black.withValues(alpha: 0.15),
-                             Colors.transparent,
-                           ],
-                         ),
-                       ),
+                       ],
                      ),
+                     child: Row(
+                       children: [
+                         IconButton(
+                           icon: Icon(Icons.menu, color: headerColors['iconColor']),
+                           onPressed: () => Scaffold.of(scaffoldContext).openDrawer(),
+                         ),
+                         Expanded(
+                           child: Row(
+                             mainAxisAlignment: MainAxisAlignment.center,
+                             crossAxisAlignment: CrossAxisAlignment.baseline,
+                             textBaseline: TextBaseline.alphabetic,
+                             children: [
+                               Text(
+                                 '纸语',
+                                 style: GoogleFonts.notoSerifSc(
+                                   fontSize: 18,
+                                   fontWeight: FontWeight.bold,
+                                   color: headerColors['titleColor'],
+                                   shadows: const [
+                                     Shadow(
+                                       color: Color.fromRGBO(0, 0, 0, 0.1),
+                                       offset: Offset(0, 1),
+                                       blurRadius: 1,
+                                     ),
+                                   ],
+                                 ),
+                               ),
+                               const SizedBox(width: 6),
+                               Text(
+                                 'PaperWhisper',
+                                 style: GoogleFonts.notoSerifSc(
+                                   fontSize: 10,
+                                   color: headerColors['subtitleColor'],
+                                 ),
+                               ),
+                             ],
+                           ),
+                         ),
+                         const SizedBox(width: 48),
+                       ],
+                     ),
+                   );
+
+               // Apply Blur for Sea Flower
+               if (isSeaFlower) {
+                 return ClipRRect(
+                   child: BackdropFilter(
+                     filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                     child: headerContent,
                    ),
-                 ),
-               ],
-             ),
+                 );
+               }
+               
+               return headerContent;
+             },
            ),
+
         
         // Waterfall List
         Expanded(
@@ -368,116 +409,10 @@ class _DiaryListPageState extends State<DiaryListPage> {
   }
 
   Widget _buildDiaryCard(BuildContext context, DiaryEntry entry, String theme) {
-    return GestureDetector(
+    return DiaryCard(
+      entry: entry, 
+      theme: theme,
       onTap: () => _openEditor(entry),
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        child: RepaintBoundary(
-          child: SkeuomorphicContainer.paper(
-            padding: const EdgeInsets.all(25),
-            bgColor: AppTheme.getPaperColor(theme),
-            shadows: [
-               const BoxShadow(
-                color: Color.fromRGBO(0, 0, 0, 0.1), // Initial shadow
-                offset: Offset(0, 5),
-                blurRadius: 10,
-              )
-            ],
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Meta (Bottom Border Dashed)
-                Container(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  margin: const EdgeInsets.only(bottom: 12),
-                  decoration: const BoxDecoration(
-                    border: Border(
-                      bottom: BorderSide(
-                        color: Color.fromRGBO(93, 64, 55, 0.15),
-                        style: BorderStyle.none // Flutter doesn't support dashed easily without CustomPaint
-                        // We can use a Row of dots or small dashes if we want strict fidelity
-                        // For now solid light line
-                      )
-                    )
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        entry.dateString,
-                        style: GoogleFonts.courierPrime(
-                          fontSize: 12,
-                          color: const Color(0xFF8D6E63),
-                        ),
-                      ),
-                      // Icons
-                      Row(
-                        children: [
-                           // Placeholder icons, could be mapped from entry.weather
-                           const Icon(Icons.wb_sunny_outlined, size: 16, color: Color(0xFF8D6E63)),
-                           const SizedBox(width: 5),
-                           const Icon(Icons.sentiment_satisfied, size: 16, color: Color(0xFF8D6E63)),
-                        ],
-                      )
-                    ],
-                  ),
-                ),
-                // CustomPaint for dashed line if needed
-                CustomPaint(
-                  size: const Size(double.infinity, 1),
-                  painter: DashedLinePainter(color: const Color.fromRGBO(93, 64, 55, 0.15)),
-                ),
-                const SizedBox(height: 12),
-                
-                // Title
-                Text(
-                  entry.title,
-                  style: GoogleFonts.notoSerifSc(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF5D4037),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                
-                // Preview
-                Text(
-                  entry.content.replaceAll('\n', ' ').substring(0, entry.content.length > 80 ? 80 : entry.content.length) + (entry.content.length > 80 ? '...' : ''),
-                  style: GoogleFonts.notoSerifSc(
-                     fontSize: 15,
-                     height: 1.8,
-                     color: const Color(0xFF5D4037).withValues(alpha: 0.9),
-                  ),
-                  maxLines: 5,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
-}
-
-class DashedLinePainter extends CustomPainter {
-  final Color color;
-  const DashedLinePainter({required this.color});
-  
-  @override
-  void paint(Canvas canvas, Size size) {
-    var paint = Paint()
-      ..color = color
-      ..strokeWidth = 1;
-    var max = size.width;
-    var dashWidth = 5;
-    var dashSpace = 3;
-    double startX = 0;
-    while (startX < max) {
-      canvas.drawLine(Offset(startX, 0), Offset(startX + dashWidth, 0), paint);
-      startX += dashWidth + dashSpace;
-    }
-  }
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }
