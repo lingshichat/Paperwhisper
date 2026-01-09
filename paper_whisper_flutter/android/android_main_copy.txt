@@ -1,0 +1,47 @@
+﻿import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+
+import 'providers/diary_provider.dart';
+import 'providers/settings_provider.dart';
+import 'pages/diary_list_page.dart';
+
+void main() {
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => SettingsProvider()),
+        ChangeNotifierProvider(create: (_) => DiaryProvider()),
+      ],
+      child: const MyApp(),
+    ),
+  );
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: '纸语 PaperWhisper',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        useMaterial3: true,
+        textTheme: GoogleFonts.notoSansScTextTheme(), // 使用 Noto Sans SC
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.brown),
+      ),
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+         Locale('zh', 'CN'),
+         Locale('en', 'US'),
+      ],
+      home: const DiaryListPage(),
+    );
+  }
+}

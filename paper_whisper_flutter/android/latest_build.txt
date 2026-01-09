@@ -1,0 +1,164 @@
+﻿> Task :gradle:checkKotlinGradlePluginConfigurationErrors
+> Task :gradle:compileKotlin UP-TO-DATE
+> Task :gradle:compileJava NO-SOURCE
+> Task :gradle:compileGroovy UP-TO-DATE
+> Task :gradle:pluginDescriptors UP-TO-DATE
+> Task :gradle:processResources UP-TO-DATE
+> Task :gradle:classes UP-TO-DATE
+> Task :gradle:jar UP-TO-DATE
+
+> Configure project :shared_preferences_android
+.\gradlew.bat : Your project
+ is configured with Android 
+NDK 26.3.11579264, but the f
+ollowing plugin(s) depend on
+ a different Android NDK ver
+sion:
+所在位置 行:1 字符: 33
++ ... v:PUB_CACHE = "E:\PubC
+ache"; .\gradlew.bat assembl
+eDebug 2>&1 | Out-F ...
++                           
+       ~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~
+    + CategoryInfo          
+    : NotSpecified: (Your   
+  project is...id NDK ver   
+ sion::String) [], Remot    
+eException
+    + FullyQualifiedErrorId 
+    : NativeCommandError
+ 
+- path_provider_android requ
+ires Android NDK 27.0.120779
+73
+- permission_handler_android
+ requires Android NDK 27.0.1
+2077973
+- shared_preferences_android
+ requires Android NDK 27.0.1
+2077973
+Fix this issue by using the 
+highest Android NDK version 
+(they are backward compatibl
+e).
+Add the following to E:\A_pr
+ogramming\paperwhisper\paper
+_whisper_flutter\android\app
+\build.gradle.kts:
+
+    android {
+        ndkVersion = "27.0.1
+2077973"
+        ...
+    }
+
+
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+
+> Task :app:compileFlutterBuildDebug
+Error: Couldn't resolve the 
+package 'flutter_localizatio
+ns' in 'package:flutter_loca
+lizations/flutter_localizati
+ons.dart'.
+lib/main.dart:4:8: Error: No
+t found: 'package:flutter_lo
+calizations/flutter_localiza
+tions.dart'
+import 'package:flutter_loca
+lizations/flutter_localizati
+ons.dart';
+       ^
+lib/main.dart:36:9: Error: U
+ndefined name 'GlobalMateria
+lLocalizations'.
+        GlobalMaterialLocali
+zations.delegate,
+        ^^^^^^^^^^^^^^^^^^^^
+^^^^^^^
+lib/main.dart:37:9: Error: U
+ndefined name 'GlobalWidgets
+Localizations'.
+        GlobalWidgetsLocaliz
+ations.delegate,
+        ^^^^^^^^^^^^^^^^^^^^
+^^^^^^
+lib/main.dart:38:9: Error: U
+ndefined name 'GlobalCuperti
+noLocalizations'.
+        GlobalCupertinoLocal
+izations.delegate,
+        ^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^
+Unhandled exception:
+FileSystemException(uri=org-
+dartlang-untranslatable-uri:
+package%3Aflutter_localizati
+ons%2Fflutter_localizations.
+dart; message=StandardFileSy
+stem only supports file:* an
+d data:* URIs)
+#0      StandardFileSystem.e
+ntityForUri (package:front_e
+nd/src/api_prototype/standar
+d_file_system.dart:45)
+#1      asFileUri (package:v
+m/kernel_front_end.dart:820)
+#2      writeDepfile (packag
+e:vm/kernel_front_end.dart:9
+60)
+<asynchronous suspension>
+#3      FrontendCompiler.com
+pile (package:frontend_serve
+r/frontend_server.dart:712)
+<asynchronous suspension>
+#4      starter (package:fro
+ntend_server/starter.dart:10
+9)
+<asynchronous suspension>
+#5      main (file:///C:/b/s
+/w/ir/x/w/sdk/pkg/frontend_s
+erver/bin/frontend_server_st
+arter.dart:13)
+<asynchronous suspension>
+
+Target kernel_snapshot_progr
+am failed: Exception
+
+
+> Task :app:compileFlutterBuildDebug FAILED
+
+FAILURE: Build failed with a
+n exception.
+
+* What went wrong:
+Execution failed for task ':
+app:compileFlutterBuildDebug
+'.
+> Process 'command 'E:\envir
+onment\flutter\bin\flutter.b
+at'' finished with non-zero 
+exit value 1
+
+* Try:
+> Run with --stacktrace opti
+on to get the stack trace.
+> Run with --info or --debug
+ option to get more log outp
+ut.
+> Run with --scan to get ful
+l insights.
+> Get more help at https://h
+elp.gradle.org.
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.10.2/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD FAILED in 14s
+7 actionable tasks: 2 executed, 5 up-to-date

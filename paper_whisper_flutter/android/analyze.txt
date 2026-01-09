@@ -1,0 +1,49 @@
+﻿Analyzing paper_whisper_flutter...                              
+
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\config\app_theme.dart:42:29 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\config\app_theme.dart:51:29 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\config\app_theme.dart:53:29 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\config\app_theme.dart:60:29 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\config\app_theme.dart:62:29 - deprecated_member_use
+   info - The imported package 'flutter_localizations' isn't a dependency of the importing package - lib\main.dart:4:8 - depend_on_referenced_packages
+  error - Target of URI doesn't exist: 'package:flutter_localizations/flutter_localizations.dart' - lib\main.dart:4:8 - uri_does_not_exist
+  error - The values in a const list literal must be constants - lib\main.dart:36:9 - non_constant_list_element
+  error - Undefined name 'GlobalMaterialLocalizations' - lib\main.dart:36:9 - undefined_identifier
+  error - The values in a const list literal must be constants - lib\main.dart:37:9 - non_constant_list_element
+  error - Undefined name 'GlobalWidgetsLocalizations' - lib\main.dart:37:9 - undefined_identifier
+  error - The values in a const list literal must be constants - lib\main.dart:38:9 - non_constant_list_element
+  error - Undefined name 'GlobalCupertinoLocalizations' - lib\main.dart:38:9 - undefined_identifier
+warning - Unused import: 'package:flutter_svg/flutter_svg.dart' - lib\pages\diary_list_page.dart:3:8 - unused_import
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\diary_list_page.dart:69:78 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\diary_list_page.dart:71:82 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\diary_list_page.dart:154:57 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\diary_list_page.dart:161:84 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\diary_list_page.dart:177:53 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\diary_list_page.dart:193:29 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\editor_page.dart:147:72 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\editor_page.dart:210:73 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\editor_page.dart:265:31 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\editor_page.dart:278:31 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\editor_page.dart:285:39 - deprecated_member_use
+   info - The imported package 'path' isn't a dependency of the importing package - lib\services\diary_service.dart:4:8 - depend_on_referenced_packages
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\glass_container.dart:45:28 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\glass_container.dart:49:52 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\glass_container.dart:54:39 - deprecated_member_use
+
+flutter : 29 issues found. (
+ran in 3.8s)
+所在位置 行:1 字符: 50
++ ... _CACHE = "E:\PubCache"
+; Set-Location ..; flutter a
+nalyze 2>&1 | Out-F ...
++                           
+                   ~~~~~~~~~
+~~~~~~~~~~~
+    + CategoryInfo          
+    : NotSpecified: (29 is  
+  sues found. (ran in 3.8   
+ s):String) [], RemoteEx    
+ception
+    + FullyQualifiedErrorId 
+    : NativeCommandError
+ 

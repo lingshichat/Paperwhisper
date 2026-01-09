@@ -1,0 +1,65 @@
+﻿Changing current working directory to: E:\A_programming\paperwhisper\paper_whisper_flutter
+
+flutter : Support for Androi
+d x86 targets will be remove
+d in the next stable release
+ after 3.27. See https://git
+hub.com/flutter/flutter/issu
+es/157543 for details.
+所在位置 行:1 字符: 130
++ ...  .\gradlew.bat --stop 
+2>$null; flutter build apk -
+-debug 2>&1 | Out-F ...
++                           
+         ~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~
+    + CategoryInfo          
+    : NotSpecified: (Suppo  
+  rt for And...43 for det   
+ ails.:String) [], Remot    
+eException
+    + FullyQualifiedErrorId 
+    : NativeCommandError
+ 
+Running Gradle task 'assembleDebug'...                          
+
+FAILURE: Build failed with a
+n exception.
+
+* Where:
+Build file 'E:\A_programming
+\paperwhisper\paper_whisper_
+flutter\android\app\build.gr
+adle.kts' line: 1
+
+* What went wrong:
+An exception occurred applyi
+ng plugin request [id: 'com.
+android.application']
+> Failed to apply plugin 'co
+m.android.internal.applicati
+on'.
+   > The option 'android.dis
+ableAutomaticComponentCreati
+on' is deprecated.
+     It was removed in versi
+on 8.0 of the Android Gradle
+ plugin.
+     Please remove it from `
+gradle.properties`.
+
+* Try:
+> Run with --stacktrace opti
+on to get the stack trace.
+> Run with --info or --debug
+ option to get more log outp
+ut.
+> Run with --scan to get ful
+l insights.
+> Get more help at https://h
+elp.gradle.org.
+
+BUILD FAILED in 7s
+Running Gradle task 'assembleDebug'...                              8.2s
+Gradle task assembleDebug fa
+iled with exit code 1

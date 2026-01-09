@@ -1,0 +1,45 @@
+﻿[鈭歖 Flutter (Channel stable, 3.29.0, on Microsoft Windows [鐗堟湰 10.0.26200.7462], locale zh-CN) [2.6s]
+    鈥?Flutter version 3.29.0 on channel stable at E:\environment\flutter
+    鈥?Upstream repository https://github.com/flutter/flutter.git
+    鈥?Framework revision 35c388afb5 (11 months ago), 2025-02-10 12:48:41 -0800
+    鈥?Engine revision f73bfc4522
+    鈥?Dart version 3.7.0
+    鈥?DevTools version 2.42.2
+
+[鈭歖 Windows Version (11 瀹跺涵涓枃鐗?64-bit, 25H2, 2009) [2.5s]
+
+[!] Android toolchain - develop for Android devices (Android SDK version 35.0.0) [2.2s]
+    鈥?Android SDK at D:\Softwares\Android\Sdk
+    鈥?Platform android-35, build-tools 35.0.0
+    鈥?ANDROID_HOME = D:\Softwares\Android\Sdk
+    鈥?Java binary at: D:\Softwares\androidstudio\jbr\bin\java
+      This is the JDK bundled with the latest Android Studio installation on this machine.
+      To manually set the JDK path, use: `flutter config --jdk-dir="path/to/jdk"`.
+    鈥?Java version OpenJDK Runtime Environment (build 17.0.11+0--11852314)
+    ! Some Android licenses not accepted. To resolve this, run: flutter doctor --android-licenses
+
+[鈭歖 Chrome - develop for the web [282ms]
+    鈥?Chrome at C:\Program Files\Google\Chrome\Application\chrome.exe
+
+[鈭歖 Visual Studio - develop Windows apps (Visual Studio Community 2026 18.1.1) [281ms]
+    鈥?Visual Studio at E:\A_programming\env\VStudio
+    鈥?Visual Studio Community 2026 version 18.1.11312.151
+    鈥?Windows 10 SDK version 10.0.26100.0
+
+[鈭歖 Android Studio (version 2024.1) [24ms]
+    鈥?Android Studio at D:\Softwares\androidstudio
+    鈥?Flutter plugin can be installed from:
+       https://plugins.jetbrains.com/plugin/9212-flutter
+    鈥?Dart plugin can be installed from:
+       https://plugins.jetbrains.com/plugin/6351-dart
+    鈥?Java version OpenJDK Runtime Environment (build 17.0.11+0--11852314)
+
+[鈭歖 Connected device (3 available) [281ms]
+    鈥?Windows (desktop) 鈥?windows 鈥?windows-x64    鈥?Microsoft Windows [鐗堟湰 10.0.26200.7462]
+    鈥?Chrome (web)      鈥?chrome  鈥?web-javascript 鈥?Google Chrome 143.0.7499.170
+    鈥?Edge (web)        鈥?edge    鈥?web-javascript 鈥?Microsoft Edge 143.0.3650.96
+
+[鈭歖 Network resources [1,295ms]
+    鈥?All expected network resources are available.
+
+! Doctor found issues in 1 category.

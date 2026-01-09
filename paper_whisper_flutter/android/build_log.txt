@@ -1,0 +1,167 @@
+﻿> Task :gradle:checkKotlinGradlePluginConfigurationErrors
+> Task :gradle:compileKotlin UP-TO-DATE
+> Task :gradle:compileJava NO-SOURCE
+> Task :gradle:compileGroovy UP-TO-DATE
+> Task :gradle:pluginDescriptors UP-TO-DATE
+> Task :gradle:processResources UP-TO-DATE
+> Task :gradle:classes UP-TO-DATE
+> Task :gradle:jar UP-TO-DATE
+
+> Configure project :shared_preferences_android
+.\gradlew.bat : Your project
+ is configured with Android 
+NDK 26.3.11579264, but the f
+ollowing plugin(s) depend on
+ a different Android NDK ver
+sion:
+所在位置 行:1 字符: 33
++ ... v:PUB_CACHE = "E:\PubC
+ache"; .\gradlew.bat assembl
+eDebug 2>&1 | Out-F ...
++                           
+       ~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~
+    + CategoryInfo          
+    : NotSpecified: (Your   
+  project is...id NDK ver   
+ sion::String) [], Remot    
+eException
+    + FullyQualifiedErrorId 
+    : NativeCommandError
+ 
+- path_provider_android requ
+ires Android NDK 27.0.120779
+73
+- permission_handler_android
+ requires Android NDK 27.0.1
+2077973
+- shared_preferences_android
+ requires Android NDK 27.0.1
+2077973
+Fix this issue by using the 
+highest Android NDK version 
+(they are backward compatibl
+e).
+Add the following to E:\A_pr
+ogramming\paperwhisper\paper
+_whisper_flutter\android\app
+\build.gradle.kts:
+
+    android {
+        ndkVersion = "27.0.1
+2077973"
+        ...
+    }
+
+IOException: https://dl.google.com/android/repository/addons_list-6.xml
+java.net.ConnectException: Connection refused: connect
+IOException: https://dl.google.com/android/repository/addons_list-5.xml
+java.net.ConnectException: Connection refused: connect
+IOException: https://dl.google.com/android/repository/addons_list-4.xml
+java.net.ConnectException: Connection refused: connect
+IOException: https://dl.google.com/android/repository/addons_list-3.xml
+java.net.ConnectException: Connection refused: connect
+IOException: https://dl.google.com/android/repository/addons_list-2.xml
+java.net.ConnectException: Connection refused: connect
+IOException: https://dl.google.com/android/repository/addons_list-1.xml
+java.net.ConnectException: Connection refused: connect
+Failed to download any source lists!
+IO exception while downloading manifest:
+java.net.ConnectException: Connection refused: connect
+	at java.base/sun.nio.ch.Net.connect0(Native Method)
+	at java.base/sun.nio.ch.Net.connect(Net.java:579)
+	at java.base/sun.nio.ch.Net.connect(Net.java:568)
+	at java.base/sun.nio.ch.NioSocketImpl.connect(NioSocketImpl.java:593)
+	at java.base/java.net.Socket.connect(Socket.java:633)
+	at java.base/java.net.Socket.connect(Socket.java:583)
+	at java.base/sun.net.NetworkClient.doConnect(NetworkClient.java:183)
+	at java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:533)
+	at java.base/sun.net.www.http.HttpClient$1.run(HttpClient.java:592)
+	at java.base/sun.net.www.http.HttpClient$1.run(HttpClient.java:590)
+	at java.base/java.security.AccessController.doPrivileged(AccessController.java:569)
+	at java.base/sun.net.www.http.HttpClient.privilegedOpenServer(HttpClient.java:589)
+	at java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:633)
+	at java.base/sun.net.www.protocol.https.HttpsClient.<init>(HttpsClient.java:266)
+	at java.base/sun.net.www.protocol.https.HttpsClient.New(HttpsClient.java:380)
+	at java.base/sun.net.www.protocol.https.AbstractDelegateHttpsURLConnection.getNewHttpClient(AbstractDelegateHttpsURLConnection.java:193)
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.plainConnect0(HttpURLConnection.java:1287)
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.plainConnect(HttpURLConnection.java:1128)
+	at java.base/sun.net.www.protocol.https.AbstractDelegateHttpsURLConnection.connect(AbstractDelegateHttpsURLConnection.java:179)
+	at java.base/sun.net.www.protocol.https.HttpsURLConnectionImpl.connect(HttpsURLConnectionImpl.java:142)
+	at com.android.sdklib.repository.legacy.remote.internal.DownloadCache.openUrl(DownloadCache.java:254)
+	at com.android.sdklib.repository.legacy.remote.internal.DownloadCache.downloadAndCache(DownloadCache.java:631)
+	at com.android.sdklib.repository.legacy.remote.internal.DownloadCache.openCachedUrl(DownloadCache.java:462)
+	at com.android.sdklib.repository.legacy.LegacyDownloader.downloadAndStream(LegacyDownloader.java:82)
+	at com.android.repository.impl.downloader.LocalFileAwareDownloader.downloadAndStream(LocalFileAwareDownloader.java:51)
+	at com.android.repository.impl.manager.RemoteRepoLoaderImpl.lambda$fetchPackages$0(RemoteRepoLoaderImpl.java:137)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:539)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+
+IO exception while downloading manifest:
+java.net.ConnectException: Connection refused: connect
+	at java.base/sun.nio.ch.Net.connect0(Native Method)
+	at java.base/sun.nio.ch.Net.connect(Net.java:579)
+	at java.base/sun.nio.ch.Net.connect(Net.java:568)
+	at java.base/sun.nio.ch.NioSocketImpl.connect(NioSocketImpl.java:593)
+	at java.base/java.net.Socket.connect(Socket.java:633)
+	at java.base/java.net.Socket.connect(Socket.java:583)
+	at java.base/sun.net.NetworkClient.doConnect(NetworkClient.java:183)
+	at java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:533)
+	at java.base/sun.net.www.http.HttpClient$1.run(HttpClient.java:592)
+	at java.base/sun.net.www.http.HttpClient$1.run(HttpClient.java:590)
+	at java.base/java.security.AccessController.doPrivileged(AccessController.java:569)
+	at java.base/sun.net.www.http.HttpClient.privilegedOpenServer(HttpClient.java:589)
+	at java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:633)
+	at java.base/sun.net.www.protocol.https.HttpsClient.<init>(HttpsClient.java:266)
+	at java.base/sun.net.www.protocol.https.HttpsClient.New(HttpsClient.java:380)
+	at java.base/sun.net.www.protocol.https.AbstractDelegateHttpsURLConnection.getNewHttpClient(AbstractDelegateHttpsURLConnection.java:193)
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.plainConnect0(HttpURLConnection.java:1287)
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.plainConnect(HttpURLConnection.java:1128)
+	at java.base/sun.net.www.protocol.https.AbstractDelegateHttpsURLConnection.connect(AbstractDelegateHttpsURLConnection.java:179)
+	at java.base/sun.net.www.protocol.https.HttpsURLConnectionImpl.connect(HttpsURLConnectionImpl.java:142)
+	at com.android.sdklib.repository.legacy.remote.internal.DownloadCache.openUrl(DownloadCache.java:254)
+	at com.android.sdklib.repository.legacy.remote.internal.DownloadCache.downloadAndCache(DownloadCache.java:631)
+	at com.android.sdklib.repository.legacy.remote.internal.DownloadCache.openCachedUrl(DownloadCache.java:462)
+	at com.android.sdklib.repository.legacy.LegacyDownloader.downloadAndStream(LegacyDownloader.java:82)
+	at com.android.repository.impl.downloader.LocalFileAwareDownloader.downloadAndStream(LocalFileAwareDownloader.java:51)
+	at com.android.repository.impl.manager.RemoteRepoLoaderImpl.lambda$fetchPackages$0(RemoteRepoLoaderImpl.java:137)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:539)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+
+Still waiting for package manifests to be fetched remotely.
+
+FAILURE: Build failed with a
+n exception.
+
+* What went wrong:
+Could not determine the depe
+ndencies of task ':app:compi
+leDebugJavaWithJavac'.
+> Failed to find Build Tools
+ revision 34.0.0
+
+* Try:
+> Run with --stacktrace opti
+on to get the stack trace.
+> Run with --info or --debug
+ option to get more log outp
+ut.
+> Run with --scan to get ful
+l insights.
+> Get more help at https://h
+elp.gradle.org.
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.10.2/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD FAILED in 6s
+6 actionable tasks: 1 executed, 5 up-to-date

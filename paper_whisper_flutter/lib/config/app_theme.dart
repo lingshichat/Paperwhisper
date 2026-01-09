@@ -1,0 +1,161 @@
+import 'package:flutter/material.dart';
+
+class AppTheme {
+  static const String themeDefault = 'default'; // Vintage (时光旧物)
+  static const String themeMidnight = 'midnight';
+  static const String themeSeaFlower = 'sea_flower';
+
+  // --- 1. Colors (CSS Variable Mapping) ---
+  
+  // Vintage Theme Colors
+  static const Color _vintageBgCenter = Color(0xFF4a3b32);
+  static const Color _vintageBgEdge = Color(0xFF2d241f);
+  static const Color _vintageSidebarStart = Color(0xFF5d4037);
+  static const Color _vintageSidebarMid = Color(0xFF4e342e);
+  static const Color _vintageSidebarEnd = Color(0xFF3e2723);
+  static const Color _vintagePaper = Color(0xFFF4ECD8); // #F4ECD8
+  static const Color _vintageTextPrimary = Color(0xFF2C3E50); // #2C3E50
+  static const Color _vintageTextSecondary = Color(0xFF5D4037); // #5D4037
+  static const Color _vintageAccent = Color(0xFF8D6E63);
+
+  // Midnight Theme Colors
+  static const Color _midnightBgCenter = Color(0xFF1a237e); // Radial stop 0%
+  static const Color _midnightBgMid = Color(0xFF050510); // Radial stop 50%
+  static const Color _midnightBgEdge = Colors.black; // Radial stop 100%
+  static const Color _midnightPaper = Color(0xFF161b22);
+  static const Color _midnightTextPrimary = Color(0xFFe6edf3);
+  static const Color _midnightTextSecondary = Color(0xFF8b949e);
+  static const Color _midnightAccent = Color(0xFF7986cb);
+
+  // --- 2. Getters ---
+
+  // CSS Shadows
+  static const List<BoxShadow> cardShadow = [
+    BoxShadow(
+      color: Color.fromRGBO(0, 0, 0, 0.3),
+      offset: Offset(0, 5), // Reduced offset
+      blurRadius: 5, // Drastically reduced for performance testing
+      spreadRadius: -2,
+    ),
+  ];
+
+  static const List<BoxShadow> paperShadow = [
+    BoxShadow(
+      color: Color.fromRGBO(0, 0, 0, 0.5),
+      offset: Offset(0, 5), // Reduced offset
+      blurRadius: 10, // Drastically reduced for performance testing (was 60)
+      spreadRadius: 0,
+    ),
+  ];
+
+  static BoxDecoration getBackground(String theme) {
+    switch (theme) {
+      case themeMidnight:
+        return BoxDecoration(
+          color: _midnightBgEdge,
+          gradient: const RadialGradient(
+            center: Alignment(0, 0.5), 
+            radius: 1.2,
+            colors: [_midnightBgCenter, _midnightBgMid, _midnightBgEdge],
+            stops: [0.0, 0.4, 1.0],
+          ),
+        );
+      case themeSeaFlower:
+         return const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFFEFDFF), Color(0xFFF6D9E6), Color(0xFFDBBAD0), Color(0xFFCDA8C7)],
+            stops: [0.0, 0.3, 0.6, 1.0],
+          ),
+        );
+      case themeDefault:
+      default:
+        return const BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment.center,
+            radius: 1.25, 
+            colors: [_vintageBgCenter, _vintageBgEdge],
+            stops: [0.0, 1.0]
+          ),
+        );
+    }
+  }
+
+  static BoxDecoration getSidebarBackground(String theme) {
+    switch (theme) {
+      case themeMidnight:
+         return BoxDecoration(
+           color: const Color(0xFF0D1117).withValues(alpha: 0.7),
+           border: const Border(right: BorderSide(color: Color(0x0DFFFFFF))),
+           // Midnight特殊阴影效果
+           boxShadow: const [
+             BoxShadow(
+               color: Color.fromRGBO(0, 0, 0, 0.5),
+               offset: Offset(1, 0),
+               blurRadius: 15,
+             ),
+           ],
+         );
+      case themeSeaFlower:
+         return BoxDecoration(
+           color: const Color(0xFF880E4F).withValues(alpha: 0.85),
+           border: const Border(right: BorderSide(color: Color(0x4DFFFFFF))),
+         );
+      case themeDefault:
+      default:
+        // 修复: 使用web端原设计 - 垂直渐变 (to bottom)
+        // CSS: linear-gradient(to bottom, #3e2723, #281815)
+        // 加上右边框和内阴影
+        return const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF3e2723), Color(0xFF281815)],
+          ),
+          border: Border(right: BorderSide(color: Color(0xFF1a100d), width: 1)),
+          boxShadow: [
+            // 模拟 inset shadow 效果 - 右侧内阴影
+            BoxShadow(
+              color: Color.fromRGBO(0, 0, 0, 0.3),
+              offset: Offset(2, 0),
+              blurRadius: 10,
+              spreadRadius: -2,
+            ),
+          ],
+        );
+    }
+  }
+
+  static Color getPaperColor(String theme) {
+    switch (theme) {
+      case themeMidnight: return _midnightPaper;
+      case themeSeaFlower: return const Color(0xD9FFFFFF); // rgba(255, 255, 255, 0.85)
+      default: return _vintagePaper;
+    }
+  }
+
+  static Color getTextColor(String theme) {
+    switch (theme) {
+      case themeMidnight: return _midnightTextPrimary;
+      case themeSeaFlower: return const Color(0xFF880E4F);
+      default: return _vintageTextPrimary;
+    }
+  }
+  
+  static Color getTextSecondaryColor(String theme) {
+    switch (theme) {
+      case themeMidnight: return _midnightTextSecondary;
+      case themeSeaFlower: return const Color(0xFFC2185B);
+      default: return _vintageTextSecondary;
+    }
+  }
+
+  static Color getAccentColor(String theme) {
+    switch (theme) {
+      case themeMidnight: return _midnightAccent;
+      case themeSeaFlower: return const Color(0xFFF50057);
+      default: return _vintageAccent;
+    }
+  }
+}
