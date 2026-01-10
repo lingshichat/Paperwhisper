@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.lingshichat" "\0"
-            VALUE "FileDescription", "paper_whisper_flutter" "\0"
+            VALUE "FileDescription", "纸语PaperWhisper" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "paper_whisper_flutter" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 com.lingshichat. All rights reserved." "\0"
             VALUE "OriginalFilename", "paper_whisper_flutter.exe" "\0"
-            VALUE "ProductName", "paper_whisper_flutter" "\0"
+            VALUE "ProductName", "纸语PaperWhisper" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

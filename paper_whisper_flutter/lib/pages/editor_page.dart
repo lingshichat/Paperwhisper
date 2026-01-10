@@ -197,8 +197,16 @@ class _EditorPageState extends State<EditorPage> {
         : null;
 
     Widget barContent = Container(
-      height: 60,
-      padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top, left: 10, right: 20),
+      // 移除固定高度，改用最小高度约束+padding适配
+      constraints: BoxConstraints(
+        minHeight: kToolbarHeight + MediaQuery.of(context).padding.top,
+      ),
+      padding: EdgeInsets.only(
+        top: MediaQuery.of(context).padding.top > 0 ? MediaQuery.of(context).padding.top : 24,
+        left: 10, 
+        right: 20,
+        bottom: 8, // 添加底部留白以保证美观
+      ),
       decoration: BoxDecoration(
         color: barBg,
         border: border,

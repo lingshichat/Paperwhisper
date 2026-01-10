@@ -182,13 +182,14 @@ class PetalPainter extends CustomPainter {
         style: TextStyle(
           fontSize: petal.size,
           color: petal.color.withValues(alpha: petal.opacity),
-          shadows: [
-            BoxShadow(
-              color: const Color(0xFFF06292).withValues(alpha: 0.3),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            )
-          ],
+          // 移除阴影以大幅提升移动端性能
+          // shadows: [
+          //   BoxShadow(
+          //     color: const Color(0xFFF06292).withValues(alpha: 0.3),
+          //     blurRadius: 4,
+          //     offset: const Offset(0, 2),
+          //   )
+          // ],
           fontFamily: 'Noto Serif SC', 
         ),
       );
@@ -377,23 +378,26 @@ class StarPainter extends CustomPainter {
   }
 
   void _drawGlowingStar(Canvas canvas, Offset center, double radius, Paint paint, double opacity) {
-    paint.isAntiAlias = true;
-    final path = _createStarPath(center, radius, radius * 0.4);
+    // 1. Draw Glow using RadialGradient (Much cheaper than MaskFilter.blur)
+    final glowRadius = radius * 3.0;
+    final glowPaint = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          Colors.white.withValues(alpha: opacity * 0.4), // Core glow
+          Colors.white.withValues(alpha: 0.0), // Fade out
+        ],
+        stops: const [0.1, 1.0],
+      ).createShader(Rect.fromCircle(center: center, radius: glowRadius));
 
-    // 1. Draw Glow (Using multiple blurred layers for smoothness)
-    // Layer 1: Wide faint glow
-    paint.color = Colors.white.withValues(alpha: opacity * 0.2);
-    paint.maskFilter = const MaskFilter.blur(BlurStyle.normal, 6.0); 
-    canvas.drawPath(path, paint);
-
-    // Layer 2: Core glow
-    paint.color = Colors.white.withValues(alpha: opacity * 0.4);
-    paint.maskFilter = const MaskFilter.blur(BlurStyle.normal, 3.0); 
-    canvas.drawPath(path, paint);
+    canvas.drawCircle(center, glowRadius, glowPaint);
 
     // 2. Draw Core (Solid)
     paint.color = Colors.white.withValues(alpha: opacity);
-    paint.maskFilter = null; // Clear blur
+    paint.maskFilter = null; // Ensure no blur
+    // Use fill for core
+    paint.style = PaintingStyle.fill;
+    
+    final path = _createStarPath(center, radius, radius * 0.4);
     canvas.drawPath(path, paint);
   }
 

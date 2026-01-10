@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart'; // Added missing import
 
 class AppTheme {
   static const String themeDefault = 'default'; // Vintage (时光旧物)
@@ -190,5 +191,86 @@ class AppTheme {
           'subtitleColor': const Color(0xFFD7CCC8).withOpacity(0.8),
         };
     }
+  }
+
+  // --- 3. Dynamic Theme Data (Fixes Flash of White & Adds Transitions) ---
+
+  static ThemeData getThemeData(String theme) {
+    // 1. Determine Background Color based on Theme
+    // This is CRITICAL for fixing the "Flash of White" issue.
+    Color scaffoldBg;
+    Color seedColor;
+
+    if (theme == themeSeaFlower) {
+      seedColor = const Color(0xFFF06292);
+      scaffoldBg = const Color(0xFFF6D9E6); // Light Pink base
+    } else if (theme == themeMidnight) {
+      seedColor = const Color(0xFF3949AB);
+      scaffoldBg = const Color(0xFF050510); // Deep Black/Blue base
+    } else {
+      seedColor = Colors.brown;
+      scaffoldBg = const Color(0xFF2d241f); // Dark Brown base
+    }
+
+    // 2. Build ThemeData
+    return ThemeData(
+      useMaterial3: true,
+      // Setting scaffoldBackgroundColor matches the theme's base color,
+      // preventing the white flash during page loads before the heavy background/gradient renders.
+      scaffoldBackgroundColor: scaffoldBg,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: seedColor,
+        surface: scaffoldBg, // Enhance consistency
+      ),
+      // 1:1 Noto Serif SC restoration
+      textTheme: GoogleFonts.notoSerifScTextTheme(),
+      
+      // 3. Custom Page Transitions
+      // "沉稳且丝滑" - Fade + Subtle Slide Up
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: _SkeuomorphicPageTransitionsBuilder(),
+          TargetPlatform.iOS: _SkeuomorphicPageTransitionsBuilder(),
+          TargetPlatform.windows: _SkeuomorphicPageTransitionsBuilder(),
+        },
+      ),
+    );
+  }
+}
+
+/// 自定义的拟物风转场动画
+/// 特征：沉稳、有分量感。
+/// 效果：
+/// 1. Fade: 0% -> 100%
+/// 2. Slide: 从下方 20px (0.05 height) 缓慢上浮至位置，模拟取出纸张的感觉。
+/// 3. Curve: easeOutQuart (快速启动，极慢停止，如同有摩擦力的物理运动)
+class _SkeuomorphicPageTransitionsBuilder extends PageTransitionsBuilder {
+  const _SkeuomorphicPageTransitionsBuilder();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    // 进场动画
+    return SlideTransition(
+      position: Tween<Offset>(
+        begin: const Offset(0, 0.05), // Start slightly below (5% height)
+        end: Offset.zero,
+      ).animate(CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeOutQuart, // Heavy, physical feel
+      )),
+      child: FadeTransition(
+        opacity: CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOut, // Linear fade is usually best, but easeOut is softer
+        ),
+        child: child,
+      ),
+    );
   }
 }
