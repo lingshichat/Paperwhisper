@@ -1,17 +1,22 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
-import '../providers/diary_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/settings_provider.dart';
 import '../models/diary_entry.dart';
 import '../config/app_theme.dart';
 import '../widgets/skeuomorphic_container.dart';
 import '../widgets/sidebar_widget.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../providers/diary_provider.dart';
 import '../widgets/visual_effects.dart';
 import '../widgets/dashed_line_painter.dart';
+import '../widgets/skeuomorphic_dialog.dart'; // Updated import
 import 'editor_page.dart';
-import 'diary_card.dart'; // Added
+import 'diary_card.dart';
+import 'dart:io' show Platform;
+import 'package:permission_handler/permission_handler.dart';
 
 class DiaryListPage extends StatefulWidget {
   const DiaryListPage({super.key});
@@ -22,8 +27,184 @@ class DiaryListPage extends StatefulWidget {
 
 class _DiaryListPageState extends State<DiaryListPage> {
   String _searchQuery = '';
-  bool _isSidebarCollapsed = false; // 桌面端侧边栏折叠状态
+  // Removed duplicate declaration
   
+  @override
+  void initState() {
+    super.initState();
+    _checkAndroidPermissions();
+    _checkAndShowAnnouncement(); // Check for version update and show announcement
+  }
+
+  Future<void> _checkAndroidPermissions() async {
+    if (!Platform.isAndroid) return;
+
+    // 1. Check current status
+    var status = await Permission.manageExternalStorage.status;
+    if (status.isGranted) return;
+
+    // 2. Determine if dialog should be shown (Simplified: always show if not granted)
+    // We wait for the first frame to render before showing dialog
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+       _showPermissionRationale();
+    });
+  }
+
+  Future<void> _checkAndShowAnnouncement() async {
+    final prefs = await SharedPreferences.getInstance();
+    const currentVersion = '1.0.0';
+    final lastVersion = prefs.getString('last_run_version');
+
+    if (lastVersion != currentVersion) {
+      if (mounted) {
+        // Update version immediately to avoid showing again if dialog is dismissed
+        await prefs.setString('last_run_version', currentVersion);
+        
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _showAnnouncementDialog();
+        });
+      }
+    }
+  }
+
+  void _showAnnouncementDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierColor: Colors.black.withValues(alpha: 0.6),
+      builder: (context) => SkeuomorphicDialog(
+        title: '纸语 1.0 —— 焕新·重逢',
+        headerIcon: Icons.auto_awesome, // Sparkles
+        content: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '致各位记录者：',
+              style: GoogleFonts.notoSerifSc(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF5D4037),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              '经过漫长的打磨，很高兴以全新的面貌与你相见。',
+              style: GoogleFonts.notoSerifSc(
+                fontSize: 15,
+                color: const Color(0xFF5D4037),
+                height: 1.6,
+              ),
+            ),
+            const SizedBox(height: 20),
+            _buildAnnouncementItem('🏷️', '架构重塑，性能飞跃', '底座完全迁移至 Flutter。告别迟滞，带来如丝般顺滑的流畅体验。'),
+            const SizedBox(height: 15),
+            _buildAnnouncementItem('💻📱', '双端同行，如影随形', '正式支持 Android 与 Windows 双平台。无缝衔接你的记录体验。'),
+            const SizedBox(height: 15),
+            _buildAnnouncementItem('🎨', '拟物美学，经典复刻', '完美移植「经典木纹」、「午夜星尘」、「海底花海」等经典主题。'),
+            const SizedBox(height: 15),
+            _buildAnnouncementItem('🔒', '数据自主，安全无忧', '坚持数据本地存储。由始至终，你的故事只属于你自己。'),
+          ],
+        ),
+        actions: [
+          SkeuomorphicDialogButton(
+            label: '开启旅程',
+            isPrimary: true,
+            onPressed: () => Navigator.pop(context),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAnnouncementItem(String emoji, String title, String desc) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(emoji, style: const TextStyle(fontSize: 18)),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: GoogleFonts.notoSerifSc(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF3E2723),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                desc,
+                style: GoogleFonts.notoSerifSc(
+                  fontSize: 14,
+                  color: const Color(0xFF5D4037).withValues(alpha: 0.8),
+                  height: 1.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showPermissionRationale() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => SkeuomorphicDialog(
+        title: '存储权限说明',
+        headerIcon: Icons.folder_special,
+        content: Text(
+          '为了防止卸载应用后日记丢失，我们需要将数据保存在手机的【文档】目录中。\n\n请在接下来的系统提示中允许 “授予所有文件的管理权限”。',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.notoSerifSc(
+            fontSize: 15,
+            height: 1.6,
+            color: const Color(0xFF5D4037),
+          ),
+        ),
+        actions: [
+          SkeuomorphicDialogButton(
+            label: '暂不授权',
+            isPrimary: false,
+            onPressed: () {
+              Navigator.pop(context);
+              // Optional: Show snackbar
+              ScaffoldMessenger.of(context).showSnackBar(
+                 const SnackBar(content: Text('已拒绝权限，将在应用私有目录下运行')),
+              );
+            },
+          ),
+          SkeuomorphicDialogButton(
+            label: '去授权',
+            isPrimary: true,
+            onPressed: () async {
+              Navigator.pop(context); // Close rationale dialog
+              // 3. Request System Permission
+              final status = await Permission.manageExternalStorage.request();
+              if (status.isGranted) {
+                 // 4. Reload Data if granted
+                 if (mounted) {
+                   await Provider.of<DiaryProvider>(context, listen: false).reloadAfterPermission();
+                 }
+              } else {
+                 if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                       const SnackBar(content: Text('权限未授予，无法读取公共目录')),
+                    );
+                 }
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   void _openEditor(DiaryEntry? entry) {
     Navigator.push(
       context, 
@@ -186,7 +367,7 @@ class _DiaryListPageState extends State<DiaryListPage> {
                        border: Border(
                          bottom: BorderSide(color: headerColors['border']!, width: 1),
                        ),
-                       boxShadow: [
+                       boxShadow: isSeaFlower ? [] : [
                          BoxShadow(
                            color: Colors.black.withValues(alpha: 0.1), // Lighter shadow
                            blurRadius: 4,

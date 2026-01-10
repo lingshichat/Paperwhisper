@@ -177,7 +177,7 @@ class AppTheme {
         // 海底花海 - 毛玻璃效果，深色文字
         return {
           'background': const Color(0xFFFFFFFF).withOpacity(0.15), // Light glass matches sidebar
-          'border': const Color(0x7FFFFFFF), // White semi-transparent border
+          'border': const Color(0x4DFFFFFF), // White semi-transparent border (Matches sidebar)
           'iconColor': const Color(0xFF880E4F), // Deep Pink
           'titleColor': const Color(0xFF880E4F), // Deep Pink
           'subtitleColor': const Color(0xCC880E4F), // Deep Pink opacity

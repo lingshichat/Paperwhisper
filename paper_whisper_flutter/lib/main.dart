@@ -7,21 +7,29 @@ import 'providers/diary_provider.dart';
 import 'providers/settings_provider.dart';
 import 'pages/diary_list_page.dart';
 import 'config/app_theme.dart'; // Added missing import
+import 'pages/intro_page.dart';
 
-void main() {
+import 'package:shared_preferences/shared_preferences.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final prefs = await SharedPreferences.getInstance();
+  final bool showIntro = !(prefs.getBool('intro_shown') ?? false);
+
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
         ChangeNotifierProvider(create: (_) => DiaryProvider()),
       ],
-      child: const MyApp(),
+      child: MyApp(showIntro: showIntro),
     ),
   );
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final bool showIntro;
+  const MyApp({super.key, required this.showIntro});
 
   @override
   Widget build(BuildContext context) {
@@ -41,7 +49,7 @@ class MyApp extends StatelessWidget {
              Locale('zh', 'CN'),
              Locale('en', 'US'),
           ],
-          home: const DiaryListPage(),
+          home: showIntro ? const IntroPage() : const DiaryListPage(),
         );
       },
     );

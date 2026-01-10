@@ -6,8 +6,9 @@ import '../providers/diary_provider.dart';
 import '../models/diary_entry.dart';
 import '../config/app_theme.dart';
 import '../providers/settings_provider.dart';
-import '../widgets/paper_sheet_widget.dart'; // Added
-import '../widgets/visual_effects.dart'; // Added
+import '../widgets/paper_sheet_widget.dart';
+import '../widgets/visual_effects.dart';
+import '../widgets/skeuomorphic_dialog.dart'; // Added
 
 class EditorPage extends StatefulWidget {
   final DiaryEntry? entry;
@@ -72,12 +73,29 @@ class _EditorPageState extends State<EditorPage> {
     final provider = Provider.of<DiaryProvider>(context, listen: false);
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('确认删除'),
-        content: const Text('删除后无法恢复，确定吗？'),
+      builder: (ctx) => SkeuomorphicDialog(
+        title: '确认撕毁？',
+        headerIcon: Icons.delete_forever,
+        content: Text(
+           '这段回忆将被永久抹去，无法从纸篓中捡回。\n确定要这么做吗？',
+           textAlign: TextAlign.center,
+           style: GoogleFonts.notoSerifSc(
+             fontSize: 16,
+             color: const Color(0xFF5D4037),
+             height: 1.6,
+           ),
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('删除', style: TextStyle(color: Colors.red))),
+          SkeuomorphicDialogButton(
+             label: '彻底撕毁',
+             isPrimary: false, 
+             onPressed: () => Navigator.pop(ctx, true),
+          ),
+          SkeuomorphicDialogButton(
+             label: '保留',
+             isPrimary: true, 
+             onPressed: () => Navigator.pop(ctx, false),
+          ),
         ],
       ),
     );
@@ -85,6 +103,53 @@ class _EditorPageState extends State<EditorPage> {
       await provider.deleteEntry(widget.entry!.filename);
       if (mounted) Navigator.pop(context);
     }
+  }
+
+  bool get _hasChanges {
+    // New entry: only dirty if there is content
+    if (widget.entry == null) {
+      return _titleController.text.isNotEmpty || _contentController.text.isNotEmpty;
+    }
+    // Existing entry: compare with initial values
+    return _titleController.text != (widget.entry?.title ?? '') ||
+           _contentController.text != (widget.entry?.content ?? '') ||
+           _weather != (widget.entry?.weather ?? WeatherType.sunny) ||
+           _mood != (widget.entry?.mood ?? MoodType.calm);
+  }
+
+  Future<bool> _onWillPop() async {
+    if (!_hasChanges) return true;
+
+    final shouldPop = await showDialog<bool>(
+      context: context,
+      builder: (context) => SkeuomorphicDialog(
+        title: '尚未保存',
+        headerIcon: Icons.save_as,
+        content: Text(
+          '文字还未落到纸上，确认要丢弃刚才的修改吗？',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.notoSerifSc(
+            fontSize: 16,
+            color: const Color(0xFF5D4037),
+            height: 1.6,
+          ),
+        ),
+        actions: [
+          SkeuomorphicDialogButton(
+             label: '丢弃',
+             isPrimary: false,
+             onPressed: () => Navigator.pop(context, true),
+          ),
+          SkeuomorphicDialogButton(
+             label: '继续编辑',
+             isPrimary: true,
+             onPressed: () => Navigator.pop(context, false),
+          ),
+        ],
+      ),
+    );
+
+    return shouldPop ?? false;
   }
 
   @override
@@ -95,83 +160,86 @@ class _EditorPageState extends State<EditorPage> {
     final bool isSeaFlower = theme == AppTheme.themeSeaFlower;
     
     // 700px width constraint handled by PaperSheetWidget
-    return Scaffold(
-      backgroundColor: Colors.transparent, // Background handled by Stack in main layout, but here we cover full screen?
-      // Actually EditorPage is pushed, so it needs its own background
-      body: Stack(
-        children: [
-          // Background
-           Container(decoration: AppTheme.getBackground(theme)),
-           if (theme == AppTheme.themeSeaFlower) const PetalRainWidget(),
-           if (theme == AppTheme.themeMidnight) const StarrySkyWidget(),
-
-          // Main View
-          Column(
-            children: [
-              // Top Bar
-              _buildTopBar(context, theme, textColor),
-              
-              // Scrollable Paper
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.only(bottom: 50),
-                  child: PaperSheetWidget(
-                    padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 40),
-                    child: Column(
-                       crossAxisAlignment: CrossAxisAlignment.stretch,
-                       children: [
-                          // 1. Header (Title + Meta)
-                          _buildHeader(textColor, secondaryColor),
-                          const SizedBox(height: 30),
-                          
-                          // 2. Decorative Line
-                          Center(
-                            child: Container(
-                              width: 60,
-                              height: 2, 
-                              color: (isSeaFlower
-                                  ? const Color(0xFFEC407A) 
-                                  : (theme == AppTheme.themeMidnight ? const Color(0xFF7986cb) : const Color(0xFFC0392B))).withValues(alpha: 0.5),
+    return WillPopScope(
+      onWillPop: _onWillPop,
+      child: Scaffold(
+        backgroundColor: Colors.transparent, // Background handled by Stack in main layout, but here we cover full screen?
+        // Actually EditorPage is pushed, so it needs its own background
+        body: Stack(
+          children: [
+            // Background
+             Container(decoration: AppTheme.getBackground(theme)),
+             if (theme == AppTheme.themeSeaFlower) const PetalRainWidget(),
+             if (theme == AppTheme.themeMidnight) const StarrySkyWidget(),
+  
+            // Main View
+            Column(
+              children: [
+                // Top Bar
+                _buildTopBar(context, theme, textColor),
+                
+                // Scrollable Paper
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.only(bottom: 50),
+                    child: PaperSheetWidget(
+                      padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 40),
+                      child: Column(
+                         crossAxisAlignment: CrossAxisAlignment.stretch,
+                         children: [
+                            // 1. Header (Title + Meta)
+                            _buildHeader(textColor, secondaryColor),
+                            const SizedBox(height: 30),
+                            
+                            // 2. Decorative Line
+                            Center(
+                              child: Container(
+                                width: 60,
+                                height: 2, 
+                                color: (isSeaFlower
+                                    ? const Color(0xFFEC407A) 
+                                    : (theme == AppTheme.themeMidnight ? const Color(0xFF7986cb) : const Color(0xFFC0392B))).withValues(alpha: 0.5),
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 30),
-
-                          // 3. Content Area
-                          _buildContentArea(textColor, theme),
-
-                          // 4. Footer
-                          const SizedBox(height: 60),
-                          Center(
-                            child: Column(
-                              children: [
-                                Text(
-                                  'CREATED WITH',
-                                  style: GoogleFonts.courierPrime(
-                                     fontSize: 10, 
-                                     color: secondaryColor.withValues(alpha: 0.4),
-                                     letterSpacing: 2
+                            const SizedBox(height: 30),
+  
+                            // 3. Content Area
+                            _buildContentArea(textColor, theme),
+  
+                            // 4. Footer
+                            const SizedBox(height: 60),
+                            Center(
+                              child: Column(
+                                children: [
+                                  Text(
+                                    'CREATED WITH',
+                                    style: GoogleFonts.courierPrime(
+                                       fontSize: 10, 
+                                       color: secondaryColor.withValues(alpha: 0.4),
+                                       letterSpacing: 2
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '纸语 PaperWhisper',
-                                  style: GoogleFonts.notoSerifSc(
-                                     fontSize: 12,
-                                     color: secondaryColor.withValues(alpha: 0.6),
-                                     fontWeight: FontWeight.bold
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '纸语 PaperWhisper',
+                                    style: GoogleFonts.notoSerifSc(
+                                       fontSize: 12,
+                                       color: secondaryColor.withValues(alpha: 0.6),
+                                       fontWeight: FontWeight.bold
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                          )
-                       ],
+                                ],
+                              ),
+                            )
+                         ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -216,7 +284,11 @@ class _EditorPageState extends State<EditorPage> {
           TextButton.icon(
              icon: Icon(Icons.arrow_back, color: iconColor, size: 18),
              label: Text('返回列表', style: TextStyle(color: iconColor)),
-             onPressed: () => Navigator.pop(context),
+             onPressed: () async {
+                if (await _onWillPop()) {
+                   if (context.mounted) Navigator.pop(context);
+                }
+             }, 
           ),
           const Spacer(),
           // Action Buttons

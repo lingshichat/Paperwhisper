@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Android 12+ (API 31+) 专属启动主题 -->
+    <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
+        <!-- 1. 背景色: 深褐色 -->
+        <item name="android:windowSplashScreenBackground">#2d241f</item>
+        
+        <!-- 2. 中间图标: 强制使用我们的文字 Logo (v6 正方形透明底) -->
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_logo</item>
+        
+        <!-- 3. 图标背景: 透明 (关键！防止出现白圈) -->
+        <item name="android:windowSplashScreenIconBackgroundColor">@android:color/transparent</item>
+        
+        <!-- 4. 动画时长: 设为 0 以尽可能减少显示时间? 不，保持默认即可 -->
+        <!-- <item name="android:windowSplashScreenAnimationDuration">1000</item> -->
+        
+        <!-- 兼容性配置 -->
+        <item name="android:windowBackground">@drawable/launch_background</item>
+        <item name="android:statusBarColor">#2d241f</item>
+    </style>
+
+    <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
+        <item name="android:windowBackground">?android:colorBackground</item>
+    </style>
+</resources>

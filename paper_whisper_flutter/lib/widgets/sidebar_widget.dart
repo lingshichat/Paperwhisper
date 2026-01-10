@@ -195,7 +195,7 @@ class _SidebarWidgetState extends State<SidebarWidget> {
       children: [
         // 1. Header
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 35, 20, 35),
+          padding: EdgeInsets.fromLTRB(20, 35 + MediaQuery.of(context).padding.top, 20, 35),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,

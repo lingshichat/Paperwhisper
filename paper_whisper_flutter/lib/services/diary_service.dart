@@ -5,12 +5,18 @@ import 'package:path/path.dart' as path;
 import 'package:uuid/uuid.dart';
 import '../models/diary_entry.dart';
 
+import 'package:permission_handler/permission_handler.dart';
+
 class DiaryService {
   Directory? _dataDir;
   final Uuid _uuid = const Uuid();
 
   // 获取数据目录路径，供 UI 显示调试用
   String get currentDataPath => _dataDir?.path ?? 'Unknown';
+
+  void reset() {
+    _dataDir = null;
+  }
 
   Future<void> init() async {
     if (_dataDir != null) return;
@@ -34,14 +40,45 @@ class DiaryService {
           _dataDir = Directory(path.join(docDir.path, 'PaperWhisper', 'diary_data'));
         }
       }
+    } else if (Platform.isAndroid) {
+      // Android: 检查权限状态，但不请求。权限请求移交 UI 层 (DiaryListPage) 处理。
+      // 这里的逻辑适用于 Android 11+ (SDK 30+)
+      var status = await Permission.manageExternalStorage.status;
+      
+      // 如果没有 MANAGE_EXTERNAL_STORAGE，检查旧版存储权限
+      bool hasLegacyStorage = false;
+      if (!status.isGranted) {
+         var storageStatus = await Permission.storage.status;
+         hasLegacyStorage = storageStatus.isGranted;
+      }
+
+      if (status.isGranted || hasLegacyStorage) {
+         // 有权限：使用公共 Documents 目录
+         _dataDir = Directory('/storage/emulated/0/Documents/PaperWhisper/diary_data');
+      } else {
+         // 无权限：使用应用私有目录 (Fallback)
+         // 注意：UI 层会在启动时请求权限，如果用户拒绝，则会使用此 Fallback
+         final appDir = await getApplicationDocumentsDirectory();
+         _dataDir = Directory(path.join(appDir.path, 'diary_data'));
+      }
     } else {
-      // Android / iOS
+      // iOS
       final appDir = await getApplicationDocumentsDirectory();
       _dataDir = Directory(path.join(appDir.path, 'diary_data'));
     }
 
     if (!await _dataDir!.exists()) {
-      await _dataDir!.create(recursive: true);
+      try {
+        await _dataDir!.create(recursive: true);
+      } catch (e) {
+        debugPrint("Error creating data dir: $e");
+        // Fallback for Android if permission denied: use App App-Specific storage
+        if (Platform.isAndroid) {
+          final appDir = await getApplicationDocumentsDirectory();
+          _dataDir = Directory(path.join(appDir.path, 'diary_data'));
+          await _dataDir!.create(recursive: true);
+        }
+      }
     }
   }
 

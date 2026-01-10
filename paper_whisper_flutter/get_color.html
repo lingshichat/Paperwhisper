@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<body>
+    <img id="img" src="assets/icon.png" style="display:none;" crossorigin="anonymous">
+    <canvas id="canvas"></canvas>
+    <div id="result">Waiting...</div>
+    <script>
+        const img = document.getElementById('img');
+        img.onload = function() {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            const pixel = ctx.getImageData(0, 0, 1, 1).data;
+            const r = pixel[0].toString(16).padStart(2, '0');
+            const g = pixel[1].toString(16).padStart(2, '0');
+            const b = pixel[2].toString(16).padStart(2, '0');
+            const hex = '#' + r + g + b;
+            document.getElementById('result').innerText = hex;
+        };
+        img.onerror = function() {
+            document.getElementById('result').innerText = 'Error loading image';
+        };
+    </script>
+</body>
+</html>

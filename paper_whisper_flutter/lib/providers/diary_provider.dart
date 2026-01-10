@@ -31,6 +31,11 @@ class DiaryProvider with ChangeNotifier {
     }
   }
 
+  Future<void> reloadAfterPermission() async {
+    _service.reset();
+    await loadEntries();
+  }
+
   Future<void> saveEntry(DiaryEntry entry) async {
     await _service.saveEntry(entry);
     await loadEntries(); // 重新加载以更新列表
