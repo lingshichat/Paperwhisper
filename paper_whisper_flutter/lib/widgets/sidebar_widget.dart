@@ -6,6 +6,7 @@ import '../services/hitokoto_service.dart';
 import '../providers/settings_provider.dart';
 import '../config/app_theme.dart';
 import '../widgets/theme_selection_dialog.dart';
+import '../pages/settings_page.dart';
 
 class SidebarWidget extends StatefulWidget {
   final double width;
@@ -337,8 +338,8 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                 ),
                 const SizedBox(height: 5),
                 _buildMenuItem(
-                  icon: Icons.settings,
-                  label: '设置风格',
+                  icon: Icons.palette_outlined,
+                  label: '风格画廊',
                   isActive: _activeMenu == 'settings',
                   textColor: menuTextColor,
                   isSeaFlower: isSeaFlower,
@@ -347,6 +348,24 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                       context: context,
                       barrierColor: Colors.black.withValues(alpha: 0.6),
                       builder: (context) => const ThemeSelectionDialog(),
+                    );
+                  },
+                ),
+                const SizedBox(height: 5),
+                _buildMenuItem(
+                  icon: Icons.settings_outlined,
+                  label: '设置',
+                  isActive: _activeMenu == 'general_settings',
+                  textColor: menuTextColor,
+                  isSeaFlower: isSeaFlower,
+                  onTap: () {
+                    // 关闭侧边栏（如果是抽屉模式）或者直接跳转
+                    // 这里 Sidebar 是固定显示的，但也可能是在 Drawer 里？
+                    // 根据代码看 SidebarWidget 似乎是直接嵌入的。
+                    // 直接 push 页面
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const SettingsPage()),
                     );
                   },
                 ),

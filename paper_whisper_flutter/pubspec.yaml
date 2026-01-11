@@ -48,6 +48,7 @@ dependencies:
   uuid: ^4.3.3
   http: ^1.6.0
   simple_animations: ^5.2.0
+  webdav_client: ^1.2.2
 
 dev_dependencies:
   flutter_test:

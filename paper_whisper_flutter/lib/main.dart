@@ -5,7 +5,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'providers/diary_provider.dart';
+import 'services/diary_service.dart';
 import 'providers/settings_provider.dart';
+import 'providers/sync_provider.dart';
 import 'pages/diary_list_page.dart';
 import 'config/app_theme.dart'; // Added missing import
 import 'pages/intro_page.dart';
@@ -16,12 +18,18 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final prefs = await SharedPreferences.getInstance();
   final bool showIntro = !(prefs.getBool('intro_shown') ?? false);
+  
+  final diaryService = DiaryService();
 
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
-        ChangeNotifierProvider(create: (_) => DiaryProvider()),
+        ChangeNotifierProvider(create: (_) => DiaryProvider(diaryService)),
+        ChangeNotifierProxyProvider<DiaryProvider, SyncProvider>(
+          create: (_) => SyncProvider(),
+          update: (_, diary, syncProvider) => syncProvider!..updateDiaryProvider(diary),
+        ),
       ],
       child: MyApp(showIntro: showIntro),
     ),

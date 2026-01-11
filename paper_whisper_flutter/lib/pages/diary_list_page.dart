@@ -10,7 +10,9 @@ import '../widgets/skeuomorphic_container.dart';
 import '../widgets/sidebar_widget.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../providers/diary_provider.dart';
+import '../providers/sync_provider.dart';
 import '../widgets/visual_effects.dart';
+import '../widgets/book_flip_refresh_widget.dart';
 import '../widgets/dashed_line_painter.dart';
 import '../widgets/skeuomorphic_dialog.dart'; // Updated import
 import 'editor_page.dart';
@@ -433,11 +435,24 @@ class _DiaryListPageState extends State<DiaryListPage> {
            ),
 
         
-        // Waterfall List
+        // Waterfall List with Book Flip Refresh
         Expanded(
-          child: list.isEmpty 
-              ? _buildEmptyState(theme)
-              : _buildWaterfallGrid(context, list, theme),
+          child: BookFlipRefreshWidget(
+            theme: theme,
+            onRefresh: () async {
+              // 触发同步
+              await Provider.of<SyncProvider>(context, listen: false).sync();
+            },
+            child: list.isEmpty 
+                ? SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: SizedBox(
+                      height: MediaQuery.of(context).size.height * 0.5,
+                      child: _buildEmptyState(theme),
+                    ),
+                  )
+                : _buildWaterfallGrid(context, list, theme),
+          ),
         ),
       ],
     );
@@ -562,6 +577,7 @@ class _DiaryListPageState extends State<DiaryListPage> {
         }
 
         return SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(40),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -576,6 +592,51 @@ class _DiaryListPageState extends State<DiaryListPage> {
                       children: columns[i].map((entry) {
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 30), // Item Gap
+                          child: _buildDiaryCard(context, entry, theme),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// 不带 ScrollView 的瀑布流内容（供 BookFlipRefreshWidget 使用）
+  Widget _buildWaterfallGridContent(BuildContext context, List<DiaryEntry> list, String theme) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        int columnCount = 1;
+        if (width > 1100) {
+          columnCount = 3;
+        } else if (width > 700) {
+          columnCount = 2;
+        }
+
+        List<List<DiaryEntry>> columns = List.generate(columnCount, (_) => []);
+        for (int i = 0; i < list.length; i++) {
+          columns[i % columnCount].add(list[i]);
+        }
+
+        return Padding(
+          padding: const EdgeInsets.all(40),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (int i = 0; i < columnCount; i++)
+                Expanded(
+                  child: Padding(
+                    padding: i < columnCount - 1 
+                        ? const EdgeInsets.only(right: 30)
+                        : EdgeInsets.zero,
+                    child: Column(
+                      children: columns[i].map((entry) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 30),
                           child: _buildDiaryCard(context, entry, theme),
                         );
                       }).toList(),

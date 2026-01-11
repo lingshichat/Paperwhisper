@@ -13,6 +13,7 @@ class DiaryService {
 
   // 获取数据目录路径，供 UI 显示调试用
   String get currentDataPath => _dataDir?.path ?? 'Unknown';
+  Directory? get dataDir => _dataDir;
 
   void reset() {
     _dataDir = null;

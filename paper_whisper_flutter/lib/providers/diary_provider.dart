@@ -3,7 +3,7 @@ import '../models/diary_entry.dart';
 import '../services/diary_service.dart';
 
 class DiaryProvider with ChangeNotifier {
-  final DiaryService _service = DiaryService();
+  final DiaryService _service;
   List<DiaryEntry> _entries = [];
   bool _isLoading = false;
   String _debugPath = '';
@@ -11,8 +11,9 @@ class DiaryProvider with ChangeNotifier {
   List<DiaryEntry> get entries => _entries;
   bool get isLoading => _isLoading;
   String get debugPath => _debugPath;
+  DiaryService get service => _service;
 
-  DiaryProvider() {
+  DiaryProvider([DiaryService? service]) : _service = service ?? DiaryService() {
     loadEntries();
   }
 
