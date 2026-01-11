@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -49,9 +50,19 @@ class MyApp extends StatelessWidget {
              Locale('zh', 'CN'),
              Locale('en', 'US'),
           ],
-          home: showIntro ? const IntroPage() : const DiaryListPage(),
-        );
-      },
-    );
+            home: showIntro ? const IntroPage() : const DiaryListPage(),
+            scrollBehavior: AppScrollBehavior(),
+          );
+        },
+      );
+    }
   }
+
+class AppScrollBehavior extends MaterialScrollBehavior {
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+        PointerDeviceKind.touch,
+        PointerDeviceKind.mouse,
+        PointerDeviceKind.trackpad, 
+      };
 }
