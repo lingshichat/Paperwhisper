@@ -16,6 +16,7 @@ class PetalRainWidget extends StatefulWidget {
 class _PetalRainWidgetState extends State<PetalRainWidget> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   final List<Petal> _petals = [];
+  int _frameId = 0; // 帧计数器，用于优化 shouldRepaint
   final Random _random = Random();
 
   @override
@@ -52,6 +53,7 @@ class _PetalRainWidgetState extends State<PetalRainWidget> with SingleTickerProv
   }
 
   void _updatePetals() {
+    _frameId++; // 递增帧号
     // 持续生成新花瓣逻辑 (Rain)
     if (_random.nextDouble() < 0.05 && _petals.length < 100) {
        _petals.add(_generatePetal(false));
@@ -202,7 +204,7 @@ class _PetalRainWidgetState extends State<PetalRainWidget> with SingleTickerProv
         builder: (context, child) {
           return RepaintBoundary(
             child: CustomPaint(
-              painter: PetalPainter(_petals),
+              painter: PetalPainter(_petals, _frameId),
               size: Size.infinite,
             ),
           );
@@ -243,57 +245,79 @@ class Petal {
 
 class PetalPainter extends CustomPainter {
   final List<Petal> petals;
+  final int frameId; // 用于判断是否需要重绘
 
-  PetalPainter(this.petals);
+  PetalPainter(this.petals, this.frameId);
+
+  // 按尺寸缓存已布局的 TextPainter，避免每帧重新布局
+  static final Map<int, TextPainter> _layoutCache = {};
+  
+  /// 获取或创建指定尺寸的 TextPainter（已预布局）
+  TextPainter _getOrCreatePainter(int sizeKey) {
+    if (!_layoutCache.containsKey(sizeKey)) {
+      final tp = TextPainter(
+        text: TextSpan(
+          text: '✿',
+          style: TextStyle(
+            fontSize: sizeKey.toDouble(),
+            color: Colors.white, // 基础白色，绘制时用 ColorFilter 调整
+            fontFamily: 'Noto Serif SC',
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      );
+      tp.layout();
+      _layoutCache[sizeKey] = tp;
+    }
+    return _layoutCache[sizeKey]!;
+  }
 
   @override
   void paint(Canvas canvas, Size size) {
-    final textPainter = TextPainter(
-      textDirection: TextDirection.ltr,
-    );
-
     for (var petal in petals) {
       if (petal.opacity <= 0) continue;
 
-      // 1. 设置文本样式 ('✿')
-      textPainter.text = TextSpan(
-        text: '✿',
-        style: TextStyle(
-          fontSize: petal.size,
-          color: petal.color.withValues(alpha: petal.opacity),
-          // 移除阴影以大幅提升移动端性能
-          // shadows: [
-          //   BoxShadow(
-          //     color: const Color(0xFFF06292).withValues(alpha: 0.3),
-          //     blurRadius: 4,
-          //     offset: const Offset(0, 2),
-          //   )
-          // ],
-          fontFamily: 'Noto Serif SC', 
-        ),
-      );
-      
-      textPainter.layout();
+      // 获取缓存的 TextPainter（按尺寸分组，避免每帧 layout）
+      final sizeKey = petal.size.toInt();
+      final textPainter = _getOrCreatePainter(sizeKey);
 
       canvas.save();
       
-      // 2. 位置 (Base X ratio + Sway px)
+      // 位置计算
       final dx = petal.x * size.width + petal.swayX;
       final dy = petal.y * size.height;
       
-      // 为了中心旋转，需要先移动到中心，旋转，再画
       canvas.translate(dx, dy);
       canvas.rotate(petal.rotation);
       
-      // 居中绘制
+      // 使用 ColorFilter 调整颜色和透明度，而非重新创建 TextSpan
+      final paint = Paint()
+        ..colorFilter = ColorFilter.mode(
+          petal.color.withValues(alpha: petal.opacity),
+          BlendMode.srcIn,
+        );
+      
+      canvas.saveLayer(
+        Rect.fromCenter(
+          center: Offset.zero,
+          width: textPainter.width + 4,
+          height: textPainter.height + 4,
+        ),
+        paint,
+      );
+      
       textPainter.paint(canvas, Offset(-textPainter.width / 2, -textPainter.height / 2));
       
-      canvas.restore();
+      canvas.restore(); // saveLayer
+      canvas.restore(); // save
     }
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+  bool shouldRepaint(covariant PetalPainter oldDelegate) {
+    // 只在帧号变化时重绘，避免不必要的重绘
+    return oldDelegate.frameId != frameId;
+  }
 }
 
 // --- Starry Sky Effect ---

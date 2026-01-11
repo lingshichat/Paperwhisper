@@ -11,6 +11,7 @@ import 'providers/sync_provider.dart';
 import 'pages/diary_list_page.dart';
 import 'config/app_theme.dart'; // Added missing import
 import 'pages/intro_page.dart';
+import 'pages/splash_page.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -58,7 +59,7 @@ class MyApp extends StatelessWidget {
              Locale('zh', 'CN'),
              Locale('en', 'US'),
           ],
-            home: showIntro ? const IntroPage() : const DiaryListPage(),
+            home: SplashPage(showIntro: showIntro),
             scrollBehavior: AppScrollBehavior(),
           );
         },

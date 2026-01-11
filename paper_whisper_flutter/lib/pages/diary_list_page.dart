@@ -54,7 +54,7 @@ class _DiaryListPageState extends State<DiaryListPage> {
 
   Future<void> _checkAndShowAnnouncement() async {
     final prefs = await SharedPreferences.getInstance();
-    const currentVersion = '1.0.0';
+    const currentVersion = '1.1.0';
     final lastVersion = prefs.getString('last_run_version');
 
     if (lastVersion != currentVersion) {
@@ -75,8 +75,8 @@ class _DiaryListPageState extends State<DiaryListPage> {
       barrierDismissible: true,
       barrierColor: Colors.black.withValues(alpha: 0.6),
       builder: (context) => SkeuomorphicDialog(
-        title: '纸语 1.0 —— 焕新·重逢',
-        headerIcon: Icons.auto_awesome, // Sparkles
+        title: '纸语 1.1 —— 细节·打磨',
+        headerIcon: Icons.auto_awesome,
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -91,7 +91,7 @@ class _DiaryListPageState extends State<DiaryListPage> {
             ),
             const SizedBox(height: 10),
             Text(
-              '经过漫长的打磨，很高兴以全新的面貌与你相见。',
+              '感谢你的陪伴，我们带来了更多细节优化。',
               style: GoogleFonts.notoSerifSc(
                 fontSize: 15,
                 color: const Color(0xFF5D4037),
@@ -99,18 +99,18 @@ class _DiaryListPageState extends State<DiaryListPage> {
               ),
             ),
             const SizedBox(height: 20),
-            _buildAnnouncementItem('🏷️', '架构重塑，性能飞跃', '底座完全迁移至 Flutter。告别迟滞，带来如丝般顺滑的流畅体验。'),
+            _buildAnnouncementItem('☁️', 'WebDAV 云同步', '支持通过 WebDAV 协议同步日记，跨设备无缝衔接。'),
             const SizedBox(height: 15),
-            _buildAnnouncementItem('💻📱', '双端同行，如影随形', '正式支持 Android 与 Windows 双平台。无缝衔接你的记录体验。'),
+            _buildAnnouncementItem('📖', '翻书下拉刷新', '下拉触发优雅的翻书动画，同步你的记忆。'),
             const SizedBox(height: 15),
-            _buildAnnouncementItem('🎨', '拟物美学，经典复刻', '完美移植「经典木纹」、「午夜星尘」、「海底花海」等经典主题。'),
+            _buildAnnouncementItem('⚡', '启动与性能优化', '优化启动流程，修复花瓣动画卡顿问题。'),
             const SizedBox(height: 15),
-            _buildAnnouncementItem('🔒', '数据自主，安全无忧', '坚持数据本地存储。由始至终，你的故事只属于你自己。'),
+            _buildAnnouncementItem('🎯', '交互体验提升', '侧边栏开启更流畅，细节打磨更舒心。'),
           ],
         ),
         actions: [
           SkeuomorphicDialogButton(
-            label: '开启旅程',
+            label: '继续旅程',
             isPrimary: true,
             onPressed: () => Navigator.pop(context),
           ),
@@ -288,6 +288,16 @@ class _DiaryListPageState extends State<DiaryListPage> {
                 if (theme == AppTheme.themeSeaFlower) const PetalRainWidget(),
                 if (theme == AppTheme.themeMidnight) const StarrySkyWidget(),
                 contentArea,
+                // 预渲染侧边栏（不可见），避免首次打开 Drawer 时卡顿
+                Offstage(
+                  offstage: true,
+                  child: SidebarWidget(
+                    width: 300,
+                    showWriteButton: false,
+                    onWritePressed: () {},
+                    onSearch: (_) {},
+                  ),
+                ),
               ],
             ),
              floatingActionButton: FloatingActionButton(

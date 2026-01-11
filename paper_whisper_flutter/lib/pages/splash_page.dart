@@ -1,0 +1,174 @@
+import 'dart:ui';
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import '../providers/diary_provider.dart';
+import '../services/hitokoto_service.dart';
+import 'diary_list_page.dart';
+import 'intro_page.dart';
+
+/// 启动屏：等待数据预加载完成后再导航到主页/引导页
+/// 同时预热字体、shader 和网络请求，避免首次交互卡顿
+class SplashPage extends StatefulWidget {
+  final bool showIntro;
+  const SplashPage({super.key, required this.showIntro});
+
+  @override
+  State<SplashPage> createState() => _SplashPageState();
+}
+
+class _SplashPageState extends State<SplashPage> {
+  @override
+  void initState() {
+    super.initState();
+    _initAndNavigate();
+  }
+
+  Future<void> _initAndNavigate() async {
+    final diaryProvider = context.read<DiaryProvider>();
+    
+    // 1. 并行执行预热任务，最多等待 2.5 秒（加上过渡动画约 3 秒）
+    await Future.any([
+      // 正常完成所有预热
+      Future.wait([
+        _waitForDiaryLoading(diaryProvider),
+        _preloadHitokoto(),
+        Future.delayed(const Duration(milliseconds: 300)),
+      ]),
+      // 硬性超时 2.5 秒
+      Future.delayed(const Duration(milliseconds: 2500)),
+    ]);
+    
+    if (!mounted) return;
+
+    // 2. 导航到目标页面
+    final Widget targetPage = widget.showIntro 
+        ? const IntroPage() 
+        : const DiaryListPage();
+    
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => targetPage,
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+        transitionDuration: const Duration(milliseconds: 600),
+      ),
+    );
+  }
+
+  Future<void> _waitForDiaryLoading(DiaryProvider provider) async {
+    int waitCount = 0;
+    const maxWait = 100; // 最多等待 5 秒
+    while (provider.isLoading && waitCount < maxWait) {
+      await Future.delayed(const Duration(milliseconds: 50));
+      waitCount++;
+    }
+  }
+
+  Future<void> _preloadHitokoto() async {
+    try {
+      // 预热一言请求，结果会被缓存在 HitokotoService 中
+      await HitokotoService().fetchHitokoto();
+    } catch (_) {
+      // 忽略错误，不影响启动
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF4ECD8),
+      body: Stack(
+        children: [
+          // 主要内容
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // App 图标
+                Container(
+                  width: 100,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.15),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Image.asset(
+                      'assets/icon.png',
+                      errorBuilder: (_, __, ___) => const Icon(
+                        Icons.book,
+                        size: 60,
+                        color: Color(0xFF8D6E63),
+                      ),
+                    ),
+                  ),
+                ),
+                
+                const SizedBox(height: 30),
+                
+                // App 名称（同时预热 GoogleFonts）
+                Text(
+                  '纸语',
+                  style: GoogleFonts.notoSerifSc(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF3E2723),
+                  ),
+                ),
+                
+                const SizedBox(height: 8),
+                
+                Text(
+                  'PaperWhisper',
+                  style: GoogleFonts.playfairDisplay(
+                    fontSize: 14,
+                    fontStyle: FontStyle.italic,
+                    color: const Color(0xFF8D6E63),
+                  ),
+                ),
+                
+                const SizedBox(height: 40),
+                
+                // 加载指示器
+                const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF8D6E63)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // 隐藏的 BackdropFilter 预热层
+          // 渲染一个不可见的 BackdropFilter 来预编译 shader
+          Positioned(
+            left: -100,
+            top: -100,
+            child: SizedBox(
+              width: 10,
+              height: 10,
+              child: ClipRRect(
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                  child: Container(color: Colors.transparent),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
