@@ -14,15 +14,13 @@ import '../providers/settings_provider.dart'; // Added
 import '../config/app_theme.dart'; // Added
 
 class MomentsPage extends StatefulWidget {
-  final bool autoOpenDrawer;
-  const MomentsPage({super.key, this.autoOpenDrawer = false});
+  const MomentsPage({super.key});
 
   @override
   State<MomentsPage> createState() => _MomentsPageState();
 }
 
 class _MomentsPageState extends State<MomentsPage> {
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final MomentService _momentService = MomentService();
   List<Moment> _allMoments = []; // Cache all
   List<Moment> _filteredMoments = [];
@@ -40,19 +38,12 @@ class _MomentsPageState extends State<MomentsPage> {
   bool _isRulerActive = false;
   bool _isPageActive = false;
 
-  // Static drawer control for seamless transition
-  bool _showStaticDrawer = false;
-
   @override
   void initState() {
     super.initState();
-    _showStaticDrawer = widget.autoOpenDrawer;
-    
     _initDates();
     _initControllers();
     _loadData();
-    
-    // Removed openDrawer call
   }
   
   void _initDates() {
@@ -390,8 +381,7 @@ class _MomentsPageState extends State<MomentsPage> {
           );
         }
 
-        final mobileScaffold = Scaffold(
-          key: _scaffoldKey,
+        return Scaffold(
           extendBodyBehindAppBar: true, 
           backgroundColor: Colors.transparent, 
           drawer: const SidebarWidget(),
@@ -429,34 +419,6 @@ class _MomentsPageState extends State<MomentsPage> {
             ],
           ),
           body: content,
-        );
-
-        return Stack(
-          children: [
-             mobileScaffold,
-             // Static Drawer Overlay for Seamless Transition
-             if (_showStaticDrawer)
-               Stack(
-                 children: [
-                   // Scrim
-                   GestureDetector(
-                     onTap: () {
-                       setState(() {
-                         _showStaticDrawer = false;
-                       });
-                     },
-                     child: Container(
-                       color: isSeaFlower ? Colors.transparent : Colors.black54,
-                     ),
-                   ),
-                   // Sidebar
-                   SizedBox(
-                     width: 300,
-                     child: const SidebarWidget(),
-                   ),
-                 ],
-               ),
-          ],
         );
       }
     );

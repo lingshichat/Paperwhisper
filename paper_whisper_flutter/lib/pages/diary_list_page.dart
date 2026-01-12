@@ -29,34 +29,25 @@ import '../models/update_info.dart';
 import '../services/update_service.dart';
 
 class DiaryListPage extends StatefulWidget {
-  final bool autoOpenDrawer;
-  const DiaryListPage({super.key, this.autoOpenDrawer = false});
+  const DiaryListPage({super.key});
 
   @override
   State<DiaryListPage> createState() => _DiaryListPageState();
 }
 
 class _DiaryListPageState extends State<DiaryListPage> {
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   String _searchQuery = '';
   // Removed duplicate declaration
   
-  // Static drawer control for seamless transition
-  bool _showStaticDrawer = false;
-
   @override
   void initState() {
     super.initState();
-    _showStaticDrawer = widget.autoOpenDrawer;
-
     _checkAndroidPermissions();
     _checkAndShowAnnouncement(); // Check for version update and show announcement
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkRemoteUpdate();
       // Ensure data is refreshed whenever this page is initialized (e.g. after pushReplacement from Moments)
       Provider.of<DiaryProvider>(context, listen: false).loadEntries();
-      
-      // Removed openDrawer call to avoid animation pop-up
     });
   }
 
@@ -410,8 +401,7 @@ class _DiaryListPageState extends State<DiaryListPage> {
           // Mobile: Drawer + Content
           final bool isSeaFlower = theme == AppTheme.themeSeaFlower;
           
-          final mobileScaffold = Scaffold(
-            key: _scaffoldKey,
+          return Scaffold(
             drawerScrimColor: isSeaFlower ? Colors.transparent : Colors.black54, // 海底花海去遮罩，透出背景
             drawer: const Drawer(
               width: 300,
@@ -426,14 +416,8 @@ class _DiaryListPageState extends State<DiaryListPage> {
                 if (theme == AppTheme.themeSeaFlower) const PetalRainWidget(),
                 if (theme == AppTheme.themeMidnight) const StarrySkyWidget(),
                 contentArea,
-                // 预渲染侧边栏（不可见），避免首次打开 Drawer 时卡顿
-                Offstage(
-                  offstage: true,
-                  child: SizedBox(width: 300, child: SidebarWidget()),
-                ),
               ],
             ),
-
              floatingActionButton: FloatingActionButton(
                backgroundColor: isSeaFlower || theme == AppTheme.themeMidnight || theme == AppTheme.themeAmberLens ? Colors.transparent : const Color(0xFFC0392B),
                elevation: (isSeaFlower || theme == AppTheme.themeMidnight) ? 0 : 6, 
@@ -498,35 +482,6 @@ class _DiaryListPageState extends State<DiaryListPage> {
                  child: Icon(Icons.edit, color: Colors.white, size: (isSeaFlower || theme == AppTheme.themeMidnight) ? 28 : 24),
                ),
              ),
-          );
-
-          return Stack(
-            children: [
-               mobileScaffold,
-               
-               // Static Drawer Overlay for Seamless Transition
-               if (_showStaticDrawer)
-                 Stack(
-                   children: [
-                     // Scrim
-                     GestureDetector(
-                       onTap: () {
-                         setState(() {
-                           _showStaticDrawer = false;
-                         });
-                       },
-                       child: Container(
-                         color: isSeaFlower ? Colors.transparent : Colors.black54,
-                       ),
-                     ),
-                     // Sidebar
-                     SizedBox(
-                       width: 300,
-                       child: const SidebarWidget(),
-                     ),
-                   ],
-                 ),
-            ],
           );
         }
       },
