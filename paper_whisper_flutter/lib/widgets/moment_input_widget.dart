@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart';
+import '../config/app_theme.dart';
 
 class MomentInputWidget extends StatefulWidget {
   final Function(String content, List<XFile> images) onSend;
@@ -43,28 +44,77 @@ class _MomentInputWidgetState extends State<MomentInputWidget> {
   @override
   Widget build(BuildContext context) {
     // Get Theme
+    // Get Theme
     final settings = Provider.of<SettingsProvider>(context);
-    final isAmber = settings.currentTheme == 'amber_lens';
+    final theme = settings.currentTheme;
+    final bool isAmber = theme == AppTheme.themeAmberLens;
+    final bool isSeaFlower = theme == AppTheme.themeSeaFlower;
+    final bool isMidnight = theme == AppTheme.themeMidnight;
     
     // Config colors based on theme
-    final containerColor = isAmber ? const Color(0xFF000000) : const Color(0xFFF4ECD8);
-    final inputBgColor = isAmber ? const Color(0xFF2C2C2C) : Colors.white;
-    final inputBorderColor = isAmber ? Colors.transparent : const Color(0xFFD7CCC8);
-    final textColor = isAmber ? Colors.white : const Color(0xFF3E2723);
-    final hintColor = isAmber ? Colors.grey : Colors.black26;
-    final iconColor = isAmber ? const Color(0xFFFF9800) : const Color(0xFF5D4037);
-    final sendColor = isAmber ? const Color(0xFFFF9800) : const Color(0xFF8D6E63);
-    final imageIconColor = isAmber ?  Colors.grey : const Color(0xFF5D4037); // Image icon grey in dark mode
+    Color containerColor;
+    Color inputBgColor;
+    Color inputBorderColor;
+    Color textColor;
+    Color hintColor;
+    Color iconColor;
+    Color sendColor;
+    Color imageIconColor;
+    Color cursorColor;
+    List<BoxShadow> boxShadows;
+
+    if (isSeaFlower) {
+       containerColor = const Color(0xFFFCE4EC); // Pink 50
+       inputBgColor = Colors.white;
+       inputBorderColor = const Color(0xFFF8BBD0);
+       textColor = const Color(0xFF880E4F);
+       hintColor = Colors.black26;
+       iconColor = const Color(0xFFD81B60);
+       sendColor = const Color(0xFFEC407A);
+       imageIconColor = const Color(0xFFD81B60);
+       cursorColor = const Color(0xFFD81B60);
+       boxShadows = [const BoxShadow(color: Colors.black12, offset: Offset(0, -2), blurRadius: 4)];
+    } else if (isMidnight) {
+       containerColor = const Color(0xFF0D1117);
+       inputBgColor = const Color(0xFF161b22);
+       inputBorderColor = const Color(0xFF30363d);
+       textColor = const Color(0xFFc9d1d9);
+       hintColor = Colors.white24;
+       iconColor = const Color(0xFF7986cb);
+       sendColor = const Color(0xFF7986cb);
+       imageIconColor = const Color(0xFF8b949e);
+       cursorColor = const Color(0xFF7986cb);
+       boxShadows = [const BoxShadow(color: Colors.black45, offset: Offset(0, -1), blurRadius: 4)];
+    } else if (isAmber) {
+       containerColor = const Color(0xFF000000);
+       inputBgColor = const Color(0xFF2C2C2C);
+       inputBorderColor = Colors.transparent;
+       textColor = Colors.white;
+       hintColor = Colors.grey;
+       iconColor = const Color(0xFFFF9800);
+       sendColor = const Color(0xFFFF9800);
+       imageIconColor = Colors.grey;
+       cursorColor = const Color(0xFFFF9800);
+       boxShadows = [const BoxShadow(color: Colors.white10, offset: Offset(0, -1), blurRadius: 1)];
+    } else {
+       // Default (Vintage/Dark Brown)
+       containerColor = const Color(0xFF2D1E1B); // Darker brown
+       inputBgColor = const Color(0xFF3E2723); // Standard brown
+       inputBorderColor = const Color(0xFF5D4037);
+       textColor = const Color(0xFFD7CCC8); // Beige
+       hintColor = const Color(0xFFA1887F);
+       iconColor = const Color(0xFFD7CCC8);
+       sendColor = const Color(0xFFFFB74D); // Orange accent
+       imageIconColor = const Color(0xFFA1887F);
+       cursorColor = const Color(0xFFFFB74D);
+       boxShadows = [const BoxShadow(color: Colors.black38, offset: Offset(0, -2), blurRadius: 4)];
+    }
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: containerColor,
-        boxShadow: isAmber ? [
-           const BoxShadow(color: Colors.white10, offset: Offset(0, -1), blurRadius: 1)
-        ] : [
-           const BoxShadow(color: Colors.black12, offset: Offset(0, -2), blurRadius: 4)
-        ]
+        boxShadow: boxShadows,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -130,7 +180,7 @@ class _MomentInputWidgetState extends State<MomentInputWidget> {
                     maxLines: 4,
                     minLines: 1,
                     style: GoogleFonts.notoSerifSc(color: textColor),
-                    cursorColor: isAmber ? const Color(0xFFFF9800) : null,
+                    cursorColor: cursorColor,
                     decoration: InputDecoration(
                       hintText: "写点什么...",
                       hintStyle: TextStyle(color: hintColor),

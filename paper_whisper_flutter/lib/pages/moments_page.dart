@@ -245,8 +245,22 @@ class _MomentsPageState extends State<MomentsPage> {
     final bool isAmber = theme == AppTheme.themeAmberLens;
 
     // Theme Colors
-    final Color appBarIconColor = isSeaFlower || isMidnight || isAmber ? Colors.white70 : const Color(0xFF5D4037);
-    final Color appBarTextColor = isSeaFlower || isMidnight || isAmber ? Colors.white : const Color(0xFF5D4037);
+    // Theme Colors
+    Color appBarIconColor;
+    Color appBarTextColor;
+
+    if (isSeaFlower) {
+      appBarIconColor = const Color(0xFFD81B60); // Pink 600
+      appBarTextColor = const Color(0xFF880E4F); // Pink 900
+    } else if (isMidnight || isAmber) {
+      appBarIconColor = Colors.white70;
+      appBarTextColor = Colors.white;
+    } else {
+      // Vintage
+      appBarIconColor = const Color(0xFFD7CCC8); // Beige Light
+      appBarTextColor = const Color(0xFFD7CCC8);
+    }
+
     final Color? rulerAccent = isAmber ? const Color(0xFFFF9800) : (isSeaFlower ? const Color(0xFFEC407A) : (isMidnight ? const Color(0xFF7986cb) : null));
     
     return LayoutBuilder(
@@ -386,9 +400,9 @@ class _MomentsPageState extends State<MomentsPage> {
           backgroundColor: Colors.transparent, 
           drawer: const SidebarWidget(),
           appBar: AppBar(
-            backgroundColor: isSeaFlower || isMidnight || isAmber 
-                ? const Color(0xFF1E1E1E).withOpacity(0.5) 
-                : const Color(0xFFD7CCC8).withOpacity(0.9), // Translucent
+            backgroundColor: isSeaFlower 
+                ? const Color(0xFFFCE4EC).withOpacity(0.8) // Light Pink Translucent
+                : const Color(0xFF1E1E1E).withOpacity(0.5), // Dark Translucent for All others (Default, Amber, Midnight)
             elevation: 0,
             leading: Builder(
               builder: (context) => IconButton(
@@ -469,9 +483,13 @@ class _MomentsPageState extends State<MomentsPage> {
     // Ideally pass color in. But here we access Provider.
     // Provider.of(context) already established in build. Using context here works.
     
-    final bool isDark = theme == AppTheme.themeAmberLens || theme == AppTheme.themeMidnight;
-    final Color emptyColor = isDark ? Colors.white38 : Colors.brown;
-    final Color textColor = isDark ? Colors.white24 : Colors.brown.withOpacity(0.5);
+    // Logic: SeaFlower is Light (Pink/White), need Dark Text?
+    // Vintage/Amber/Midnight are Dark, need Light Text.
+    final bool isLight = theme == AppTheme.themeSeaFlower;
+    final bool isDark = !isLight;
+    
+    final Color emptyColor = isDark ? Colors.white38 : const Color(0xFF5D4037); // Brown for Light Theme
+    final Color textColor = isDark ? Colors.white24 : const Color(0xFF8D6E63).withOpacity(0.5);
 
     return Center(
       child: Opacity(

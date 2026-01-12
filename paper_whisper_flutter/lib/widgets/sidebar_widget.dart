@@ -9,6 +9,8 @@ import '../pages/moments_page.dart';
 import '../pages/settings_page.dart';
 import '../widgets/slide_page_route.dart';
 import '../providers/settings_provider.dart';
+import '../pages/editor_page.dart';
+import '../widgets/paper_fold_page_route.dart';
 
 class SidebarWidget extends StatefulWidget {
   const SidebarWidget({super.key});
@@ -38,48 +40,122 @@ class _SidebarWidgetState extends State<SidebarWidget> {
 
   @override
   Widget build(BuildContext context) {
-    // Determine active route logic
     bool isWriter = context.findAncestorWidgetOfExactType<DiaryListPage>() != null;
     bool isMoments = context.findAncestorWidgetOfExactType<MomentsPage>() != null;
     
     int activeIndex = -1;
     if (isWriter) activeIndex = 0;
     if (isMoments) activeIndex = 1;
+
+    final theme = Provider.of<SettingsProvider>(context).currentTheme;
     
-    // Item Height: Padding(16*2) + Icon(24) = 56. Spacing = 12.
-    // Top offsets: 0, 68...
+    // Theme Configs
+    BoxDecoration bgDecor;
+    Color textColor;
+    Color activeTextColor;
+    Color subTextColor;
+    Color pillColor;
+    List<BoxShadow> pillShadows;
+    BoxBorder? pillBorder;
     
-    return Container(
-      width: 280, // Default width if not constrained
-      decoration: const BoxDecoration(
+    // 1. Sea Flower (Light/Pink)
+    if (theme == AppTheme.themeSeaFlower) {
+       bgDecor = const BoxDecoration(
+          color: Color(0xFFFCE4EC), // Pink 50
+          // Removed leather texture for clean look, or use a soft paper texture if available
+          // image: DecorationImage(image: AssetImage('assets/textures/paper_1.png'), opacity: 0.1, fit: BoxFit.cover),
+          boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(5, 0))]
+       );
+       textColor = const Color(0xFF880E4F); // Pink 900
+       activeTextColor = const Color(0xFFD81B60); // Pink 600
+       subTextColor = const Color(0xFFBC477B); // Pink 300
+       pillColor = Colors.white;
+       pillShadows = [
+          BoxShadow(color: const Color(0xFFF48FB1).withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4)),
+       ];
+       pillBorder = null;
+    } 
+    // 2. Midnight (Deep Blue/Dark)
+    else if (theme == AppTheme.themeMidnight) {
+       bgDecor = const BoxDecoration(
+          color: Color(0xFF0D1117), 
+          // image: DecorationImage(image: AssetImage('assets/textures/starry_bg.png'), fit: BoxFit.cover, opacity: 0.3), // If available
+          border: Border(right: BorderSide(color: Colors.white12)),
+          boxShadow: [BoxShadow(color: Colors.black87, blurRadius: 10, offset: Offset(5, 0))]
+       );
+       textColor = const Color(0xFFc9d1d9);
+       activeTextColor = const Color(0xFF7986cb); // Indigo Light
+       subTextColor = const Color(0xFF8b949e);
+       pillColor = const Color(0xFF161b22);
+       pillShadows = [
+          BoxShadow(color: const Color(0xFF7986cb).withOpacity(0.2), blurRadius: 8, offset: const Offset(0, 0), spreadRadius: 1),
+       ];
+       pillBorder = Border.all(color: Colors.white10);
+    }
+    // 3. Amber Lens (Existing/Dark Leather)
+    else if (theme == AppTheme.themeAmberLens) {
+      bgDecor = const BoxDecoration(
           color: Color(0xFF2C2C2C),
           image: DecorationImage(
             image: AssetImage('assets/textures/leather_dark.png'),
             fit: BoxFit.cover,
             opacity: 0.5,
           ),
-          boxShadow: [
-             BoxShadow(color: Colors.black45, blurRadius: 10, offset: Offset(5, 0))
-          ]
-        ),
+          boxShadow: [BoxShadow(color: Colors.black45, blurRadius: 10, offset: Offset(5, 0))]
+      );
+      textColor = const Color(0xFFBDBDBD);
+      activeTextColor = const Color(0xFFFF9800); // Amber
+      subTextColor = const Color(0xFF757575);
+      pillColor = const Color(0xFF222222);
+      pillShadows = [
+          BoxShadow(color: Colors.white10, offset: Offset(0, 1), blurRadius: 0),
+          BoxShadow(color: Colors.black87, offset: Offset(0, -2), blurRadius: 1)
+      ];
+      pillBorder = null;
+    }
+    // 4. Default / Vintage (Dark Metal/Leather)
+    else {
+       bgDecor = const BoxDecoration(
+          color: Color(0xFF3E2723), // Dark Brown
+          image: DecorationImage(
+            image: AssetImage('assets/textures/leather_dark.png'), // Reuse leather
+            fit: BoxFit.cover,
+            opacity: 0.6,
+          ),
+          boxShadow: [BoxShadow(color: Colors.black45, blurRadius: 10, offset: Offset(5, 0))]
+       );
+       textColor = const Color(0xFFD7CCC8); // Beige
+       activeTextColor = const Color(0xFFFF5252); // Red Accent
+       subTextColor = const Color(0xFFA1887F);
+       pillColor = const Color(0xFF2D1E1B); 
+       pillShadows = [
+           BoxShadow(color: Colors.white10, offset: Offset(0, 1), blurRadius: 0),
+           BoxShadow(color: Colors.black87, offset: Offset(0, -2), blurRadius: 1)
+       ];
+       pillBorder = null;
+    }
+
+    return Container(
+      width: 280, 
+      decoration: bgDecor,
         child: SafeArea(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
                // Header
                Padding(
-                 padding: const EdgeInsets.fromLTRB(24, 40, 24, 40),
+                 padding: const EdgeInsets.fromLTRB(24, 40, 24, 30),
                  child: Column(
                    crossAxisAlignment: CrossAxisAlignment.start,
                    children: [
                      Text(
                        "纸语",
                        style: GoogleFonts.notoSerifSc(
-                         color: const Color(0xFFD7CCC8),
+                         color: textColor, // Adapted
                          fontSize: 28,
                          fontWeight: FontWeight.bold,
                          shadows: [
-                           const Shadow(color: Colors.black, offset: Offset(0, 2), blurRadius: 4)
+                           Shadow(color: Colors.black.withOpacity(0.3), offset: const Offset(0, 2), blurRadius: 4)
                          ]
                        ),
                      ),
@@ -87,7 +163,7 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                      Text(
                        "PaperWhisper",
                        style: GoogleFonts.playfairDisplay(
-                         color: const Color(0xFFA1887F),
+                         color: subTextColor, // Adapted
                          fontSize: 14,
                          fontStyle: FontStyle.italic,
                        ),
@@ -96,6 +172,79 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                  ),
                ),
                
+               // Write Button (Only for Desktop/Non-Drawer)
+               if (context.findAncestorWidgetOfExactType<Drawer>() == null)
+                 Padding(
+                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                   child: Material(
+                     color: Colors.transparent,
+                     child: InkWell(
+                       onTap: () {
+                          Navigator.push(
+                            context,
+                            LetterFoldPageRoute(page: EditorPage(entry: null)),
+                          );
+                       },
+                       borderRadius: BorderRadius.circular(12),
+                       child: Container(
+                         padding: const EdgeInsets.symmetric(vertical: 14),
+                          decoration: BoxDecoration(
+                            // Solid-like look but with gradient to simulate lighting (Bevel)
+                            // This avoids "borderRadius with non-uniform borders" crash
+                            gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: theme == AppTheme.themeSeaFlower
+                                    ? [const Color(0xFFF06292), const Color(0xFFD81B60)] // Pink Light -> Dark
+                                    : theme == AppTheme.themeMidnight
+                                        ? [const Color(0xFF7986cb), const Color(0xFF3F51B5)] // Indigo Light -> Dark
+                                        : theme == AppTheme.themeAmberLens
+                                            ? [const Color(0xFFFFB74D), const Color(0xFFF57C00)] // Amber Light -> Dark
+                                            : [const Color(0xFFE57373), const Color(0xFFD32F2F)], // Red Light -> Dark (Simulates Highlight Top, Shadow Bottom)
+                            ),
+                                        
+                            // Rounded Corners (Restore)
+                            borderRadius: BorderRadius.circular(10),
+                            
+                            boxShadow: [
+                               // Drop Shadow (Soft)
+                               BoxShadow(
+                                 color: Colors.black.withOpacity(0.3),
+                                 offset: const Offset(0, 3), // Bottom shadow
+                                 blurRadius: 6,
+                               ),
+                            ],
+                            // Uniform Border to prevent Crash
+                            // We use a subtle white stroke to sharpen edges
+                            border: Border.all(
+                                color: Colors.white.withOpacity(0.2), 
+                                width: 1.0
+                            ),
+                          ),
+                         child: Row(
+                           mainAxisAlignment: MainAxisAlignment.center,
+                           children: [
+                             const Icon(Icons.edit, color: Colors.white, size: 20),
+                             const SizedBox(width: 8),
+                             Text(
+                               "写一篇",
+                               style: GoogleFonts.notoSerifSc(
+                                 color: Colors.white,
+                                 fontSize: 16, // Slightly larger
+                                 fontWeight: FontWeight.bold,
+                                 letterSpacing: 2, // Wider spacing like reference
+                                 shadows: [
+                                   Shadow(color: Colors.black.withOpacity(0.2), offset: const Offset(0, 1), blurRadius: 2)
+                                 ]
+                               ),
+                             )
+                           ],
+                         ),
+                       ),
+                     ),
+                   ),
+                 ),
+               
                // Menu Area with Animated Pill
                Stack(
                  children: [
@@ -103,7 +252,7 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                     if (activeIndex != -1)
                       AnimatedPositioned(
                         duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeOutBack, // In-page animation (e.g. initial load correction)
+                        curve: Curves.easeOutBack, 
                         top: activeIndex * 68.0,
                         left: 16,
                         right: 16,
@@ -112,12 +261,10 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                           tag: 'sidebar_selection_pill',
                           child: Container(
                             decoration: BoxDecoration(
-                              color: const Color(0xFF222222),
+                              color: pillColor, // Adapted
                               borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
-                                  const BoxShadow(color: Colors.white10, offset: Offset(0, 1), blurRadius: 0),
-                                  const BoxShadow(color: Colors.black87, offset: Offset(0, -2), blurRadius: 1) 
-                                ]
+                              boxShadow: pillShadows, // Adapted
+                              border: pillBorder, // Adapted
                             ),
                           ),
                         ),
@@ -140,13 +287,16 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                                     context, 
                                     PageRouteBuilder(
                                       pageBuilder: (_, __, ___) => const DiaryListPage(),
-                                      transitionDuration: const Duration(milliseconds: 500), // Slower for hero to fly?
+                                      transitionDuration: const Duration(milliseconds: 500), 
                                       transitionsBuilder: (_, a, __, c) => FadeTransition(opacity: a, child: c),
                                     )
                                 );
                               }
                            },
-                           isActive: isWriter
+                           isActive: isWriter,
+                           // Pass colors down
+                           textColor: textColor,
+                           activeColor: activeTextColor,
                          ),
                          
                          const SizedBox(height: 12),
@@ -171,7 +321,9 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                                 );
                               }
                            },
-                           isActive: isMoments
+                           isActive: isMoments,
+                           textColor: textColor,
+                           activeColor: activeTextColor,
                          ),
                       ],
                     ),
@@ -185,7 +337,7 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                   padding: const EdgeInsets.all(20),
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   decoration: BoxDecoration(
-                    color: Colors.black26,
+                    color: theme == AppTheme.themeSeaFlower ? Colors.white54 : Colors.black26, // Lighter for SeaFlower
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: Colors.white10),
                   ),
@@ -195,7 +347,7 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                       Text(
                         _hitokoto?.hitokoto ?? '正在获取一言...',
                         style: GoogleFonts.notoSerifSc(
-                          color: const Color(0xFFBCAAA4),
+                          color: subTextColor, // Adapted
                           fontSize: 12,
                           fontStyle: FontStyle.italic,
                           height: 1.5,
@@ -208,7 +360,7 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                           child: Text(
                             '—— ${_hitokoto!.from}',
                             style: GoogleFonts.notoSerifSc(
-                              color: const Color(0xFF8D6E63),
+                              color: subTextColor.withOpacity(0.8), // Adapted
                               fontSize: 11,
                             ),
                           ),
@@ -218,7 +370,7 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                   ),
                ),
                
-               const Divider(color: Colors.white10, height: 1),
+               Divider(color: theme == AppTheme.themeSeaFlower ? Colors.black12 : Colors.white10, height: 1),
                
                // Settings
                Padding(
@@ -233,7 +385,9 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                       }
                       Navigator.push(context, SlidePageRoute(page: const SettingsPage()));
                    },
-                   isActive: false
+                   isActive: false,
+                   textColor: textColor,
+                   activeColor: activeTextColor,
                  ),
                ),
                const SizedBox(height: 10),
@@ -243,7 +397,14 @@ class _SidebarWidgetState extends State<SidebarWidget> {
     );
   }
 
-  Widget _buildMenuItem(BuildContext context, {required IconData icon, required String label, required VoidCallback onTap, bool isActive = false}) {
+  Widget _buildMenuItem(BuildContext context, {
+    required IconData icon, 
+    required String label, 
+    required VoidCallback onTap, 
+    bool isActive = false,
+    required Color textColor,
+    required Color activeColor,
+  }) {
     // Inner height: 16*2 + 24 = 56
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -264,12 +425,12 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                 type: MaterialType.transparency,
                 child: Row(
                   children: [
-                    Icon(icon, color: isActive ? const Color(0xFFFFB74D) : const Color(0xFF9E9E9E), size: 24),
+                    Icon(icon, color: isActive ? activeColor : textColor.withOpacity(0.7), size: 24),
                     const SizedBox(width: 20),
                     Text(
                       label,
                       style: GoogleFonts.notoSerifSc(
-                        color: isActive ? const Color(0xFFFFB74D) : const Color(0xFFBDBDBD),
+                        color: isActive ? activeColor : textColor,
                         fontSize: 16,
                         fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
                         letterSpacing: 1,
