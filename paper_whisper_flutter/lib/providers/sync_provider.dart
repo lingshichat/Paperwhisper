@@ -1,14 +1,19 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path/path.dart' as path;
 import 'package:webdav_client/webdav_client.dart' as webdav;
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../models/sync_config.dart';
 import '../services/webdav_sync_service.dart';
 import '../services/diary_service.dart';
 import '../services/moment_service.dart';
+import '../widgets/skeuomorphic_dialog.dart';
 import 'diary_provider.dart';
 
 enum SyncStatus { none, syncing, success, failed }
@@ -16,6 +21,7 @@ enum SyncStatus { none, syncing, success, failed }
 class SyncProvider with ChangeNotifier {
   final WebDavSyncService _webDavService = WebDavSyncService();
   final MomentService _momentService = MomentService();
+  final FlutterLocalNotificationsPlugin _notificationsPlugin = FlutterLocalNotificationsPlugin();
   
   DiaryProvider? _diaryProvider;
   
@@ -23,6 +29,11 @@ class SyncProvider with ChangeNotifier {
   SyncStatus _status = SyncStatus.none;
   String _lastError = '';
   DateTime? _lastSyncTime;
+  
+  Timer? _autoSyncTimer;
+  static const int _notificationId = 888;
+  static const String _channelId = 'paper_whisper_sync';
+  static const String _channelName = 'Sync Status';
 
   SyncConfig get config => _config;
   SyncStatus get status => _status;
@@ -32,10 +43,23 @@ class SyncProvider with ChangeNotifier {
 
   SyncProvider() {
     _loadConfig();
+    _initNotifications();
   }
 
   void updateDiaryProvider(DiaryProvider dp) {
     _diaryProvider = dp;
+  }
+  
+  Future<void> _initNotifications() async {
+    const AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings('@mipmap/launcher_icon');
+        
+    // Darwin (iOS) settings can be added here
+    final InitializationSettings initializationSettings = InitializationSettings(
+      android: initializationSettingsAndroid,
+    );
+    
+    await _notificationsPlugin.initialize(initializationSettings);
   }
 
   Future<void> _loadConfig() async {
@@ -85,9 +109,56 @@ class SyncProvider with ChangeNotifier {
     }
     return success;
   }
+  
+  /// 请求自动同步（防抖 30秒）
+  void requestAutoSync() {
+    if (!_config.enabled) return;
+    
+    debugPrint('AutoSync requested. Debouncing...');
+    if (_autoSyncTimer?.isActive ?? false) _autoSyncTimer!.cancel();
+    
+    _autoSyncTimer = Timer(const Duration(seconds: 30), () {
+      debugPrint('AutoSync triggered!');
+      sync(isAuto: true);
+    });
+  }
+
+  /// 检查并请求通知权限（带拟物化弹窗）
+  Future<void> checkNotificationPermission(BuildContext context) async {
+     var status = await Permission.notification.status;
+     if (!status.isGranted) {
+       // Show Explanation Dialog
+       if (context.mounted) {
+         await showDialog(
+           context: context,
+           builder: (ctx) => SkeuomorphicDialog(
+             title: '需要通知权限',
+             headerIcon: Icons.notifications_active,
+             content: const Text(
+               '为了防止同步过程被系统中断，并让您直观地看到上传进度，我们需要申请通知栏权限。\n\n这能确保您的日记和瞬间安全地备份到云端。',
+             ),
+             actions: [
+               SkeuomorphicDialogButton(
+                 label: '暂不开启', 
+                 isPrimary: false,
+                 onPressed: () => Navigator.pop(ctx),
+               ),
+               SkeuomorphicDialogButton(
+                 label: '去开启', 
+                 onPressed: () {
+                   Navigator.pop(ctx);
+                   Permission.notification.request();
+                 },
+               ),
+             ],
+           ),
+         );
+       }
+     }
+  }
 
   /// 执行完整同步
-  Future<void> sync() async {
+  Future<void> sync({bool isAuto = false}) async {
     if (_status == SyncStatus.syncing) return;
     if (!_config.enabled) return;
 
@@ -101,6 +172,7 @@ class SyncProvider with ChangeNotifier {
     }
 
     _setStatus(SyncStatus.syncing);
+    if (!isAuto) _showNotification(0, 0, indeterminate: true);
 
     try {
       if (_diaryProvider == null) {
@@ -108,10 +180,10 @@ class SyncProvider with ChangeNotifier {
       }
 
       // 1. 同步日记 (Txt)
-      await _syncDiaries();
+      await _syncDiaries(isAuto);
       
       // 2. 同步随心记 (Moments JSON & Images)
-      await _syncMoments();
+      await _syncMoments(isAuto);
 
       _lastSyncTime = DateTime.now();
       final prefs = await SharedPreferences.getInstance();
@@ -122,30 +194,49 @@ class SyncProvider with ChangeNotifier {
       // 刷新 UI
       await _diaryProvider!.loadEntries();
       
+      // 完成通知
+      if (!isAuto) {
+         _showCompletionNotification('同步成功');
+         // 延迟关闭
+         Future.delayed(const Duration(seconds: 2), () => _cancelNotification());
+      }
+      
     } catch (e) {
       debugPrint('Sync failed: $e');
       _setStatus(SyncStatus.failed, error: e.toString());
+      if (!isAuto) _showCompletionNotification('同步失败: $e');
+    }
+  }
+  
+  // ==========================================
+  // 并发处理辅助
+  // ==========================================
+  Future<void> _processBatch<T>(List<T> items, Future<void> Function(T) action) async {
+    const int batchSize = 3;
+    for (var i = 0; i < items.length; i += batchSize) {
+      final end = (i + batchSize < items.length) ? i + batchSize : items.length;
+      final batch = items.sublist(i, end);
+      await Future.wait(batch.map((item) => action(item)));
     }
   }
   
   // ==========================================
   // 日记同步逻辑 (Txt)
   // ==========================================
-  Future<void> _syncDiaries() async {
+  Future<void> _syncDiaries(bool isAuto) async {
       await _diaryProvider!.service.init();
       final localDir = _diaryProvider!.service.dataDir;
       if (localDir == null) throw Exception('本地日记目录不可用');
 
-      // 加载 Snapshot
       final prefs = await SharedPreferences.getInstance();
       List<String> lastKnownRemoteFiles = prefs.getStringList('last_known_remote_manifest') ?? [];
 
-      debugPrint('Sync Diaries: Fetching remote files...');
+      if (!isAuto) _showNotification(null, null, body: "正在检查日记列表...");
+      
       List<webdav.File> currentRemoteFilesRaw = await _webDavService.listRemoteFiles(
         remotePath: WebDavSyncService.diaryBasePath
       );
       
-      // Filter & Map
       List<webdav.File> currentRemoteFilesList = currentRemoteFilesRaw
           .where((f) => f.name != null && f.name!.endsWith('.txt'))
           .toList();
@@ -166,7 +257,6 @@ class SyncProvider with ChangeNotifier {
         if (!currentRemoteMap.containsKey(filename) && currentLocalMap.containsKey(filename)) {
            await _diaryProvider!.service.deleteEntry(filename);
            currentLocalMap.remove(filename);
-           debugPrint('Sync Diaries: Cloud deletion detected, removing local: $filename');
         }
       }
 
@@ -177,111 +267,108 @@ class SyncProvider with ChangeNotifier {
           filesToDeleteRemote.add(filename);
         }
       }
-      for (var filename in filesToDeleteRemote) {
-        await _webDavService.deleteFile(WebDavSyncService.diaryBasePath + filename);
-        currentRemoteMap.remove(filename);
-        debugPrint('Sync Diaries: Local deletion detected, removing remote: $filename');
+      
+      if (filesToDeleteRemote.isNotEmpty) {
+        if (!isAuto) _showNotification(null, null, body: "正在同步删除...");
+        await _processBatch(filesToDeleteRemote, (filename) async {
+           await _webDavService.deleteFile(WebDavSyncService.diaryBasePath + filename);
+        });
+        for (var f in filesToDeleteRemote) currentRemoteMap.remove(f);
       }
 
-      // Update / Download
+      // Update / Download List
+      List<String> toDownload = [];
+      List<String> toUpload = []; // Existing update
+      
       for (var filename in currentRemoteMap.keys) {
         final remote = currentRemoteMap[filename]!;
         final localFile = currentLocalMap[filename];
 
-        bool needsDownload = false;
         if (localFile == null) {
-          needsDownload = true;
-          debugPrint('Sync Diaries: New remote file found: $filename');
-        } else {
-          if (remote.mTime != null) {
+          toDownload.add(filename);
+        } else if (remote.mTime != null) {
             final remoteTime = remote.mTime!;
             final localTime = await localFile.lastModified();
             if (remoteTime.difference(localTime).inSeconds > 2) {
-               needsDownload = true;
-               debugPrint('Sync Diaries: Remote newer: $filename');
+               toDownload.add(filename);
+             } else if (localTime.difference(remoteTime).inSeconds > 2) {
+               toUpload.add(filename);
              }
-          }
         }
+        if (toDownload.contains(filename) || toUpload.contains(filename)) {
+           currentLocalMap.remove(filename);
+        }
+      }
 
-        if (needsDownload) {
+      // New Uploads
+      for (var entry in currentLocalMap.entries) {
+        toUpload.add(entry.key);
+      }
+
+      int totalOps = toDownload.length + toUpload.length;
+      int processed = 0;
+      
+      Future<void> updateProgress(String action, String name) async {
+         processed++;
+         if (!isAuto) _showNotification(processed, totalOps, body: "$action: $name");
+      }
+
+      // Execute Downloads
+      await _processBatch(toDownload, (filename) async {
           await _webDavService.downloadFile(
             WebDavSyncService.diaryBasePath + filename, 
             path.join(localDir.path, filename)
           );
-          currentLocalMap.remove(filename); 
-        } else {
-          if (localFile != null) {
-             final remoteTime = remote.mTime;
-             if (remoteTime != null) {
-               final localTime = await localFile.lastModified();
-               if (localTime.difference(remoteTime).inSeconds > 2) {
-                 await _webDavService.uploadFile(
-                   localFile.path, 
-                   WebDavSyncService.diaryBasePath + filename
-                 );
-                 debugPrint('Sync Diaries: Local newer, uploading: $filename');
-               }
-             }
-             currentLocalMap.remove(filename);
-          }
-        }
-      }
+          await updateProgress("下载", filename);
+      });
 
-      // Upload New Local
-      for (var entry in currentLocalMap.entries) {
-        final filename = entry.key;
-        final file = entry.value;
-        debugPrint('Sync Diaries: New local file found, uploading: $filename');
-        await _webDavService.uploadFile(
-          file.path, 
-          WebDavSyncService.diaryBasePath + filename
-        );
-      }
+      // Execute Uploads
+      await _processBatch(toUpload, (filename) async {
+         // Re-find file object
+         File f = File(path.join(localDir.path, filename));
+         if (await f.exists()) {
+            await _webDavService.uploadFile(
+              f.path, 
+              WebDavSyncService.diaryBasePath + filename
+            );
+            await updateProgress("上传", filename);
+         }
+      });
 
-      // Update Snapshot
-      List<webdav.File> finalRemoteFiles = await _webDavService.listRemoteFiles(
-        remotePath: WebDavSyncService.diaryBasePath
-      );
-      List<String> newManifest = finalRemoteFiles
-          .where((f) => f.name != null && f.name!.endsWith('.txt'))
-          .map((f) => f.name!)
-          .toList();
-
-      await prefs.setStringList('last_known_remote_manifest', newManifest);
+      // Update Snapshot (Local Calculation)
+      Set<String> finalKeys = currentRemoteMap.keys.toSet();
+      finalKeys.removeAll(filesToDeleteRemote);
+      finalKeys.addAll(toUpload); // Add new/updated files
+      
+      await prefs.setStringList('last_known_remote_manifest', finalKeys.toList());
   }
 
   // ==========================================
   // 随心记同步逻辑 (Moments)
   // ==========================================
-  Future<void> _syncMoments() async {
+  Future<void> _syncMoments(bool isAuto) async {
       await _momentService.init();
       final localDir = _momentService.dataDir;
-      if (localDir == null) {
-        debugPrint('Sync Moments: Local dir not available, skipping.');
-        return;
-      }
+      if (localDir == null) return;
       
-      // 1. 同步 JSON 数据 (Moment Files)
-      await _syncMomentJsonFiles(localDir);
+      await _syncMomentJsonFiles(localDir, isAuto);
       
-      // 2. 同步图片附件 (Images)
-      // Images dir: localDir/images
       final imagesDir = Directory(path.join(localDir.path, 'images'));
       if (await imagesDir.exists()) {
-         await _syncMomentImages(imagesDir);
+         await _syncMomentImages(imagesDir, isAuto);
       }
   }
 
-  Future<void> _syncMomentJsonFiles(Directory localDir) async {
+  Future<void> _syncMomentJsonFiles(Directory localDir, bool isAuto) async {
       final prefs = await SharedPreferences.getInstance();
       List<String> lastKnownRemoteFiles = prefs.getStringList('last_known_moments_manifest') ?? [];
 
-      debugPrint('Sync Moments: Fetching remote JSON files...');
+      if (!isAuto) _showNotification(null, null, body: "正在检查随心记...");
+
       List<webdav.File> currentRemoteFilesRaw = await _webDavService.listRemoteFiles(
         remotePath: WebDavSyncService.momentsBasePath
       );
       
-      // Filter JSON
       List<webdav.File> currentRemoteFilesList = currentRemoteFilesRaw
           .where((f) => f.name != null && f.name!.endsWith('.json'))
           .toList();
@@ -300,11 +387,9 @@ class SyncProvider with ChangeNotifier {
       // Cloud Delete -> Local Delete
       for (var filename in lastKnownRemoteFiles) {
         if (!currentRemoteMap.containsKey(filename) && currentLocalMap.containsKey(filename)) {
-           // Delete local moment json
            try {
              await currentLocalMap[filename]!.delete();
              currentLocalMap.remove(filename);
-             debugPrint('Sync Moments: Cloud deletion detected, removing local: $filename');
            } catch(e) {
              debugPrint('Sync Moments: Error deleting local file $filename: $e');
            }
@@ -318,79 +403,75 @@ class SyncProvider with ChangeNotifier {
           filesToDeleteRemote.add(filename);
         }
       }
-      for (var filename in filesToDeleteRemote) {
-        await _webDavService.deleteFile(WebDavSyncService.momentsBasePath + filename);
-        currentRemoteMap.remove(filename);
-        debugPrint('Sync Moments: Local deletion detected, removing remote: $filename');
+      
+      if (filesToDeleteRemote.isNotEmpty) {
+         await _processBatch(filesToDeleteRemote, (filename) async {
+            await _webDavService.deleteFile(WebDavSyncService.momentsBasePath + filename);
+         });
+         for(var f in filesToDeleteRemote) currentRemoteMap.remove(f);
       }
 
-      // Update / Download
+      List<String> toDownload = [];
+      List<String> toUpload = [];
+      
       for (var filename in currentRemoteMap.keys) {
         final remote = currentRemoteMap[filename]!;
         final localFile = currentLocalMap[filename];
 
-        bool needsDownload = false;
         if (localFile == null) {
-          needsDownload = true;
-        } else {
-          if (remote.mTime != null) {
+          toDownload.add(filename);
+        } else if (remote.mTime != null) {
             final remoteTime = remote.mTime!;
             final localTime = await localFile.lastModified();
             if (remoteTime.difference(localTime).inSeconds > 2) {
-               needsDownload = true;
+               toDownload.add(filename);
+             } else if (localTime.difference(remoteTime).inSeconds > 2) {
+               toUpload.add(filename);
              }
-          }
         }
+        if (toDownload.contains(filename) || toUpload.contains(filename)) currentLocalMap.remove(filename);
+      }
 
-        if (needsDownload) {
+      for (var entry in currentLocalMap.entries) toUpload.add(entry.key);
+
+      int processed = 0;
+      int total = toDownload.length + toUpload.length;
+
+      // Downloads
+      await _processBatch(toDownload, (filename) async {
           await _webDavService.downloadFile(
             WebDavSyncService.momentsBasePath + filename, 
             path.join(localDir.path, filename)
           );
-          currentLocalMap.remove(filename); 
-        } else {
-          if (localFile != null) {
-             final remoteTime = remote.mTime;
-             if (remoteTime != null) {
-               final localTime = await localFile.lastModified();
-               if (localTime.difference(remoteTime).inSeconds > 2) {
-                 await _webDavService.uploadFile(
-                   localFile.path, 
-                   WebDavSyncService.momentsBasePath + filename
-                 );
-               }
-             }
-             currentLocalMap.remove(filename);
+          processed++;
+          if (!isAuto) _showNotification(processed, total, body: "随心记下载: $filename");
+      });
+
+      // Uploads
+      await _processBatch(toUpload, (filename) async {
+          File f = File(path.join(localDir.path, filename));
+          if (await f.exists()) {
+             await _webDavService.uploadFile(
+               f.path, 
+               WebDavSyncService.momentsBasePath + filename
+             );
+             processed++;
+             if (!isAuto) _showNotification(processed, total, body: "随心记上传: $filename");
           }
-        }
-      }
+      });
 
-      // Upload New Local
-      for (var entry in currentLocalMap.entries) {
-        final filename = entry.key;
-        final file = entry.value;
-        await _webDavService.uploadFile(
-          file.path, 
-          WebDavSyncService.momentsBasePath + filename
-        );
-      }
+      // Update Snapshot (Local Calculation)
+      Set<String> finalKeys = currentRemoteMap.keys.toSet();
+      finalKeys.removeAll(filesToDeleteRemote);
+      finalKeys.addAll(toUpload); // Add new/updated files
 
-      // Update Snapshot
-      List<webdav.File> finalRemoteFiles = await _webDavService.listRemoteFiles(
-        remotePath: WebDavSyncService.momentsBasePath
-      );
-      List<String> newManifest = finalRemoteFiles
-          .where((f) => f.name != null && f.name!.endsWith('.json'))
-          .map((f) => f.name!)
-          .toList();
-
-      await prefs.setStringList('last_known_moments_manifest', newManifest);
+      await prefs.setStringList('last_known_moments_manifest', finalKeys.toList());
   }
 
-  Future<void> _syncMomentImages(Directory localImagesDir) async {
-      debugPrint('Sync Moments: Syncing images...');
+  Future<void> _syncMomentImages(Directory localImagesDir, bool isAuto) async {
+      if (!isAuto) _showNotification(null, null, body: "正在同步图片...");
       
-      // 1. Get Remote Images List
+      // 1. Get Remote List
       List<webdav.File> remoteImagesRaw = await _webDavService.listRemoteFiles(
         remotePath: WebDavSyncService.momentsImagesPath
       );
@@ -399,38 +480,119 @@ class SyncProvider with ChangeNotifier {
          .map((f) => f.name!)
          .toSet();
 
-      // 2. Get Local Images List
+      // 2. Get Local List
       List<FileSystemEntity> localImages = localImagesDir.listSync();
       
-      // 3. Upload Local -> Remote (If not exists)
+      // 3. Collect Uploads
+      List<File> toUpload = [];
       for (var f in localImages) {
          if (f is File) {
             String name = path.basename(f.path);
             if (!remoteImageNames.contains(name)) {
-               debugPrint('Sync Moments: Uploading new image $name');
-               await _webDavService.uploadFile(
-                 f.path, 
-                 WebDavSyncService.momentsImagesPath + name
-               );
+               toUpload.add(f);
             }
          }
       }
       
-      // 4. Download Remote -> Local (If not exists)
-      // This ensures if I add images on phone, PC gets them.
+      // Safety Check: 如果自动同步时发现大量文件需要上传，可能是因为误判或新设备迁移
+      // 为了防止流量偷跑，跳过本次自动同步
+      if (isAuto && toUpload.length > 20) {
+         debugPrint('AutoSync Safety: Skipping upload of ${toUpload.length} images to prevent high data usage.');
+         return;
+      }
+      
+      // 4. Collect Downloads
+      List<String> toDownload = [];
       for (var remoteFile in remoteImagesRaw) {
          String? name = remoteFile.name;
          if (name == null) continue;
-         
          File localFile = File(path.join(localImagesDir.path, name));
          if (!localFile.existsSync()) {
-            debugPrint('Sync Moments: Downloading missing image $name');
-            await _webDavService.downloadFile(
-               WebDavSyncService.momentsImagesPath + name, 
-               localFile.path
-            );
+            toDownload.add(name);
          }
       }
+
+      int total = toUpload.length + toDownload.length;
+      int processed = 0;
+
+      // Parallel Upload
+      await _processBatch(toUpload, (f) async {
+          String name = path.basename(f.path);
+          await _webDavService.uploadFile(
+             f.path, 
+             WebDavSyncService.momentsImagesPath + name
+          );
+          processed++;
+          if (!isAuto) _showNotification(processed, total, body: "图片上传: $name");
+      });
+
+      // Parallel Download
+      await _processBatch(toDownload, (name) async {
+          File localFile = File(path.join(localImagesDir.path, name));
+           await _webDavService.downloadFile(
+              WebDavSyncService.momentsImagesPath + name, 
+              localFile.path
+           );
+           processed++;
+           if (!isAuto) _showNotification(processed, total, body: "图片下载: $name");
+      });
+  }
+
+  // ==========================================
+  // 通知管理
+  // ==========================================
+  Future<void> _showNotification(int? progress, int? max, {String? body, bool indeterminate = false}) async {
+    final AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails(
+            _channelId, 
+            _channelName,
+            channelDescription: '显示同步状态和进度',
+            importance: Importance.low, // Low = no sound/vibrate, good for progress
+            priority: Priority.low,
+            onlyAlertOnce: true,
+            showProgress: true,
+            maxProgress: max ?? 100,
+            progress: progress ?? 0,
+            indeterminate: indeterminate || (progress == null && max == null),
+            ongoing: true, // Prevent swipe away
+            autoCancel: false,
+        );
+        
+    final NotificationDetails platformChannelSpecifics =
+        NotificationDetails(android: androidPlatformChannelSpecifics);
+        
+    await _notificationsPlugin.show(
+        _notificationId, 
+        'PaperWhisper 云同步', 
+        body ?? '正在同步中...', 
+        platformChannelSpecifics
+    );
+  }
+  
+  Future<void> _showCompletionNotification(String message) async {
+      final AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails(
+            _channelId, 
+            _channelName,
+            channelDescription: '显示同步状态和进度',
+            importance: Importance.defaultImportance,
+            priority: Priority.defaultPriority,
+            ongoing: false,
+            autoCancel: true,
+        );
+      final NotificationDetails platformChannelSpecifics =
+        NotificationDetails(android: androidPlatformChannelSpecifics);
+      
+      await _notificationsPlugin.show(
+        _notificationId, 
+        '同步完成', 
+        message, 
+        platformChannelSpecifics
+      );
+  }
+
+  Future<void> _cancelNotification() async {
+    await _notificationsPlugin.cancel(_notificationId);
   }
 
   void _setStatus(SyncStatus s, {String error = ''}) {
@@ -439,3 +601,4 @@ class SyncProvider with ChangeNotifier {
     notifyListeners();
   }
 }
+

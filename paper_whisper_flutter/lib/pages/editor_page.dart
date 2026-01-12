@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart'; // Added
 import '../providers/diary_provider.dart';
+import '../providers/sync_provider.dart'; // Added
 import '../models/diary_entry.dart';
 import '../config/app_theme.dart';
 import '../providers/settings_provider.dart';
@@ -64,7 +65,16 @@ class _EditorPageState extends State<EditorPage> {
     );
     await provider.saveEntry(newEntry);
     if (mounted) {
-      SkeuomorphicToast.success(context, '日记已保存');
+      final syncProvider = context.read<SyncProvider>();
+      if (syncProvider.isConfigured) {
+         SkeuomorphicToast.success(context, '日记已保存，准备同步...');
+         // 检查权限并请求同步
+         syncProvider.checkNotificationPermission(context).then((_) {
+            if (mounted) syncProvider.requestAutoSync();
+         });
+      } else {
+         SkeuomorphicToast.success(context, '日记已保存');
+      }
       Navigator.pop(context);
     }
   }

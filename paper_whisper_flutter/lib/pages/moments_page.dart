@@ -11,7 +11,9 @@ import '../widgets/ruler_date_picker.dart';
 import '../widgets/moment_input_widget.dart';
 import '../pages/diary_list_page.dart';
 import '../providers/settings_provider.dart'; // Added
+import '../providers/sync_provider.dart'; // Added
 import '../config/app_theme.dart'; // Added
+import '../widgets/skeuomorphic_toast.dart'; // Added
 
 class MomentsPage extends StatefulWidget {
   const MomentsPage({super.key});
@@ -152,7 +154,17 @@ class _MomentsPageState extends State<MomentsPage> {
     await _momentService.saveMoment(newMoment);
     await _loadData(); // visual refresh
     
-    // If user is not on Today, maybe jump to Today? Or stay? Stay.
+    if (mounted) {
+       final syncProvider = context.read<SyncProvider>();
+       if (syncProvider.isConfigured) {
+           SkeuomorphicToast.info(context, '记录已保存，准备同步...');
+           syncProvider.checkNotificationPermission(context).then((_) {
+              if (mounted) syncProvider.requestAutoSync();
+           });
+       } else {
+           SkeuomorphicToast.success(context, '记录已保存');
+       }
+    }
   }
 
   Future<void> _handleAggregation() async {
@@ -205,6 +217,12 @@ class _MomentsPageState extends State<MomentsPage> {
         await _momentService.exportDailySummary(_selectedDate, customTitle: result);
         
         if (!mounted) return;
+        
+        final syncProvider = context.read<SyncProvider>();
+        if (syncProvider.isConfigured) {
+            syncProvider.requestAutoSync();
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('生成成功，正在跳转...')));
         
         // Auto navigate to Writer

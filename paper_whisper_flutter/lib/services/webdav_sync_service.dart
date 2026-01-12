@@ -110,7 +110,9 @@ class WebDavSyncService {
       return await _client!.readDir(remotePath);
     } catch (e) {
       debugPrint('WebDAV list files failed for $remotePath: $e');
-      return [];
+      // 严重错误：如果列举失败，必须抛出异常，绝对不能返回空列表！
+      // 返回空列表会导致同步逻辑误以为云端被清空，从而触发全量重新上传，消耗大量流量。
+      rethrow;
     }
   }
 
