@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -15,10 +16,17 @@ import '../widgets/visual_effects.dart';
 import '../widgets/book_flip_refresh_widget.dart';
 import '../widgets/dashed_line_painter.dart';
 import '../widgets/skeuomorphic_dialog.dart'; // Updated import
+import '../widgets/skeuomorphic_toast.dart';
 import 'editor_page.dart';
 import 'diary_card.dart';
+import 'sync_settings_page.dart';
+import '../widgets/slide_page_route.dart';
+import '../widgets/unfold_page_route.dart';
+import '../widgets/paper_fold_page_route.dart'; // LetterFoldPageRoute
 import 'dart:io' show Platform;
 import 'package:permission_handler/permission_handler.dart';
+import '../models/update_info.dart';
+import '../services/update_service.dart';
 
 class DiaryListPage extends StatefulWidget {
   const DiaryListPage({super.key});
@@ -36,6 +44,11 @@ class _DiaryListPageState extends State<DiaryListPage> {
     super.initState();
     _checkAndroidPermissions();
     _checkAndShowAnnouncement(); // Check for version update and show announcement
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkRemoteUpdate();
+      // Ensure data is refreshed whenever this page is initialized (e.g. after pushReplacement from Moments)
+      Provider.of<DiaryProvider>(context, listen: false).loadEntries();
+    });
   }
 
   Future<void> _checkAndroidPermissions() async {
@@ -54,7 +67,7 @@ class _DiaryListPageState extends State<DiaryListPage> {
 
   Future<void> _checkAndShowAnnouncement() async {
     final prefs = await SharedPreferences.getInstance();
-    const currentVersion = '1.1.0';
+    const currentVersion = '1.1.1';
     final lastVersion = prefs.getString('last_run_version');
 
     if (lastVersion != currentVersion) {
@@ -69,13 +82,90 @@ class _DiaryListPageState extends State<DiaryListPage> {
     }
   }
 
+  Future<void> _checkRemoteUpdate() async {
+    // 只有在非web平台检测
+    if (kIsWeb) return;
+    
+    try {
+      final updateInfo = await UpdateService().checkForUpdate();
+      if (updateInfo != null && mounted) {
+        _showUpdateDialog(updateInfo);
+      }
+    } catch (e) {
+      debugPrint('Update check failed: $e');
+    }
+  }
+
+  void _showUpdateDialog(UpdateInfo info) {
+    showDialog(
+      context: context,
+      barrierDismissible: !info.isForceUpdate,
+      barrierColor: Colors.black.withValues(alpha: 0.6),
+      builder: (context) => SkeuomorphicDialog(
+        title: '发现新版本 ${info.latestVersion}',
+        headerIcon: Icons.system_update,
+        content: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '发布日期：${info.releaseDate ?? "未知"}',
+              style: GoogleFonts.notoSerifSc(
+                fontSize: 12,
+                color: const Color(0xFF8D6E63),
+              ),
+            ),
+            const SizedBox(height: 15),
+            ...info.changelog.map((line) => Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('• ', style: TextStyle(color: Color(0xFF5D4037), fontWeight: FontWeight.bold)),
+                  Expanded(
+                    child: Text(
+                      line,
+                      style: GoogleFonts.notoSerifSc(
+                        fontSize: 14,
+                        height: 1.5,
+                        color: const Color(0xFF5D4037),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )),
+          ],
+        ),
+        actions: [
+          if (!info.isForceUpdate)
+             SkeuomorphicDialogButton(
+               label: '暂不更新', 
+               isPrimary: false, 
+               onPressed: () => Navigator.pop(context)
+             ),
+          SkeuomorphicDialogButton(
+            label: '立即更新', 
+            isPrimary: true, 
+            onPressed: () {
+               // Navigator.pop(context); // Optional: keep dialog open or close?
+               // Close allows user to continue using app while downloading externally
+               Navigator.pop(context);
+               UpdateService().openDownloadUrl(info);
+            }
+          ),
+        ],
+      )
+    );
+  }
+
   void _showAnnouncementDialog() {
     showDialog(
       context: context,
       barrierDismissible: true,
       barrierColor: Colors.black.withValues(alpha: 0.6),
       builder: (context) => SkeuomorphicDialog(
-        title: '纸语 1.1 —— 细节·打磨',
+        title: '纸语 1.1.1 —— 细节与体验',
         headerIcon: Icons.auto_awesome,
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -91,7 +181,7 @@ class _DiaryListPageState extends State<DiaryListPage> {
             ),
             const SizedBox(height: 10),
             Text(
-              '感谢你的陪伴，我们带来了更多细节优化。',
+              '本次更新主要优化了动画流畅度与视觉细节。',
               style: GoogleFonts.notoSerifSc(
                 fontSize: 15,
                 color: const Color(0xFF5D4037),
@@ -99,13 +189,13 @@ class _DiaryListPageState extends State<DiaryListPage> {
               ),
             ),
             const SizedBox(height: 20),
-            _buildAnnouncementItem('☁️', 'WebDAV 云同步', '支持通过 WebDAV 协议同步日记，跨设备无缝衔接。'),
+            _buildAnnouncementItem('🐞', '动画修复', '优化信纸展开动画，消除黑闪。'),
             const SizedBox(height: 15),
-            _buildAnnouncementItem('📖', '翻书下拉刷新', '下拉触发优雅的翻书动画，同步你的记忆。'),
+            _buildAnnouncementItem('📝', '状态栏适配', '完美适配各主题状态栏颜色。'),
             const SizedBox(height: 15),
-            _buildAnnouncementItem('⚡', '启动与性能优化', '优化启动流程，修复花瓣动画卡顿问题。'),
+            _buildAnnouncementItem('🐌', '舒缓转场', '全局转场动画更舒缓自然。'),
             const SizedBox(height: 15),
-            _buildAnnouncementItem('🎯', '交互体验提升', '侧边栏开启更流畅，细节打磨更舒心。'),
+            _buildAnnouncementItem('✨', '细节打磨', '细节体验持续打磨。'),
           ],
         ),
         actions: [
@@ -175,10 +265,8 @@ class _DiaryListPageState extends State<DiaryListPage> {
             isPrimary: false,
             onPressed: () {
               Navigator.pop(context);
-              // Optional: Show snackbar
-              ScaffoldMessenger.of(context).showSnackBar(
-                 const SnackBar(content: Text('已拒绝权限，将在应用私有目录下运行')),
-              );
+              // 显示拒绝权限提示
+              SkeuomorphicToast.info(context, '已拒绝权限，将在应用私有目录下运行');
             },
           ),
           SkeuomorphicDialogButton(
@@ -195,9 +283,7 @@ class _DiaryListPageState extends State<DiaryListPage> {
                  }
               } else {
                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                       const SnackBar(content: Text('权限未授予，无法读取公共目录')),
-                    );
+                    SkeuomorphicToast.warning(context, '权限未授予，无法读取公共目录');
                  }
               }
             },
@@ -207,11 +293,64 @@ class _DiaryListPageState extends State<DiaryListPage> {
     );
   }
 
-  void _openEditor(DiaryEntry? entry) {
-    Navigator.push(
-      context, 
-      MaterialPageRoute(builder: (_) => EditorPage(entry: entry))
+  /// 显示 WebDAV 配置提示
+  void _showWebDavConfigPrompt() {
+    showDialog(
+      context: context,
+      builder: (ctx) => SkeuomorphicDialog(
+        title: '尚未配置同步',
+        headerIcon: Icons.cloud_off_outlined,
+        content: Text(
+          '您还没有配置 WebDAV 同步服务。\n\n配置后，日记将自动同步到云端，随时随地访问。',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.notoSerifSc(
+            fontSize: 15,
+            height: 1.6,
+            color: const Color(0xFF5D4037),
+          ),
+        ),
+        actions: [
+          SkeuomorphicDialogButton(
+            label: '稍后再说',
+            isPrimary: false,
+            onPressed: () => Navigator.pop(ctx),
+          ),
+          SkeuomorphicDialogButton(
+            label: '去配置',
+            isPrimary: true,
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.push(
+                context,
+                SlidePageRoute(page: const SyncSettingsPage()),
+              );
+            },
+          ),
+        ],
+      ),
     );
+  }
+
+  void _openEditor(DiaryEntry? entry, [Rect? cardRect]) {
+    if (entry == null) {
+      // 新建日记：使用信纸对折动画
+      Navigator.push(
+        context,
+        LetterFoldPageRoute(page: EditorPage(entry: null)),
+      );
+    } else if (cardRect != null) {
+      // 点击卡片：使用展开动画
+      Navigator.push(
+        context, 
+        UnfoldPageRoute(page: EditorPage(entry: entry), sourceRect: cardRect),
+      );
+    } else {
+      // 降级：使用平滑动画
+      Navigator.push(
+        context,
+        SlidePageRoute(page: EditorPage(entry: entry)),
+      );
+    }
   }
 
   @override
@@ -246,10 +385,9 @@ class _DiaryListPageState extends State<DiaryListPage> {
                  // 3. Main Layout
                  Row(
                     children: [
-                       SidebarWidget(
-                         width: 300, // Fixed: 260 width + 40 padding = 300 actual width
-                         onWritePressed: () => _openEditor(null),
-                         onSearch: (val) => setState(() => _searchQuery = val),
+                       const SizedBox(
+                         width: 300, 
+                         child: SidebarWidget(),
                        ),
                        Expanded(
                          child: contentArea,
@@ -265,21 +403,11 @@ class _DiaryListPageState extends State<DiaryListPage> {
           
           return Scaffold(
             drawerScrimColor: isSeaFlower ? Colors.transparent : Colors.black54, // 海底花海去遮罩，透出背景
-            drawer: Drawer(
+            drawer: const Drawer(
               width: 300,
-              elevation: 0, // Remove elevation shadow
+              elevation: 0, 
               backgroundColor: Colors.transparent, 
-              child: SidebarWidget(
-                width: 300, 
-                showWriteButton: false, 
-                onWritePressed: () {
-                  Navigator.pop(context);
-                  _openEditor(null);
-                },
-                onSearch: (val) {
-                   setState(() => _searchQuery = val);
-                },
-              ),
+              child: SidebarWidget(),
             ),
             // Mobile Body
             body: Stack(
@@ -291,12 +419,7 @@ class _DiaryListPageState extends State<DiaryListPage> {
                 // 预渲染侧边栏（不可见），避免首次打开 Drawer 时卡顿
                 Offstage(
                   offstage: true,
-                  child: SidebarWidget(
-                    width: 300,
-                    showWriteButton: false,
-                    onWritePressed: () {},
-                    onSearch: (_) {},
-                  ),
+                  child: SizedBox(width: 300, child: SidebarWidget()),
                 ),
               ],
             ),
@@ -425,7 +548,16 @@ class _DiaryListPageState extends State<DiaryListPage> {
                              ],
                            ),
                          ),
-                         const SizedBox(width: 48),
+                         // Add Search Button
+                         IconButton(
+                           icon: Icon(Icons.search, color: headerColors['iconColor']),
+                           onPressed: () {
+                             // Simple search dialog or toggle search bar
+                             // For now, toggle a search field in the header or show a dialog
+                             // Let's assume we toggle a boolean _showSearch in state later
+                           },
+                         ),
+                         const SizedBox(width: 4), // adjusted padding
                        ],
                      ),
                    );
@@ -450,8 +582,19 @@ class _DiaryListPageState extends State<DiaryListPage> {
           child: BookFlipRefreshWidget(
             theme: theme,
             onRefresh: () async {
+              final syncProvider = Provider.of<SyncProvider>(context, listen: false);
+              
+              // 检查 WebDAV 是否已配置
+              if (!syncProvider.isConfigured) {
+                // 显示提示并引导用户配置
+                if (mounted) {
+                  _showWebDavConfigPrompt();
+                }
+                return;
+              }
+              
               // 触发同步
-              await Provider.of<SyncProvider>(context, listen: false).sync();
+              await syncProvider.sync();
             },
             child: list.isEmpty 
                 ? SingleChildScrollView(
@@ -664,7 +807,7 @@ class _DiaryListPageState extends State<DiaryListPage> {
     return DiaryCard(
       entry: entry, 
       theme: theme,
-      onTap: () => _openEditor(entry),
+      onTapWithRect: (rect) => _openEditor(entry, rect),
     );
   }
 }

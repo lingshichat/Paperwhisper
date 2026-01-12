@@ -111,4 +111,17 @@ class WebDavSyncService {
       rethrow;
     }
   }
+
+  /// 删除云端文件
+  Future<void> deleteFile(String filename) async {
+    if (_client == null) return;
+    try {
+      String remotePath = remoteBasePath + filename;
+      await _client!.remove(remotePath);
+      debugPrint('Deleted Remote: $filename');
+    } catch (e) {
+      debugPrint('WebDAV delete failed: $e');
+      // Don't rethrow, strictly speaking, as it might be already gone
+    }
+  }
 }

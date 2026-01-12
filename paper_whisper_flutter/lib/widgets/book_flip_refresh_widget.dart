@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../config/app_theme.dart';
+import 'skeuomorphic_toast.dart';
 
 /// 刷新状态
 enum BookRefreshStatus {
@@ -54,8 +55,9 @@ class _BookFlipRefreshWidgetState extends State<BookFlipRefreshWidget>
   @override
   void initState() {
     super.initState();
+    // 翻页动画周期加长，更平滑
     _pageFlipController = AnimationController(
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 1200),
       vsync: this,
     );
     _bounceController = AnimationController(vsync: this);
@@ -110,12 +112,7 @@ class _BookFlipRefreshWidgetState extends State<BookFlipRefreshWidget>
       _pageFlipController.stop();
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('同步失败: $e'),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
+        SkeuomorphicToast.error(context, '同步失败: $e');
       }
       await Future.delayed(const Duration(milliseconds: 500));
     }
@@ -188,30 +185,29 @@ class _BookFlipRefreshWidgetState extends State<BookFlipRefreshWidget>
       child: Stack(
         children: [
           // 刷新区域（固定在顶部，被内容遮挡）
+          // 使用 AnimatedBuilder 确保翻页动画能触发重建
           Positioned(
             top: 0,
             left: 0,
             right: 0,
             height: _refreshAreaHeight,
-            child: _RefreshAreaWidget(
-              bookColor: bookColor,
-              pageColor: pageColor,
-              textColor: textColor,
-              progress: progress,
-              flipProgress: _pageFlipController.value,
-              status: _status,
+            child: AnimatedBuilder(
+              animation: _pageFlipController,
+              builder: (context, _) => _RefreshAreaWidget(
+                bookColor: bookColor,
+                pageColor: pageColor,
+                textColor: textColor,
+                progress: progress,
+                flipProgress: _pageFlipController.value,
+                status: _status,
+              ),
             ),
           ),
           
           // 主内容（下移）
-          AnimatedBuilder(
-            animation: _pageFlipController,
-            builder: (context, child) {
-              return Transform.translate(
-                offset: Offset(0, _dragOffset),
-                child: widget.child,
-              );
-            },
+          Transform.translate(
+            offset: Offset(0, _dragOffset),
+            child: widget.child,
           ),
         ],
       ),
@@ -290,15 +286,16 @@ class _RefreshAreaWidget extends StatelessWidget {
                       right: 0,
                       child: _buildPage(bookWidth, bookHeight, false, pageColor, textColor),
                     ),
-                    // 翻动页
+                    // 翻动页 - 使用多层叠加实现连续翻页效果
                     if (isFlipping)
-                      for (int i = 0; i < 3; i++)
-                        Positioned(
-                          right: 0,
-                          child: _buildFlippingPage(
-                            bookWidth, bookHeight, pageColor, textColor,
-                            (flipProgress + i * 0.3) % 1.0,
-                          ),
+                      for (int i = 0; i < 4; i++)
+                        _FlippingPage(
+                          width: bookWidth,
+                          height: bookHeight,
+                          pageColor: pageColor,
+                          lineColor: textColor,
+                          // 错开每一页的动画进度
+                          progress: (flipProgress + i * 0.25) % 1.0,
                         ),
                     // 书脊
                     Container(
@@ -375,32 +372,79 @@ class _RefreshAreaWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildFlippingPage(double w, double h, Color pageColor, Color lineColor, double progress) {
-    if (progress > 0.5) return const SizedBox.shrink();
+}
+
+/// 翻页动画组件 - 实现从右往左翻页效果
+class _FlippingPage extends StatelessWidget {
+  final double width;
+  final double height;
+  final Color pageColor;
+  final Color lineColor;
+  final double progress; // 0.0 -> 1.0
+  
+  const _FlippingPage({
+    required this.width,
+    required this.height,
+    required this.pageColor,
+    required this.lineColor,
+    required this.progress,
+  });
+  
+  @override
+  Widget build(BuildContext context) {
+    // 使用缓动曲线使动画更自然
+    final easedProgress = Curves.easeInOutCubic.transform(progress);
     
-    return Transform(
-      alignment: Alignment.centerLeft,
-      transform: Matrix4.identity()
-        ..setEntry(3, 2, 0.001)
-        ..rotateY(-progress * math.pi),
-      child: Container(
-        width: w,
-        height: h,
-        decoration: BoxDecoration(
-          color: pageColor,
-          borderRadius: const BorderRadius.only(
-            topRight: Radius.circular(2),
-            bottomRight: Radius.circular(2),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 2,
+    // 翻页角度: 0° -> 180°
+    final angle = easedProgress * math.pi;
+    
+    // 动态调整透明度，避免突兀消失
+    double opacity = 1.0;
+    if (easedProgress < 0.1) {
+      opacity = easedProgress / 0.1; // 淡入
+    } else if (easedProgress > 0.9) {
+      opacity = (1.0 - easedProgress) / 0.1; // 淡出
+    }
+    
+    // 翻页到一半时显示反面（更深的颜色）
+    final bool showBackSide = angle > math.pi / 2;
+    final displayColor = showBackSide 
+        ? Color.lerp(pageColor, lineColor.withValues(alpha: 0.1), 0.2)!
+        : pageColor;
+    
+    return Positioned(
+      right: 0,
+      child: Opacity(
+        opacity: opacity.clamp(0.0, 1.0),
+        child: Transform(
+          alignment: Alignment.centerLeft, // 以左边为轴翻转
+          transform: Matrix4.identity()
+            ..setEntry(3, 2, 0.002) // 透视效果
+            ..rotateY(-angle), // 从右往左翻
+          child: Container(
+            width: width,
+            height: height,
+            decoration: BoxDecoration(
+              color: displayColor,
+              borderRadius: const BorderRadius.only(
+                topRight: Radius.circular(2),
+                bottomRight: Radius.circular(2),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.15 * (1 - easedProgress)),
+                  blurRadius: 3,
+                  offset: Offset(2 * (1 - easedProgress), 1),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: CustomPaint(
-          painter: _PageLinesPainter(color: lineColor.withOpacity(0.15), isLeft: false),
+            child: CustomPaint(
+              painter: _PageLinesPainter(
+                color: lineColor.withValues(alpha: showBackSide ? 0.08 : 0.2),
+                isLeft: false,
+              ),
+            ),
+          ),
         ),
       ),
     );

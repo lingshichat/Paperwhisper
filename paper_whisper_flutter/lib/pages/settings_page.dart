@@ -6,10 +6,22 @@ import 'package:provider/provider.dart';
 import '../config/app_theme.dart';
 import '../providers/settings_provider.dart';
 import '../providers/sync_provider.dart';
+import '../services/update_service.dart';
+import '../widgets/update_dialog.dart';
+import '../widgets/skeuomorphic_toast.dart';
+import '../widgets/slide_page_route.dart';
 import 'sync_settings_page.dart';
 
-class SettingsPage extends StatelessWidget {
+class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
+
+  @override
+  State<SettingsPage> createState() => _SettingsPageState();
+}
+
+class _SettingsPageState extends State<SettingsPage> {
+  bool _isCheckingUpdate = false;
+  String? _currentVersion;
 
   @override
   Widget build(BuildContext context) {
@@ -65,7 +77,7 @@ class SettingsPage extends StatelessWidget {
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
-      body: _buildList(context, isSeaFlower, isMidnight, textColor),
+      body: _buildList(context, isSeaFlower, isMidnight, textColor, settings),
     );
 
     if (isSeaFlower) {
@@ -94,7 +106,7 @@ class SettingsPage extends StatelessWidget {
     }
   }
 
-  Widget _buildList(BuildContext context, bool isSeaFlower, bool isMidnight, Color textColor) {
+  Widget _buildList(BuildContext context, bool isSeaFlower, bool isMidnight, Color textColor, SettingsProvider settings) {
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
@@ -111,13 +123,52 @@ class SettingsPage extends StatelessWidget {
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const SyncSettingsPage()),
+              SlidePageRoute(page: const SyncSettingsPage()),
             );
           },
         ),
         const SizedBox(height: 30),
+        _buildSectionHeader('外观', textColor),
+        const SizedBox(height: 10),
+        // Theme Setting
+        _buildSettingsItem(
+          context: context,
+          icon: Icons.palette_outlined,
+          title: '主题风格',
+          subtitle: _getThemeName(settings.currentTheme),
+          isSeaFlower: isSeaFlower,
+          isMidnight: isMidnight,
+          textColor: textColor,
+          onTap: () => _showThemePicker(context, settings),
+        ),
+        const SizedBox(height: 12),
+        // Startup Page Setting
+        _buildSettingsItem(
+          context: context,
+          icon: Icons.start_outlined,
+          title: '启动页',
+          subtitle: _getStartupPageName(settings.startupPage),
+          isSeaFlower: isSeaFlower,
+          isMidnight: isMidnight,
+          textColor: textColor,
+          onTap: () => _showStartupPagePicker(context, settings),
+        ),
+        const SizedBox(height: 30),
         _buildSectionHeader('关于', textColor),
         const SizedBox(height: 10),
+        // 检测更新项
+        _buildSettingsItem(
+          context: context,
+          icon: Icons.system_update_outlined,
+          title: '检测更新',
+          subtitle: _isCheckingUpdate ? '检测中...' : (_currentVersion != null ? 'v$_currentVersion' : '点击检查新版本'),
+          isSeaFlower: isSeaFlower,
+          isMidnight: isMidnight,
+          textColor: textColor,
+          isLoading: _isCheckingUpdate,
+          onTap: _isCheckingUpdate ? () {} : () => _checkForUpdate(context),
+        ),
+        const SizedBox(height: 12),
         _buildSettingsItem(
           context: context,
           icon: Icons.info_outline,
@@ -132,6 +183,41 @@ class SettingsPage extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  /// 手动检测更新
+  Future<void> _checkForUpdate(BuildContext context) async {
+    setState(() => _isCheckingUpdate = true);
+    
+    try {
+      final updateService = UpdateService();
+      final currentVersion = await updateService.getCurrentVersion();
+      
+      setState(() => _currentVersion = currentVersion);
+      
+      final updateInfo = await updateService.checkForUpdate();
+      
+      if (!mounted) return;
+      
+      if (updateInfo != null) {
+        // 有新版本，显示更新弹窗
+        UpdateDialog.show(
+          context,
+          updateInfo: updateInfo,
+          currentVersion: currentVersion,
+        );
+      } else {
+        // 已是最新版本
+        SkeuomorphicToast.success(context, '已是最新版本 ✔');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      SkeuomorphicToast.error(context, '检测更新失败，请检查网络');
+    } finally {
+      if (mounted) {
+        setState(() => _isCheckingUpdate = false);
+      }
+    }
   }
 
   String _getSyncStatusText(BuildContext context) {
@@ -173,6 +259,7 @@ class SettingsPage extends StatelessWidget {
     required bool isMidnight,
     required Color textColor,
     required VoidCallback onTap,
+    bool isLoading = false,
   }) {
     // 容器样式
     final BoxDecoration decoration = BoxDecoration(
@@ -229,9 +316,109 @@ class SettingsPage extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(Icons.arrow_forward_ios, color: textColor.withOpacity(0.4), size: 16),
+              // 加载中显示指示器，否则显示箭头
+              if (isLoading)
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(textColor.withOpacity(0.6)),
+                  ),
+                )
+              else
+                Icon(Icons.arrow_forward_ios, color: textColor.withOpacity(0.4), size: 16),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  String _getThemeName(String theme) {
+    switch (theme) {
+      case AppTheme.themeSeaFlower: return '海底花海';
+      case AppTheme.themeMidnight: return '午夜深蓝';
+      default: return '复古纸张';
+    }
+  }
+
+  String _getStartupPageName(String page) {
+    switch (page) {
+      case 'moments': return '随心记';
+      case 'writer': return '专注书写';
+      case 'last': return '恢复上次状态';
+      default: return '专注书写';
+    }
+  }
+
+  void _showThemePicker(BuildContext context, SettingsProvider settings) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _buildGlassBottomSheet(
+        context,
+        title: '选择主题',
+        children: [
+          _buildRadioItem(ctx, '复古纸张', 'default', settings.currentTheme, (val) => settings.setTheme(val)),
+          _buildRadioItem(ctx, '海底花海', 'sea_flower', settings.currentTheme, (val) => settings.setTheme(val)),
+          _buildRadioItem(ctx, '午夜深蓝', 'midnight', settings.currentTheme, (val) => settings.setTheme(val)),
+        ]
+      )
+    );
+  }
+
+  void _showStartupPagePicker(BuildContext context, SettingsProvider settings) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _buildGlassBottomSheet(
+        context,
+        title: '选择启动页',
+        children: [
+          _buildRadioItem(ctx, '专注书写', 'writer', settings.startupPage, (val) => settings.setStartupPage(val)),
+          _buildRadioItem(ctx, '随心记', 'moments', settings.startupPage, (val) => settings.setStartupPage(val)),
+          // _buildRadioItem(ctx, '恢复上次状态', 'last', settings.startupPage, (val) => settings.setStartupPage(val)),
+        ]
+      )
+    );
+  }
+  
+  Widget _buildGlassBottomSheet(BuildContext context, {required String title, required List<Widget> children}) {
+    // Simple styled bottom sheet
+    return Container(
+      decoration: const BoxDecoration(
+        color: Color(0xFFFAEBD7), // Antiquewhite-ish
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: GoogleFonts.notoSerifSc(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF5D4037))),
+          const SizedBox(height: 16),
+          ...children
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildRadioItem(BuildContext context, String label, String value, String groupValue, Function(String) onChanged) {
+    final isSelected = value == groupValue;
+    return InkWell(
+      onTap: () {
+        onChanged(value);
+        Navigator.pop(context);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Row(
+          children: [
+             Text(label, style: GoogleFonts.notoSerifSc(fontSize: 16, color: isSelected ? const Color(0xFF8D6E63) : Colors.black54)),
+             const Spacer(),
+             if (isSelected) const Icon(Icons.check, color: Color(0xFF8D6E63))
+          ],
         ),
       ),
     );

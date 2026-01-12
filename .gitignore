@@ -50,3 +50,9 @@ download_libs.py
 repro_file_io.py
 repro_lines.py
 retry_download.py
+
+# 发布打包文件
+releases/builds/*.apk
+releases/builds/*.exe
+releases/builds/*.zip
+releases/builds/*.msi

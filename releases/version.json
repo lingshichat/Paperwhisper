@@ -1,0 +1,23 @@
+{
+    "latestVersion": "1.1.1",
+    "latestBuildNumber": 1,
+    "releaseDate": "2026-01-12",
+    "isForceUpdate": false,
+    "changelog": [
+        "🆕新增：",
+        "☁️ 更新webdav功能，下拉刷新即可配置",
+        "🛠️优化：",
+        "🎨 完美适配各主题状态栏颜色",
+        "🐌 全局转场动画更舒缓自然",
+        "✨ 细节体验持续打磨"
+    ],
+    "downloadUrl": {
+        "android": "https://dl.lingshichat.top/Android/paper_whisper_flutter_android_1.1.1.apk",
+        "windows": "https://dl.lingshichat.top/Windows/paper_whisper_flutter_windows_1.1.1.zip"
+    },
+    "backupUrl": {
+        "android": "https://lingshi.lanzouv.com/iUAac3ft2uoj",
+        "windows": "https://lingshi.lanzouv.com/iUWt53ft3qvi"
+    },
+    "minSupportedVersion": "1.0.0"
+}

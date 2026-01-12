@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'dart:ui';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -50,6 +51,12 @@ class MyApp extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           // 使用 AppTheme 生成的动态 Theme，包含背景色修复和自定义转场
           theme: AppTheme.getThemeData(settings.currentTheme),
+          builder: (context, child) {
+            return AnnotatedRegion<SystemUiOverlayStyle>(
+              value: AppTheme.getSystemUiOverlayStyle(settings.currentTheme),
+              child: child!,
+            );
+          },
           localizationsDelegates: const [
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,

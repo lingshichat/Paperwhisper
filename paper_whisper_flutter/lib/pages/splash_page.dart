@@ -4,8 +4,12 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/diary_provider.dart';
 import '../services/hitokoto_service.dart';
+import '../services/update_service.dart';
+import '../widgets/update_dialog.dart';
 import 'diary_list_page.dart';
 import 'intro_page.dart';
+import 'moments_page.dart';
+import '../providers/settings_provider.dart'; // Ensure provider is imported
 
 /// 启动屏：等待数据预加载完成后再导航到主页/引导页
 /// 同时预热字体、shader 和网络请求，避免首次交互卡顿
@@ -42,9 +46,30 @@ class _SplashPageState extends State<SplashPage> {
     if (!mounted) return;
 
     // 2. 导航到目标页面
-    final Widget targetPage = widget.showIntro 
-        ? const IntroPage() 
-        : const DiaryListPage();
+    
+    // Determine target page based on settings
+    final settings = context.read<SettingsProvider>();
+    Widget targetPage;
+    
+    if (widget.showIntro) {
+      targetPage = const IntroPage();
+    } else {
+      // Check startup preference
+      switch (settings.startupPage) {
+        case 'moments':
+          targetPage = const MomentsPage();
+          break;
+        case 'writer':
+          targetPage = const DiaryListPage();
+          break;
+        case 'last':
+        default:
+          // TODO: Implement actual 'last' logic or default to writer
+          // For now default to writer if last is not tracked
+          targetPage = const DiaryListPage();
+          break;
+      }
+    }
     
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
@@ -55,6 +80,11 @@ class _SplashPageState extends State<SplashPage> {
         transitionDuration: const Duration(milliseconds: 600),
       ),
     );
+
+    // 3. 启动时自动检测更新（仅非引导页时检查）
+    if (!widget.showIntro) {
+      _checkForUpdateAfterNavigation();
+    }
   }
 
   Future<void> _waitForDiaryLoading(DiaryProvider provider) async {
@@ -72,6 +102,41 @@ class _SplashPageState extends State<SplashPage> {
       await HitokotoService().fetchHitokoto();
     } catch (_) {
       // 忽略错误，不影响启动
+    }
+  }
+
+  /// 导航完成后延迟检测更新
+  Future<void> _checkForUpdateAfterNavigation() async {
+    // 等待页面动画完成
+    await Future.delayed(const Duration(milliseconds: 1200));
+    
+    if (!mounted) return;
+
+    try {
+      final updateService = UpdateService();
+      final updateInfo = await updateService.checkForUpdate();
+      
+      if (updateInfo != null && mounted) {
+        final currentVersion = await updateService.getCurrentVersion();
+        
+        // 获取当前 Navigator 的 context（从新页面）
+        // 由于导航已完成，需要通过全局 key 或 overlay 来显示弹窗
+        // 这里使用延迟确保 context 可用
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            // 使用 Navigator 的 overlay context
+            final navigatorContext = Navigator.of(context).context;
+            UpdateDialog.show(
+              navigatorContext,
+              updateInfo: updateInfo,
+              currentVersion: currentVersion,
+            );
+          }
+        });
+      }
+    } catch (e) {
+      // 静默失败，不影响用户体验
+      print('启动时检测更新失败: $e');
     }
   }
 

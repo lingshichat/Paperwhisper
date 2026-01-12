@@ -7,17 +7,20 @@ import '../models/diary_entry.dart';
 import '../config/app_theme.dart';
 import '../widgets/skeuomorphic_container.dart';
 import '../widgets/dashed_line_painter.dart';
+import '../widgets/unfold_page_route.dart';
 
 class DiaryCard extends StatefulWidget {
   final DiaryEntry entry;
   final String theme;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
+  final void Function(Rect cardRect)? onTapWithRect; // 点击时传递卡片位置
 
   const DiaryCard({
     super.key,
     required this.entry,
     required this.theme,
-    required this.onTap,
+    this.onTap,
+    this.onTapWithRect,
   });
 
   @override
@@ -26,6 +29,7 @@ class DiaryCard extends StatefulWidget {
 
 class _DiaryCardState extends State<DiaryCard> {
   bool _isHovering = false;
+  final GlobalKey _cardKey = GlobalKey();
 
   @override
   Widget build(BuildContext context) {
@@ -242,8 +246,20 @@ class _DiaryCardState extends State<DiaryCard> {
     }
     
     return GestureDetector(
-      onTap: widget.onTap,
+      onTap: () {
+        // 获取卡片位置并触发回调
+        if (widget.onTapWithRect != null) {
+          final rect = getWidgetRect(_cardKey);
+          if (rect != null) {
+            widget.onTapWithRect!(rect);
+            return;
+          }
+        }
+        // 降级到普通回调
+        widget.onTap?.call();
+      },
       child: MouseRegion(
+        key: _cardKey, // 用于获取位置
         cursor: SystemMouseCursors.click,
         onEnter: (_) => setState(() => _isHovering = true),
         onExit: (_) => setState(() => _isHovering = false),

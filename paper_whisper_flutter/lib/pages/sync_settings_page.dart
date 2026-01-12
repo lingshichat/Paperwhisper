@@ -7,6 +7,7 @@ import '../config/app_theme.dart';
 import '../models/sync_config.dart';
 import '../providers/settings_provider.dart';
 import '../providers/sync_provider.dart';
+import '../widgets/skeuomorphic_toast.dart';
 
 class SyncSettingsPage extends StatefulWidget {
   const SyncSettingsPage({super.key});
@@ -63,12 +64,11 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
     
     if (mounted) {
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(success ? '连接成功！' : '连接失败，请检查配置'),
-          backgroundColor: success ? Colors.green : Colors.red,
-        ),
-      );
+      if (success) {
+        SkeuomorphicToast.success(context, '连接成功！');
+      } else {
+        SkeuomorphicToast.error(context, '连接失败，请检查配置');
+      }
       
       // 如果连接成功且已启用，自动触发一次同步
       if (success && newConfig.enabled) {
@@ -84,13 +84,9 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
      if (mounted) {
        setState(() => _isLoading = false);
        if (provider.status == SyncStatus.success) {
-         ScaffoldMessenger.of(context).showSnackBar(
-           const SnackBar(content: Text('同步完成'), backgroundColor: Colors.green),
-         );
+         SkeuomorphicToast.success(context, '同步完成');
        } else {
-         ScaffoldMessenger.of(context).showSnackBar(
-           SnackBar(content: Text('同步失败: ${provider.lastError}'), backgroundColor: Colors.red),
-         );
+         SkeuomorphicToast.error(context, '同步失败: ${provider.lastError}');
        }
      }
   }

@@ -9,6 +9,7 @@ import '../providers/settings_provider.dart';
 import '../widgets/paper_sheet_widget.dart';
 import '../widgets/visual_effects.dart';
 import '../widgets/skeuomorphic_dialog.dart'; // Added
+import '../widgets/skeuomorphic_toast.dart';
 
 class EditorPage extends StatefulWidget {
   final DiaryEntry? entry;
@@ -63,7 +64,7 @@ class _EditorPageState extends State<EditorPage> {
     );
     await provider.saveEntry(newEntry);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('日记已保存')));
+      SkeuomorphicToast.success(context, '日记已保存');
       Navigator.pop(context);
     }
   }
@@ -167,10 +168,8 @@ class _EditorPageState extends State<EditorPage> {
         // Actually EditorPage is pushed, so it needs its own background
         body: Stack(
           children: [
-            // Background
+            // Background（不再添加动画效果组件，由下层页面提供）
              Container(decoration: AppTheme.getBackground(theme)),
-             if (theme == AppTheme.themeSeaFlower) const PetalRainWidget(),
-             if (theme == AppTheme.themeMidnight) const StarrySkyWidget(),
   
             // Main View
             Column(

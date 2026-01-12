@@ -83,7 +83,7 @@ class SyncProvider with ChangeNotifier {
     return success;
   }
 
-  /// 执行完整同步
+  /// 执行完整同步（支持双向删除）
   Future<void> sync() async {
     if (_status == SyncStatus.syncing) return;
     if (!_config.enabled) return;
@@ -108,49 +108,84 @@ class SyncProvider with ChangeNotifier {
       await _diaryProvider!.service.init();
       final localDir = _diaryProvider!.service.dataDir;
       if (localDir == null) {
-        throw Exception('本地数据目录不可用');
+         throw Exception('本地数据目录不可用');
       }
 
-      // 2. 获取两端文件列表
-      debugPrint('Sync: Fetching remote files...');
-      List<webdav.File> remoteFiles = await _webDavService.listRemoteFiles();
-      
-      debugPrint('Sync: Remote files count: ${remoteFiles.length}');
-      // 过滤非 txt 文件
-      remoteFiles = remoteFiles.where((f) => f.name != null && f.name!.endsWith('.txt')).toList();
+      // 2. 加载“上次已知云端文件列表”快照
+      final prefs = await SharedPreferences.getInstance();
+      List<String> lastKnownRemoteFiles = prefs.getStringList('last_known_remote_manifest') ?? [];
 
+      // 3. 获取最新的云端和本地文件列表
+      debugPrint('Sync: Fetching remote files...');
+      List<webdav.File> currentRemoteFilesRaw = await _webDavService.listRemoteFiles();
+      
+      // 过滤 txt 并提取文件名
+      List<webdav.File> currentRemoteFilesList = currentRemoteFilesRaw
+          .where((f) => f.name != null && f.name!.endsWith('.txt'))
+          .toList();
+      Map<String, webdav.File> currentRemoteMap = {
+        for (var f in currentRemoteFilesList) f.name!: f
+      };
+      
       List<FileSystemEntity> localFiles = localDir.listSync();
-      Map<String, File> localMap = {};
+      Map<String, File> currentLocalMap = {};
       for (var f in localFiles) {
         if (f is File && path.extension(f.path) == '.txt') {
-          localMap[path.basename(f.path)] = f;
+          currentLocalMap[path.basename(f.path)] = f;
         }
       }
 
       int uploadCount = 0;
       int downloadCount = 0;
+      int deleteLocalCount = 0;
+      int deleteRemoteCount = 0;
 
-      // 3. 遍历远程文件（检测下载/更新）
-      for (var remote in remoteFiles) {
-        final filename = remote.name!;
-        final localFile = localMap[filename];
+      // 4. 检测【云端删除】并同步到本地 (Cloud Deleted -> Delete Local)
+      // 条件：文件在“上次快照”中，但不在“当前云端”中，且本地还存在
+      for (var filename in lastKnownRemoteFiles) {
+        if (!currentRemoteMap.containsKey(filename) && currentLocalMap.containsKey(filename)) {
+           // 确认删除本地
+           await _diaryProvider!.service.deleteEntry(filename); // 使用 service 直接删除
+           currentLocalMap.remove(filename); // 从待处理列表移除
+           deleteLocalCount++;
+           debugPrint('Sync: Cloud deletion detected, removing local: $filename');
+        }
+      }
+
+      // 5. 检测【本地删除】并同步到云端 (Local Deleted -> Delete Remote)
+      // 条件：文件在“上次快照”中，也在“当前云端”中，但本地不存在
+      List<String> filesToDeleteRemote = [];
+      for (var filename in lastKnownRemoteFiles) {
+        if (currentRemoteMap.containsKey(filename) && !currentLocalMap.containsKey(filename)) {
+          filesToDeleteRemote.add(filename);
+        }
+      }
+      for (var filename in filesToDeleteRemote) {
+        await _webDavService.deleteFile(filename);
+        currentRemoteMap.remove(filename); // 从待处理列表移除
+        deleteRemoteCount++;
+        debugPrint('Sync: Local deletion detected, removing remote: $filename');
+      }
+
+      // 6. 双向新增/修改同步
+      // 遍历剩余的云端文件（检测下载/更新）
+      for (var filename in currentRemoteMap.keys) {
+        final remote = currentRemoteMap[filename]!;
+        final localFile = currentLocalMap[filename];
 
         bool needsDownload = false;
         if (localFile == null) {
-          // 本地没有 -> 下载
+          // 本地没有（且不在快照中，说明是新产生的） -> 下载
           needsDownload = true;
           debugPrint('Sync: New remote file found: $filename');
         } else {
-          // 本地有 -> 比较修改时间
-          // WebDAV modification time 通常是 GMT
+          // 本地有 -> 比较时间
           if (remote.mTime != null) {
-            final remoteTime = remote.mTime!; // webdav_client 已解析为 DateTime
+            final remoteTime = remote.mTime!;
             final localTime = await localFile.lastModified();
-             
-            // 简单的比较策略：如果远程比本地新 2秒以上（容差），下载覆盖
-             if (remoteTime.difference(localTime).inSeconds > 2) {
+            if (remoteTime.difference(localTime).inSeconds > 2) {
                needsDownload = true;
-               debugPrint('Sync: Remote newer: $filename (Remote: $remoteTime, Local: $localTime)');
+               debugPrint('Sync: Remote newer: $filename');
              }
           }
         }
@@ -158,40 +193,68 @@ class SyncProvider with ChangeNotifier {
         if (needsDownload) {
           await _webDavService.downloadFile(filename, path.join(localDir.path, filename));
           downloadCount++;
-          // 从 map 中移除，表示已处理
-          localMap.remove(filename);
+          // 更新 localMap 以避免后续重复
+          currentLocalMap.remove(filename); 
         } else {
-          // 已经存在且本地比较新（或一样），从 map 移除，后续不再处理（除非需要上传覆盖）
+          // 本地存在且可能更新 -> 检查是否上传
           if (localFile != null) {
-             // 检查是否需要上传覆盖
              final remoteTime = remote.mTime;
              if (remoteTime != null) {
                final localTime = await localFile.lastModified();
                if (localTime.difference(remoteTime).inSeconds > 2) {
-                 // 本地比远程新 -> 上传
                  await _webDavService.uploadFile(localFile.path, filename);
                  uploadCount++;
                  debugPrint('Sync: Local newer, uploading: $filename');
                }
              }
-             localMap.remove(filename);
+             currentLocalMap.remove(filename);
           }
         }
       }
 
-      // 4. 遍历剩余的本地文件（检测上传 - 这些是远程没有的）
-      for (var entry in localMap.entries) {
+      // 7. 遍历剩余的本地文件（检测上传 - 纯新增）
+      for (var entry in currentLocalMap.entries) {
         final filename = entry.key;
         final file = entry.value;
         debugPrint('Sync: New local file found, uploading: $filename');
         await _webDavService.uploadFile(file.path, filename);
         uploadCount++;
+        
+        // 临时添加到 currentRemoteMap 以便更新 manifest
+        // 实际上只要上传成功，下次 fetch 就会有
       }
 
-      debugPrint('Sync completed. Uploaded: $uploadCount, Downloaded: $downloadCount');
+      // 8. 更新快照 (Snapshot)
+      // 新的快照应该是：同步操作完成后，云端应该有的文件列表
+      // 简单起见，我们重新 fetch 一次？或者根据操作推算。
+      // 为保证准确性，建议根据逻辑推算：
+      // Final Remote = (Original Remote - Deleted) + Uploaded + (Existing kept)
+      // 最稳妥方式：再 list 一次（虽然耗时），或者假定成功。
+      // 鉴于 webdav 延迟，假定成功比较好。
+      
+      // 构建新的 manifest
+      List<String> newManifest = [];
+      // 保留未被删除的云端文件
+      newManifest.addAll(currentRemoteMap.keys); 
+      // 加上新上传的文件
+      // 上面步骤 7 中的文件
+      // 加上步骤 6 中下载的文件? 它们已经在 currentRemoteMap.keys 里了 (如果没有被 remove)
+      // Wait, I removed handled files from currentLocalMap, not currentRemoteMap keys (except deleted ones).
+      // So currentRemoteMap.keys contains all original remote files minus deleted ones.
+      // We need to add newly uploaded files.
+      // But actually, just fetching is safer to avoid inconsistencies.
+      // Given user request is infrequent sync, let's fetch list again to be absolutely sure.
+      List<webdav.File> finalRemoteFiles = await _webDavService.listRemoteFiles();
+      newManifest = finalRemoteFiles
+          .where((f) => f.name != null && f.name!.endsWith('.txt'))
+          .map((f) => f.name!)
+          .toList();
+
+      await prefs.setStringList('last_known_remote_manifest', newManifest);
+
+      debugPrint('Sync completed. DL:$downloadCount, UL:$uploadCount, DelLoc:$deleteLocalCount, DelRem:$deleteRemoteCount');
       
       _lastSyncTime = DateTime.now();
-      final prefs = await SharedPreferences.getInstance();
       await prefs.setString('last_sync_time', _lastSyncTime!.toIso8601String());
 
       _setStatus(SyncStatus.success);

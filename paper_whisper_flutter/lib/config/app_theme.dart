@@ -1,8 +1,34 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart'; // Added missing import
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   static const String themeDefault = 'default'; // Vintage (时光旧物)
+
+
+  static SystemUiOverlayStyle getSystemUiOverlayStyle(String theme) {
+    switch (theme) {
+      case themeSeaFlower:
+        return SystemUiOverlayStyle.dark.copyWith(
+          statusBarColor: Colors.transparent,
+          systemNavigationBarColor: const Color(0xFFF6D9E6), // Match gradient near bottom
+          systemNavigationBarIconBrightness: Brightness.dark,
+        );
+      case themeMidnight:
+        return SystemUiOverlayStyle.light.copyWith(
+          statusBarColor: Colors.transparent,
+          systemNavigationBarColor: const Color(0xFF000000), // _midnightBgEdge
+          systemNavigationBarIconBrightness: Brightness.light,
+        );
+      case themeDefault:
+      default:
+        return SystemUiOverlayStyle.light.copyWith(
+          statusBarColor: Colors.transparent,
+          systemNavigationBarColor: const Color(0xFF2d241f), // _vintageBgEdge
+          systemNavigationBarIconBrightness: Brightness.light,
+        );
+    }
+  }
   static const String themeMidnight = 'midnight';
   static const String themeSeaFlower = 'sea_flower';
 

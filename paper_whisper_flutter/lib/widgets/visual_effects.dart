@@ -245,41 +245,38 @@ class Petal {
 
 class PetalPainter extends CustomPainter {
   final List<Petal> petals;
-  final int frameId; // 用于判断是否需要重绘
+  final int frameId;
 
   PetalPainter(this.petals, this.frameId);
 
-  // 按尺寸缓存已布局的 TextPainter，避免每帧重新布局
-  static final Map<int, TextPainter> _layoutCache = {};
+  // 按尺寸和颜色缓存已布局的 TextPainter
+  static final Map<String, TextPainter> _layoutCache = {};
   
-  /// 获取或创建指定尺寸的 TextPainter（已预布局）
-  TextPainter _getOrCreatePainter(int sizeKey) {
-    if (!_layoutCache.containsKey(sizeKey)) {
+  /// 获取或创建指定尺寸和颜色的 TextPainter（已预布局）
+  TextPainter _getOrCreatePainter(int sizeKey, Color color) {
+    final cacheKey = '$sizeKey-${color.value}';
+    if (!_layoutCache.containsKey(cacheKey)) {
       final tp = TextPainter(
         text: TextSpan(
           text: '✿',
           style: TextStyle(
             fontSize: sizeKey.toDouble(),
-            color: Colors.white, // 基础白色，绘制时用 ColorFilter 调整
+            color: color,
             fontFamily: 'Noto Serif SC',
           ),
         ),
         textDirection: TextDirection.ltr,
       );
       tp.layout();
-      _layoutCache[sizeKey] = tp;
+      _layoutCache[cacheKey] = tp;
     }
-    return _layoutCache[sizeKey]!;
+    return _layoutCache[cacheKey]!;
   }
 
   @override
   void paint(Canvas canvas, Size size) {
     for (var petal in petals) {
-      if (petal.opacity <= 0) continue;
-
-      // 获取缓存的 TextPainter（按尺寸分组，避免每帧 layout）
-      final sizeKey = petal.size.toInt();
-      final textPainter = _getOrCreatePainter(sizeKey);
+      if (petal.opacity <= 0.01) continue;
 
       canvas.save();
       
@@ -290,32 +287,31 @@ class PetalPainter extends CustomPainter {
       canvas.translate(dx, dy);
       canvas.rotate(petal.rotation);
       
-      // 使用 ColorFilter 调整颜色和透明度，而非重新创建 TextSpan
-      final paint = Paint()
-        ..colorFilter = ColorFilter.mode(
-          petal.color.withValues(alpha: petal.opacity),
-          BlendMode.srcIn,
-        );
+      // 获取缓存的 TextPainter
+      final sizeKey = petal.size.toInt();
+      final displayColor = petal.color.withValues(alpha: petal.opacity);
       
-      canvas.saveLayer(
-        Rect.fromCenter(
-          center: Offset.zero,
-          width: textPainter.width + 4,
-          height: textPainter.height + 4,
+      // 直接创建带颜色的 TextPainter（每帧创建，但比 saveLayer 性能好）
+      final textPainter = TextPainter(
+        text: TextSpan(
+          text: '✿',
+          style: TextStyle(
+            fontSize: sizeKey.toDouble(),
+            color: displayColor,
+          ),
         ),
-        paint,
+        textDirection: TextDirection.ltr,
       );
+      textPainter.layout();
       
       textPainter.paint(canvas, Offset(-textPainter.width / 2, -textPainter.height / 2));
       
-      canvas.restore(); // saveLayer
-      canvas.restore(); // save
+      canvas.restore();
     }
   }
 
   @override
   bool shouldRepaint(covariant PetalPainter oldDelegate) {
-    // 只在帧号变化时重绘，避免不必要的重绘
     return oldDelegate.frameId != frameId;
   }
 }
