@@ -36,6 +36,7 @@ class _DiaryCardState extends State<DiaryCard> {
     // 海底花海主题判断
     final bool isSeaFlower = widget.theme == AppTheme.themeSeaFlower;
     final bool isMidnight = widget.theme == AppTheme.themeMidnight;
+    final bool isAmber = widget.theme == AppTheme.themeAmberLens;
 
     // 颜色配置
     final Color titleColor;
@@ -55,7 +56,13 @@ class _DiaryCardState extends State<DiaryCard> {
       contentColor = const Color(0xFF8b949e);
       dateColor = const Color(0xFF8b949e);
       iconColor = const Color(0xFF7986cb);
-      dashedLineColor = const Color(0xFF30363d); // Lighter gray for better visibility
+      dashedLineColor = const Color(0xFF30363d);
+    } else if (isAmber) {
+      titleColor = const Color(0xFFE0E0E0);
+      contentColor = const Color(0xFFBDBDBD);
+      dateColor = const Color(0xFFFF9800);
+      iconColor = const Color(0xFFFF9800);
+      dashedLineColor = const Color(0x40FF9800); // Amber 25%
     } else {
       titleColor = const Color(0xFF5D4037);
       contentColor = const Color(0xFF5D4037).withValues(alpha: 0.9);
@@ -79,7 +86,7 @@ class _DiaryCardState extends State<DiaryCard> {
                 style: GoogleFonts.courierPrime(
                   fontSize: 12,
                   color: dateColor,
-                  fontWeight: isSeaFlower ? FontWeight.w600 : FontWeight.normal,
+                  fontWeight: isSeaFlower || isAmber ? FontWeight.w600 : FontWeight.normal,
                 ),
               ),
               Row(
@@ -154,7 +161,7 @@ class _DiaryCardState extends State<DiaryCard> {
        ];
       border = Border.all(color: Colors.white.withOpacity(0.5));
     } else if (isMidnight) {
-      bgColor = const Color(0xFF161b22).withOpacity(0.9); // Slightly more opaque
+      bgColor = const Color(0xFF161b22).withOpacity(0.9);
       normalShadows = [
         const BoxShadow(
           color: Color.fromRGBO(0, 0, 0, 0.5),
@@ -163,12 +170,11 @@ class _DiaryCardState extends State<DiaryCard> {
         )
       ];
       hoverShadows = [
-         // Midnight Stardust Glow
          const BoxShadow(
           color: Color(0xFF7986cb), // Indigo glow
           offset: Offset(0, 0),
           blurRadius: 15,
-          spreadRadius: 1, // Subtle spread
+          spreadRadius: 1,
         ),
          const BoxShadow(
           color: Color.fromRGBO(0, 0, 0, 0.8),
@@ -177,6 +183,21 @@ class _DiaryCardState extends State<DiaryCard> {
         )
       ];
       border = Border.all(color: _isHovering ? const Color(0xFF7986cb) : const Color(0xFF30363d));
+    } else if (isAmber) {
+      bgColor = const Color(0xFF1E1E1E).withOpacity(0.95);
+      normalShadows = [
+        const BoxShadow(color: Colors.black, offset: Offset(0, 4), blurRadius: 8)
+      ];
+      hoverShadows = [
+        const BoxShadow(
+          color: Color(0x66FF9800), // Amber glow
+          offset: Offset(0, 0),
+          blurRadius: 15,
+          spreadRadius: 1,
+        ),
+        const BoxShadow(color: Colors.black, offset: Offset(0, 10), blurRadius: 20)
+      ];
+      border = Border.all(color: _isHovering ? const Color(0xFFFF9800) : const Color(0xFF424242));
     } else {
       bgColor = AppTheme.getPaperColor(widget.theme);
       normalShadows = [
@@ -217,7 +238,7 @@ class _DiaryCardState extends State<DiaryCard> {
            ),
          ),
        );
-    } else if (isMidnight) {
+    } else if (isMidnight || isAmber) {
         containerBody = AnimatedContainer(
              duration: const Duration(milliseconds: 300),
              curve: Curves.easeOut,

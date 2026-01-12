@@ -34,6 +34,8 @@ class PaperSheetWidget extends StatelessWidget {
       accentColor = const Color(0xFFEC407A); // Pink Ribbon
     } else if (theme == AppTheme.themeMidnight) {
       accentColor = const Color(0xFF7986cb); // Indigo Ribbon for Midnight
+    } else if (theme == AppTheme.themeAmberLens) {
+      accentColor = const Color(0xFFFF9800); // Amber Ribbon
     } else {
       accentColor = const Color(0xFFC0392B); // Default Red Ribbon
     }
@@ -43,6 +45,8 @@ class PaperSheetWidget extends StatelessWidget {
       border = Border.all(color: Colors.white.withValues(alpha: 0.6), width: 1);
     } else if (theme == AppTheme.themeMidnight) {
       border = Border.all(color: const Color(0xFF30363d), width: 1); // Subtle dark border
+    } else if (theme == AppTheme.themeAmberLens) {
+      border = Border.all(color: const Color(0xFFFF9800), width: 1); // Amber Border
     } else {
       border = const Border(top: BorderSide(color: Color(0xFFC0392B), width: 8)); // Default Red Top
     }
@@ -63,6 +67,10 @@ class PaperSheetWidget extends StatelessWidget {
           offset: Offset(0, 4),
           blurRadius: 20,
         )
+      ];
+    } else if (theme == AppTheme.themeAmberLens) {
+      shadows = [
+        const BoxShadow(color: Colors.black, offset: Offset(0, 5), blurRadius: 20)
       ];
     } else {
       shadows = AppTheme.paperShadow;

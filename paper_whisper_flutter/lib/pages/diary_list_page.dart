@@ -29,25 +29,34 @@ import '../models/update_info.dart';
 import '../services/update_service.dart';
 
 class DiaryListPage extends StatefulWidget {
-  const DiaryListPage({super.key});
+  final bool autoOpenDrawer;
+  const DiaryListPage({super.key, this.autoOpenDrawer = false});
 
   @override
   State<DiaryListPage> createState() => _DiaryListPageState();
 }
 
 class _DiaryListPageState extends State<DiaryListPage> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   String _searchQuery = '';
   // Removed duplicate declaration
   
+  // Static drawer control for seamless transition
+  bool _showStaticDrawer = false;
+
   @override
   void initState() {
     super.initState();
+    _showStaticDrawer = widget.autoOpenDrawer;
+
     _checkAndroidPermissions();
     _checkAndShowAnnouncement(); // Check for version update and show announcement
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkRemoteUpdate();
       // Ensure data is refreshed whenever this page is initialized (e.g. after pushReplacement from Moments)
       Provider.of<DiaryProvider>(context, listen: false).loadEntries();
+      
+      // Removed openDrawer call to avoid animation pop-up
     });
   }
 
@@ -401,7 +410,8 @@ class _DiaryListPageState extends State<DiaryListPage> {
           // Mobile: Drawer + Content
           final bool isSeaFlower = theme == AppTheme.themeSeaFlower;
           
-          return Scaffold(
+          final mobileScaffold = Scaffold(
+            key: _scaffoldKey,
             drawerScrimColor: isSeaFlower ? Colors.transparent : Colors.black54, // 海底花海去遮罩，透出背景
             drawer: const Drawer(
               width: 300,
@@ -423,8 +433,9 @@ class _DiaryListPageState extends State<DiaryListPage> {
                 ),
               ],
             ),
+
              floatingActionButton: FloatingActionButton(
-               backgroundColor: isSeaFlower || theme == AppTheme.themeMidnight ? Colors.transparent : const Color(0xFFC0392B),
+               backgroundColor: isSeaFlower || theme == AppTheme.themeMidnight || theme == AppTheme.themeAmberLens ? Colors.transparent : const Color(0xFFC0392B),
                elevation: (isSeaFlower || theme == AppTheme.themeMidnight) ? 0 : 6, 
                focusElevation: (isSeaFlower || theme == AppTheme.themeMidnight) ? 0 : 6,
                hoverElevation: (isSeaFlower || theme == AppTheme.themeMidnight) ? 0 : 8,
@@ -466,10 +477,56 @@ class _DiaryListPageState extends State<DiaryListPage> {
                              )
                            ]
                          )
-                       : null),
+                       : (theme == AppTheme.themeAmberLens
+                           ? const BoxDecoration(
+                               shape: BoxShape.circle, // 确保按圆形渲染
+                               gradient: LinearGradient(
+                                 begin: Alignment.topLeft,
+                                 end: Alignment.bottomRight,
+                                 colors: [Color(0xFFFFB74D), Color(0xFFF57C00)], // Amber Light to Dark
+                               ),
+                               boxShadow: [
+                                 BoxShadow(
+                                   color: Color.fromRGBO(255, 152, 0, 0.5), // Amber Glow
+                                   blurRadius: 15,
+                                   offset: Offset(0, 0),
+                                   spreadRadius: 2,
+                                 )
+                               ]
+                             )
+                           : null)),
                  child: Icon(Icons.edit, color: Colors.white, size: (isSeaFlower || theme == AppTheme.themeMidnight) ? 28 : 24),
                ),
              ),
+          );
+
+          return Stack(
+            children: [
+               mobileScaffold,
+               
+               // Static Drawer Overlay for Seamless Transition
+               if (_showStaticDrawer)
+                 Stack(
+                   children: [
+                     // Scrim
+                     GestureDetector(
+                       onTap: () {
+                         setState(() {
+                           _showStaticDrawer = false;
+                         });
+                       },
+                       child: Container(
+                         color: isSeaFlower ? Colors.transparent : Colors.black54,
+                       ),
+                     ),
+                     // Sidebar
+                     SizedBox(
+                       width: 300,
+                       child: const SidebarWidget(),
+                     ),
+                   ],
+                 ),
+            ],
           );
         }
       },
@@ -625,6 +682,10 @@ class _DiaryListPageState extends State<DiaryListPage> {
       case AppTheme.themeSeaFlower:
         emptyTextColor = const Color(0xFFC2185B); // 洋红色
         accentColor = const Color(0xFFF50057);    // 玫瑰红
+        break;
+      case AppTheme.themeAmberLens:
+        emptyTextColor = const Color(0xFF9E9E9E); // Grey
+        accentColor = const Color(0xFFFF9800);    // Amber
         break;
       default: // vintage/default
         emptyTextColor = const Color(0xFFd7ccc8); // 浅米色 (与侧栏文字一致)

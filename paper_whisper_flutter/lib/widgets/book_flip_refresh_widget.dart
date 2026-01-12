@@ -155,16 +155,17 @@ class _BookFlipRefreshWidgetState extends State<BookFlipRefreshWidget>
   Widget build(BuildContext context) {
     final bool isSeaFlower = widget.theme == AppTheme.themeSeaFlower;
     final bool isMidnight = widget.theme == AppTheme.themeMidnight;
+    final bool isAmber = widget.theme == AppTheme.themeAmberLens;
     
     final Color bookColor = isSeaFlower 
         ? const Color(0xFFAD1457)
-        : (isMidnight ? const Color(0xFF5C6BC0) : const Color(0xFF6D4C41));
+        : (isMidnight ? const Color(0xFF5C6BC0) : (isAmber ? const Color(0xFFFF6F00) : const Color(0xFF6D4C41)));
     final Color pageColor = isSeaFlower
         ? const Color(0xFFFCE4EC)
-        : (isMidnight ? const Color(0xFFE8EAF6) : const Color(0xFFFAF8F5));
+        : (isMidnight ? const Color(0xFFE8EAF6) : (isAmber ? const Color(0xFF424242) : const Color(0xFFFAF8F5)));
     final Color textColor = isSeaFlower
         ? const Color(0xFFAD1457)
-        : (isMidnight ? const Color(0xFFB0BEC5) : const Color(0xFF8D6E63));
+        : (isMidnight ? const Color(0xFFB0BEC5) : (isAmber ? const Color(0xFFFFB74D) : const Color(0xFF8D6E63)));
 
     final double progress = (_dragOffset / _triggerOffset).clamp(0.0, 1.0);
 

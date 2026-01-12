@@ -4,33 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   static const String themeDefault = 'default'; // Vintage (时光旧物)
-
-
-  static SystemUiOverlayStyle getSystemUiOverlayStyle(String theme) {
-    switch (theme) {
-      case themeSeaFlower:
-        return SystemUiOverlayStyle.dark.copyWith(
-          statusBarColor: Colors.transparent,
-          systemNavigationBarColor: const Color(0xFFF6D9E6), // Match gradient near bottom
-          systemNavigationBarIconBrightness: Brightness.dark,
-        );
-      case themeMidnight:
-        return SystemUiOverlayStyle.light.copyWith(
-          statusBarColor: Colors.transparent,
-          systemNavigationBarColor: const Color(0xFF000000), // _midnightBgEdge
-          systemNavigationBarIconBrightness: Brightness.light,
-        );
-      case themeDefault:
-      default:
-        return SystemUiOverlayStyle.light.copyWith(
-          statusBarColor: Colors.transparent,
-          systemNavigationBarColor: const Color(0xFF2d241f), // _vintageBgEdge
-          systemNavigationBarIconBrightness: Brightness.light,
-        );
-    }
-  }
-  static const String themeMidnight = 'midnight';
-  static const String themeSeaFlower = 'sea_flower';
+  static const String themeAmberLens = 'amber_lens';
 
   // --- 1. Colors (CSS Variable Mapping) ---
   
@@ -54,7 +28,47 @@ class AppTheme {
   static const Color _midnightTextSecondary = Color(0xFF8b949e);
   static const Color _midnightAccent = Color(0xFF7986cb);
 
+  // Amber Lens Theme Colors
+  static const Color _amberBgCenter = Color(0xFF2C2C2C);
+  static const Color _amberBgEdge = Color(0xFF000000);
+  static const Color _amberPaper = Color(0xFF1E1E1E); // Editor Paper
+  static const Color _amberTextPrimary = Color(0xFFE0E0E0);
+  static const Color _amberTextSecondary = Color(0xFF9E9E9E);
+  static const Color _amberAccent = Color(0xFFFF9800);
+
   // --- 2. Getters ---
+
+  static SystemUiOverlayStyle getSystemUiOverlayStyle(String theme) {
+    switch (theme) {
+      case themeSeaFlower:
+        return SystemUiOverlayStyle.dark.copyWith(
+          statusBarColor: Colors.transparent,
+          systemNavigationBarColor: const Color(0xFFF6D9E6), // Match gradient near bottom
+          systemNavigationBarIconBrightness: Brightness.dark,
+        );
+      case themeMidnight:
+        return SystemUiOverlayStyle.light.copyWith(
+          statusBarColor: Colors.transparent,
+          systemNavigationBarColor: const Color(0xFF000000), // _midnightBgEdge
+          systemNavigationBarIconBrightness: Brightness.light,
+        );
+      case themeAmberLens:
+        return SystemUiOverlayStyle.light.copyWith(
+          statusBarColor: Colors.transparent,
+          systemNavigationBarColor: const Color(0xFF000000), 
+          systemNavigationBarIconBrightness: Brightness.light,
+        );
+      case themeDefault:
+      default:
+        return SystemUiOverlayStyle.light.copyWith(
+          statusBarColor: Colors.transparent,
+          systemNavigationBarColor: const Color(0xFF2d241f), // _vintageBgEdge
+          systemNavigationBarIconBrightness: Brightness.light,
+        );
+    }
+  }
+  static const String themeMidnight = 'midnight';
+  static const String themeSeaFlower = 'sea_flower';
 
   // CSS Shadows
   static const List<BoxShadow> cardShadow = [
@@ -96,6 +110,16 @@ class AppTheme {
             stops: [0.0, 0.3, 0.6, 1.0],
           ),
         );
+      case themeAmberLens:
+        return const BoxDecoration(
+          color: _amberBgEdge,
+          gradient: RadialGradient(
+            center: Alignment.center,
+            radius: 1.0, 
+            colors: [_amberBgCenter, _amberBgEdge],
+            stops: [0.0, 1.0]
+          ),
+        );
       case themeDefault:
       default:
         return const BoxDecoration(
@@ -131,6 +155,14 @@ class AppTheme {
            color: Colors.white.withOpacity(0.15),
            border: const Border(right: BorderSide(color: Color(0x4DFFFFFF), width: 1)),
          );
+      case themeAmberLens:
+        return BoxDecoration(
+          color: const Color(0xFF1E1E1E).withOpacity(0.85),
+          border: const Border(right: BorderSide(color: Color(0xFFFF9800), width: 1)), // Amber Border line
+          boxShadow: const [
+             BoxShadow(color: Colors.black, offset: Offset(2,0), blurRadius: 10)
+          ]
+        );
       case themeDefault:
       default:
         // 修复: 使用web端原设计 - 垂直渐变 (to bottom)
@@ -160,6 +192,7 @@ class AppTheme {
     switch (theme) {
       case themeMidnight: return _midnightPaper;
       case themeSeaFlower: return const Color(0xD9FFFFFF); // rgba(255, 255, 255, 0.85)
+      case themeAmberLens: return _amberPaper;
       default: return _vintagePaper;
     }
   }
@@ -168,6 +201,7 @@ class AppTheme {
     switch (theme) {
       case themeMidnight: return _midnightTextPrimary;
       case themeSeaFlower: return const Color(0xFF880E4F);
+      case themeAmberLens: return _amberTextPrimary;
       default: return _vintageTextPrimary;
     }
   }
@@ -176,6 +210,7 @@ class AppTheme {
     switch (theme) {
       case themeMidnight: return _midnightTextSecondary;
       case themeSeaFlower: return const Color(0xFFC2185B);
+      case themeAmberLens: return _amberTextSecondary;
       default: return _vintageTextSecondary;
     }
   }
@@ -184,6 +219,7 @@ class AppTheme {
     switch (theme) {
       case themeMidnight: return _midnightAccent;
       case themeSeaFlower: return const Color(0xFFF50057);
+      case themeAmberLens: return _amberAccent;
       default: return _vintageAccent;
     }
   }
@@ -207,6 +243,14 @@ class AppTheme {
           'iconColor': const Color(0xFF880E4F), // Deep Pink
           'titleColor': const Color(0xFF880E4F), // Deep Pink
           'subtitleColor': const Color(0xCC880E4F), // Deep Pink opacity
+        };
+      case themeAmberLens:
+        return {
+          'background': const Color(0xFF1E1E1E).withOpacity(0.9),
+          'border': const Color(0xFFFF9800).withOpacity(0.5),
+          'iconColor': const Color(0xFFFF9800),
+          'titleColor': const Color(0xFFE0E0E0),
+          'subtitleColor': const Color(0xFF9E9E9E),
         };
       default: // vintage/default
         return {
@@ -233,6 +277,9 @@ class AppTheme {
     } else if (theme == themeMidnight) {
       seedColor = const Color(0xFF3949AB);
       scaffoldBg = const Color(0xFF050510); // Deep Black/Blue base
+    } else if (theme == themeAmberLens) {
+      seedColor = const Color(0xFFFF9800);
+      scaffoldBg = const Color(0xFF1E1E1E); // Matte Black base
     } else {
       seedColor = Colors.brown;
       scaffoldBg = const Color(0xFF2d241f); // Dark Brown base

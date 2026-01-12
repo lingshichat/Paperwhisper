@@ -6,7 +6,10 @@ import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 
 import 'dart:io';
+import 'package:provider/provider.dart';
 import '../models/moment.dart';
+import '../providers/settings_provider.dart';
+import '../config/app_theme.dart';
 
 class MomentCard extends StatefulWidget {
   final Moment moment;
@@ -78,6 +81,36 @@ class _MomentCardState extends State<MomentCard> {
 
   @override
   Widget build(BuildContext context) {
+    final settings = Provider.of<SettingsProvider>(context);
+    final theme = settings.currentTheme;
+    final bool isAmber = theme == AppTheme.themeAmberLens;
+    final bool isSeaFlower = theme == AppTheme.themeSeaFlower;
+    final bool isMidnight = theme == AppTheme.themeMidnight;
+
+    // --- Dynamic Styles ---
+    final Color cardBg = isAmber || isMidnight ? const Color(0xFF1E1E1E) : (isSeaFlower ? Colors.white.withOpacity(0.8) : Colors.white);
+    final Color textColor = isAmber || isMidnight ? const Color(0xFFE0E0E0) : const Color(0xFF3E2723);
+    final Color metaColor = isAmber ? const Color(0xFF9E9E9E) : Colors.grey[400]!;
+    final Color iconColor = isAmber ? const Color(0xFFFF9800) : (isSeaFlower ? const Color(0xFFEC407A) : (isMidnight ? const Color(0xFF7986cb) : const Color(0xFF8D6E63)));
+    
+    final List<BoxShadow> shadows = isAmber 
+      ? [
+          const BoxShadow(color: Colors.black54, offset: Offset(0, 4), blurRadius: 8),
+          const BoxShadow(color: Color(0x22FF9800), offset: Offset(0, 0), blurRadius: 10, spreadRadius: 1), // Amber Glow
+        ] 
+      : (isMidnight
+         ? [
+             const BoxShadow(color: Colors.black54, offset: Offset(0, 4), blurRadius: 8),
+             const BoxShadow(color: Color(0x227986cb), offset: Offset(0, 0), blurRadius: 10, spreadRadius: 1), // Indigo Glow
+           ]
+         : [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              offset: const Offset(1, 2),
+              blurRadius: 3,
+            ),
+         ]);
+
     final bool hasImage = widget.moment.images.isNotEmpty;
     
     return Column(
@@ -91,15 +124,10 @@ class _MomentCardState extends State<MomentCard> {
             child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 6), // Reduce vertical margin for list
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: cardBg,
                 borderRadius: BorderRadius.circular(4), // Slightly rounded for paper feel
-                boxShadow: [
-                   BoxShadow(
-                     color: Colors.black.withOpacity(0.08),
-                     offset: const Offset(1, 2),
-                     blurRadius: 3,
-                   ),
-                ],
+                boxShadow: shadows,
+                border: isSeaFlower ? Border.all(color: Colors.white.withOpacity(0.4)): null,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -114,7 +142,7 @@ class _MomentCardState extends State<MomentCard> {
                          constraints: const BoxConstraints(maxHeight: 250), // Limit height
                          child: Container(
                            width: double.infinity,
-                           color: const Color(0xFFF5F5F5),
+                           color: isAmber || isMidnight ? Colors.black12 : const Color(0xFFF5F5F5),
                            child: ClipRRect(
                              borderRadius: BorderRadius.circular(2),
                              child: _buildImage(widget.moment.images.first)
@@ -134,7 +162,7 @@ class _MomentCardState extends State<MomentCard> {
                            widget.moment.content,
                            style: GoogleFonts.notoSerifSc( // Use Noto Serif as base, or Try 'Long Cang' if needed
                              fontSize: 16,
-                             color: const Color(0xFF3E2723),
+                             color: textColor,
                              height: 1.6,
                            ),
                          ),
@@ -146,12 +174,12 @@ class _MomentCardState extends State<MomentCard> {
                                _formatTime(widget.moment.createdAt),
                                style: GoogleFonts.notoSerifSc(
                                  fontSize: 12,
-                                 color: Colors.grey[400],
+                                 color: metaColor,
                                ),
                              ),
                              const Spacer(),
-                             if (widget.moment.weather != null) Text(widget.moment.weather! + " ", style: const TextStyle(fontSize: 12)),
-                             if (widget.moment.mood != null) Text(widget.moment.mood!, style: const TextStyle(fontSize: 12)),
+                             if (widget.moment.weather != null) Text(widget.moment.weather! + " ", style: TextStyle(fontSize: 12, color: metaColor)),
+                             if (widget.moment.mood != null) Text(widget.moment.mood!, style: TextStyle(fontSize: 12, color: metaColor)),
                            ],
                          ),
                        ],
@@ -163,7 +191,7 @@ class _MomentCardState extends State<MomentCard> {
                        padding: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
                        child: Column(
                        children: [
-                         Divider(color: Colors.black.withOpacity(0.05), height: 20),
+                         Divider(color: isAmber || isMidnight ? Colors.white10 : Colors.black.withOpacity(0.05), height: 20),
                          Row(
                            mainAxisAlignment: MainAxisAlignment.center,
                            children: [
@@ -173,7 +201,7 @@ class _MomentCardState extends State<MomentCard> {
                                  'assets/icon.png', 
                                  width: 14, 
                                  height: 14,
-                                 errorBuilder: (_,__,___) => const Icon(Icons.edit, size: 14, color: Colors.grey),
+                                 errorBuilder: (_,__,___) => Icon(Icons.edit, size: 14, color: metaColor),
                                ),
                              ),
                              const SizedBox(width: 6),
@@ -181,7 +209,7 @@ class _MomentCardState extends State<MomentCard> {
                                "纸语 PaperWhisper",
                                style: GoogleFonts.notoSerifSc(
                                  fontSize: 10,
-                                 color: Colors.grey[400],
+                                 color: metaColor,
                                  letterSpacing: 1,
                                  fontWeight: FontWeight.w500
                                ),
@@ -202,9 +230,9 @@ class _MomentCardState extends State<MomentCard> {
           padding: const EdgeInsets.only(right: 24, bottom: 12),
           child: InkWell(
             onTap: _captureAndSave,
-            child: const Padding(
-              padding: EdgeInsets.all(4.0),
-              child: Icon(Icons.share_outlined, size: 18, color: Color(0xFF8D6E63)),
+            child: Padding(
+              padding: const EdgeInsets.all(4.0),
+              child: Icon(Icons.share_outlined, size: 18, color: iconColor),
             ),
           ),
         )

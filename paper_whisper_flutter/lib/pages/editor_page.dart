@@ -159,6 +159,7 @@ class _EditorPageState extends State<EditorPage> {
     final textColor = AppTheme.getTextColor(theme);
     final secondaryColor = AppTheme.getTextSecondaryColor(theme);
     final bool isSeaFlower = theme == AppTheme.themeSeaFlower;
+    final bool isAmber = theme == AppTheme.themeAmberLens;
     
     // 700px width constraint handled by PaperSheetWidget
     return WillPopScope(
@@ -197,7 +198,7 @@ class _EditorPageState extends State<EditorPage> {
                                 height: 2, 
                                 color: (isSeaFlower
                                     ? const Color(0xFFEC407A) 
-                                    : (theme == AppTheme.themeMidnight ? const Color(0xFF7986cb) : const Color(0xFFC0392B))).withValues(alpha: 0.5),
+                                    : (isAmber ? const Color(0xFFFF9800) : (theme == AppTheme.themeMidnight ? const Color(0xFF7986cb) : const Color(0xFFC0392B)))).withValues(alpha: 0.5),
                               ),
                             ),
                             const SizedBox(height: 30),
@@ -245,23 +246,26 @@ class _EditorPageState extends State<EditorPage> {
 
   Widget _buildTopBar(BuildContext context, String theme, Color textColor) {
     final bool isSeaFlower = theme == AppTheme.themeSeaFlower;
+    final bool isAmber = theme == AppTheme.themeAmberLens;
     
     final Color barBg;
     if (isSeaFlower) {
       barBg = Colors.white.withOpacity(0.2);
     } else if (theme == AppTheme.themeMidnight) {
       barBg = const Color(0xFF0D1117).withValues(alpha: 0.9);
+    } else if (isAmber) {
+      barBg = const Color(0xFF1E1E1E).withValues(alpha: 0.9);
     } else {
       barBg = const Color(0xFF281815).withValues(alpha: 0.75);
     }
         
-    final Color iconColor = isSeaFlower || theme == AppTheme.themeMidnight
-        ? (isSeaFlower ? const Color(0xFF880E4F) : const Color(0xFFc9d1d9))
+    final Color iconColor = isSeaFlower || theme == AppTheme.themeMidnight || isAmber
+        ? (isSeaFlower ? const Color(0xFF880E4F) : (isAmber ? const Color(0xFFFF9800) : const Color(0xFFc9d1d9)))
         : const Color(0xFFD7CCC8);
         
     final Border? border = isSeaFlower
         ? Border(bottom: BorderSide(color: Colors.white.withValues(alpha: 0.3)))
-        : null;
+        : (isAmber ? Border(bottom: BorderSide(color: Colors.white.withValues(alpha: 0.1))) : null);
 
     Widget barContent = Container(
       // 移除固定高度，改用最小高度约束+padding适配
@@ -303,15 +307,15 @@ class _EditorPageState extends State<EditorPage> {
           if (_isEditing)
              ElevatedButton.icon(
                icon: Text('✓', style: TextStyle(
-                 color: isSeaFlower ? const Color(0xFFC2185B) : const Color(0xFFC0392B), 
+                 color: isSeaFlower ? const Color(0xFFC2185B) : (isAmber ? Colors.black : const Color(0xFFC0392B)), 
                  fontWeight: FontWeight.bold
                )),
                label: Text('完成', style: TextStyle(
-                 color: isSeaFlower ? const Color(0xFF880E4F) : const Color(0xFF5D4037), 
+                 color: isSeaFlower ? const Color(0xFF880E4F) : (isAmber ? Colors.black : const Color(0xFF5D4037)), 
                  fontWeight: FontWeight.bold
                )),
                style: ElevatedButton.styleFrom(
-                 backgroundColor: isSeaFlower ? Colors.white.withValues(alpha: 0.9) : const Color(0xFFF7F1E3),
+                 backgroundColor: isSeaFlower ? Colors.white.withValues(alpha: 0.9) : (isAmber ? const Color(0xFFFF9800) : const Color(0xFFF7F1E3)),
                  elevation: 4,
                ),
                onPressed: _save,
@@ -354,10 +358,10 @@ class _EditorPageState extends State<EditorPage> {
                 fontWeight: FontWeight.bold, 
                 color: textColor // Use dynamic theme color
              ),
-             cursorColor: theme == AppTheme.themeMidnight ? const Color(0xFF7986cb) : const Color(0xFFC0392B),
+             cursorColor: theme == AppTheme.themeMidnight ? const Color(0xFF7986cb) : (theme == AppTheme.themeAmberLens ? const Color(0xFFFF9800) : const Color(0xFFC0392B)),
              decoration: InputDecoration(
                hintText: '在此输入标题...',
-               hintStyle: TextStyle(color: theme == AppTheme.themeMidnight ? Colors.white24 : Colors.black26),
+               hintStyle: TextStyle(color: theme == AppTheme.themeMidnight ? Colors.white24 : (theme == AppTheme.themeAmberLens ? Colors.grey : Colors.black26)),
                border: InputBorder.none,
              ),
            )
@@ -398,7 +402,7 @@ class _EditorPageState extends State<EditorPage> {
       foregroundPainter: LinedPaperPainter(
          lineColor: theme == AppTheme.themeMidnight 
             ? Colors.white.withValues(alpha: 0.08) 
-            : const Color(0xFF5D4037).withValues(alpha: 0.12),
+            : (theme == AppTheme.themeAmberLens ? const Color(0x1FFFFFFF) : const Color(0xFF5D4037).withValues(alpha: 0.12)),
          lineHeight: lineHeight,
       ),
       child: Container(
@@ -420,7 +424,7 @@ class _EditorPageState extends State<EditorPage> {
                  forceStrutHeight: true,
                  leadingDistribution: TextLeadingDistribution.even,
                ),
-               cursorColor: theme == AppTheme.themeMidnight ? const Color(0xFF7986cb) : const Color(0xFFC0392B),
+               cursorColor: theme == AppTheme.themeMidnight ? const Color(0xFF7986cb) : (theme == AppTheme.themeAmberLens ? const Color(0xFFFF9800) : const Color(0xFFC0392B)),
                cursorHeight: 20, // 稍大于字体高度，小于行高
                decoration: const InputDecoration(
                  border: InputBorder.none,

@@ -363,6 +363,7 @@ class _SettingsPageState extends State<SettingsPage> {
           _buildRadioItem(ctx, '复古纸张', 'default', settings.currentTheme, (val) => settings.setTheme(val)),
           _buildRadioItem(ctx, '海底花海', 'sea_flower', settings.currentTheme, (val) => settings.setTheme(val)),
           _buildRadioItem(ctx, '午夜深蓝', 'midnight', settings.currentTheme, (val) => settings.setTheme(val)),
+          _buildRadioItem(ctx, '琥珀光圈', 'amber_lens', settings.currentTheme, (val) => settings.setTheme(val)),
         ]
       )
     );

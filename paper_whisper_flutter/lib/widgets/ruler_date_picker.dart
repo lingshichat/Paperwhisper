@@ -6,12 +6,14 @@ class RulerDatePicker extends StatefulWidget {
   final DateTime selectedDate;
   final ValueChanged<DateTime> onDateChanged;
   final FixedExtentScrollController? controller; // External controller
+  final Color? accentColor;
 
   const RulerDatePicker({
     super.key,
     required this.selectedDate,
     required this.onDateChanged,
     this.controller,
+    this.accentColor,
   });
 
   @override
@@ -78,6 +80,11 @@ class _RulerDatePickerState extends State<RulerDatePicker> {
     // Lens Ring Height
     const double height = 85;
     const double itemWidth = 70;
+    
+    final Color activeColor = widget.accentColor ?? const Color(0xFFFF9800);
+    // Indicator defaults to activeColor if provided, else RedFocus
+    // Use Red as per user feedback
+    final Color indicatorColor = const Color(0xFFFF3D00);
 
     return Container(
       height: height,
@@ -143,7 +150,7 @@ class _RulerDatePickerState extends State<RulerDatePicker> {
                                style: GoogleFonts.robotoMono(
                                  fontSize: isSelected ? 20 : 16,
                                  fontWeight: isSelected ? FontWeight.w900 : FontWeight.w400,
-                                 color: isSelected ? const Color(0xFFFF9800) : Colors.grey[600],
+                                 color: isSelected ? activeColor : Colors.grey[600],
                                ),
                              ),
                              const SizedBox(height: 4),
@@ -161,7 +168,7 @@ class _RulerDatePickerState extends State<RulerDatePicker> {
                              Container(
                                width: 1,
                                height: isSelected ? 12 : 8,
-                               color: isSelected ? const Color(0xFFFF9800) : Colors.grey[700],
+                               color: isSelected ? activeColor : Colors.grey[700],
                              )
                            ],
                          ),
@@ -180,32 +187,13 @@ class _RulerDatePickerState extends State<RulerDatePicker> {
                width: 3,
                height: 12,
                decoration: BoxDecoration(
-                 color: const Color(0xFFFF3D00),
+                 color: indicatorColor,
                  borderRadius: BorderRadius.circular(1.5),
-                 boxShadow: const [BoxShadow(color: Colors.redAccent, blurRadius: 4)]
+                 boxShadow: [BoxShadow(color: indicatorColor.withOpacity(0.5), blurRadius: 4)]
                ),
              ),
           ),
           
-          // 3. Top Reflection / Glass Glare (Optional)
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height: 30,
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.white.withOpacity(0.08),
-                    Colors.transparent
-                  ]
-                )
-              ),
-            ),
-          ),
         ],
       ),
     );

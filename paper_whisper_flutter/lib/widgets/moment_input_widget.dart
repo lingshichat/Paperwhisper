@@ -2,6 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
+import '../providers/settings_provider.dart';
 
 class MomentInputWidget extends StatefulWidget {
   final Function(String content, List<XFile> images) onSend;
@@ -40,12 +42,28 @@ class _MomentInputWidgetState extends State<MomentInputWidget> {
 
   @override
   Widget build(BuildContext context) {
+    // Get Theme
+    final settings = Provider.of<SettingsProvider>(context);
+    final isAmber = settings.currentTheme == 'amber_lens';
+    
+    // Config colors based on theme
+    final containerColor = isAmber ? const Color(0xFF000000) : const Color(0xFFF4ECD8);
+    final inputBgColor = isAmber ? const Color(0xFF2C2C2C) : Colors.white;
+    final inputBorderColor = isAmber ? Colors.transparent : const Color(0xFFD7CCC8);
+    final textColor = isAmber ? Colors.white : const Color(0xFF3E2723);
+    final hintColor = isAmber ? Colors.grey : Colors.black26;
+    final iconColor = isAmber ? const Color(0xFFFF9800) : const Color(0xFF5D4037);
+    final sendColor = isAmber ? const Color(0xFFFF9800) : const Color(0xFF8D6E63);
+    final imageIconColor = isAmber ?  Colors.grey : const Color(0xFF5D4037); // Image icon grey in dark mode
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: const BoxDecoration(
-        color: Color(0xFFF4ECD8),
-        boxShadow: [
-          BoxShadow(color: Colors.black12, offset: Offset(0, -2), blurRadius: 4)
+      decoration: BoxDecoration(
+        color: containerColor,
+        boxShadow: isAmber ? [
+           const BoxShadow(color: Colors.white10, offset: Offset(0, -1), blurRadius: 1)
+        ] : [
+           const BoxShadow(color: Colors.black12, offset: Offset(0, -2), blurRadius: 4)
         ]
       ),
       child: Column(
@@ -93,7 +111,7 @@ class _MomentInputWidgetState extends State<MomentInputWidget> {
             children: [
               // Image Button
               IconButton(
-                icon: const Icon(Icons.image_outlined, color: Color(0xFF5D4037)),
+                icon: Icon(Icons.image_outlined, color: imageIconColor),
                 onPressed: _pickImages,
               ),
               const SizedBox(width: 8),
@@ -102,19 +120,20 @@ class _MomentInputWidgetState extends State<MomentInputWidget> {
               Expanded(
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: inputBgColor,
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: const Color(0xFFD7CCC8)),
+                    border: Border.all(color: inputBorderColor),
                   ),
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: TextField(
                     controller: _controller,
                     maxLines: 4,
                     minLines: 1,
-                    style: GoogleFonts.notoSerifSc(color: const Color(0xFF3E2723)),
-                    decoration: const InputDecoration(
+                    style: GoogleFonts.notoSerifSc(color: textColor),
+                    cursorColor: isAmber ? const Color(0xFFFF9800) : null,
+                    decoration: InputDecoration(
                       hintText: "写点什么...",
-                      hintStyle: TextStyle(color: Colors.black26),
+                      hintStyle: TextStyle(color: hintColor),
                       border: InputBorder.none,
                       isDense: true,
                     ),
@@ -126,7 +145,7 @@ class _MomentInputWidgetState extends State<MomentInputWidget> {
               
               // Send Button (Paper Plane)
               IconButton(
-                icon: const Icon(Icons.send, color: Color(0xFF8D6E63)),
+                icon: Icon(Icons.send, color: sendColor),
                 onPressed: _handleSend,
               ),
             ],
