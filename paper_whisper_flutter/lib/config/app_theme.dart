@@ -17,7 +17,7 @@ class AppTheme {
   static const Color _vintagePaper = Color(0xFFF4ECD8); // #F4ECD8
   static const Color _vintageTextPrimary = Color(0xFF2C3E50); // #2C3E50
   static const Color _vintageTextSecondary = Color(0xFF5D4037); // #5D4037
-  static const Color _vintageAccent = Color(0xFF8D6E63);
+  static const Color _vintageAccent = Color(0xFFFF3D00); // Red
 
   // Midnight Theme Colors
   static const Color _midnightBgCenter = Color(0xFF1a237e); // Radial stop 0%

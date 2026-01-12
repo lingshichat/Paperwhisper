@@ -8,12 +8,15 @@ import 'package:webdav_client/webdav_client.dart' as webdav;
 import '../models/sync_config.dart';
 import '../services/webdav_sync_service.dart';
 import '../services/diary_service.dart';
+import '../services/moment_service.dart';
 import 'diary_provider.dart';
 
 enum SyncStatus { none, syncing, success, failed }
 
 class SyncProvider with ChangeNotifier {
   final WebDavSyncService _webDavService = WebDavSyncService();
+  final MomentService _momentService = MomentService();
+  
   DiaryProvider? _diaryProvider;
   
   SyncConfig _config = SyncConfig();
@@ -83,7 +86,7 @@ class SyncProvider with ChangeNotifier {
     return success;
   }
 
-  /// 执行完整同步（支持双向删除）
+  /// 执行完整同步
   Future<void> sync() async {
     if (_status == SyncStatus.syncing) return;
     if (!_config.enabled) return;
@@ -104,22 +107,45 @@ class SyncProvider with ChangeNotifier {
         throw Exception('DiaryProvider not initialized');
       }
 
-      // 1. 确保本地环境准备好
+      // 1. 同步日记 (Txt)
+      await _syncDiaries();
+      
+      // 2. 同步随心记 (Moments JSON & Images)
+      await _syncMoments();
+
+      _lastSyncTime = DateTime.now();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('last_sync_time', _lastSyncTime!.toIso8601String());
+
+      _setStatus(SyncStatus.success);
+      
+      // 刷新 UI
+      await _diaryProvider!.loadEntries();
+      
+    } catch (e) {
+      debugPrint('Sync failed: $e');
+      _setStatus(SyncStatus.failed, error: e.toString());
+    }
+  }
+  
+  // ==========================================
+  // 日记同步逻辑 (Txt)
+  // ==========================================
+  Future<void> _syncDiaries() async {
       await _diaryProvider!.service.init();
       final localDir = _diaryProvider!.service.dataDir;
-      if (localDir == null) {
-         throw Exception('本地数据目录不可用');
-      }
+      if (localDir == null) throw Exception('本地日记目录不可用');
 
-      // 2. 加载“上次已知云端文件列表”快照
+      // 加载 Snapshot
       final prefs = await SharedPreferences.getInstance();
       List<String> lastKnownRemoteFiles = prefs.getStringList('last_known_remote_manifest') ?? [];
 
-      // 3. 获取最新的云端和本地文件列表
-      debugPrint('Sync: Fetching remote files...');
-      List<webdav.File> currentRemoteFilesRaw = await _webDavService.listRemoteFiles();
+      debugPrint('Sync Diaries: Fetching remote files...');
+      List<webdav.File> currentRemoteFilesRaw = await _webDavService.listRemoteFiles(
+        remotePath: WebDavSyncService.diaryBasePath
+      );
       
-      // 过滤 txt 并提取文件名
+      // Filter & Map
       List<webdav.File> currentRemoteFilesList = currentRemoteFilesRaw
           .where((f) => f.name != null && f.name!.endsWith('.txt'))
           .toList();
@@ -135,25 +161,16 @@ class SyncProvider with ChangeNotifier {
         }
       }
 
-      int uploadCount = 0;
-      int downloadCount = 0;
-      int deleteLocalCount = 0;
-      int deleteRemoteCount = 0;
-
-      // 4. 检测【云端删除】并同步到本地 (Cloud Deleted -> Delete Local)
-      // 条件：文件在“上次快照”中，但不在“当前云端”中，且本地还存在
+      // Cloud Delete -> Local Delete
       for (var filename in lastKnownRemoteFiles) {
         if (!currentRemoteMap.containsKey(filename) && currentLocalMap.containsKey(filename)) {
-           // 确认删除本地
-           await _diaryProvider!.service.deleteEntry(filename); // 使用 service 直接删除
-           currentLocalMap.remove(filename); // 从待处理列表移除
-           deleteLocalCount++;
-           debugPrint('Sync: Cloud deletion detected, removing local: $filename');
+           await _diaryProvider!.service.deleteEntry(filename);
+           currentLocalMap.remove(filename);
+           debugPrint('Sync Diaries: Cloud deletion detected, removing local: $filename');
         }
       }
 
-      // 5. 检测【本地删除】并同步到云端 (Local Deleted -> Delete Remote)
-      // 条件：文件在“上次快照”中，也在“当前云端”中，但本地不存在
+      // Local Delete -> Cloud Delete
       List<String> filesToDeleteRemote = [];
       for (var filename in lastKnownRemoteFiles) {
         if (currentRemoteMap.containsKey(filename) && !currentLocalMap.containsKey(filename)) {
@@ -161,50 +178,48 @@ class SyncProvider with ChangeNotifier {
         }
       }
       for (var filename in filesToDeleteRemote) {
-        await _webDavService.deleteFile(filename);
-        currentRemoteMap.remove(filename); // 从待处理列表移除
-        deleteRemoteCount++;
-        debugPrint('Sync: Local deletion detected, removing remote: $filename');
+        await _webDavService.deleteFile(WebDavSyncService.diaryBasePath + filename);
+        currentRemoteMap.remove(filename);
+        debugPrint('Sync Diaries: Local deletion detected, removing remote: $filename');
       }
 
-      // 6. 双向新增/修改同步
-      // 遍历剩余的云端文件（检测下载/更新）
+      // Update / Download
       for (var filename in currentRemoteMap.keys) {
         final remote = currentRemoteMap[filename]!;
         final localFile = currentLocalMap[filename];
 
         bool needsDownload = false;
         if (localFile == null) {
-          // 本地没有（且不在快照中，说明是新产生的） -> 下载
           needsDownload = true;
-          debugPrint('Sync: New remote file found: $filename');
+          debugPrint('Sync Diaries: New remote file found: $filename');
         } else {
-          // 本地有 -> 比较时间
           if (remote.mTime != null) {
             final remoteTime = remote.mTime!;
             final localTime = await localFile.lastModified();
             if (remoteTime.difference(localTime).inSeconds > 2) {
                needsDownload = true;
-               debugPrint('Sync: Remote newer: $filename');
+               debugPrint('Sync Diaries: Remote newer: $filename');
              }
           }
         }
 
         if (needsDownload) {
-          await _webDavService.downloadFile(filename, path.join(localDir.path, filename));
-          downloadCount++;
-          // 更新 localMap 以避免后续重复
+          await _webDavService.downloadFile(
+            WebDavSyncService.diaryBasePath + filename, 
+            path.join(localDir.path, filename)
+          );
           currentLocalMap.remove(filename); 
         } else {
-          // 本地存在且可能更新 -> 检查是否上传
           if (localFile != null) {
              final remoteTime = remote.mTime;
              if (remoteTime != null) {
                final localTime = await localFile.lastModified();
                if (localTime.difference(remoteTime).inSeconds > 2) {
-                 await _webDavService.uploadFile(localFile.path, filename);
-                 uploadCount++;
-                 debugPrint('Sync: Local newer, uploading: $filename');
+                 await _webDavService.uploadFile(
+                   localFile.path, 
+                   WebDavSyncService.diaryBasePath + filename
+                 );
+                 debugPrint('Sync Diaries: Local newer, uploading: $filename');
                }
              }
              currentLocalMap.remove(filename);
@@ -212,60 +227,210 @@ class SyncProvider with ChangeNotifier {
         }
       }
 
-      // 7. 遍历剩余的本地文件（检测上传 - 纯新增）
+      // Upload New Local
       for (var entry in currentLocalMap.entries) {
         final filename = entry.key;
         final file = entry.value;
-        debugPrint('Sync: New local file found, uploading: $filename');
-        await _webDavService.uploadFile(file.path, filename);
-        uploadCount++;
-        
-        // 临时添加到 currentRemoteMap 以便更新 manifest
-        // 实际上只要上传成功，下次 fetch 就会有
+        debugPrint('Sync Diaries: New local file found, uploading: $filename');
+        await _webDavService.uploadFile(
+          file.path, 
+          WebDavSyncService.diaryBasePath + filename
+        );
       }
 
-      // 8. 更新快照 (Snapshot)
-      // 新的快照应该是：同步操作完成后，云端应该有的文件列表
-      // 简单起见，我们重新 fetch 一次？或者根据操作推算。
-      // 为保证准确性，建议根据逻辑推算：
-      // Final Remote = (Original Remote - Deleted) + Uploaded + (Existing kept)
-      // 最稳妥方式：再 list 一次（虽然耗时），或者假定成功。
-      // 鉴于 webdav 延迟，假定成功比较好。
-      
-      // 构建新的 manifest
-      List<String> newManifest = [];
-      // 保留未被删除的云端文件
-      newManifest.addAll(currentRemoteMap.keys); 
-      // 加上新上传的文件
-      // 上面步骤 7 中的文件
-      // 加上步骤 6 中下载的文件? 它们已经在 currentRemoteMap.keys 里了 (如果没有被 remove)
-      // Wait, I removed handled files from currentLocalMap, not currentRemoteMap keys (except deleted ones).
-      // So currentRemoteMap.keys contains all original remote files minus deleted ones.
-      // We need to add newly uploaded files.
-      // But actually, just fetching is safer to avoid inconsistencies.
-      // Given user request is infrequent sync, let's fetch list again to be absolutely sure.
-      List<webdav.File> finalRemoteFiles = await _webDavService.listRemoteFiles();
-      newManifest = finalRemoteFiles
+      // Update Snapshot
+      List<webdav.File> finalRemoteFiles = await _webDavService.listRemoteFiles(
+        remotePath: WebDavSyncService.diaryBasePath
+      );
+      List<String> newManifest = finalRemoteFiles
           .where((f) => f.name != null && f.name!.endsWith('.txt'))
           .map((f) => f.name!)
           .toList();
 
       await prefs.setStringList('last_known_remote_manifest', newManifest);
+  }
 
-      debugPrint('Sync completed. DL:$downloadCount, UL:$uploadCount, DelLoc:$deleteLocalCount, DelRem:$deleteRemoteCount');
+  // ==========================================
+  // 随心记同步逻辑 (Moments)
+  // ==========================================
+  Future<void> _syncMoments() async {
+      await _momentService.init();
+      final localDir = _momentService.dataDir;
+      if (localDir == null) {
+        debugPrint('Sync Moments: Local dir not available, skipping.');
+        return;
+      }
       
-      _lastSyncTime = DateTime.now();
-      await prefs.setString('last_sync_time', _lastSyncTime!.toIso8601String());
+      // 1. 同步 JSON 数据 (Moment Files)
+      await _syncMomentJsonFiles(localDir);
+      
+      // 2. 同步图片附件 (Images)
+      // Images dir: localDir/images
+      final imagesDir = Directory(path.join(localDir.path, 'images'));
+      if (await imagesDir.exists()) {
+         await _syncMomentImages(imagesDir);
+      }
+  }
 
-      _setStatus(SyncStatus.success);
+  Future<void> _syncMomentJsonFiles(Directory localDir) async {
+      final prefs = await SharedPreferences.getInstance();
+      List<String> lastKnownRemoteFiles = prefs.getStringList('last_known_moments_manifest') ?? [];
+
+      debugPrint('Sync Moments: Fetching remote JSON files...');
+      List<webdav.File> currentRemoteFilesRaw = await _webDavService.listRemoteFiles(
+        remotePath: WebDavSyncService.momentsBasePath
+      );
       
-      // 刷新 UI
-      await _diaryProvider!.loadEntries();
+      // Filter JSON
+      List<webdav.File> currentRemoteFilesList = currentRemoteFilesRaw
+          .where((f) => f.name != null && f.name!.endsWith('.json'))
+          .toList();
+      Map<String, webdav.File> currentRemoteMap = {
+        for (var f in currentRemoteFilesList) f.name!: f
+      };
       
-    } catch (e) {
-      debugPrint('Sync failed: $e');
-      _setStatus(SyncStatus.failed, error: e.toString());
-    }
+      List<FileSystemEntity> localFiles = localDir.listSync();
+      Map<String, File> currentLocalMap = {};
+      for (var f in localFiles) {
+        if (f is File && path.extension(f.path) == '.json') {
+          currentLocalMap[path.basename(f.path)] = f;
+        }
+      }
+
+      // Cloud Delete -> Local Delete
+      for (var filename in lastKnownRemoteFiles) {
+        if (!currentRemoteMap.containsKey(filename) && currentLocalMap.containsKey(filename)) {
+           // Delete local moment json
+           try {
+             await currentLocalMap[filename]!.delete();
+             currentLocalMap.remove(filename);
+             debugPrint('Sync Moments: Cloud deletion detected, removing local: $filename');
+           } catch(e) {
+             debugPrint('Sync Moments: Error deleting local file $filename: $e');
+           }
+        }
+      }
+
+      // Local Delete -> Cloud Delete
+      List<String> filesToDeleteRemote = [];
+      for (var filename in lastKnownRemoteFiles) {
+        if (currentRemoteMap.containsKey(filename) && !currentLocalMap.containsKey(filename)) {
+          filesToDeleteRemote.add(filename);
+        }
+      }
+      for (var filename in filesToDeleteRemote) {
+        await _webDavService.deleteFile(WebDavSyncService.momentsBasePath + filename);
+        currentRemoteMap.remove(filename);
+        debugPrint('Sync Moments: Local deletion detected, removing remote: $filename');
+      }
+
+      // Update / Download
+      for (var filename in currentRemoteMap.keys) {
+        final remote = currentRemoteMap[filename]!;
+        final localFile = currentLocalMap[filename];
+
+        bool needsDownload = false;
+        if (localFile == null) {
+          needsDownload = true;
+        } else {
+          if (remote.mTime != null) {
+            final remoteTime = remote.mTime!;
+            final localTime = await localFile.lastModified();
+            if (remoteTime.difference(localTime).inSeconds > 2) {
+               needsDownload = true;
+             }
+          }
+        }
+
+        if (needsDownload) {
+          await _webDavService.downloadFile(
+            WebDavSyncService.momentsBasePath + filename, 
+            path.join(localDir.path, filename)
+          );
+          currentLocalMap.remove(filename); 
+        } else {
+          if (localFile != null) {
+             final remoteTime = remote.mTime;
+             if (remoteTime != null) {
+               final localTime = await localFile.lastModified();
+               if (localTime.difference(remoteTime).inSeconds > 2) {
+                 await _webDavService.uploadFile(
+                   localFile.path, 
+                   WebDavSyncService.momentsBasePath + filename
+                 );
+               }
+             }
+             currentLocalMap.remove(filename);
+          }
+        }
+      }
+
+      // Upload New Local
+      for (var entry in currentLocalMap.entries) {
+        final filename = entry.key;
+        final file = entry.value;
+        await _webDavService.uploadFile(
+          file.path, 
+          WebDavSyncService.momentsBasePath + filename
+        );
+      }
+
+      // Update Snapshot
+      List<webdav.File> finalRemoteFiles = await _webDavService.listRemoteFiles(
+        remotePath: WebDavSyncService.momentsBasePath
+      );
+      List<String> newManifest = finalRemoteFiles
+          .where((f) => f.name != null && f.name!.endsWith('.json'))
+          .map((f) => f.name!)
+          .toList();
+
+      await prefs.setStringList('last_known_moments_manifest', newManifest);
+  }
+
+  Future<void> _syncMomentImages(Directory localImagesDir) async {
+      debugPrint('Sync Moments: Syncing images...');
+      
+      // 1. Get Remote Images List
+      List<webdav.File> remoteImagesRaw = await _webDavService.listRemoteFiles(
+        remotePath: WebDavSyncService.momentsImagesPath
+      );
+      Set<String> remoteImageNames = remoteImagesRaw
+         .where((f) => f.name != null)
+         .map((f) => f.name!)
+         .toSet();
+
+      // 2. Get Local Images List
+      List<FileSystemEntity> localImages = localImagesDir.listSync();
+      
+      // 3. Upload Local -> Remote (If not exists)
+      for (var f in localImages) {
+         if (f is File) {
+            String name = path.basename(f.path);
+            if (!remoteImageNames.contains(name)) {
+               debugPrint('Sync Moments: Uploading new image $name');
+               await _webDavService.uploadFile(
+                 f.path, 
+                 WebDavSyncService.momentsImagesPath + name
+               );
+            }
+         }
+      }
+      
+      // 4. Download Remote -> Local (If not exists)
+      // This ensures if I add images on phone, PC gets them.
+      for (var remoteFile in remoteImagesRaw) {
+         String? name = remoteFile.name;
+         if (name == null) continue;
+         
+         File localFile = File(path.join(localImagesDir.path, name));
+         if (!localFile.existsSync()) {
+            debugPrint('Sync Moments: Downloading missing image $name');
+            await _webDavService.downloadFile(
+               WebDavSyncService.momentsImagesPath + name, 
+               localFile.path
+            );
+         }
+      }
   }
 
   void _setStatus(SyncStatus s, {String error = ''}) {

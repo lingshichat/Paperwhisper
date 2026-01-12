@@ -261,7 +261,29 @@ class _MomentsPageState extends State<MomentsPage> {
       appBarTextColor = const Color(0xFFD7CCC8);
     }
 
-    final Color? rulerAccent = isAmber ? const Color(0xFFFF9800) : (isSeaFlower ? const Color(0xFFEC407A) : (isMidnight ? const Color(0xFF7986cb) : null));
+    final Color rulerAccent = AppTheme.getAccentColor(theme);
+
+    // Ruler Colors Configuration
+    Color? rulerBg;
+    Color? rulerTextColor;
+    Color? rulerInactiveTextColor;
+    Color? rulerSubTextColor;
+    Color? rulerInactiveSubTextColor;
+    Color? rulerIndicatorColor;
+    Color? rulerShadowColor;
+    Color? rulerBorderColor;
+
+    if (isSeaFlower) {
+      // 拟物风：浅白色半透明磨砂质感
+      rulerBg = Colors.white.withOpacity(0.9);
+      rulerTextColor = const Color(0xFF880E4F);
+      rulerInactiveTextColor = const Color(0xFF880E4F).withOpacity(0.4);
+      rulerSubTextColor = const Color(0xFF880E4F);
+      rulerInactiveSubTextColor = const Color(0xFF880E4F).withOpacity(0.4);
+      rulerIndicatorColor = const Color(0xFFF50057);
+      rulerShadowColor = const Color(0x1F880E4F); // 柔和粉色阴影
+      rulerBorderColor = Colors.transparent;
+    }
     
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -311,6 +333,14 @@ class _MomentsPageState extends State<MomentsPage> {
                       onDateChanged: (d) => _onDateChanged(d),
                       controller: _rulerController,
                       accentColor: rulerAccent,
+                      backgroundColor: rulerBg,
+                      textColor: rulerTextColor,
+                      inactiveTextColor: rulerInactiveTextColor,
+                      subTextColor: rulerSubTextColor,
+                      inactiveSubTextColor: rulerInactiveSubTextColor,
+                      indicatorColor: rulerIndicatorColor,
+                      shadowColor: rulerShadowColor,
+                      borderColor: rulerBorderColor,
                     ),
                   ),
                   
@@ -479,32 +509,33 @@ class _MomentsPageState extends State<MomentsPage> {
   Widget _buildEmptyStateForDate(DateTime date) {
     bool isToday = _isSameDay(date, DateTime.now());
     
-    final theme = Provider.of<SettingsProvider>(context, listen: false).currentTheme; // Listen false is fine inside build? NO, we are in build context indirectly or logic.
-    // Ideally pass color in. But here we access Provider.
-    // Provider.of(context) already established in build. Using context here works.
+    final theme = Provider.of<SettingsProvider>(context, listen: false).currentTheme;
+    final bool isSeaFlower = theme == AppTheme.themeSeaFlower;
     
-    // Logic: SeaFlower is Light (Pink/White), need Dark Text?
-    // Vintage/Amber/Midnight are Dark, need Light Text.
-    final bool isLight = theme == AppTheme.themeSeaFlower;
-    final bool isDark = !isLight;
+    Color iconColor;
+    Color messageColor;
     
-    final Color emptyColor = isDark ? Colors.white38 : const Color(0xFF5D4037); // Brown for Light Theme
-    final Color textColor = isDark ? Colors.white24 : const Color(0xFF8D6E63).withOpacity(0.5);
+    if (isSeaFlower) {
+       // 海底花海 (浅色背景)：使用深粉紫色，提高对比度
+       iconColor = const Color(0xFF880E4F).withOpacity(0.3); 
+       messageColor = const Color(0xFF880E4F).withOpacity(0.6); 
+    } else {
+       // 其他深色背景 (Vintage, Midnight, Amber)：使用半透明白色
+       iconColor = Colors.white.withOpacity(0.2);
+       messageColor = Colors.white.withOpacity(0.3);
+    }
 
     return Center(
-      child: Opacity(
-        opacity: isDark ? 0.6 : 0.3, // bump opacity for dark mode slightly?? or keep low but use light color
-        child: Column(
-           mainAxisSize: MainAxisSize.min,
-           children: [
-             Icon(Icons.edit_note, size: 64, color: emptyColor),
-             const SizedBox(height: 16),
-             Text(
-               isToday ? "这一天不仅是空白，更是无限可能" : "这天没有留下记录", 
-               style: GoogleFonts.notoSerifSc(fontSize: 14, color: textColor)
-             ),
-           ],
-        ),
+      child: Column(
+         mainAxisSize: MainAxisSize.min,
+         children: [
+           Icon(Icons.edit_note, size: 64, color: iconColor),
+           const SizedBox(height: 16),
+           Text(
+             isToday ? "这一天不仅是空白，更是无限可能" : "这天没有留下记录", 
+             style: GoogleFonts.notoSerifSc(fontSize: 14, color: messageColor)
+           ),
+         ],
       ),
     );
   }

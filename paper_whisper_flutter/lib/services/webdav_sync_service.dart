@@ -9,8 +9,11 @@ class WebDavSyncService {
   String? _username;
   String? _password;
 
-  // 默认云端存储路径
-  static const String remoteBasePath = '/PaperWhisper/diary_data/';
+  // 基础路径常量
+  static const String rootPath = '/PaperWhisper/';
+  static const String diaryBasePath = '/PaperWhisper/diary_data/';
+  static const String momentsBasePath = '/PaperWhisper/moments_data/';
+  static const String momentsImagesPath = '/PaperWhisper/moments_data/images/';
 
   bool get isConnected => _client != null;
 
@@ -29,7 +32,6 @@ class WebDavSyncService {
         debug: kDebugMode,
       );
 
-      // 设置连接信息备用
       _serverUrl = serverUrl;
       _username = username;
       _password = password;
@@ -45,27 +47,52 @@ class WebDavSyncService {
     }
   }
 
-  /// 测试连接有效性 (包含路径检查)
+  /// 递归确保目录存在
+  Future<void> ensureDirectoryExists(String remotePath) async {
+    if (_client == null) return;
+    
+    // 移除末尾斜杠以便统一处理
+    if (remotePath.endsWith('/')) {
+      remotePath = remotePath.substring(0, remotePath.length - 1);
+    }
+    
+    // 如果是根目录，忽略
+    if (remotePath.isEmpty) return;
+
+    // 尝试直接读取，如果成功则目录存在
+    try {
+       await _client!.readDir(remotePath + '/');
+       return; 
+    } catch (_) {
+       // 目录不存在，需要创建
+    }
+    
+    // 递归检查父目录
+    // 使用 posix context 处理 WebDAV 路径 (总是 / 分隔)
+    String parent = path.posix.dirname(remotePath);
+    
+    // 避免死循环
+    if (parent != remotePath && parent != '/' && parent != '.') {
+       await ensureDirectoryExists(parent);
+    }
+    
+    // 创建当前目录
+    try {
+      await _client!.mkdir(remotePath);
+      debugPrint('Created remote directory: $remotePath');
+    } catch (e) {
+      // 忽略创建错误（可能是并发导致已存在）
+    }
+  }
+
+  /// 测试连接有效性 (包含基础目录检查)
   Future<bool> testConnection() async {
     if (_client == null) return false;
     try {
       await _client!.ping();
-      
-      // 检查或创建基础目录
-      try {
-        await _client!.readDir(remoteBasePath);
-      } catch (e) {
-        // 如果目录不存在，尝试逐级创建
-        // 简化处理：尝试直接创建全路径 (mkcol recursive not standard, so step by step)
-        // 坚果云等通常支持 mkdir -p 行为或者我们需要手动 split
-        // 这里假设 /PaperWhisper/ 可能不存在
-        try {
-          await _client!.mkdir('/PaperWhisper');
-        } catch (_) {} 
-        try {
-          await _client!.mkdir('/PaperWhisper/diary_data');
-        } catch (_) {}
-      }
+      // 预先创建常用目录
+      await ensureDirectoryExists(diaryBasePath);
+      // 不要在这里强制创建 moments，按需创建
       return true;
     } catch (e) {
       debugPrint('WebDAV test connection failed: $e');
@@ -74,25 +101,27 @@ class WebDavSyncService {
   }
 
   /// 获取云端文件列表
-  Future<List<webdav.File>> listRemoteFiles() async {
+  /// [remotePath] 必须以 / 结尾，例如 '/PaperWhisper/diary_data/'
+  Future<List<webdav.File>> listRemoteFiles({String remotePath = diaryBasePath}) async {
     if (_client == null) return [];
     try {
       // 确保目录存在
-      await testConnection(); 
-      return await _client!.readDir(remoteBasePath);
+      await ensureDirectoryExists(remotePath); 
+      return await _client!.readDir(remotePath);
     } catch (e) {
-      debugPrint('WebDAV list files failed: $e');
+      debugPrint('WebDAV list files failed for $remotePath: $e');
       return [];
     }
   }
 
   /// 上传文件
-  Future<void> uploadFile(String localPath, String filename) async {
+  /// [localFilePath] 本地文件绝对路径
+  /// [remoteFilePath] 云端完整路径，例如 '/PaperWhisper/diary_data/abc.txt'
+  Future<void> uploadFile(String localFilePath, String remoteFilePath) async {
     if (_client == null) return;
     try {
-      String remotePath = remoteBasePath + filename;
-      await _client!.writeFromFile(localPath, remotePath);
-      debugPrint('Uploaded: $filename');
+      await _client!.writeFromFile(localFilePath, remoteFilePath);
+      debugPrint('Uploaded: $remoteFilePath');
     } catch (e) {
       debugPrint('WebDAV upload failed: $e');
       rethrow;
@@ -100,12 +129,13 @@ class WebDavSyncService {
   }
 
   /// 下载文件
-  Future<void> downloadFile(String filename, String localPath) async {
+  /// [remoteFilePath] 云端完整路径
+  /// [localSavePath] 本地保存完整路径
+  Future<void> downloadFile(String remoteFilePath, String localSavePath) async {
     if (_client == null) return;
     try {
-      String remotePath = remoteBasePath + filename;
-      await _client!.read2File(remotePath, localPath);
-      debugPrint('Downloaded: $filename');
+      await _client!.read2File(remoteFilePath, localSavePath);
+      debugPrint('Downloaded: $remoteFilePath');
     } catch (e) {
       debugPrint('WebDAV download failed: $e');
       rethrow;
@@ -113,15 +143,14 @@ class WebDavSyncService {
   }
 
   /// 删除云端文件
-  Future<void> deleteFile(String filename) async {
+  /// [remoteFilePath] 云端完整路径
+  Future<void> deleteFile(String remoteFilePath) async {
     if (_client == null) return;
     try {
-      String remotePath = remoteBasePath + filename;
-      await _client!.remove(remotePath);
-      debugPrint('Deleted Remote: $filename');
+      await _client!.remove(remoteFilePath);
+      debugPrint('Deleted Remote: $remoteFilePath');
     } catch (e) {
       debugPrint('WebDAV delete failed: $e');
-      // Don't rethrow, strictly speaking, as it might be already gone
     }
   }
 }

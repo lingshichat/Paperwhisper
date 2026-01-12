@@ -7,6 +7,14 @@ class RulerDatePicker extends StatefulWidget {
   final ValueChanged<DateTime> onDateChanged;
   final FixedExtentScrollController? controller; // External controller
   final Color? accentColor;
+  final Color? backgroundColor;
+  final Color? textColor;
+  final Color? inactiveTextColor;
+  final Color? subTextColor;
+  final Color? inactiveSubTextColor;
+  final Color? indicatorColor;
+  final Color? shadowColor;
+  final Color? borderColor;
 
   const RulerDatePicker({
     super.key,
@@ -14,6 +22,14 @@ class RulerDatePicker extends StatefulWidget {
     required this.onDateChanged,
     this.controller,
     this.accentColor,
+    this.backgroundColor,
+    this.textColor,
+    this.inactiveTextColor,
+    this.subTextColor,
+    this.inactiveSubTextColor,
+    this.indicatorColor,
+    this.shadowColor,
+    this.borderColor,
   });
 
   @override
@@ -82,17 +98,27 @@ class _RulerDatePickerState extends State<RulerDatePicker> {
     const double itemWidth = 70;
     
     final Color activeColor = widget.accentColor ?? const Color(0xFFFF9800);
-    // Indicator defaults to activeColor if provided, else RedFocus
-    // Use Red as per user feedback
-    final Color indicatorColor = const Color(0xFFFF3D00);
+    
+    // Theme Defaults (Dark/Vintage Style)
+    final Color bgColor = widget.backgroundColor ?? const Color(0xFF1E1E1E);
+    final Color finalBorderColor = widget.borderColor ?? const Color(0xFF121212);
+    final Color finalShadowColor = widget.shadowColor ?? Colors.black54;
+    
+    final Color activeTextColor = widget.textColor ?? activeColor;
+    final Color inactiveTextCol = widget.inactiveTextColor ?? Colors.grey[600]!;
+    
+    final Color activeSubTextCol = widget.subTextColor ?? Colors.white;
+    final Color inactiveSubTextCol = widget.inactiveSubTextColor ?? Colors.grey[700]!;
+    
+    final Color finalIndicatorColor = widget.indicatorColor ?? Colors.white;
 
     return Container(
       height: height,
-      decoration: const BoxDecoration(
-        color: Color(0xFF1E1E1E), // Lens Body
-        border: Border(bottom: BorderSide(color: Color(0xFF121212), width: 1)),
+      decoration: BoxDecoration(
+        color: bgColor, // Configurable background
+        border: Border(bottom: BorderSide(color: finalBorderColor, width: 1)),
         boxShadow: [
-          BoxShadow(color: Colors.black54, offset: Offset(0, 4), blurRadius: 8)
+          BoxShadow(color: finalShadowColor, offset: const Offset(0, 4), blurRadius: 8)
         ]
       ),
       child: Stack(
@@ -150,7 +176,7 @@ class _RulerDatePickerState extends State<RulerDatePicker> {
                                style: GoogleFonts.robotoMono(
                                  fontSize: isSelected ? 20 : 16,
                                  fontWeight: isSelected ? FontWeight.w900 : FontWeight.w400,
-                                 color: isSelected ? activeColor : Colors.grey[600],
+                                 color: isSelected ? activeTextColor : inactiveTextCol,
                                ),
                              ),
                              const SizedBox(height: 4),
@@ -159,16 +185,16 @@ class _RulerDatePickerState extends State<RulerDatePicker> {
                                isToday ? "TODAY" : DateFormat('E').format(date).toUpperCase(),
                                style: GoogleFonts.roboto( 
                                  fontSize: 10,
-                                 color: isSelected ? Colors.white : Colors.grey[700],
+                                 color: isSelected ? activeSubTextCol : inactiveSubTextCol,
                                  fontWeight: FontWeight.bold,
                                ),
                              ),
                              const SizedBox(height: 6),
-                             // Hash Marks
+                             // Hash Marks (Use activeTextColor for selected hash too)
                              Container(
                                width: 1,
                                height: isSelected ? 12 : 8,
-                               color: isSelected ? activeColor : Colors.grey[700],
+                               color: isSelected ? activeTextColor : inactiveSubTextCol,
                              )
                            ],
                          ),
@@ -187,9 +213,9 @@ class _RulerDatePickerState extends State<RulerDatePicker> {
                width: 3,
                height: 12,
                decoration: BoxDecoration(
-                 color: indicatorColor,
+                 color: finalIndicatorColor,
                  borderRadius: BorderRadius.circular(1.5),
-                 boxShadow: [BoxShadow(color: indicatorColor.withOpacity(0.5), blurRadius: 4)]
+                 boxShadow: [BoxShadow(color: finalIndicatorColor.withOpacity(0.5), blurRadius: 4)]
                ),
              ),
           ),

@@ -104,9 +104,9 @@ class _MomentInputWidgetState extends State<MomentInputWidget> {
        textColor = const Color(0xFFD7CCC8); // Beige
        hintColor = const Color(0xFFA1887F);
        iconColor = const Color(0xFFD7CCC8);
-       sendColor = const Color(0xFFFFB74D); // Orange accent
+       sendColor = Colors.white; // User requested White
        imageIconColor = const Color(0xFFA1887F);
-       cursorColor = const Color(0xFFFFB74D);
+       cursorColor = AppTheme.getAccentColor(theme);
        boxShadows = [const BoxShadow(color: Colors.black38, offset: Offset(0, -2), blurRadius: 4)];
     }
 
