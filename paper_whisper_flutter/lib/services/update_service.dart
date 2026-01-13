@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/services.dart'; // Add this for rootBundle
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -115,6 +116,18 @@ class UpdateService {
     } catch (e) {
       print('打开链接失败: $e');
       return false;
+    }
+  }
+
+  /// 获取本地版本信息 (from assets/version.json)
+  Future<UpdateInfo?> getLocalUpdateInfo() async {
+    try {
+      final jsonString = await rootBundle.loadString('assets/version.json');
+      final json = jsonDecode(jsonString);
+      return UpdateInfo.fromJson(json);
+    } catch (e) {
+      print('Failed to load local version info: $e');
+      return null;
     }
   }
 

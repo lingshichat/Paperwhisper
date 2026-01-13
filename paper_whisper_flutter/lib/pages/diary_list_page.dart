@@ -67,17 +67,26 @@ class _DiaryListPageState extends State<DiaryListPage> {
 
   Future<void> _checkAndShowAnnouncement() async {
     final prefs = await SharedPreferences.getInstance();
-    const currentVersion = '1.1.1';
+    final updateService = UpdateService();
+    
+    // 1. Get Current Version Dynamically
+    final currentVersion = await updateService.getCurrentVersion();
     final lastVersion = prefs.getString('last_run_version');
 
+    // 2. Compare Version
     if (lastVersion != currentVersion) {
       if (mounted) {
-        // Update version immediately to avoid showing again if dialog is dismissed
+        // Update stored version
         await prefs.setString('last_run_version', currentVersion);
         
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _showAnnouncementDialog();
-        });
+        // 3. Load Local Announcement (assets/version.json)
+        final localInfo = await updateService.getLocalUpdateInfo();
+        
+        if (localInfo != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+             _showUnifiedDialog(localInfo, isAnnouncement: true);
+          });
+        }
       }
     }
   }
@@ -89,45 +98,55 @@ class _DiaryListPageState extends State<DiaryListPage> {
     try {
       final updateInfo = await UpdateService().checkForUpdate();
       if (updateInfo != null && mounted) {
-        _showUpdateDialog(updateInfo);
+        _showUnifiedDialog(updateInfo, isAnnouncement: false);
       }
     } catch (e) {
       debugPrint('Update check failed: $e');
     }
   }
 
-  void _showUpdateDialog(UpdateInfo info) {
+  void _showUnifiedDialog(UpdateInfo info, {required bool isAnnouncement}) {
     showDialog(
       context: context,
       barrierDismissible: !info.isForceUpdate,
-      barrierColor: Colors.black.withValues(alpha: 0.6),
+      barrierColor: Colors.black.withOpacity(0.6), // Consistent opacity
       builder: (context) => SkeuomorphicDialog(
-        title: '发现新版本 ${info.latestVersion}',
-        headerIcon: Icons.system_update,
+        title: isAnnouncement 
+            ? (info.title ?? '版本更新 ${info.latestVersion}') 
+            : '发现新版本 ${info.latestVersion}',
+        headerIcon: isAnnouncement ? Icons.auto_awesome : Icons.system_update,
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              '发布日期：${info.releaseDate ?? "未知"}',
-              style: GoogleFonts.notoSerifSc(
-                fontSize: 12,
-                color: const Color(0xFF8D6E63),
+            if (info.releaseDate != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Text(
+                  '发布日期：${info.releaseDate}',
+                  style: GoogleFonts.notoSerifSc(
+                    fontSize: 12,
+                    color: const Color(0xFF8D6E63),
+                  ),
+                ),
               ),
-            ),
-            const SizedBox(height: 15),
+            // Changelog List
             ...info.changelog.map((line) => Padding(
-              padding: const EdgeInsets.only(bottom: 6),
+              padding: const EdgeInsets.only(bottom: 8),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('• ', style: TextStyle(color: Color(0xFF5D4037), fontWeight: FontWeight.bold)),
+                  Text(
+                     _getBulletIcon(line), 
+                     style: const TextStyle(fontSize: 14, height: 1.4) 
+                  ), // Use emoji bullet if detected or dot
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      line,
+                      _cleanLine(line),
                       style: GoogleFonts.notoSerifSc(
-                        fontSize: 14,
-                        height: 1.5,
+                        fontSize: 15,
+                        height: 1.6,
                         color: const Color(0xFF5D4037),
                       ),
                     ),
@@ -135,113 +154,67 @@ class _DiaryListPageState extends State<DiaryListPage> {
                 ],
               ),
             )),
+            if (isAnnouncement) ...[
+               const SizedBox(height: 16),
+               Text(
+                 "感谢您与纸语一同成长。", 
+                 style: GoogleFonts.notoSerifSc(
+                    fontSize: 13, 
+                    color: Colors.grey[600],
+                    fontStyle: FontStyle.italic,
+                 )
+               )
+            ]
           ],
         ),
         actions: [
-          if (!info.isForceUpdate)
+          if (isAnnouncement)
              SkeuomorphicDialogButton(
-               label: '暂不更新', 
-               isPrimary: false, 
+               label: '开启体验', 
+               isPrimary: true, 
                onPressed: () => Navigator.pop(context)
+             )
+          else ...[
+             if (!info.isForceUpdate)
+               SkeuomorphicDialogButton(
+                 label: '暂不更新', 
+                 isPrimary: false, 
+                 onPressed: () => Navigator.pop(context)
+               ),
+             SkeuomorphicDialogButton(
+               label: '立即更新', 
+               isPrimary: true, 
+               onPressed: () {
+                 if (info.downloadUrl != null) {
+                    Navigator.pop(context);
+                    UpdateService().openDownloadUrl(info);
+                 }
+               }
              ),
-          SkeuomorphicDialogButton(
-            label: '立即更新', 
-            isPrimary: true, 
-            onPressed: () {
-               // Navigator.pop(context); // Optional: keep dialog open or close?
-               // Close allows user to continue using app while downloading externally
-               Navigator.pop(context);
-               UpdateService().openDownloadUrl(info);
-            }
-          ),
+          ]
         ],
       )
     );
   }
 
-  void _showAnnouncementDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: true,
-      barrierColor: Colors.black.withValues(alpha: 0.6),
-      builder: (context) => SkeuomorphicDialog(
-        title: '纸语 1.1.1 —— 细节与体验',
-        headerIcon: Icons.auto_awesome,
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              '致各位记录者：',
-              style: GoogleFonts.notoSerifSc(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF5D4037),
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              '本次更新主要优化了动画流畅度与视觉细节。',
-              style: GoogleFonts.notoSerifSc(
-                fontSize: 15,
-                color: const Color(0xFF5D4037),
-                height: 1.6,
-              ),
-            ),
-            const SizedBox(height: 20),
-            _buildAnnouncementItem('🐞', '动画修复', '优化信纸展开动画，消除黑闪。'),
-            const SizedBox(height: 15),
-            _buildAnnouncementItem('📝', '状态栏适配', '完美适配各主题状态栏颜色。'),
-            const SizedBox(height: 15),
-            _buildAnnouncementItem('🐌', '舒缓转场', '全局转场动画更舒缓自然。'),
-            const SizedBox(height: 15),
-            _buildAnnouncementItem('✨', '细节打磨', '细节体验持续打磨。'),
-          ],
-        ),
-        actions: [
-          SkeuomorphicDialogButton(
-            label: '继续旅程',
-            isPrimary: true,
-            onPressed: () => Navigator.pop(context),
-          ),
-        ],
-      ),
-    );
+  String _getBulletIcon(String line) {
+    // Basic heuristic: check if line starts with specific emojis
+    // Or just return dot if simple.
+    // The version.json lines already have emojis like "✨ [新增]".
+    // We can just return empty string if the line handles it, or standardized bullet.
+    // The user's requested style had emoji separately.
+    // Let's rely on the text itself having the emoji for now as per version.json content.
+    // But to align with previous code logic '• ', let's see.
+    // version.json: "✨ [新增] ..."
+    // So we don't need extra bullet.
+    return ''; 
   }
 
-  Widget _buildAnnouncementItem(String emoji, String title, String desc) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(emoji, style: const TextStyle(fontSize: 18)),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: GoogleFonts.notoSerifSc(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFF3E2723),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                desc,
-                style: GoogleFonts.notoSerifSc(
-                  fontSize: 14,
-                  color: const Color(0xFF5D4037).withValues(alpha: 0.8),
-                  height: 1.5,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
+  String _cleanLine(String line) {
+     return line;
   }
+
+
 
   void _showPermissionRationale() {
     showDialog(

@@ -4,19 +4,21 @@ class UpdateInfo {
   final String latestVersion;
   final int? buildNumber;
   final String? releaseDate;
+  final String? title; // New: Announcement Title
   final bool isForceUpdate;
   final List<String> changelog;
-  final Map<String, String> downloadUrl;
-  final Map<String, String>? backupUrl; // 蓝奏云备用下载链接
+  final Map<String, String>? downloadUrl; // Changed to nullable
+  final Map<String, String>? backupUrl; 
   final String? minSupportedVersion;
 
   UpdateInfo({
     required this.latestVersion,
     this.buildNumber,
     this.releaseDate,
+    this.title,
     this.isForceUpdate = false,
     required this.changelog,
-    required this.downloadUrl,
+    this.downloadUrl,
     this.backupUrl,
     this.minSupportedVersion,
   });
@@ -25,14 +27,15 @@ class UpdateInfo {
   factory UpdateInfo.fromJson(Map<String, dynamic> json) {
     return UpdateInfo(
       latestVersion: json['latestVersion'] as String,
-      buildNumber: json['latestBuildNumber'] as int?,
+      buildNumber: json['latestBuildNumber'] as int? ?? json['buildNumber'] as int?,
       releaseDate: json['releaseDate'] as String?,
+      title: json['title'] as String?,
       isForceUpdate: json['isForceUpdate'] as bool? ?? false,
       changelog: (json['changelog'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
           [],
-      downloadUrl: Map<String, String>.from(json['downloadUrl'] as Map),
+      downloadUrl: json['downloadUrl'] != null ? Map<String, String>.from(json['downloadUrl'] as Map) : null,
       backupUrl: json['backupUrl'] != null
           ? Map<String, String>.from(json['backupUrl'] as Map)
           : null,
@@ -42,7 +45,7 @@ class UpdateInfo {
 
   /// 根据平台获取主下载链接
   String? getDownloadUrl(String platform) {
-    return downloadUrl[platform];
+    return downloadUrl?[platform];
   }
 
   /// 根据平台获取备用下载链接
