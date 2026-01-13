@@ -181,6 +181,16 @@ class _DiaryListPageState extends State<DiaryListPage> {
                  isPrimary: false, 
                  onPressed: () => Navigator.pop(context)
                ),
+             // 备用下载按钮
+             if (info.hasBackupUrl(UpdateService().currentPlatform))
+               SkeuomorphicDialogButton(
+                 label: '备用下载',
+                 isPrimary: false,
+                 onPressed: () {
+                   Navigator.pop(context);
+                   UpdateService().openDownloadUrl(info, useBackup: true);
+                 },
+               ),
              SkeuomorphicDialogButton(
                label: '立即更新', 
                isPrimary: true, 
@@ -579,7 +589,7 @@ class _DiaryListPageState extends State<DiaryListPage> {
               }
               
               // 触发同步
-              await syncProvider.sync();
+              await syncProvider.sync(context: context);
             },
             child: list.isEmpty 
                 ? SingleChildScrollView(

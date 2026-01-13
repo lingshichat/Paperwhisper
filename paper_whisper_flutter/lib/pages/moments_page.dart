@@ -160,7 +160,7 @@ class _MomentsPageState extends State<MomentsPage> {
        if (syncProvider.isConfigured) {
            SkeuomorphicToast.info(context, '记录已保存，准备同步...');
            syncProvider.checkNotificationPermission(context).then((_) {
-              if (mounted) syncProvider.requestAutoSync();
+              if (mounted) syncProvider.requestAutoSync(force: true, context: context); // Force immediate sync
            });
        } else {
            SkeuomorphicToast.success(context, '记录已保存');
@@ -235,7 +235,7 @@ class _MomentsPageState extends State<MomentsPage> {
         
         final syncProvider = context.read<SyncProvider>();
         if (syncProvider.isConfigured) {
-            syncProvider.requestAutoSync();
+            syncProvider.requestAutoSync(context: context);
         }
 
         SkeuomorphicToast.success(context, '生成成功，正在跳转...');
@@ -321,17 +321,15 @@ class _MomentsPageState extends State<MomentsPage> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final bool isDesktop = constraints.maxWidth > 800;
+        debugPrint("LayoutBuilder Constraints: ${constraints.maxWidth} (isDesktop: $isDesktop)");
         
         final Widget content = Stack(
+          fit: StackFit.expand,
           children: [
-            // Background (If not desktop, desktop puts bg on scaffold level? Or row?)
-            // DiaryListPage puts background on Scaffold body stack.
-            // Let's keep background here for the content area.
-            if (!isDesktop) Container(decoration: AppTheme.getBackground(theme)),
-            
             // Content Column
             SafeArea(
               top: !isDesktop, // On desktop, sidebar handles top? No, we still need padding for header
+              bottom: isDesktop, // Mobile bottom handled by stack
               child: Column(
                 children: [
                   // On Desktop, we need a Header (replacement for AppBar)
@@ -348,11 +346,6 @@ class _MomentsPageState extends State<MomentsPage> {
                          if (_pageController.hasClients && _rulerController.hasClients) {
                            double rulerOffset = _rulerController.offset;
                            double page = rulerOffset / 70.0;
-                           // On Desktop, PageView width is not Screen Width. It's available width.
-                           // But PageView page logic relies on viewport fraction.
-                           // Actually PageView uses logical pages. jumpTo requires pixel offset?
-                           // _pageController.jumpTo expects pixels.
-                           // Pixels = page * viewportDimension.
                            double pageWidth = _pageController.position.viewportDimension;
                            _pageController.jumpTo(page * pageWidth);
                          }
@@ -393,11 +386,11 @@ class _MomentsPageState extends State<MomentsPage> {
                         } else if (notification is ScrollEndNotification) {
                            _isPageActive = false;
                            if (!_isRulerActive && _pageController.hasClients) {
-                              int pageIndex = _pageController.page?.round() ?? 0;
-                              DateTime targetDate = _startDate.add(Duration(days: pageIndex));
-                              if (!_isSameDay(targetDate, _selectedDate)) {
-                                 _onDateChanged(targetDate, animate: false);
-                              }
+                               int pageIndex = _pageController.page?.round() ?? 0;
+                               DateTime targetDate = _startDate.add(Duration(days: pageIndex));
+                               if (!_isSameDay(targetDate, _selectedDate)) {
+                                  _onDateChanged(targetDate, animate: false);
+                               }
                            }
                         }
                         return false;
@@ -418,7 +411,7 @@ class _MomentsPageState extends State<MomentsPage> {
                             }
                             
                             return ListView.builder(
-                                padding: const EdgeInsets.symmetric(vertical: 20),
+                                padding: const EdgeInsets.only(top: 20, bottom: 90), // Add bottom padding for input
                                 itemCount: moments.length,
                                 itemBuilder: (context, i) {
                                    return MomentCard(
@@ -440,8 +433,10 @@ class _MomentsPageState extends State<MomentsPage> {
                     ),
                   ),
                   
-                  // Input Widget
-                  MomentInputWidget(onSend: _handleSend),
+                  // Input Widget Removed from here (Moved to Stack in Mobile, what about Desktop?)
+                  // if (isDesktop) MomentInputWidget(onSend: _handleSend),
+                  // For now, let's keep it here ONLY if isDesktop, otherwise Container()
+                  if (isDesktop) MomentInputWidget(onSend: _handleSend)
                 ],
               ),
             ),
@@ -468,12 +463,13 @@ class _MomentsPageState extends State<MomentsPage> {
 
         return Scaffold(
           extendBodyBehindAppBar: true, 
-          backgroundColor: Colors.transparent, 
+          backgroundColor: Colors.transparent,
+          resizeToAvoidBottomInset: true, // Revert to true to ensure visibility
           drawer: const SidebarWidget(),
           appBar: AppBar(
             backgroundColor: isSeaFlower 
-                ? const Color(0xFFFCE4EC).withOpacity(0.8) // Light Pink Translucent
-                : const Color(0xFF1E1E1E).withOpacity(0.5), // Dark Translucent for All others (Default, Amber, Midnight)
+                ? const Color(0xFFFCE4EC).withOpacity(0.8) 
+                : const Color(0xFF1E1E1E).withOpacity(0.5), 
             elevation: 0,
             leading: Builder(
               builder: (context) => IconButton(
@@ -503,11 +499,49 @@ class _MomentsPageState extends State<MomentsPage> {
               )
             ],
           ),
-          body: content,
+          body: Stack(
+            children: [
+              // 0. Background (Always Rendered)
+              Positioned.fill(
+                child: Container(decoration: AppTheme.getBackground(theme))
+              ),
+
+              // 1. Main Content
+              Positioned.fill(
+                child: content
+              ),
+              
+              // 2. Dismiss Layer (Only when keyboard is open)
+              Builder(
+                builder: (ctx) {
+                   final isKeyboardOpen = MediaQuery.of(ctx).viewInsets.bottom > 0;
+                   if (!isKeyboardOpen) return const SizedBox.shrink();
+                   
+                   return Positioned.fill(
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.translucent,
+                        onTap: () {
+                          FocusScope.of(ctx).unfocus();
+                        },
+                        child: Container(color: Colors.transparent),
+                      ),
+                   );
+                }
+              ),
+              
+              // 3. Input Widget (Aligned to bottom)
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: MomentInputWidget(onSend: _handleSend),
+              ),
+            ],
+          ),
         );
       }
     );
   }
+
+
 
   Widget _buildDesktopHeader(Color textColor, Color iconColor) {
     return Container(

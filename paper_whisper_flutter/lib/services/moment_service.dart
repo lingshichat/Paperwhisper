@@ -7,6 +7,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../models/moment.dart';
 import '../models/diary_entry.dart';
 import '../services/diary_service.dart';
+import 'manifest_service.dart';
 
 class MomentService {
   Directory? _dataDir;
@@ -43,22 +44,26 @@ class MomentService {
         }
       }
     } else if (Platform.isAndroid) {
-      // Android: 检查权限状态
-      var status = await Permission.manageExternalStorage.status;
+      // Android: Robust Permission & Path Logic
       
-      bool hasLegacyStorage = false;
-      if (!status.isGranted) {
-         var storageStatus = await Permission.storage.status;
-         hasLegacyStorage = storageStatus.isGranted;
-      }
-
-      if (status.isGranted || hasLegacyStorage) {
-         // 有权限：使用公共 Documents 目录
+      // Try to get Manage External Storage first (for full access)
+      if (await Permission.manageExternalStorage.isGranted) {
          _dataDir = Directory('/storage/emulated/0/Documents/PaperWhisper/moments_data');
       } else {
-         // 无权限：使用应用私有目录 (Fallback)
-         final appDir = await getApplicationDocumentsDirectory();
-         _dataDir = Directory(path.join(appDir.path, 'moments_data'));
+         // Check standard storage permissions
+         // For Android 13+ (SDK 33), storage permission is split. 
+         // But we mainly need to read/write our OWN files or generic docs.
+         // If manageExternalStorage is NOT granted, we fall back to App-Specific storage 
+         // because "Documents" is not writable without it on new Android.
+         
+         // However, try legacy approach just in case
+         final extDir = await getExternalStorageDirectory(); // Android/data/package/files
+         if (extDir != null) {
+            _dataDir = Directory(path.join(extDir.path, 'moments_data'));
+         } else {
+            final appDir = await getApplicationDocumentsDirectory();
+            _dataDir = Directory(path.join(appDir.path, 'moments_data'));
+         }
       }
     } else {
       // iOS / Other
@@ -67,11 +72,12 @@ class MomentService {
     }
 
     // Ensure main data dir exists
-    if (!await _dataDir!.exists()) {
+    if (_dataDir != null && !await _dataDir!.exists()) {
       try {
         await _dataDir!.create(recursive: true);
       } catch (e) {
-        debugPrint("Error creating moments data dir: $e");
+        debugPrint("Error creating moments data dir at ${_dataDir?.path}: $e");
+        // Fallback for Android if creation failed (e.g. permission mismatch)
         if (Platform.isAndroid) {
           final appDir = await getApplicationDocumentsDirectory();
           _dataDir = Directory(path.join(appDir.path, 'moments_data'));
@@ -81,9 +87,15 @@ class MomentService {
     }
 
     // Ensure images dir exists
-    _imagesDir = Directory(path.join(_dataDir!.path, 'images'));
-    if (!await _imagesDir!.exists()) {
-      await _imagesDir!.create(recursive: true);
+    if (_dataDir != null) {
+      _imagesDir = Directory(path.join(_dataDir!.path, 'images'));
+      if (!await _imagesDir!.exists()) {
+        await _imagesDir!.create(recursive: true);
+      }
+      
+      // Init Manifest
+      await _manifestService.init(_dataDir!, manifestFileName: 'local_moments_manifest.json');
+      await _manifestService.ensureConsistency(_dataDir!, fileExtension: '.json');
     }
   }
 
@@ -113,12 +125,18 @@ class MomentService {
     return moments;
   }
 
+  final ManifestService _manifestService = ManifestService();
+  ManifestService get manifestService => _manifestService;
+
   Future<void> saveMoment(Moment moment) async {
     await init();
     // Filename convention: moment_{uuid}.json
     String filename = "moment_${moment.uuid}.json";
     File file = File(path.join(_dataDir!.path, filename));
     await file.writeAsString(moment.toJsonString());
+    
+    // Update Manifest
+    _manifestService.updateItem(filename, isDeleted: false);
   }
 
   Future<void> deleteMoment(String uuid) async {
@@ -128,6 +146,10 @@ class MomentService {
     if (await file.exists()) {
       await file.delete();
     }
+    
+    // Update Manifest
+    _manifestService.updateItem(filename, isDeleted: true);
+    
     // Note: We are not automatically deleting images to avoid accidental data loss 
     // if images are shared (though here they are copied). 
     // Optimization: could add logic to delete images if they are unique to this moment.

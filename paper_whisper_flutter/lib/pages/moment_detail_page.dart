@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../models/moment.dart';
 import '../widgets/postmark_stamp.dart';
 import '../config/app_theme.dart';
@@ -91,18 +92,39 @@ class _MomentDetailPageState extends State<MomentDetailPage> with SingleTickerPr
 
       final directory = await getApplicationDocumentsDirectory();
       String exportPath;
+      
       if (Platform.isAndroid) {
-        exportPath = '/storage/emulated/0/Documents/PaperWhisper_Exports';
+        if (await Permission.manageExternalStorage.isGranted) {
+           // Change to standard Pictures directory for Gallery visibility
+           exportPath = '/storage/emulated/0/Pictures/PaperWhisper';
+        } else {
+           // Fallback to app specific external dir or standard docs
+           final extDir = await getExternalStorageDirectory();
+           if (extDir != null) {
+              exportPath = path.join(extDir.path, 'Exports');
+           } else {
+              exportPath = path.join(directory.path, 'Exports');
+           }
+        }
       } else {
         exportPath = path.join(directory.path, 'PaperWhisper_Exports');
       }
       
       final exportDir = Directory(exportPath);
-      if (!await exportDir.exists()) await exportDir.create(recursive: true);
+      if (!await exportDir.exists()) {
+         try {
+           await exportDir.create(recursive: true);
+         } catch (e) {
+            // Final fallback
+            final recoverDir = await getApplicationDocumentsDirectory();
+            exportPath = path.join(recoverDir.path, 'Exports');
+            await Directory(exportPath).create(recursive: true);
+         }
+      }
       
       String prefix = showBack ? 'postcard' : 'polaroid';
       String fileName = '${prefix}_${DateTime.now().millisecondsSinceEpoch}.png';
-      final file = File(path.join(exportDir.path, fileName));
+      final file = File(path.join(exportPath, fileName));
       await file.writeAsBytes(pngBytes);
       
       if (mounted) {
@@ -266,7 +288,7 @@ class _MomentDetailPageState extends State<MomentDetailPage> with SingleTickerPr
                     padding: const EdgeInsets.symmetric(horizontal: 4.0),
                     child: Text(
                       widget.moment.content,
-                      style: GoogleFonts.caveat(fontSize: 20, color: const Color(0xFF333333), height: 1.8),
+                      style: GoogleFonts.notoSerifSc(fontSize: 16, color: const Color(0xFF333333), height: 2.25),
                     ),
                   ),
                 ),
@@ -283,7 +305,7 @@ class _MomentDetailPageState extends State<MomentDetailPage> with SingleTickerPr
                             padding: const EdgeInsets.only(bottom: 15, right: 16),
                             child: Text(
                               widget.moment.mood!,
-                              style: GoogleFonts.caveat(fontSize: 16, color: Colors.grey[600]),
+                              style: GoogleFonts.notoSerifSc(fontSize: 12, color: Colors.grey[600]),
                             ),
                           ),
                         PostmarkStamp(date: widget.moment.createdAt, size: 80),

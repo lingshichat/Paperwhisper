@@ -4,6 +4,7 @@ import 'package:flutter/rendering.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import 'dart:io';
 import 'package:provider/provider.dart';
@@ -55,20 +56,41 @@ class _MomentCardState extends State<MomentCard> {
       final directory = await getApplicationDocumentsDirectory();
       String exportPath;
       
+      bool usePublic = false;
       if (Platform.isAndroid) {
-        // Use public Documents folder
-        exportPath = '/storage/emulated/0/Documents/PaperWhisper_Exports';
+        if (await Permission.manageExternalStorage.isGranted) {
+           usePublic = true;
+           // Change to standard Pictures directory for Gallery visibility
+           exportPath = '/storage/emulated/0/Pictures/PaperWhisper';
+        } else {
+           // Fallback to app specific external dir or standard docs
+           final extDir = await getExternalStorageDirectory();
+           // extDir is Android/data/.../files
+           // Let's use a nice subfolder
+           if (extDir != null) {
+              exportPath = path.join(extDir.path, 'Exports');
+           } else {
+              exportPath = path.join(directory.path, 'Exports');
+           }
+        }
       } else {
         exportPath = path.join(directory.path, 'PaperWhisper_Exports');
       }
       
       final exportDir = Directory(exportPath);
       if (!await exportDir.exists()) {
-        await exportDir.create(recursive: true);
+        try {
+          await exportDir.create(recursive: true);
+        } catch (e) {
+           // Final fallback
+           final recoverDir = await getApplicationDocumentsDirectory();
+           exportPath = path.join(recoverDir.path, 'Exports');
+           await Directory(exportPath).create(recursive: true);
+        }
       }
       
       String fileName = 'moment_${DateTime.now().millisecondsSinceEpoch}.png';
-      final file = File(path.join(exportDir.path, fileName));
+      final file = File(path.join(exportPath, fileName));
       await file.writeAsBytes(pngBytes);
       
       if (mounted) {

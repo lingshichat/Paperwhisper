@@ -17,7 +17,7 @@ class SkeuomorphicToast {
   /// 显示错误提示
   static void error(BuildContext context, String message) {
     final colors = _getThemeColors(context, _ToastType.error);
-    _show(context, message: message, icon: Icons.error_outline, colors: colors);
+    _show(context, message: message, icon: Icons.error_outline, colors: colors, duration: const Duration(seconds: 4));
   }
 
   /// 显示信息提示
@@ -29,7 +29,7 @@ class SkeuomorphicToast {
   /// 显示警告提示
   static void warning(BuildContext context, String message) {
     final colors = _getThemeColors(context, _ToastType.warning);
-    _show(context, message: message, icon: Icons.warning_amber_outlined, colors: colors);
+    _show(context, message: message, icon: Icons.warning_amber_outlined, colors: colors, duration: const Duration(seconds: 4));
   }
 
   /// 获取当前主题对应的颜色配置

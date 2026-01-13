@@ -1,21 +1,17 @@
 {
-    "latestVersion": "1.3.0",
-    "latestBuildNumber": 3,
+    "latestVersion": "1.3.1",
+    "latestBuildNumber": 4,
     "releaseDate": "2026-01-13",
-    "title": "纸语 1.3.0 —— 守护每一份记忆",
+    "title": "纸语 1.3.1 —— 守护每一份记忆",
     "isForceUpdate": true,
     "changelog": [
-        "⚠️ 重要更新：本版本强制升级，优化了数据储存模式，升级前请在绑定坚果云同步数据，或者前往对应目录备份一下文件",
-        "📂 数据储存目录（双端均为此目录）：document/paper_whisper_flutter",
-        "🛠️ 优化：数据储存模式、同步模式、备份模式",
-        "🗑️ 新增：回收站，日记删除后可在回收站恢复，仅针对此版本及以后版本新建或修改的日记生效",
-        "📃 新增：草稿箱，异常退出后新建日记或者编辑日记会弹出提示载入草稿与否",
-        "🕯️ 新增：拍立得分享模式（随心记所属功能），愿你记录的每一刻都值得珍藏",
-        "✨ 其他：一些其余细节优化，让体验更丝滑"
+        "⚠️ 重要更新：本版本强制升级，修复了随心记webdav同步概率丢失的问题",
+        "🛠️ 修复了图片分享失败，目前可以直接调用app进行分享了",
+        "🛠️ 优化手动检测更新后更新弹窗显示异常"
     ],
     "downloadUrl": {
-        "android": "https://dl.lingshichat.top/Android/paper_whisper_flutter_android_1.3.0.apk",
-        "windows": "https://dl.lingshichat.top/Windows/paper_whisper_flutter_windows_1.3.0.zip"
+        "android": "https://dl.lingshichat.top/Android/paper_whisper_flutter_android_1.3.1.apk",
+        "windows": "https://dl.lingshichat.top/Windows/paper_whisper_flutter_windows_1.3.1.zip"
     },
     "backupUrl": {
         "android": "https://pan.baidu.com/s/5yCz-SftTvyEAJl0oZRaN1Q?_at_=1768287810796#list/path=%2F",

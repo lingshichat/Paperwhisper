@@ -16,6 +16,7 @@ import '../services/webdav_sync_service.dart';
 import '../services/diary_service.dart';
 import '../services/moment_service.dart';
 import '../widgets/skeuomorphic_dialog.dart';
+import '../widgets/skeuomorphic_toast.dart';
 import 'diary_provider.dart';
 
 enum SyncStatus { none, syncing, success, failed }
@@ -90,8 +91,20 @@ class SyncProvider with ChangeNotifier {
   }
 
   Future<void> saveConfig(SyncConfig newConfig) async {
-    _config = newConfig;
     final prefs = await SharedPreferences.getInstance();
+    
+    // Check for critical changes (Server URL or Username)
+    // If changed, we MUST reset the sync history (LastKnownManifests)
+    // to prevent the "New Empty Server = All Deleted" logic from wiping local data.
+    if (_config.serverUrl != newConfig.serverUrl || _config.username != newConfig.username) {
+       debugPrint("Sync Config changed (Server/User). Resetting sync history to prevent data loss.");
+       await prefs.remove('last_known_remote_manifest');
+       await prefs.remove('last_known_moments_manifest');
+       await prefs.remove('last_sync_time');
+       _lastSyncTime = null;
+    }
+
+    _config = newConfig;
     await prefs.setString('sync_config', jsonEncode(_config.toJson()));
     notifyListeners();
     
@@ -119,11 +132,23 @@ class SyncProvider with ChangeNotifier {
   /// [fromLifecycle]: 是否由生命周期(如切前台)触发。如果是，则受 5分钟 冷却限制。
   /// 请求自动同步（防抖 30秒）
   /// [fromLifecycle]: 是否由生命周期(如切前台)触发。如果是，则受 5分钟 冷却限制。
-  Future<void> requestAutoSync({bool fromLifecycle = false}) async {
+  /// [force]: 是否强制立即同步（忽略防抖和冷却）。适用于用户手动触发或重要保存操作。
+  Future<void> requestAutoSync({bool fromLifecycle = false, bool force = false, BuildContext? context}) async {
     // 等待初始化完成，避免冷启动时 _lastSyncTime 尚未加载导致冷却失效
     await _initFuture;
 
     if (!_config.enabled) return;
+
+    // Force Sync: Skip checks, run immediately
+    if (force) {
+      debugPrint('Force Sync requested. Skipping debounce and cooldown.');
+      if (_autoSyncTimer?.isActive ?? false) _autoSyncTimer!.cancel();
+      // Pass context for feedback
+      sync(isAuto: true, context: context).catchError((e) {
+         debugPrint('Force Sync caught error: $e');
+      });
+      return;
+    }
     
     // Cooldown verification for lifecycle events
     if (fromLifecycle && _lastSyncTime != null) {
@@ -139,7 +164,12 @@ class SyncProvider with ChangeNotifier {
     
     _autoSyncTimer = Timer(const Duration(seconds: 30), () {
       debugPrint('AutoSync triggered!');
-      sync(isAuto: true);
+      // Context might be stale here if widget disposed, so usually we don't pass context 
+      // from a delayed timer unless we are sure. 
+      // Safe to pass null for pure auto sync.
+      sync(isAuto: true).catchError((e) {
+         debugPrint('AutoSync caught error: $e');
+      });
     });
   }
 
@@ -178,7 +208,7 @@ class SyncProvider with ChangeNotifier {
   }
 
   /// 执行完整同步
-  Future<void> sync({bool isAuto = false}) async {
+  Future<void> sync({bool isAuto = false, BuildContext? context}) async {
     if (_status == SyncStatus.syncing) return;
     if (!_config.enabled) return;
 
@@ -187,6 +217,9 @@ class SyncProvider with ChangeNotifier {
       bool connected = await connect(test: false);
       if (!connected) {
         _setStatus(SyncStatus.failed, error: '无法连接到服务器');
+        if (context != null) {
+             SkeuomorphicToast.error(context, "无法连接到 WebDAV 服务器");
+        }
         return;
       }
     }
@@ -214,6 +247,11 @@ class SyncProvider with ChangeNotifier {
       // 刷新 UI
       await _diaryProvider!.loadEntries();
       
+      // Success Feedback
+      if (context != null) {
+         SkeuomorphicToast.success(context, "同步成功");
+      }
+      
       // 完成通知
       if (!isAuto) {
          _showCompletionNotification('同步成功');
@@ -224,7 +262,28 @@ class SyncProvider with ChangeNotifier {
     } catch (e) {
       debugPrint('Sync failed: $e');
       _setStatus(SyncStatus.failed, error: e.toString());
+      
+      // Error Feedback via Toast
+      if (context != null) {
+         String msg = "同步失败";
+         final errStr = e.toString();
+         if (errStr.contains("Forbidden") || errStr.contains("403")) {
+            msg = "同步失败 (403): 权限被拒绝\n请检查WebDAV配置或剩余空间";
+         } else if (errStr.contains("401") || errStr.contains("Unauthorized")) {
+            msg = "同步失败 (401): 账号或密码错误";
+         } else if (errStr.contains("Service Unavailable") || errStr.contains("503") || errStr.contains("Blocked")) {
+             msg = "同步失败: 服务器繁忙/暂停服务\n操作过于频繁，请等待15分钟后再试";
+         } else if (errStr.contains("SocketException") || errStr.contains("Network")) {
+             msg = "同步失败: 网络连接异常";
+         } else {
+             // Extract short error message
+             msg = "同步失败: ${errStr.length > 50 ? errStr.substring(0, 50) + '...' : errStr}"; 
+         }
+         SkeuomorphicToast.error(context, msg);
+      }
+      
       if (!isAuto) _showCompletionNotification('同步失败: $e');
+      rethrow;
     }
   }
   
@@ -232,11 +291,20 @@ class SyncProvider with ChangeNotifier {
   // 并发处理辅助
   // ==========================================
   Future<void> _processBatch<T>(List<T> items, Future<void> Function(T) action) async {
-    const int batchSize = 3;
+    // 坚果云等 WebDAV 服务对并发请求有严格限制 (部分触发 403 Forbidden)
+    // 降级为串行处理 (Batch Size = 1) 并增加间隔
+    const int batchSize = 1; 
+    
     for (var i = 0; i < items.length; i += batchSize) {
       final end = (i + batchSize < items.length) ? i + batchSize : items.length;
       final batch = items.sublist(i, end);
+      
       await Future.wait(batch.map((item) => action(item)));
+      
+      // 增加 1000ms 间隔，避免触发 API 速率限制 (坚果云极其敏感)
+      if (i + batchSize < items.length) {
+         await Future.delayed(const Duration(milliseconds: 1000));
+      }
     }
   }
   
@@ -565,128 +633,166 @@ class SyncProvider with ChangeNotifier {
   }
 
   // ==========================================
-  // 随心记同步逻辑 (Moments)
+  // 随心记同步逻辑 (Manifest Based)
   // ==========================================
   Future<void> _syncMoments(bool isAuto) async {
       await _momentService.init();
       final localDir = _momentService.dataDir;
       if (localDir == null) return;
       
-      await _syncMomentJsonFiles(localDir, isAuto);
+      // 1. Sync JSONs (Manifest Based)
+      await _syncMomentJsonFiles(isAuto);
       
+      // 2. Sync Images (Append/Check only)
       final imagesDir = Directory(path.join(localDir.path, 'images'));
       if (await imagesDir.exists()) {
          await _syncMomentImages(imagesDir, isAuto);
       }
   }
 
-  Future<void> _syncMomentJsonFiles(Directory localDir, bool isAuto) async {
-      final prefs = await SharedPreferences.getInstance();
-      List<String> lastKnownRemoteFiles = prefs.getStringList('last_known_moments_manifest') ?? [];
-
-      if (!isAuto) _showNotification(null, null, body: "正在检查随心记...");
-
-      List<webdav.File> currentRemoteFilesRaw = await _webDavService.listRemoteFiles(
-        remotePath: WebDavSyncService.momentsBasePath
-      );
-      
-      List<webdav.File> currentRemoteFilesList = currentRemoteFilesRaw
-          .where((f) => f.name != null && f.name!.endsWith('.json'))
-          .toList();
-      Map<String, webdav.File> currentRemoteMap = {
-        for (var f in currentRemoteFilesList) f.name!: f
-      };
-      
-      List<FileSystemEntity> localFiles = localDir.listSync();
-      Map<String, File> currentLocalMap = {};
-      for (var f in localFiles) {
-        if (f is File && path.extension(f.path) == '.json') {
-          currentLocalMap[path.basename(f.path)] = f;
-        }
-      }
-
-      // Cloud Delete -> Local Delete
-      for (var filename in lastKnownRemoteFiles) {
-        if (!currentRemoteMap.containsKey(filename) && currentLocalMap.containsKey(filename)) {
-           try {
-             await currentLocalMap[filename]!.delete();
-             currentLocalMap.remove(filename);
-           } catch(e) {
-             debugPrint('Sync Moments: Error deleting local file $filename: $e');
-           }
-        }
-      }
-
-      // Local Delete -> Cloud Delete
-      List<String> filesToDeleteRemote = [];
-      for (var filename in lastKnownRemoteFiles) {
-        if (currentRemoteMap.containsKey(filename) && !currentLocalMap.containsKey(filename)) {
-          filesToDeleteRemote.add(filename);
-        }
-      }
-      
-      if (filesToDeleteRemote.isNotEmpty) {
-         await _processBatch(filesToDeleteRemote, (filename) async {
-            await _webDavService.deleteFile(WebDavSyncService.momentsBasePath + filename);
-         });
-         for(var f in filesToDeleteRemote) currentRemoteMap.remove(f);
-      }
-
-      List<String> toDownload = [];
-      List<String> toUpload = [];
-      
-      for (var filename in currentRemoteMap.keys) {
-        final remote = currentRemoteMap[filename]!;
-        final localFile = currentLocalMap[filename];
-
-        if (localFile == null) {
-          toDownload.add(filename);
-        } else if (remote.mTime != null) {
-            final remoteTime = remote.mTime!;
-            final localTime = await localFile.lastModified();
-            if (remoteTime.difference(localTime).inSeconds > 2) {
-               toDownload.add(filename);
-             } else if (localTime.difference(remoteTime).inSeconds > 2) {
-               toUpload.add(filename);
+  Future<void> _syncMomentJsonFiles(bool isAuto) async {
+       final service = _momentService; // Use MomentService instance
+       await service.init();
+       
+       // 1. 获取本地 Manifest
+       final localManifest = service.manifestService.manifest;
+       
+       // 2. 获取云端 Manifest
+       if (!isAuto) _showNotification(null, null, body: "正在获取随心记索引...");
+       final remoteManifestJsonStr = await _webDavService.readRemoteFile(
+         WebDavSyncService.rootPath + 'moments_manifest.json'
+       );
+       
+       SyncManifest remoteManifest;
+       if (remoteManifestJsonStr == null) {
+         remoteManifest = SyncManifest(lastSyncTimestamp: 0, items: {});
+       } else {
+         try {
+           remoteManifest = SyncManifest.fromJson(jsonDecode(remoteManifestJsonStr));
+         } catch (e) {
+           debugPrint("Error parsing remote moments manifest: $e");
+           remoteManifest = SyncManifest(lastSyncTimestamp: 0, items: {});
+         }
+       }
+       
+       // 3. 合并 Manifest
+       final mergedItems = _mergeManifests(localManifest, remoteManifest);
+       
+       // 4. 执行差异同步
+       int processed = 0;
+       int totalOps = 0;
+       
+       List<String> toDownload = [];
+       List<String> toUpload = [];
+       List<String> toDeleteLocal = [];
+       List<String> toTrashRemote = []; 
+       
+       for (var filename in mergedItems.keys) {
+          final item = mergedItems[filename]!;
+          final localFile = File(path.join(service.dataDir!.path, filename));
+          final localExists = await localFile.exists();
+          
+          if (item.isDeleted) {
+             if (localExists) {
+                toDeleteLocal.add(filename);
              }
-        }
-        if (toDownload.contains(filename) || toUpload.contains(filename)) currentLocalMap.remove(filename);
-      }
-
-      for (var entry in currentLocalMap.entries) toUpload.add(entry.key);
-
-      int processed = 0;
-      int total = toDownload.length + toUpload.length;
-
-      // Downloads
-      await _processBatch(toDownload, (filename) async {
+             final remoteItem = remoteManifest.items[filename];
+             if (remoteItem == null || !remoteItem.isDeleted) {
+                toTrashRemote.add(filename);
+             }
+          } else {
+             if (!localExists) {
+                toDownload.add(filename);
+             } else {
+                final localItem = localManifest.items[filename];
+                final remoteItem = remoteManifest.items[filename];
+                
+                bool fromRemote = remoteItem != null && 
+                    remoteItem.versionTimestamp == item.versionTimestamp &&
+                    remoteItem.versionTimestamp != (localItem?.versionTimestamp ?? -1);
+                    
+                bool fromLocal = localItem != null && 
+                    localItem.versionTimestamp == item.versionTimestamp &&
+                    localItem.versionTimestamp != (remoteItem?.versionTimestamp ?? -1);
+ 
+                if (fromRemote) toDownload.add(filename);
+                else if (fromLocal) toUpload.add(filename);
+             }
+          }
+       }
+       
+       totalOps = toDownload.length + toUpload.length + toDeleteLocal.length + toTrashRemote.length;
+       
+       if (!isAuto && totalOps > 0) {
+         _showNotification(processed, totalOps, body: "同步随心记 ($totalOps)...");
+       }
+ 
+       // Downloads
+       await _processBatch(toDownload, (filename) async {
           await _webDavService.downloadFile(
-            WebDavSyncService.momentsBasePath + filename, 
-            path.join(localDir.path, filename)
+             WebDavSyncService.momentsBasePath + filename,
+             path.join(service.dataDir!.path, filename)
+          );
+          service.manifestService.updateItem(filename, 
+            timestamp: mergedItems[filename]!.versionTimestamp,
+            isDeleted: false
           );
           processed++;
-          if (!isAuto) _showNotification(processed, total, body: "随心记下载: $filename");
-      });
-
-      // Uploads
-      await _processBatch(toUpload, (filename) async {
-          File f = File(path.join(localDir.path, filename));
-          if (await f.exists()) {
-             await _webDavService.uploadFile(
-               f.path, 
+          if (!isAuto) _showNotification(processed, totalOps, body: "随心记下载: $filename");
+       });
+       
+       // Uploads
+       await _processBatch(toUpload, (filename) async {
+          final file = File(path.join(service.dataDir!.path, filename));
+          if (await file.exists()) {
+            await _webDavService.uploadFile(
+               file.path,
                WebDavSyncService.momentsBasePath + filename
-             );
-             processed++;
-             if (!isAuto) _showNotification(processed, total, body: "随心记上传: $filename");
+            );
           }
-      });
-
-      // Update Snapshot (Local Calculation)
-      Set<String> finalKeys = currentRemoteMap.keys.toSet();
-      finalKeys.removeAll(filesToDeleteRemote);
-      finalKeys.addAll(toUpload); // Add new/updated files
-
-      await prefs.setStringList('last_known_moments_manifest', finalKeys.toList());
+          processed++;
+          if (!isAuto) _showNotification(processed, totalOps, body: "随心记上传: $filename");
+       });
+       
+       // Local Deletes
+       await _processBatch(toDeleteLocal, (filename) async {
+          final file = File(path.join(service.dataDir!.path, filename));
+          if (await file.exists()) {
+             // For moments, we can just delete or move to a local trash if we had one.
+             await file.delete(); 
+          }
+          processed++;
+       });
+       
+       // Remote Deletes (Move to Trash)
+       await _processBatch(toTrashRemote, (filename) async {
+          final srcPath = WebDavSyncService.momentsBasePath + filename;
+          final trashPath = WebDavSyncService.trashBasePath + "moments_" + filename;
+          
+          await _webDavService.ensureDirectoryExists(WebDavSyncService.trashBasePath);
+          
+          try {
+            await _webDavService.moveFile(srcPath, trashPath);
+          } catch (e) {
+            debugPrint("Remote moment move failed: $e");
+          }
+          processed++;
+       });
+       
+       // 5. 更新 Local Manifest (Merge Result)
+       for (var item in mergedItems.values) {
+         service.manifestService.updateItem(item.filename, 
+            timestamp: item.versionTimestamp,
+            isDeleted: item.isDeleted
+         );
+       }
+       
+       // 6. 更新 Remote Manifest
+       final newManifest = service.manifestService.manifest; 
+       await _webDavService.writeRemoteFile(
+          WebDavSyncService.rootPath + 'moments_manifest.json',
+          jsonEncode(newManifest.toJson())
+       );
   }
 
   Future<void> _syncMomentImages(Directory localImagesDir, bool isAuto) async {

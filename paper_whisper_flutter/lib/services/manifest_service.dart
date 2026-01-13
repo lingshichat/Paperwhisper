@@ -9,7 +9,7 @@ class ManifestService {
   File? _manifestFile;
   SyncManifest? _cachedManifest;
 
-  Future<void> init(Directory dataDir) async {
+  Future<void> init(Directory dataDir, {String manifestFileName = 'local_manifest.json'}) async {
     // Manifest is stored in the same parent directory as diary_data usually, or inside it?
     // Storing it INSIDE diary_data might be confusing if user syncs files manually.
     // Better store it in the parent 'PaperWhisper' directory.
@@ -18,7 +18,7 @@ class ManifestService {
     if (!await parentDir.exists()) {
        await parentDir.create(recursive: true);
     }
-    _manifestFile = File(path.join(parentDir.path, 'local_manifest.json'));
+    _manifestFile = File(path.join(parentDir.path, manifestFileName));
     await _load();
   }
   
@@ -68,7 +68,7 @@ class ManifestService {
   }
 
   /// Ensure manifest matches disk content (Migration/Recovery)
-  Future<void> ensureConsistency(Directory dataDir) async {
+  Future<void> ensureConsistency(Directory dataDir, {String fileExtension = '.txt'}) async {
      if (_cachedManifest == null) return;
      if (!await dataDir.exists()) return;
      
@@ -76,7 +76,7 @@ class ManifestService {
      bool changed = false;
      
      for (var f in files) {
-        if (f is File && path.extension(f.path) == '.txt') {
+        if (f is File && path.extension(f.path) == fileExtension) {
            final filename = path.basename(f.path);
            final item = _cachedManifest!.items[filename];
            

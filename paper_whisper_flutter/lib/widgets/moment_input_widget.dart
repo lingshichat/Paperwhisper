@@ -111,15 +111,18 @@ class _MomentInputWidgetState extends State<MomentInputWidget> {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: containerColor,
         boxShadow: boxShadows,
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
           // Image Preview
           if (_selectedImages.isNotEmpty)
             SizedBox(
@@ -174,7 +177,7 @@ class _MomentInputWidgetState extends State<MomentInputWidget> {
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: inputBorderColor),
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   child: TextField(
                     controller: _controller,
                     maxLines: 4,
@@ -186,6 +189,7 @@ class _MomentInputWidgetState extends State<MomentInputWidget> {
                       hintStyle: TextStyle(color: hintColor),
                       border: InputBorder.none,
                       isDense: true,
+contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
                     ),
                   ),
                 ),
@@ -201,6 +205,8 @@ class _MomentInputWidgetState extends State<MomentInputWidget> {
             ],
           ),
         ],
+          ),
+        ),
       ),
     );
   }

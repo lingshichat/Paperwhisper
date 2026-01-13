@@ -1,10 +1,9 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:url_launcher/url_launcher.dart'; // For Windows check
-import 'package:android_intent_plus/android_intent.dart';
-import 'package:android_intent_plus/flag.dart';
+import 'package:open_filex/open_filex.dart';
 import 'skeuomorphic_dialog.dart';
+import 'skeuomorphic_toast.dart';
 
 Future<void> showExportSuccessDialog(BuildContext context, String filePath) async {
   await showDialog(
@@ -34,26 +33,20 @@ Future<void> showExportSuccessDialog(BuildContext context, String filePath) asyn
             label: '去查看',
             isPrimary: true,
             onPressed: () async {
-              Navigator.pop(context);
-              if (Platform.isAndroid) {
-                 // Try to open directory or file
-                 const intent = AndroidIntent(
-                    action: 'android.intent.action.VIEW',
-                     // Use specific mime type for image or defaults to file manager?
-                     // VIEWing a folder is tricky. 
-                     // Best attempt: Open generic file manager or gallery
-                     type: 'image/*',
-                     flags: [Flag.FLAG_ACTIVITY_NEW_TASK],
-                 );
-                 try {
-                   await intent.launch();
-                 } catch (e) {
-                   debugPrint("Error launching android intent: $e");
+              Navigator.pop(context); // Close dialog first
+              
+              try {
+                final result = await OpenFilex.open(filePath);
+                if (result.type != ResultType.done) {
+                   if (context.mounted) {
+                     SkeuomorphicToast.error(context, "无法打开文件: ${result.message}");
+                   }
+                }
+              } catch (e) {
+                 debugPrint("Error opening file: $e");
+                 if (context.mounted) {
+                   SkeuomorphicToast.error(context, "打开失败");
                  }
-              } else if (Platform.isWindows) {
-                 // Open explorer
-                 final dir = Directory(filePath).parent.path;
-                 Process.run('explorer', [dir]);
               }
             },
           ),

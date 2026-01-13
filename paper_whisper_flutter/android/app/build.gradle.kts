@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "com.lingshichat.paper_whisper_flutter"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
     // 指定 NDK 版本以满足插件依赖 (path_provider, permission_handler, shared_preferences)
     ndkVersion = "27.0.12077973"
 
@@ -27,7 +27,7 @@ android {
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }

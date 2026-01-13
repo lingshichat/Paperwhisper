@@ -271,7 +271,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
            SkeuomorphicToast.success(context, '日记已保存，准备同步...');
            // 检查权限并请求同步
            syncProvider.checkNotificationPermission(context).then((_) {
-              if (mounted) syncProvider.requestAutoSync();
+              if (mounted) syncProvider.requestAutoSync(force: true);
            });
         } else {
            SkeuomorphicToast.success(context, '日记已保存');
@@ -646,7 +646,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         constraints: const BoxConstraints(minHeight: 300),
         child: _isEditing
            ? TextField(
-               controller: _contentController,
+                controller: _contentController,
                style: GoogleFonts.notoSerifSc(
                   fontSize: fontSize,
                   color: textColor,
@@ -661,12 +661,13 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                  leadingDistribution: TextLeadingDistribution.even,
                ),
                cursorColor: theme == AppTheme.themeMidnight ? const Color(0xFF7986cb) : (theme == AppTheme.themeAmberLens ? const Color(0xFFFF9800) : const Color(0xFFC0392B)),
-               cursorHeight: 20, // 稍大于字体高度，小于行高
+               cursorHeight: 22, // Slightly increase cursor height to fill the line better or keep it same
                decoration: const InputDecoration(
                  border: InputBorder.none,
                  contentPadding: EdgeInsets.zero,
-                 isCollapsed: true, // 移除所有默认内边距，避免影响行距
+                 isCollapsed: true, // 移除所有默认内边距
                  isDense: true, // 使用紧凑模式
+                 counterText: "", // Hide counter if any
                ),
                maxLines: null,
              )
@@ -675,7 +676,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                style: GoogleFonts.notoSerifSc(
                   fontSize: fontSize,
                   color: textColor,
-                  height: lineHeight / fontSize, // 保持与编辑模式一致的行高
+                  height: lineHeight / fontSize,
                ),
                strutStyle: StrutStyle(
                  fontFamily: GoogleFonts.notoSerifSc().fontFamily,

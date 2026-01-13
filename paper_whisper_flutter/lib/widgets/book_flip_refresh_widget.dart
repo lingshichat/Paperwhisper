@@ -112,7 +112,7 @@ class _BookFlipRefreshWidgetState extends State<BookFlipRefreshWidget>
       _pageFlipController.stop();
       
       if (mounted) {
-        SkeuomorphicToast.error(context, '同步失败: $e');
+         // Toast handled by SyncProvider or caller
       }
       await Future.delayed(const Duration(milliseconds: 500));
     }
