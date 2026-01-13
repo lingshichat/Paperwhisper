@@ -10,6 +10,7 @@ import '../pages/settings_page.dart';
 import '../widgets/slide_page_route.dart';
 import '../providers/settings_provider.dart';
 import '../pages/editor_page.dart';
+import '../pages/trash_page.dart';
 import '../widgets/paper_fold_page_route.dart';
 
 class SidebarWidget extends StatefulWidget {
@@ -372,6 +373,7 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                
                Divider(color: theme == AppTheme.themeSeaFlower ? Colors.black12 : Colors.white10, height: 1),
                
+
                // Settings
                Padding(
                  padding: const EdgeInsets.symmetric(vertical: 10),

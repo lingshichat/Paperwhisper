@@ -78,7 +78,7 @@ class PaperSheetWidget extends StatelessWidget {
 
     Widget paperContent = Container(
       width: width,
-      constraints: const BoxConstraints(minHeight: 800),
+      constraints: const BoxConstraints(minHeight: 300),
       padding: padding,
       decoration: BoxDecoration(
         color: paperColor,

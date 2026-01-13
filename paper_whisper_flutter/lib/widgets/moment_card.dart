@@ -10,6 +10,10 @@ import 'package:provider/provider.dart';
 import '../models/moment.dart';
 import '../providers/settings_provider.dart';
 import '../config/app_theme.dart';
+import 'skeuomorphic_toast.dart';
+import 'export_success_dialog.dart';
+import 'skeuomorphic_dialog.dart';
+import '../pages/moment_detail_page.dart';
 
 class MomentCard extends StatefulWidget {
   final Moment moment;
@@ -21,7 +25,10 @@ class MomentCard extends StatefulWidget {
     required this.moment,
     this.baseDir,
     this.onTap,
+    this.onDelete,
   });
+
+  final VoidCallback? onDelete;
 
   @override
   State<MomentCard> createState() => _MomentCardState();
@@ -45,8 +52,17 @@ class _MomentCardState extends State<MomentCard> {
       var byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       var pngBytes = byteData!.buffer.asUint8List();
 
-      final directory = await getApplicationDocumentsDirectory(); 
-      final exportDir = Directory(path.join(directory.path, 'PaperWhisper_Exports'));
+      final directory = await getApplicationDocumentsDirectory();
+      String exportPath;
+      
+      if (Platform.isAndroid) {
+        // Use public Documents folder
+        exportPath = '/storage/emulated/0/Documents/PaperWhisper_Exports';
+      } else {
+        exportPath = path.join(directory.path, 'PaperWhisper_Exports');
+      }
+      
+      final exportDir = Directory(exportPath);
       if (!await exportDir.exists()) {
         await exportDir.create(recursive: true);
       }
@@ -56,20 +72,12 @@ class _MomentCardState extends State<MomentCard> {
       await file.writeAsBytes(pngBytes);
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('已保存图片至: ${file.path}'),
-            action: SnackBarAction(label: '打开文件夹', onPressed: () {
-               if (Platform.isWindows) {
-                 Process.run('explorer', [exportDir.path]);
-               }
-            }),
-          )
-        );
+         // Use new Dialog
+         await showExportSuccessDialog(context, file.path);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('保存失败: $e')));
+        SkeuomorphicToast.error(context, '保存失败: $e');
       }
     } finally {
       // 2. Hide watermark
@@ -77,6 +85,35 @@ class _MomentCardState extends State<MomentCard> {
         setState(() => _showWatermark = false);
       }
     }
+  }
+
+  Future<void> _confirmDelete() async {
+    showDialog(
+      context: context,
+      builder: (ctx) => SkeuomorphicDialog(
+        title: '删除随心记',
+        headerIcon: Icons.delete_forever,
+        content: const Text(
+          '确定要删除这条随心记吗？\n删除后将无法恢复。',
+          textAlign: TextAlign.center,
+        ),
+        actions: [
+          SkeuomorphicDialogButton(
+            label: '取消', 
+            isPrimary: false, 
+            onPressed: () => Navigator.pop(ctx)
+          ),
+          SkeuomorphicDialogButton(
+            label: '删除', 
+            isPrimary: true, 
+            onPressed: () {
+               Navigator.pop(ctx);
+               if (widget.onDelete != null) widget.onDelete!();
+            }
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -112,6 +149,7 @@ class _MomentCardState extends State<MomentCard> {
          ]);
 
     final bool hasImage = widget.moment.images.isNotEmpty;
+    final String heroTag = 'moment_${widget.moment.uuid}';
     
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -120,8 +158,24 @@ class _MomentCardState extends State<MomentCard> {
         RepaintBoundary(
           key: _globalKey,
           child: GestureDetector(
-            onTap: widget.onTap,
-            child: Container(
+            onTap: () {
+               Navigator.of(context).push(
+                 PageRouteBuilder(
+                   opaque: false, 
+                   pageBuilder: (_, __, ___) => MomentDetailPage(
+                     moment: widget.moment,
+                     baseDir: widget.baseDir,
+                     heroTag: heroTag,
+                   ),
+                   transitionsBuilder: (_, animation, __, child) {
+                     return FadeTransition(opacity: animation, child: child);
+                   }
+                 )
+               );
+            },
+            child: Hero(
+              tag: heroTag,
+              child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 6), // Reduce vertical margin for list
               decoration: BoxDecoration(
                 color: cardBg,
@@ -224,16 +278,24 @@ class _MomentCardState extends State<MomentCard> {
             ),
           ),
         ),
+      ),
         
-        // Share Button (Outside RepaintBoundary)
+        // Actions Row (Outside RepaintBoundary)
         Padding(
           padding: const EdgeInsets.only(right: 24, bottom: 12),
-          child: InkWell(
-            onTap: _captureAndSave,
-            child: Padding(
-              padding: const EdgeInsets.all(4.0),
-              child: Icon(Icons.share_outlined, size: 18, color: iconColor),
-            ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+               // Delete (Only delete remains)
+               if (widget.onDelete != null)
+                 InkWell(
+                  onTap: _confirmDelete,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: Icon(Icons.delete_outline, size: 18, color: iconColor.withOpacity(0.7)),
+                  ),
+                 ),
+            ],
           ),
         )
       ],
@@ -242,7 +304,13 @@ class _MomentCardState extends State<MomentCard> {
 
   Widget _buildImage(String relativePath) {
     if (widget.baseDir == null) return const SizedBox();
-    File file = File(path.join(widget.baseDir!.path, relativePath));
+    
+    // Sanitize path for cross-platform (Windows might save with '\', Android needs '/')
+    // Split by both separators and rejoin using local system separator
+    List<String> parts = relativePath.split(RegExp(r'[/\\]'));
+    String localPath = path.joinAll(parts);
+    
+    File file = File(path.join(widget.baseDir!.path, localPath));
     return Image.file(file, fit: BoxFit.cover, errorBuilder: (_,__,___) => const SizedBox());
   }
 

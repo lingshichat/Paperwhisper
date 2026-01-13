@@ -55,7 +55,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     // 冷启动自动同步
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-         context.read<SyncProvider>().requestAutoSync();
+         context.read<SyncProvider>().requestAutoSync(fromLifecycle: true);
       }
     });
   }
@@ -71,7 +71,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) {
        // 切回前台自动同步
        if (mounted) {
-         context.read<SyncProvider>().requestAutoSync();
+         context.read<SyncProvider>().requestAutoSync(fromLifecycle: true);
        }
     }
   }

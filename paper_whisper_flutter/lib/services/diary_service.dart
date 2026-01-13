@@ -4,12 +4,19 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 import 'package:uuid/uuid.dart';
 import '../models/diary_entry.dart';
-
+import 'manifest_service.dart';
+import 'trash_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class DiaryService {
   Directory? _dataDir;
   final Uuid _uuid = const Uuid();
+  
+  final ManifestService _manifestService = ManifestService();
+  final TrashService _trashService = TrashService();
+  
+  ManifestService get manifestService => _manifestService;
+  TrashService get trashService => _trashService;
 
   // 获取数据目录路径，供 UI 显示调试用
   String get currentDataPath => _dataDir?.path ?? 'Unknown';
@@ -23,47 +30,42 @@ class DiaryService {
     if (_dataDir != null) return;
 
     if (Platform.isWindows) {
-      // 1. 开发/迁移模式：检查上级目录的 diary_data (针对当前 workspace)
-      // 当前运行在 paper_whisper_flutter 下，上级是 paperwhisper
-      Directory devLegacyDir = Directory(path.normalize(path.absolute('..', 'diary_data')));
-      if (await devLegacyDir.exists()) {
-        _dataDir = devLegacyDir;
-        debugPrint("Using Legacy/Dev Data Dir: ${_dataDir!.path}");
-      } else {
-        // 2. 便携模式：检查可执行文件同级 diary_data
-        String exeDir = path.dirname(Platform.resolvedExecutable);
-        Directory portableDir = Directory(path.join(exeDir, 'diary_data'));
-        if (await portableDir.exists()) {
-          _dataDir = portableDir;
-        } else {
-          // 3. 标准模式：文档目录/PaperWhisper
-          final docDir = await getApplicationDocumentsDirectory();
-          _dataDir = Directory(path.join(docDir.path, 'PaperWhisper', 'diary_data'));
-        }
+      // 1. Windows: 优先使用文档目录 (Standard Mode)，不再根据 Dev/Portable 随意切换，保证数据位置唯一
+      final docDir = await getApplicationDocumentsDirectory();
+      _dataDir = Directory(path.join(docDir.path, 'PaperWhisper', 'diary_data'));
+      
+      // 旧版/便携版兼容检查 (Optional: 如果发现标准目录为空但旧目录有数据，可以考虑迁移，但为了避免混乱，暂时只打印 Log)
+      String exeDir = path.dirname(Platform.resolvedExecutable);
+      Directory portableDir = Directory(path.join(exeDir, 'diary_data'));
+      if (await portableDir.exists()) {
+         debugPrint("Found Portable Data: ${portableDir.path} (Using Standard Path instead: ${_dataDir!.path})");
       }
     } else if (Platform.isAndroid) {
-      // Android: 检查权限状态，但不请求。权限请求移交 UI 层 (DiaryListPage) 处理。
-      // 这里的逻辑适用于 Android 11+ (SDK 30+)
+      // Android: 权限检查移交 UI 层，这里只做路径决策和迁移
       var status = await Permission.manageExternalStorage.status;
       
-      // 如果没有 MANAGE_EXTERNAL_STORAGE，检查旧版存储权限
+      // 检查旧版存储权限
       bool hasLegacyStorage = false;
       if (!status.isGranted) {
          var storageStatus = await Permission.storage.status;
          hasLegacyStorage = storageStatus.isGranted;
       }
-
-      if (status.isGranted || hasLegacyStorage) {
+      
+      final bool canUsePublic = status.isGranted || hasLegacyStorage;
+      
+      if (canUsePublic) {
          // 有权限：使用公共 Documents 目录
          _dataDir = Directory('/storage/emulated/0/Documents/PaperWhisper/diary_data');
+         
+         // [MIGRATION] 检查是否存在私有目录数据，如果有则迁移
+         await _migrateFromPrivateToPublic(_dataDir!);
       } else {
-         // 无权限：使用应用私有目录 (Fallback)
-         // 注意：UI 层会在启动时请求权限，如果用户拒绝，则会使用此 Fallback
+         // 无权限：使用应用私有目录
          final appDir = await getApplicationDocumentsDirectory();
          _dataDir = Directory(path.join(appDir.path, 'diary_data'));
       }
     } else {
-      // iOS
+      // iOS / MacOS
       final appDir = await getApplicationDocumentsDirectory();
       _dataDir = Directory(path.join(appDir.path, 'diary_data'));
     }
@@ -73,13 +75,58 @@ class DiaryService {
         await _dataDir!.create(recursive: true);
       } catch (e) {
         debugPrint("Error creating data dir: $e");
-        // Fallback for Android if permission denied: use App App-Specific storage
+        // Fallback
         if (Platform.isAndroid) {
           final appDir = await getApplicationDocumentsDirectory();
           _dataDir = Directory(path.join(appDir.path, 'diary_data'));
           await _dataDir!.create(recursive: true);
         }
       }
+    }
+    
+    debugPrint("✅ DiaryService Initialized. Using Data Dir: ${_dataDir!.path}");
+    
+    // Init Helper Services
+    await _manifestService.init(_dataDir!);
+    await _trashService.init(_dataDir!);
+    await _manifestService.ensureConsistency(_dataDir!);
+  }
+
+  /// Android: 将私有目录数据迁移到公共目录
+  Future<void> _migrateFromPrivateToPublic(Directory publicDir) async {
+    try {
+      final appDir = await getApplicationDocumentsDirectory();
+      final privateDir = Directory(path.join(appDir.path, 'diary_data'));
+      
+      if (await privateDir.exists()) {
+        final files = privateDir.listSync();
+        if (files.isEmpty) return;
+        
+        // 确保目标目录已创建
+        if (!await publicDir.exists()) {
+          await publicDir.create(recursive: true);
+        }
+
+        int count = 0;
+        for (var entity in files) {
+          if (entity is File && entity.path.endsWith('.txt')) {
+             String filename = path.basename(entity.path);
+             File targetFile = File(path.join(publicDir.path, filename));
+             
+             // 如果目标文件不存在，才移动（避免覆盖）
+             if (!await targetFile.exists()) {
+               await entity.copy(targetFile.path); // Copy first
+               await entity.delete(); // Then delete
+               count++;
+             }
+          }
+        }
+        if (count > 0) {
+          debugPrint("🚀 Migrated $count diaries from Private to Public storage.");
+        }
+      }
+    } catch (e) {
+      debugPrint("Migration failed: $e");
     }
   }
 
@@ -129,6 +176,9 @@ class DiaryService {
     File file = File(path.join(_dataDir!.path, filename));
     await file.writeAsString(entry.toFileContent());
     
+    // Update Manifest
+    _manifestService.updateItem(filename, isDeleted: false);
+    
     return filename;
   }
 
@@ -136,7 +186,11 @@ class DiaryService {
     await init();
     File file = File(path.join(_dataDir!.path, filename));
     if (await file.exists()) {
-      await file.delete();
+      // Logic changed: Move to Trash instead of Delete
+      await _trashService.moveToTrash(file);
     }
+    
+    // Update Manifest: Mark as deleted (soft delete)
+    _manifestService.updateItem(filename, isDeleted: true);
   }
 }

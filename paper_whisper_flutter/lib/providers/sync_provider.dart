@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import '../models/sync_manifest.dart';
+import '../models/diary_entry.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -41,8 +43,10 @@ class SyncProvider with ChangeNotifier {
   DateTime? get lastSyncTime => _lastSyncTime;
   bool get isConfigured => _config.enabled && _config.serverUrl.isNotEmpty;
 
+  late Future<void> _initFuture;
+
   SyncProvider() {
-    _loadConfig();
+    _initFuture = _loadConfig();
     _initNotifications();
   }
 
@@ -111,8 +115,24 @@ class SyncProvider with ChangeNotifier {
   }
   
   /// 请求自动同步（防抖 30秒）
-  void requestAutoSync() {
+  /// 请求自动同步（防抖 30秒）
+  /// [fromLifecycle]: 是否由生命周期(如切前台)触发。如果是，则受 5分钟 冷却限制。
+  /// 请求自动同步（防抖 30秒）
+  /// [fromLifecycle]: 是否由生命周期(如切前台)触发。如果是，则受 5分钟 冷却限制。
+  Future<void> requestAutoSync({bool fromLifecycle = false}) async {
+    // 等待初始化完成，避免冷启动时 _lastSyncTime 尚未加载导致冷却失效
+    await _initFuture;
+
     if (!_config.enabled) return;
+    
+    // Cooldown verification for lifecycle events
+    if (fromLifecycle && _lastSyncTime != null) {
+       final diff = DateTime.now().difference(_lastSyncTime!);
+       if (diff.inMinutes < 5) {
+         debugPrint('AutoSync suppressed (Cooldown: ${5 - diff.inMinutes}m remaining)');
+         return;
+       }
+    }
     
     debugPrint('AutoSync requested. Debouncing...');
     if (_autoSyncTimer?.isActive ?? false) _autoSyncTimer!.cancel();
@@ -221,9 +241,210 @@ class SyncProvider with ChangeNotifier {
   }
   
   // ==========================================
-  // 日记同步逻辑 (Txt)
+  // 日记同步逻辑 (Manifest Based)
   // ==========================================
   Future<void> _syncDiaries(bool isAuto) async {
+      final service = _diaryProvider!.service;
+      await service.init();
+      
+      // 1. 获取本地 Manifest
+      final localManifest = service.manifestService.manifest;
+      
+      // 2. 获取云端 Manifest
+      if (!isAuto) _showNotification(null, null, body: "正在获取云端索引...");
+      final remoteManifestJsonStr = await _webDavService.readRemoteFile(
+        WebDavSyncService.rootPath + 'manifest.json'
+      );
+      
+      SyncManifest remoteManifest;
+      if (remoteManifestJsonStr == null) {
+        remoteManifest = SyncManifest(lastSyncTimestamp: 0, items: {});
+      } else {
+        try {
+          remoteManifest = SyncManifest.fromJson(jsonDecode(remoteManifestJsonStr));
+        } catch (e) {
+          debugPrint("Error parsing remote manifest: $e");
+          remoteManifest = SyncManifest(lastSyncTimestamp: 0, items: {});
+        }
+      }
+      
+      // 3. 合并 Manifest (Conflict Resolution)
+      final mergedItems = _mergeManifests(localManifest, remoteManifest);
+      
+      // 4. 执行差异同步
+      int processed = 0;
+      int totalOps = 0;
+      
+      List<String> toDownload = [];
+      List<String> toUpload = [];
+      List<String> toDeleteLocal = [];
+      List<String> toTrashRemote = []; 
+      
+      for (var filename in mergedItems.keys) {
+         final item = mergedItems[filename]!;
+         final localFile = File(path.join(service.dataDir!.path, filename));
+         final localExists = await localFile.exists();
+         
+         if (item.isDeleted) {
+            if (localExists) {
+               toDeleteLocal.add(filename);
+            }
+            final remoteItem = remoteManifest.items[filename];
+            if (remoteItem == null || !remoteItem.isDeleted) {
+               toTrashRemote.add(filename);
+            }
+         } else {
+            if (!localExists) {
+               toDownload.add(filename);
+            } else {
+               final localItem = localManifest.items[filename];
+               final remoteItem = remoteManifest.items[filename];
+               
+               bool fromRemote = remoteItem != null && 
+                   remoteItem.versionTimestamp == item.versionTimestamp &&
+                   remoteItem.versionTimestamp != (localItem?.versionTimestamp ?? -1);
+                   
+               bool fromLocal = localItem != null && 
+                   localItem.versionTimestamp == item.versionTimestamp &&
+                   localItem.versionTimestamp != (remoteItem?.versionTimestamp ?? -1);
+
+               if (fromRemote) toDownload.add(filename);
+               else if (fromLocal) toUpload.add(filename);
+            }
+         }
+      }
+      
+      totalOps = toDownload.length + toUpload.length + toDeleteLocal.length + toTrashRemote.length;
+      
+      if (!isAuto && totalOps > 0) {
+        _showNotification(processed, totalOps, body: "开始同步 $totalOps 个变更...");
+      }
+
+      await _processBatch(toDownload, (filename) async {
+         await _webDavService.downloadFile(
+            WebDavSyncService.diaryBasePath + filename,
+            path.join(service.dataDir!.path, filename)
+         );
+         service.manifestService.updateItem(filename, 
+           timestamp: mergedItems[filename]!.versionTimestamp,
+           isDeleted: false
+         );
+         processed++;
+         if (!isAuto) _showNotification(processed, totalOps, body: "下载: $filename");
+      });
+      
+      await _processBatch(toUpload, (filename) async {
+         final file = File(path.join(service.dataDir!.path, filename));
+         if (await file.exists()) {
+           await _webDavService.uploadFile(
+              file.path,
+              WebDavSyncService.diaryBasePath + filename
+           );
+         }
+         processed++;
+         if (!isAuto) _showNotification(processed, totalOps, body: "上传: $filename");
+      });
+      
+      await _processBatch(toDeleteLocal, (filename) async {
+         final file = File(path.join(service.dataDir!.path, filename));
+         if (await file.exists()) {
+            await service.trashService.moveToTrash(file);
+         }
+         processed++;
+      });
+      
+      await _processBatch(toTrashRemote, (filename) async {
+         final srcPath = WebDavSyncService.diaryBasePath + filename;
+         final trashPath = WebDavSyncService.trashBasePath + filename;
+         
+         await _webDavService.ensureDirectoryExists(WebDavSyncService.trashBasePath);
+         
+         try {
+           await _webDavService.moveFile(srcPath, trashPath);
+         } catch (e) {
+           debugPrint("Remote move failed (maybe file already gone): $e");
+         }
+         processed++;
+      });
+      
+      for (var item in mergedItems.values) {
+        service.manifestService.updateItem(item.filename, 
+           timestamp: item.versionTimestamp,
+           isDeleted: item.isDeleted
+        );
+      }
+      
+      final newManifest = service.manifestService.manifest; 
+      await _webDavService.writeRemoteFile(
+         WebDavSyncService.rootPath + 'manifest.json',
+         jsonEncode(newManifest.toJson())
+      );
+      
+      // 6. Sync Trash (Safe Archive - Upload Only)
+      await _syncTrash(service, isAuto);
+  }
+  
+  Map<String, SyncItem> _mergeManifests(SyncManifest local, SyncManifest remote) {
+    Set<String> allKeys = {};
+    allKeys.addAll(local.items.keys);
+    allKeys.addAll(remote.items.keys);
+    
+    Map<String, SyncItem> merged = {};
+    
+    for (var key in allKeys) {
+      final localItem = local.items[key];
+      final remoteItem = remote.items[key];
+      
+      if (localItem == null && remoteItem == null) continue;
+      
+      if (localItem == null) {
+        merged[key] = remoteItem!;
+      } else if (remoteItem == null) {
+        merged[key] = localItem;
+      } else {
+        if (localItem.versionTimestamp >= remoteItem.versionTimestamp) {
+           merged[key] = localItem;
+        } else {
+           merged[key] = remoteItem;
+        }
+      }
+    }
+    return merged;
+  }
+  
+  Future<void> _syncTrash(DiaryService service, bool isAuto) async {
+    final trashFiles = await service.trashService.listValidTrashFiles();
+    if (trashFiles.isEmpty) return;
+    
+    if (!isAuto) _showNotification(null, null, body: "正在归档回收站...");
+    
+    try {
+      // 检查云端 Trash 目录是否存在
+      await _webDavService.ensureDirectoryExists(WebDavSyncService.trashBasePath);
+
+      final remoteTrashList = await _webDavService.listRemoteFiles(
+        remotePath: WebDavSyncService.trashBasePath
+      );
+      final remoteNames = remoteTrashList.map((f) => f.name).toSet();
+      
+      await _processBatch(trashFiles, (file) async {
+         final name = path.basename(file.path);
+         if (!remoteNames.contains(name)) {
+            await _webDavService.uploadFile(
+               file.path,
+               WebDavSyncService.trashBasePath + name
+            );
+         }
+      });
+    } catch (e) {
+      debugPrint("Trash sync failed (non-critical): $e");
+    }
+  }
+
+  // ==========================================
+  // 日记同步逻辑 (Txt) - LEGACY
+  // ==========================================
+  Future<void> _syncDiariesLegacy(bool isAuto) async {
       await _diaryProvider!.service.init();
       final localDir = _diaryProvider!.service.dataDir;
       if (localDir == null) throw Exception('本地日记目录不可用');

@@ -10,7 +10,10 @@ import '../services/update_service.dart';
 import '../widgets/update_dialog.dart';
 import '../widgets/skeuomorphic_toast.dart';
 import '../widgets/slide_page_route.dart';
+import '../pages/trash_page.dart';
 import 'sync_settings_page.dart';
+
+
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -123,7 +126,24 @@ class _SettingsPageState extends State<SettingsPage> {
           onTap: () {
             Navigator.push(
               context,
-              SlidePageRoute(page: const SyncSettingsPage()),
+              SlidePageRoute(page: SyncSettingsPage()),
+            );
+          },
+        ),
+        const SizedBox(height: 12),
+        // Recycle Bin
+        _buildSettingsItem(
+          context: context,
+          icon: Icons.delete_outline,
+          title: '回收站',
+          subtitle: '找回误删的日记',
+          isSeaFlower: isSeaFlower,
+          isMidnight: isMidnight,
+          textColor: textColor,
+          onTap: () {
+            Navigator.push(
+              context,
+              SlidePageRoute(page: TrashPage()),
             );
           },
         ),

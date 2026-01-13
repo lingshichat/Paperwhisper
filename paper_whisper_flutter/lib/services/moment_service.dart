@@ -143,8 +143,9 @@ class MomentService {
     
     await sourceFile.copy(destinationPath);
     
-    // Return relative path: images/filename
-    return path.join('images', filename);
+    // Return relative path: images/filename (Force POSIX style for cross-platform compatibility)
+    String relativePath = path.join('images', filename);
+    return relativePath.replaceAll('\\', '/');
   }
 
   /// Get absolute path of an image from its relative path

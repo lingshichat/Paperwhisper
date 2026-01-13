@@ -14,6 +14,7 @@ import '../providers/settings_provider.dart'; // Added
 import '../providers/sync_provider.dart'; // Added
 import '../config/app_theme.dart'; // Added
 import '../widgets/skeuomorphic_toast.dart'; // Added
+import '../widgets/skeuomorphic_dialog.dart'; // Added
 
 class MomentsPage extends StatefulWidget {
   const MomentsPage({super.key});
@@ -170,36 +171,56 @@ class _MomentsPageState extends State<MomentsPage> {
   Future<void> _handleAggregation() async {
     // Show Dialog
     String title = "今日份的日记";
+    String inputVal = "";
+    
+    // Using SkeuomorphicDialog
+    // We need a StatefulBuilder to manage input state if we want validation or just use a controller defined outside.
+    // Dialog execution is async, so local variable capture is fine.
+    
     String? result = await showDialog<String>(
       context: context,
       builder: (ctx) {
-        String inputVal = "";
-        return AlertDialog(
-          title: Text('生成长文日记', style: GoogleFonts.notoSerifSc(fontWeight: FontWeight.bold)),
+        return SkeuomorphicDialog(
+          title: '生成长文日记',
+          headerIcon: Icons.auto_awesome, // Magic icon
           content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('将今天的记录汇聚成篇，存入专注书写模块。', style: GoogleFonts.notoSerifSc(fontSize: 14)),
-              const SizedBox(height: 16),
-              TextField(
-                decoration: const InputDecoration(
-                  labelText: '为日记起个名字',
-                  hintText: '默认: 今日份的日记',
-                  border: OutlineInputBorder(),
-                ),
-                onChanged: (v) => inputVal = v,
-              ),
-            ],
+             mainAxisSize: MainAxisSize.min,
+             crossAxisAlignment: CrossAxisAlignment.start,
+             children: [
+               Text('将今天的记录汇聚成篇，存入专注书写模块。', style: GoogleFonts.notoSerifSc(fontSize: 14)),
+               const SizedBox(height: 20),
+               
+               // Skeuomorphic Input Field (Simple version)
+               Container(
+                 decoration: BoxDecoration(
+                   color: Colors.white.withValues(alpha: 0.5),
+                   border: Border(bottom: BorderSide(color: Colors.brown.shade300, width: 2)),
+                 ),
+                 child: TextField(
+                    autofocus: true,
+                    decoration: InputDecoration(
+                      labelText: '为日记起个名字',
+                      hintText: '默认: 今日份的日记',
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                      labelStyle: GoogleFonts.notoSerifSc(color: Colors.brown.shade700),
+                    ),
+                    style: GoogleFonts.notoSerifSc(color: Colors.brown.shade900),
+                    onChanged: (v) => inputVal = v,
+                 ),
+               )
+             ],
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx), 
-              child: const Text('取消')
+            SkeuomorphicDialogButton(
+               label: '取消', 
+               isPrimary: false,
+               onPressed: () => Navigator.pop(ctx)
             ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(ctx, inputVal.isEmpty ? title : inputVal),
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF8D6E63)),
-              child: const Text('生成', style: TextStyle(color: Colors.white)),
+            SkeuomorphicDialogButton(
+               label: '生成', 
+               isPrimary: true,
+               onPressed: () => Navigator.pop(ctx, inputVal.isEmpty ? title : inputVal)
             ),
           ],
         );
@@ -208,12 +229,6 @@ class _MomentsPageState extends State<MomentsPage> {
 
     if (result != null) {
       try {
-        // Reuse service logic but we need to pass title!
-        // The service method 'exportDailySummary' hardcoded title.
-        // I might need to update service or just copy logic here.
-        // Update service is cleaner. But for speed, I might just rely on service for now
-        // OR better: Update service to accept title.
-        
         await _momentService.exportDailySummary(_selectedDate, customTitle: result);
         
         if (!mounted) return;
@@ -223,7 +238,7 @@ class _MomentsPageState extends State<MomentsPage> {
             syncProvider.requestAutoSync();
         }
 
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('生成成功，正在跳转...')));
+        SkeuomorphicToast.success(context, '生成成功，正在跳转...');
         
         // Auto navigate to Writer
         Navigator.of(context).pushReplacement(
@@ -235,7 +250,7 @@ class _MomentsPageState extends State<MomentsPage> {
         );
         
       } catch (e) {
-         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('生成失败: $e')));
+         if (mounted) SkeuomorphicToast.error(context, '生成失败: $e');
       }
     }
   }
@@ -409,6 +424,14 @@ class _MomentsPageState extends State<MomentsPage> {
                                    return MomentCard(
                                      moment: moments[i],
                                      baseDir: _baseDir,
+                                     onDelete: () async {
+                                        await _momentService.deleteMoment(moments[i].uuid);
+                                        // Refresh
+                                        await _loadData();
+                                        if (mounted) {
+                                           SkeuomorphicToast.success(context, '随心记已删除');
+                                        }
+                                     },
                                    );
                                 },
                               );

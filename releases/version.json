@@ -1,22 +1,20 @@
 {
-    "latestVersion": "1.1.1",
-    "latestBuildNumber": 1,
+    "latestVersion": "1.2.0",
+    "latestBuildNumber": 2,
     "releaseDate": "2026-01-12",
     "isForceUpdate": false,
     "changelog": [
-        "🆕新增：",
-        "☁️ 更新webdav功能，下拉刷新即可配置",
-        "🛠️优化：",
-        "🎨 完美适配各主题状态栏颜色",
-        "🐌 全局转场动画更舒缓自然",
-        "✨ 细节体验持续打磨"
+        "✨ 新增随心记：随时随地捕捉灵感，轻盈记录每一刻",
+        "🎨 侧边栏焕新！交互体验全面升级",
+        "🕯️ 新增拟物主题：琥珀光圈，据说搭配随心记更香哦~",
+        "☁️ WebDAV同步优化，大大减少同步流量消耗"
     ],
     "downloadUrl": {
-        "android": "https://dl.lingshichat.top/Android/paper_whisper_flutter_android_1.1.1.apk",
-        "windows": "https://dl.lingshichat.top/Windows/paper_whisper_flutter_windows_1.1.1.zip"
+        "android": "https://dl.lingshichat.top/Android/paper_whisper_flutter_android_1.2.0.apk",
+        "windows": "https://dl.lingshichat.top/Windows/paper_whisper_flutter_windows_1.2.0.zip"
     },
     "backupUrl": {
-        "android": "https://lingshi.lanzouv.com/iUAac3ft2uoj",
+        "android": "",
         "windows": "https://lingshi.lanzouv.com/iUWt53ft3qvi"
     },
     "minSupportedVersion": "1.0.0"

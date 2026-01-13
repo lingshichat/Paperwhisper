@@ -1,27 +1,38 @@
-import 'dart:ui';
+import 'dart:async';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart'; // Added
+import 'package:google_fonts/google_fonts.dart';
 import '../providers/diary_provider.dart';
-import '../providers/sync_provider.dart'; // Added
+import '../providers/sync_provider.dart';
 import '../models/diary_entry.dart';
 import '../config/app_theme.dart';
 import '../providers/settings_provider.dart';
 import '../widgets/paper_sheet_widget.dart';
 import '../widgets/visual_effects.dart';
-import '../widgets/skeuomorphic_dialog.dart'; // Added
+import '../widgets/skeuomorphic_dialog.dart';
 import '../widgets/skeuomorphic_toast.dart';
+import '../services/draft_service.dart'; // Added
+import '../widgets/slide_page_route.dart'; // Needed for "Save As New" navigation
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as path;
+import 'dart:io';
+import '../widgets/export_success_dialog.dart';
+import 'package:flutter/rendering.dart'; // For RenderRepaintBoundary
 
 class EditorPage extends StatefulWidget {
   final DiaryEntry? entry;
-
+  
+  // 如果是从 draft 恢复的，则传入 content，否则为空
+  // 但我们通过 service 恢复，不需要传参，直接内部加载
+  
   const EditorPage({super.key, this.entry});
 
   @override
   State<EditorPage> createState() => _EditorPageState();
 }
 
-class _EditorPageState extends State<EditorPage> {
+class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   late TextEditingController _titleController;
   late TextEditingController _contentController;
   
@@ -31,10 +42,18 @@ class _EditorPageState extends State<EditorPage> {
   
   bool _isEditing = false;
   late String _currentDateStr;
+  
+  // Draft Logic
+  final _draftService = DraftService();
+  Timer? _autoSaveTimer;
+  bool _hasDraftChanges = false;
+  bool _hasCheckedDraft = false; // Prevent double checking
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    
     final e = widget.entry;
     _titleController = TextEditingController(text: e?.title ?? '');
     _contentController = TextEditingController(text: e?.content ?? '');
@@ -43,16 +62,191 @@ class _EditorPageState extends State<EditorPage> {
     _isMarkdown = e?.isMarkdown ?? false; 
     _isEditing = (e == null);
     _currentDateStr = e?.dateString ?? DateTime.now().toString().split(' ')[0];
+    
+    // Listeners for auto-save
+    _titleController.addListener(_onTextChanged);
+    _contentController.addListener(_onTextChanged);
+    
+    // Check Draft after UI build (For BOTH new and existing entries)
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkDraft());
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _autoSaveTimer?.cancel();
     _titleController.dispose();
     _contentController.dispose();
     super.dispose();
   }
+  
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      _performAutoSave(); // 切后台立即保存
+    }
+  }
+
+  // Auto-Save Logic (Debounce)
+  void _onTextChanged() {
+    if (!_isEditing) return;
+    
+    // Reset timer
+    _autoSaveTimer?.cancel();
+    _autoSaveTimer = Timer(const Duration(seconds: 2), _performAutoSave);
+    _hasDraftChanges = true;
+  }
+
+  Future<void> _performAutoSave() async {
+    if (!mounted || !_hasDraftChanges) return;
+    if (_titleController.text.isEmpty && _contentController.text.isEmpty) return; // 空内容不存
+
+    final id = widget.entry?.filename ?? 'new';
+    final currentEntry = DiaryEntry(
+      filename: id == 'new' ? '' : id,
+      dateString: _currentDateStr,
+      title: _titleController.text,
+      weather: _weather,
+      mood: _mood,
+      content: _contentController.text,
+      isMarkdown: _isMarkdown,
+    );
+    
+    await _draftService.saveDraft(id, currentEntry);
+    debugPrint('Auto-saved draft for $id');
+    _hasDraftChanges = false; 
+  }
+
+  // Restore Logic
+  Future<void> _checkDraft() async {
+    if (_hasCheckedDraft) return;
+    _hasCheckedDraft = true;
+
+    final id = widget.entry?.filename ?? 'new';
+    final draft = await _draftService.getDraft(id);
+    
+    if (draft == null) return;
+    
+    // 如果是新建，只要有草稿就恢复
+    // 如果是编辑旧日记，对比内容是否不同
+    if (id != 'new') {
+       final currentContent = widget.entry?.content ?? '';
+       // 如果草稿内容完全一样，就没必要提示了(可能是上次正常保存遗留的?)
+       // 但我们在 save() 成功后会 clearDraft，所以只要有草稿通常意味着有未保存修改
+       if (draft.content == currentContent && draft.title == (widget.entry?.title ?? '')) {
+          await _draftService.clearDraft(id);
+          return;
+       }
+    } else {
+       if (draft.content.isEmpty && draft.title.isEmpty) {
+          await _draftService.clearDraft(id);
+          return;
+       }
+    }
+    
+    if (!mounted) return;
+
+    // 比对残缺 (Check if draft is SMALLER than original)
+    // 仅针对非新日记
+    bool isIncomplete = false;
+    if (id != 'new' && widget.entry != null) {
+       // 简单的长度对比，未必精准但有效
+       if (draft.content.length < widget.entry!.content.length) {
+          isIncomplete = true;
+       }
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => SkeuomorphicDialog(
+        title: isIncomplete ? '发现残缺手稿' : '发现未保存手稿',
+        headerIcon: isIncomplete ? Icons.warning_amber_rounded : Icons.restore_page,
+        content: Text(
+          isIncomplete 
+             ? '上次编辑可能意外中断，本地草稿内容少于原日记。\n建议"另存为新日记"以对比查看，\n或选择"丢弃"保留原样。'
+             : '上次编辑似乎没有保存成功，\n是否恢复到当时的状态？',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.notoSerifSc(
+            fontSize: 16,
+            color: const Color(0xFF5D4037),
+            height: 1.6,
+          ),
+        ),
+        // Use footer for custom layout (Column > [Button, Row])
+        actions: null, 
+        footer: Column(
+          children: [
+            // 1. 另存为新日记 (Safe Choice - Primary Action)
+            SkeuomorphicDialogButton(
+              label: '另存为新日记',
+              isPrimary: true,
+              onPressed: () {
+                 Navigator.pop(ctx);
+                 Navigator.pushReplacement(
+                   context,
+                   SlidePageRoute(page: EditorPage(
+                     entry: DiaryEntry(
+                        filename: '',
+                        dateString: draft.dateString,
+                        title: draft.title,
+                        content: draft.content,
+                        weather: draft.weather,
+                        mood: draft.mood,
+                        isMarkdown: true, 
+                     )
+                   )),
+                 );
+              },
+            ),
+            
+            const SizedBox(height: 12), // Spacing
+            
+            // 2. Secondary Actions in a Row
+            Row(
+              children: [
+                 // 丢弃 (Discard)
+                 Expanded(
+                   child: SkeuomorphicDialogButton(
+                      label: '丢弃草稿',
+                      isPrimary: false,
+                      onPressed: () async {
+                         Navigator.pop(ctx);
+                         await _draftService.clearDraft(id);
+                         if (mounted) SkeuomorphicToast.success(context, '草稿已丢弃');
+                      },
+                   ),
+                 ),
+                 const SizedBox(width: 12),
+                 // 恢复 (Overwrite)
+                 Expanded(
+                   child: SkeuomorphicDialogButton(
+                      label: '恢复覆盖',
+                      isPrimary: !isIncomplete, 
+                      onPressed: () {
+                         Navigator.pop(ctx);
+                         setState(() {
+                            _titleController.text = draft.title;
+                            _contentController.text = draft.content;
+                            _weather = draft.weather;
+                            _mood = draft.mood;
+                            _currentDateStr = draft.dateString;
+                         });
+                         SkeuomorphicToast.success(context, '内容已恢复');
+                      },
+                   ),
+                 ),
+              ],
+            )
+          ],
+        ),
+      ),
+    );
+  }
 
   void _save() async {
+    // 强制保存一次可能未保存的 draft? 不需要，因为我们马上要存正式文件了
+    
     final provider = Provider.of<DiaryProvider>(context, listen: false);
     final newEntry = DiaryEntry(
       filename: widget.entry?.filename ?? '',
@@ -63,19 +257,32 @@ class _EditorPageState extends State<EditorPage> {
       content: _contentController.text,
       isMarkdown: _isMarkdown,
     );
-    await provider.saveEntry(newEntry);
-    if (mounted) {
-      final syncProvider = context.read<SyncProvider>();
-      if (syncProvider.isConfigured) {
-         SkeuomorphicToast.success(context, '日记已保存，准备同步...');
-         // 检查权限并请求同步
-         syncProvider.checkNotificationPermission(context).then((_) {
-            if (mounted) syncProvider.requestAutoSync();
-         });
-      } else {
-         SkeuomorphicToast.success(context, '日记已保存');
+    
+    try {
+      await provider.saveEntry(newEntry);
+      
+      // Save Success: Clear Draft!
+      final id = widget.entry?.filename ?? 'new';
+      await _draftService.clearDraft(id);
+      
+      if (mounted) {
+        final syncProvider = context.read<SyncProvider>();
+        if (syncProvider.isConfigured) {
+           SkeuomorphicToast.success(context, '日记已保存，准备同步...');
+           // 检查权限并请求同步
+           syncProvider.checkNotificationPermission(context).then((_) {
+              if (mounted) syncProvider.requestAutoSync();
+           });
+        } else {
+           SkeuomorphicToast.success(context, '日记已保存');
+        }
+        Navigator.pop(context);
       }
-      Navigator.pop(context);
+    } catch (e) {
+      debugPrint("Save failed: $e");
+      if (mounted) {
+         SkeuomorphicToast.error(context, '保存失败: $e\n请检查存储权限或稍后重试');
+      }
     }
   }
 
@@ -112,6 +319,9 @@ class _EditorPageState extends State<EditorPage> {
     );
     if (confirm == true) {
       await provider.deleteEntry(widget.entry!.filename);
+      // Delete success: Also clear draft if any
+      await _draftService.clearDraft(widget.entry!.filename);
+      
       if (mounted) Navigator.pop(context);
     }
   }
@@ -149,7 +359,12 @@ class _EditorPageState extends State<EditorPage> {
           SkeuomorphicDialogButton(
              label: '丢弃',
              isPrimary: false,
-             onPressed: () => Navigator.pop(context, true),
+             onPressed: () async {
+                 // Discard: Clear draft too!
+                 final id = widget.entry?.filename ?? 'new';
+                 await _draftService.clearDraft(id);
+                 Navigator.pop(context, true);
+             },
           ),
           SkeuomorphicDialogButton(
              label: '继续编辑',
@@ -165,6 +380,7 @@ class _EditorPageState extends State<EditorPage> {
 
   @override
   Widget build(BuildContext context) {
+    // ... (Keep existing build method unchanged)
     final theme = Provider.of<SettingsProvider>(context).currentTheme;
     final textColor = AppTheme.getTextColor(theme);
     final secondaryColor = AppTheme.getTextSecondaryColor(theme);
@@ -192,56 +408,59 @@ class _EditorPageState extends State<EditorPage> {
                 Expanded(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.only(bottom: 50),
-                    child: PaperSheetWidget(
-                      padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 40),
-                      child: Column(
-                         crossAxisAlignment: CrossAxisAlignment.stretch,
-                         children: [
-                            // 1. Header (Title + Meta)
-                            _buildHeader(textColor, secondaryColor),
-                            const SizedBox(height: 30),
-                            
-                            // 2. Decorative Line
-                            Center(
-                              child: Container(
-                                width: 60,
-                                height: 2, 
-                                color: (isSeaFlower
-                                    ? const Color(0xFFEC407A) 
-                                    : (isAmber ? const Color(0xFFFF9800) : (theme == AppTheme.themeMidnight ? const Color(0xFF7986cb) : const Color(0xFFC0392B)))).withValues(alpha: 0.5),
+                    child: RepaintBoundary(
+                      key: _sheetKey,
+                      child: PaperSheetWidget(
+                        padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 40),
+                        child: Column(
+                           crossAxisAlignment: CrossAxisAlignment.stretch,
+                           children: [
+                              // 1. Header (Title + Meta)
+                              _buildHeader(textColor, secondaryColor),
+                              const SizedBox(height: 30),
+                              
+                              // 2. Decorative Line
+                              Center(
+                                child: Container(
+                                  width: 60,
+                                  height: 2, 
+                                  color: (isSeaFlower
+                                      ? const Color(0xFFEC407A) 
+                                      : (isAmber ? const Color(0xFFFF9800) : (theme == AppTheme.themeMidnight ? const Color(0xFF7986cb) : const Color(0xFFC0392B)))).withValues(alpha: 0.5),
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 30),
+                              const SizedBox(height: 30),
   
-                            // 3. Content Area
-                            _buildContentArea(textColor, theme),
+                              // 3. Content Area
+                              _buildContentArea(textColor, theme),
   
-                            // 4. Footer
-                            const SizedBox(height: 60),
-                            Center(
-                              child: Column(
-                                children: [
-                                  Text(
-                                    'CREATED WITH',
-                                    style: GoogleFonts.courierPrime(
-                                       fontSize: 10, 
-                                       color: secondaryColor.withValues(alpha: 0.4),
-                                       letterSpacing: 2
+                              // 4. Footer
+                              const SizedBox(height: 60),
+                              Center(
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      'CREATED WITH',
+                                      style: GoogleFonts.courierPrime(
+                                         fontSize: 10, 
+                                         color: secondaryColor.withValues(alpha: 0.4),
+                                         letterSpacing: 2
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    '纸语 PaperWhisper',
-                                    style: GoogleFonts.notoSerifSc(
-                                       fontSize: 12,
-                                       color: secondaryColor.withValues(alpha: 0.6),
-                                       fontWeight: FontWeight.bold
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '纸语 PaperWhisper',
+                                      style: GoogleFonts.notoSerifSc(
+                                         fontSize: 12,
+                                         color: secondaryColor.withValues(alpha: 0.6),
+                                         fontWeight: FontWeight.bold
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            )
-                         ],
+                                  ],
+                                ),
+                              )
+                           ],
+                        ),
                       ),
                     ),
                   ),
@@ -305,6 +524,13 @@ class _EditorPageState extends State<EditorPage> {
           ),
           const Spacer(),
           // Action Buttons
+          IconButton(
+            icon: Icon(Icons.share_outlined, color: iconColor), 
+            onPressed: _captureAndSave,
+            tooltip: '导出为图片',
+          ),
+          const SizedBox(width: 5),
+
           if (!_isEditing && widget.entry != null) ...[
              IconButton(
                icon: Icon(Icons.delete_outline, color: iconColor), 
@@ -344,7 +570,7 @@ class _EditorPageState extends State<EditorPage> {
     if (isSeaFlower) {
       return ClipRect(
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+          filter: ui.ImageFilter.blur(sigmaX: 15, sigmaY: 15),
           child: barContent,
         ),
       );
@@ -417,7 +643,7 @@ class _EditorPageState extends State<EditorPage> {
       ),
       child: Container(
         padding: const EdgeInsets.only(top: 0), // Adjust if needed
-        constraints: const BoxConstraints(minHeight: 600),
+        constraints: const BoxConstraints(minHeight: 300),
         child: _isEditing
            ? TextField(
                controller: _contentController,
@@ -508,7 +734,54 @@ class _EditorPageState extends State<EditorPage> {
        },
     );
   }
+
+  // Export Logic
+  final GlobalKey _sheetKey = GlobalKey();
+
+  Future<void> _captureAndSave() async {
+     try {
+       // Wait for build
+       await Future.delayed(const Duration(milliseconds: 50));
+
+       RenderRepaintBoundary? boundary = _sheetKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+       if (boundary == null) return;
+
+       SkeuomorphicToast.info(context, '正在生成图片...');
+       
+       ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+       var byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+       var pngBytes = byteData!.buffer.asUint8List();
+
+       final directory = await getApplicationDocumentsDirectory(); 
+       String exportPath;
+      
+       if (Platform.isAndroid) {
+          exportPath = '/storage/emulated/0/Documents/PaperWhisper_Exports';
+       } else {
+          exportPath = path.join(directory.path, 'PaperWhisper_Exports');
+       }
+       
+       final exportDir = Directory(exportPath);
+       if (!await exportDir.exists()) {
+          await exportDir.create(recursive: true);
+       }
+       
+       String fileName = 'diary_${widget.entry?.filename ?? "new"}_${DateTime.now().millisecondsSinceEpoch}.png';
+       final file = File(path.join(exportDir.path, fileName));
+       await file.writeAsBytes(pngBytes);
+       
+       if (mounted) {
+          await showExportSuccessDialog(context, file.path);
+       }
+     } catch (e) {
+       if (mounted) {
+         SkeuomorphicToast.error(context, '导出失败: $e');
+       }
+     }
+  }
 }
+
+
 
 class LinedPaperPainter extends CustomPainter {
   final Color lineColor;
@@ -522,15 +795,15 @@ class LinedPaperPainter extends CustomPainter {
       ..color = lineColor
       ..strokeWidth = 1.0;
 
-    // Start drawing lines from top, account for padding usually but here we just fill
+    // Start drawing lines from top
     // We want the text to sit ON the line. Text height 1.77 * 18 ≈ 31.86 -> ~32px.
     // First line should be at roughly 32.
-    // Adjusted to lineHeight + 2 to ensure cursor doesn't cross the line.
+    // Draw lines until the end of the canvas + extra buffer to look nice
     for (double y = lineHeight + 2; y < size.height; y += lineHeight) {
       canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
     }
   }
-
+  
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

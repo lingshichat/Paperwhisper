@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:webdav_client/webdav_client.dart' as webdav;
 import 'package:path/path.dart' as path;
@@ -12,6 +14,7 @@ class WebDavSyncService {
   // 基础路径常量
   static const String rootPath = '/PaperWhisper/';
   static const String diaryBasePath = '/PaperWhisper/diary_data/';
+  static const String trashBasePath = '/PaperWhisper/trash/'; // New Trash Path
   static const String momentsBasePath = '/PaperWhisper/moments_data/';
   static const String momentsImagesPath = '/PaperWhisper/moments_data/images/';
 
@@ -144,8 +147,7 @@ class WebDavSyncService {
     }
   }
 
-  /// 删除云端文件
-  /// [remoteFilePath] 云端完整路径
+  /// 删除云端文件 (慎用，现建议移动到 Trash)
   Future<void> deleteFile(String remoteFilePath) async {
     if (_client == null) return;
     try {
@@ -153,6 +155,49 @@ class WebDavSyncService {
       debugPrint('Deleted Remote: $remoteFilePath');
     } catch (e) {
       debugPrint('WebDAV delete failed: $e');
+    }
+  }
+
+  /// 移动/重命名云端文件
+  Future<void> moveFile(String oldPath, String newPath) async {
+    if (_client == null) return;
+    try {
+      // 确保目标目录存在
+      await ensureDirectoryExists(path.posix.dirname(newPath));
+      
+      await _client!.rename(oldPath, newPath, false); // false = don't overwrite? wait, rename param overwrite
+      // pub webdav_client rename(path, newPath, overwrite)
+      debugPrint('Moved Remote: $oldPath -> $newPath');
+    } catch (e) {
+      debugPrint('WebDAV move failed: $e');
+      rethrow;
+    }
+  }
+
+  /// 读取云端文件内容为字符串
+  Future<String?> readRemoteFile(String remotePath) async {
+    if (_client == null) return null;
+    try {
+      // 临时下载到缓冲区
+      List<int> bytes = await _client!.read(remotePath);
+      return utf8.decode(bytes);
+    } catch (e) {
+      // 404 is common for new manifest
+      debugPrint('WebDAV read failed (might be 404): $e');
+      return null;
+    }
+  }
+
+  /// 直接写入字符串到云端文件
+  Future<void> writeRemoteFile(String remotePath, String content) async {
+    if (_client == null) return;
+    try {
+      Uint8List bytes = Uint8List.fromList(utf8.encode(content));
+      await _client!.write(remotePath, bytes);
+      debugPrint('Wrote string to: $remotePath');
+    } catch (e) {
+      debugPrint('WebDAV write string failed: $e');
+      rethrow;
     }
   }
 }

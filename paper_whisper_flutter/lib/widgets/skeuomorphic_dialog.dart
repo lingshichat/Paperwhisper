@@ -9,16 +9,20 @@ class SkeuomorphicDialog extends StatelessWidget {
   final String title;
   final Widget? content;
   final List<Widget>? actions;
+  final Widget? footer; // Custom footer widget (overrides actions layout)
   final bool showTape;
   final IconData? headerIcon;
+  final double? width;
 
   const SkeuomorphicDialog({
     super.key,
     required this.title,
     this.content,
     this.actions,
+    this.footer,
     this.showTape = true,
     this.headerIcon,
+    this.width,
   });
 
   @override
@@ -36,7 +40,7 @@ class SkeuomorphicDialog extends StatelessWidget {
         children: [
           // 1. 纸张背景
           Container(
-            width: 320,
+            width: width ?? 360,
             constraints: const BoxConstraints(maxHeight: 500),
             padding: const EdgeInsets.fromLTRB(30, 40, 30, 30),
             decoration: BoxDecoration(
@@ -91,8 +95,11 @@ class SkeuomorphicDialog extends StatelessWidget {
                   ),
                 ],
 
-                // 操作按钮
-                if (actions != null && actions!.isNotEmpty) ...[
+                // 自定义底部 (优先于 actions)
+                if (footer != null) ...[
+                   const SizedBox(height: 30),
+                   footer!,
+                ] else if (actions != null && actions!.isNotEmpty) ...[
                   const SizedBox(height: 30),
                   Row(
                     children: actions!.map((action) {
