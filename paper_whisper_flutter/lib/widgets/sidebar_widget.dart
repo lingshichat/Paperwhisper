@@ -12,6 +12,8 @@ import '../providers/settings_provider.dart';
 import '../pages/editor_page.dart';
 import '../pages/trash_page.dart';
 import '../widgets/paper_fold_page_route.dart';
+import '../widgets/skeuomorphic_search_bar.dart';
+import '../providers/diary_provider.dart';
 
 class SidebarWidget extends StatefulWidget {
   const SidebarWidget({super.key});
@@ -171,6 +173,29 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                      ),
                    ],
                  ),
+               ),
+
+               // Search Bar (Desktop Only - 通过屏幕宽度检测)
+               // 使用 MediaQuery 检测是否是桌面端，比 Drawer ancestor 更可靠
+               Builder(
+                 builder: (context) {
+                   // 桌面端判断：屏幕宽度 > 800
+                   final isDesktop = MediaQuery.of(context).size.width > 800;
+                   if (!isDesktop) return const SizedBox.shrink();
+                   
+                   try {
+                     final diaryProvider = context.watch<DiaryProvider>();
+                     return Padding(
+                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                       child: SkeuomorphicSearchBar(
+                         value: diaryProvider.searchQuery,
+                         onChanged: (val) => diaryProvider.setSearchQuery(val),
+                       ),
+                     );
+                   } catch (e) {
+                     return const SizedBox.shrink();
+                   }
+                 }
                ),
                
                // Write Button (Only for Desktop/Non-Drawer)

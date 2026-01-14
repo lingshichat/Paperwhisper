@@ -16,6 +16,9 @@ import '../config/app_theme.dart'; // Added
 import '../widgets/skeuomorphic_toast.dart'; // Added
 import '../widgets/skeuomorphic_dialog.dart'; // Added
 
+import '../providers/diary_provider.dart'; // Added
+import '../widgets/skeuomorphic_search_bar.dart'; // Added
+
 class MomentsPage extends StatefulWidget {
   const MomentsPage({super.key});
 
@@ -40,6 +43,9 @@ class _MomentsPageState extends State<MomentsPage> {
   // Flags to prevent circular sync
   bool _isRulerActive = false;
   bool _isPageActive = false;
+
+  // Search State
+  bool _isSearching = false; 
 
   @override
   void initState() {
@@ -318,129 +324,145 @@ class _MomentsPageState extends State<MomentsPage> {
       rulerBorderColor = Colors.transparent;
     }
     
+    // Search Integration
+    final diaryProvider = Provider.of<DiaryProvider>(context);
+    final String searchQuery = diaryProvider.searchQuery;
+    final bool isSearchActive = searchQuery.isNotEmpty;
+
+    // Filter Logic if searching
+    if (isSearchActive) {
+      // Filter _allMoments
+      _filteredMoments = _allMoments.where((m) {
+        // Basic match: content or plain text
+        // Moment has content string.
+        return m.content.contains(searchQuery);
+      }).toList();
+      // Sort by latest first for search
+      _filteredMoments.sort((a,b) => b.createdAt.compareTo(a.createdAt));
+    }
+    
     return LayoutBuilder(
       builder: (context, constraints) {
         final bool isDesktop = constraints.maxWidth > 800;
         debugPrint("LayoutBuilder Constraints: ${constraints.maxWidth} (isDesktop: $isDesktop)");
         
-        final Widget content = Stack(
-          fit: StackFit.expand,
-          children: [
-            // Content Column
-            SafeArea(
-              top: !isDesktop, // On desktop, sidebar handles top? No, we still need padding for header
-              bottom: isDesktop, // Mobile bottom handled by stack
-              child: Column(
-                children: [
-                  // On Desktop, we need a Header (replacement for AppBar)
-                  if (isDesktop) 
-                    _buildDesktopHeader(appBarTextColor, appBarIconColor),
-                    
-                  // Ruler with Sync Listener
-                  NotificationListener<ScrollNotification>(
-                    onNotification: (notification) {
-                       if (notification.depth == 0 && notification is ScrollUpdateNotification) {
-                         if (_isPageActive) return false;
-                         _isRulerActive = true;
-                         
-                         if (_pageController.hasClients && _rulerController.hasClients) {
-                           double rulerOffset = _rulerController.offset;
-                           double page = rulerOffset / 70.0;
-                           double pageWidth = _pageController.position.viewportDimension;
-                           _pageController.jumpTo(page * pageWidth);
-                         }
-                       } else if (notification is ScrollEndNotification) {
-                         _isRulerActive = false;
+        // 简化 content 结构：直接使用 SafeArea + Column，避免嵌套 Stack 导致的渲染问题
+        final Widget content = SafeArea(
+          top: !isDesktop, 
+          bottom: isDesktop, 
+          child: Column(
+            children: [
+              // On Desktop, we need a Header (replacement for AppBar)
+              if (isDesktop) 
+                _buildDesktopHeader(appBarTextColor, appBarIconColor),
+                
+              // If searching, show result list. Else show regular layout.
+              if (isSearchActive) 
+                 Expanded(child: _buildSearchResults(theme, textColor: rulerTextColor))
+              else ...[
+                // Ruler with Sync Listener
+                NotificationListener<ScrollNotification>(
+                  onNotification: (notification) {
+                     if (notification.depth == 0 && notification is ScrollUpdateNotification) {
+                       if (_isPageActive) return false;
+                       _isRulerActive = true;
+                       
+                       if (_pageController.hasClients && _rulerController.hasClients) {
+                         double rulerOffset = _rulerController.offset;
+                         double page = rulerOffset / 70.0;
+                         double pageWidth = _pageController.position.viewportDimension;
+                         _pageController.jumpTo(page * pageWidth);
                        }
-                       return false;
-                    },
-                    child: RulerDatePicker(
-                      selectedDate: _selectedDate, 
-                      onDateChanged: (d) => _onDateChanged(d),
-                      controller: _rulerController,
-                      accentColor: rulerAccent,
-                      backgroundColor: rulerBg,
-                      textColor: rulerTextColor,
-                      inactiveTextColor: rulerInactiveTextColor,
-                      subTextColor: rulerSubTextColor,
-                      inactiveSubTextColor: rulerInactiveSubTextColor,
-                      indicatorColor: rulerIndicatorColor,
-                      shadowColor: rulerShadowColor,
-                      borderColor: rulerBorderColor,
-                    ),
+                     } else if (notification is ScrollEndNotification) {
+                       _isRulerActive = false;
+                     }
+                     return false;
+                  },
+                  child: RulerDatePicker(
+                    selectedDate: _selectedDate, 
+                    onDateChanged: (d) => _onDateChanged(d),
+                    controller: _rulerController,
+                    accentColor: rulerAccent,
+                    backgroundColor: rulerBg,
+                    textColor: rulerTextColor,
+                    inactiveTextColor: rulerInactiveTextColor,
+                    subTextColor: rulerSubTextColor,
+                    inactiveSubTextColor: rulerInactiveSubTextColor,
+                    indicatorColor: rulerIndicatorColor,
+                    shadowColor: rulerShadowColor,
+                    borderColor: rulerBorderColor,
                   ),
-                  
-                  // List (PageView)
-                  Expanded(
-                    child: NotificationListener<ScrollNotification>(
-                      onNotification: (notification) {
-                        if (notification.depth == 0 && notification is ScrollUpdateNotification) {
-                          if (_isRulerActive) return false;
-                          _isPageActive = true;
-                          
-                          if (_pageController.hasClients && _rulerController.hasClients) {
-                            double page = _pageController.page ?? 0;
-                            double rulerOffset = page * 70.0; 
-                            _rulerController.jumpTo(rulerOffset);
-                          }
-                        } else if (notification is ScrollEndNotification) {
-                           _isPageActive = false;
-                           if (!_isRulerActive && _pageController.hasClients) {
-                               int pageIndex = _pageController.page?.round() ?? 0;
-                               DateTime targetDate = _startDate.add(Duration(days: pageIndex));
-                               if (!_isSameDay(targetDate, _selectedDate)) {
-                                  _onDateChanged(targetDate, animate: false);
-                               }
-                           }
+                ),
+                
+                // List (PageView)
+                Expanded(
+                  child: NotificationListener<ScrollNotification>(
+                    onNotification: (notification) {
+                      if (notification.depth == 0 && notification is ScrollUpdateNotification) {
+                        if (_isRulerActive) return false;
+                        _isPageActive = true;
+                        
+                        if (_pageController.hasClients && _rulerController.hasClients) {
+                          double page = _pageController.page ?? 0;
+                          double rulerOffset = page * 70.0; 
+                          _rulerController.jumpTo(rulerOffset);
                         }
-                        return false;
+                      } else if (notification is ScrollEndNotification) {
+                         _isPageActive = false;
+                         if (!_isRulerActive && _pageController.hasClients) {
+                             int pageIndex = _pageController.page?.round() ?? 0;
+                             DateTime targetDate = _startDate.add(Duration(days: pageIndex));
+                             if (!_isSameDay(targetDate, _selectedDate)) {
+                                _onDateChanged(targetDate, animate: false);
+                             }
+                         }
+                      }
+                      return false;
+                    },
+                    child: PageView.builder(
+                      controller: _pageController,
+                      itemCount: _dayRange, 
+                      physics: const BouncingScrollPhysics(),
+                      onPageChanged: (index) {
+                         // Optional: Could trigger haptic feedback here
                       },
-                      child: PageView.builder(
-                        controller: _pageController,
-                        itemCount: _dayRange, 
-                        physics: const BouncingScrollPhysics(),
-                        onPageChanged: (index) {
-                           // Optional: Could trigger haptic feedback here
-                        },
-                        itemBuilder: (context, index) {
-                           DateTime date = _startDate.add(Duration(days: index));
-                           List<Moment> moments = _getMomentsForDate(date);
-                           
-                            if (moments.isEmpty) {
-                              return _buildEmptyStateForDate(date);
-                            }
-                            
-                            return ListView.builder(
-                                padding: const EdgeInsets.only(top: 20, bottom: 90), // Add bottom padding for input
-                                itemCount: moments.length,
-                                itemBuilder: (context, i) {
-                                   return MomentCard(
-                                     moment: moments[i],
-                                     baseDir: _baseDir,
-                                     onDelete: () async {
-                                        await _momentService.deleteMoment(moments[i].uuid);
-                                        // Refresh
-                                        await _loadData();
-                                        if (mounted) {
-                                           SkeuomorphicToast.success(context, '随心记已删除');
-                                        }
-                                     },
-                                   );
-                                },
-                              );
-                        },
-                      ),
+                      itemBuilder: (context, index) {
+                         DateTime date = _startDate.add(Duration(days: index));
+                         List<Moment> moments = _getMomentsForDate(date);
+                         
+                          if (moments.isEmpty) {
+                            return _buildEmptyStateForDate(date);
+                          }
+                          
+                          return ListView.builder(
+                              padding: const EdgeInsets.only(top: 20, bottom: 90), 
+                              itemCount: moments.length,
+                              itemBuilder: (context, i) {
+                                 return MomentCard(
+                                   moment: moments[i],
+                                   baseDir: _baseDir,
+                                   onDelete: () async {
+                                      await _momentService.deleteMoment(moments[i].uuid);
+                                      // Refresh
+                                      await _loadData();
+                                      if (mounted) {
+                                         SkeuomorphicToast.success(context, '随心记已删除');
+                                      }
+                                   },
+                                 );
+                              },
+                            );
+                      },
                     ),
                   ),
-                  
-                  // Input Widget Removed from here (Moved to Stack in Mobile, what about Desktop?)
-                  // if (isDesktop) MomentInputWidget(onSend: _handleSend),
-                  // For now, let's keep it here ONLY if isDesktop, otherwise Container()
-                  if (isDesktop) MomentInputWidget(onSend: _handleSend)
-                ],
-              ),
-            ),
-          ],
+                ),
+              ],
+
+              // Input Widget Removed from here
+              // Display only if NOT searching and is Desktop
+              if (isDesktop && !isSearchActive) MomentInputWidget(onSend: _handleSend)
+            ],
+          ),
         );
 
         if (isDesktop) {
@@ -458,26 +480,19 @@ class _MomentsPageState extends State<MomentsPage> {
                  )
                ],
              ),
-          );
+           );
         }
 
-        return Scaffold(
-          extendBodyBehindAppBar: true, 
-          backgroundColor: Colors.transparent,
-          resizeToAvoidBottomInset: true, // Revert to true to ensure visibility
-          drawer: const SidebarWidget(),
-          appBar: AppBar(
-            backgroundColor: isSeaFlower 
-                ? const Color(0xFFFCE4EC).withOpacity(0.8) 
-                : const Color(0xFF1E1E1E).withOpacity(0.5), 
-            elevation: 0,
-            leading: Builder(
-              builder: (context) => IconButton(
-                icon: Icon(Icons.menu, color: appBarIconColor),
-                onPressed: () => Scaffold.of(context).openDrawer(),
-              ),
-            ),
-            title: Column(
+        // Mobile Header Logic
+        Widget headerTitle;
+        if (_isSearching) {
+           headerTitle = SkeuomorphicSearchBar(
+             value: searchQuery,
+             onChanged: (val) => diaryProvider.setSearchQuery(val),
+             autoFocus: true,
+           );
+        } else {
+           headerTitle = Column(
               children: [
                  Text(
                    "${_selectedDate.year}年${_selectedDate.month}月",
@@ -488,60 +503,136 @@ class _MomentsPageState extends State<MomentsPage> {
                    style: GoogleFonts.notoSerifSc(color: appBarTextColor, fontWeight: FontWeight.bold, fontSize: 16),
                  )
               ],
+           );
+        }
+
+        return Scaffold(
+          extendBodyBehindAppBar: true, 
+          backgroundColor: Colors.transparent,
+          resizeToAvoidBottomInset: true, 
+          drawer: const SidebarWidget(),
+          appBar: AppBar(
+            backgroundColor: isSeaFlower 
+                ? const Color(0xFFFCE4EC).withOpacity(0.8) 
+                : const Color(0xFF1E1E1E).withOpacity(0.5), 
+            elevation: 0,
+            leading: Builder(
+              builder: (context) {
+                 if (_isSearching) {
+                   return IconButton(
+                     icon: Icon(Icons.arrow_back, color: appBarIconColor),
+                     onPressed: () {
+                        setState(() { _isSearching = false; });
+                        diaryProvider.setSearchQuery('');
+                     }
+                   );
+                 }
+                 return IconButton(
+                    icon: Icon(Icons.menu, color: appBarIconColor),
+                    onPressed: () => Scaffold.of(context).openDrawer(),
+                 );
+              }
+            ),
+            title: AnimatedSwitcher(
+               duration: const Duration(milliseconds: 300),
+               child: headerTitle,
             ),
             centerTitle: true,
             actions: [
-              IconButton(
-                key: const ValueKey('mobile_generate_btn'),
-                icon: Icon(Icons.description_outlined, color: appBarIconColor),
-                tooltip: '生成今日日记',
-                onPressed: _handleAggregation,
-              )
+               if (!_isSearching)
+                 IconButton(
+                    icon: Icon(Icons.search, color: appBarIconColor),
+                    onPressed: () => setState(() => _isSearching = true),
+                 ),
+               
+               if (!_isSearching)
+                 IconButton(
+                   key: const ValueKey('mobile_generate_btn'),
+                   icon: Icon(Icons.description_outlined, color: appBarIconColor),
+                   tooltip: '生成今日日记',
+                   onPressed: _handleAggregation,
+                 )
             ],
           ),
-          body: Stack(
-            children: [
-              // 0. Background (Always Rendered)
-              Positioned.fill(
-                child: Container(decoration: AppTheme.getBackground(theme))
-              ),
-
-              // 1. Main Content
-              Positioned.fill(
-                child: content
-              ),
+          body: Builder(
+            builder: (bodyContext) {
+              // 在 Builder 内部获取键盘状态，避免通过 Builder 返回 Positioned
+              final isKeyboardOpen = MediaQuery.of(bodyContext).viewInsets.bottom > 0;
               
-              // 2. Dismiss Layer (Only when keyboard is open)
-              Builder(
-                builder: (ctx) {
-                   final isKeyboardOpen = MediaQuery.of(ctx).viewInsets.bottom > 0;
-                   if (!isKeyboardOpen) return const SizedBox.shrink();
-                   
-                   return Positioned.fill(
+              return Stack(
+                children: [
+                  // 0. Background (Always Rendered)
+                  Positioned.fill(
+                    child: Container(decoration: AppTheme.getBackground(theme))
+                  ),
+
+                  // 1. Main Content
+                  Positioned.fill(
+                    child: content
+                  ),
+                  
+                  // 2. Dismiss Layer (Only when keyboard is open)
+                  // 方案 A: 直接条件渲染，而非通过 Builder 返回 Positioned
+                  if (isKeyboardOpen)
+                    Positioned.fill(
                       child: GestureDetector(
                         behavior: HitTestBehavior.translucent,
                         onTap: () {
-                          FocusScope.of(ctx).unfocus();
+                          FocusScope.of(bodyContext).unfocus();
                         },
                         child: Container(color: Colors.transparent),
                       ),
-                   );
-                }
-              ),
-              
-              // 3. Input Widget (Aligned to bottom)
-              Align(
-                alignment: Alignment.bottomCenter,
-                child: MomentInputWidget(onSend: _handleSend),
-              ),
-            ],
+                    ),
+                  
+                  // 3. Input Widget (Aligned to bottom)
+                  // Only if NOT searching
+                  if (!isSearchActive)
+                    Align(
+                      alignment: Alignment.bottomCenter,
+                      child: MomentInputWidget(onSend: _handleSend),
+                    ),
+                ],
+              );
+            }
           ),
         );
       }
     );
   }
 
-
+  Widget _buildSearchResults(String theme, {Color? textColor}) {
+    // 使用透明容器，确保背景可以穿透显示
+    return Container(
+      color: Colors.transparent, // 透明背景
+      child: _filteredMoments.isEmpty
+        ? Center(
+            child: Opacity(
+              opacity: 0.7,
+              child: Text(
+                '没有找到相关记忆...',
+                style: GoogleFonts.notoSerifSc(
+                  color: textColor?.withOpacity(0.7) ?? Colors.white70,
+                  fontSize: 16
+                )
+              ),
+            )
+          )
+        : ListView.builder(
+            padding: const EdgeInsets.only(top: 20, bottom: 90),
+            itemCount: _filteredMoments.length,
+            itemBuilder: (context, i) {
+               return MomentCard(
+                 moment: _filteredMoments[i],
+                 baseDir: _baseDir,
+                 onDelete: () async {
+                    await _momentService.deleteMoment(_filteredMoments[i].uuid);
+                    await _loadData();
+                 },
+               );
+            },
+          ),
+    );
+  }
 
   Widget _buildDesktopHeader(Color textColor, Color iconColor) {
     return Container(

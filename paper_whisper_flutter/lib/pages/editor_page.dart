@@ -19,6 +19,7 @@ import 'package:path/path.dart' as path;
 import 'dart:io';
 import '../widgets/export_success_dialog.dart';
 import 'package:flutter/rendering.dart'; // For RenderRepaintBoundary
+import 'package:permission_handler/permission_handler.dart';
 
 class EditorPage extends StatefulWidget {
   final DiaryEntry? entry;
@@ -757,15 +758,35 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
        String exportPath;
       
        if (Platform.isAndroid) {
-          exportPath = '/storage/emulated/0/Documents/PaperWhisper_Exports';
-       } else {
-          exportPath = path.join(directory.path, 'PaperWhisper_Exports');
-       }
-       
-       final exportDir = Directory(exportPath);
-       if (!await exportDir.exists()) {
+        if (await Permission.manageExternalStorage.isGranted) {
+           // Change to standard Pictures directory for Gallery visibility
+           exportPath = '/storage/emulated/0/Pictures/PaperWhisper';
+        } else {
+           // Fallback to app specific external dir or standard docs
+           final extDir = await getExternalStorageDirectory();
+           // extDir is Android/data/.../files
+           // Let's use a nice subfolder
+           if (extDir != null) {
+              exportPath = path.join(extDir.path, 'Exports');
+           } else {
+              exportPath = path.join(directory.path, 'Exports');
+           }
+        }
+      } else {
+        exportPath = path.join(directory.path, 'PaperWhisper_Exports');
+      }
+      
+      final exportDir = Directory(exportPath);
+      if (!await exportDir.exists()) {
+        try {
           await exportDir.create(recursive: true);
-       }
+        } catch (e) {
+           // Final fallback
+           final recoverDir = await getApplicationDocumentsDirectory();
+           exportPath = path.join(recoverDir.path, 'Exports');
+           await Directory(exportPath).create(recursive: true);
+        }
+      }
        
        String fileName = 'diary_${widget.entry?.filename ?? "new"}_${DateTime.now().millisecondsSinceEpoch}.png';
        final file = File(path.join(exportDir.path, fileName));

@@ -27,6 +27,7 @@ import 'dart:io' show Platform;
 import 'package:permission_handler/permission_handler.dart';
 import '../models/update_info.dart';
 import '../services/update_service.dart';
+import '../utils/platform_utils.dart';
 
 class DiaryListPage extends StatefulWidget {
   const DiaryListPage({super.key});
@@ -226,11 +227,16 @@ class _DiaryListPageState extends State<DiaryListPage> {
 
 
 
-  void _showPermissionRationale() {
+  void _showPermissionRationale() async {
+    // 检测是否为鸿蒙系统
+    final isHarmony = await PlatformUtils.isHarmonyOS();
+    
+    if (!mounted) return;
+    
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => SkeuomorphicDialog(
+      builder: (ctx) => SkeuomorphicDialog(
         title: '存储权限说明',
         headerIcon: Icons.folder_special,
         content: Text(
@@ -247,8 +253,7 @@ class _DiaryListPageState extends State<DiaryListPage> {
             label: '暂不授权',
             isPrimary: false,
             onPressed: () {
-              Navigator.pop(context);
-              // 显示拒绝权限提示
+              Navigator.pop(ctx);
               SkeuomorphicToast.info(context, '已拒绝权限，将在应用私有目录下运行');
             },
           ),
@@ -256,24 +261,54 @@ class _DiaryListPageState extends State<DiaryListPage> {
             label: '去授权',
             isPrimary: true,
             onPressed: () async {
-              Navigator.pop(context); // Close rationale dialog
-              // 3. Request System Permission
-              final status = await Permission.manageExternalStorage.request();
-              if (status.isGranted) {
-                 // 4. Reload Data if granted
-                 if (mounted) {
-                   await Provider.of<DiaryProvider>(context, listen: false).reloadAfterPermission();
-                 }
+              Navigator.pop(ctx);
+              
+              if (isHarmony) {
+                // 鸿蒙系统：跳转到应用设置页
+                final opened = await openAppSettings();
+                if (opened) {
+                  if (mounted) {
+                    SkeuomorphicToast.info(context, '请在设置页开启存储权限后返回');
+                  }
+                  _schedulePermissionRecheck();
+                } else {
+                  if (mounted) {
+                    SkeuomorphicToast.warning(context, '无法打开设置页，请手动前往设置');
+                  }
+                }
               } else {
-                 if (mounted) {
+                // 标准 Android：使用 permission_handler 请求
+                final status = await Permission.manageExternalStorage.request();
+                if (status.isGranted) {
+                  if (mounted) {
+                    await Provider.of<DiaryProvider>(context, listen: false).reloadAfterPermission();
+                  }
+                } else {
+                  if (mounted) {
                     SkeuomorphicToast.warning(context, '权限未授予，无法读取公共目录');
-                 }
+                  }
+                }
               }
             },
           ),
         ],
       ),
     );
+  }
+  
+  /// 延迟检查权限状态（用于鸿蒙系统从设置页返回后）
+  void _schedulePermissionRecheck() {
+    Future.delayed(const Duration(seconds: 2), () async {
+      if (!mounted) return;
+      
+      final status = await Permission.manageExternalStorage.status;
+      if (status.isGranted) {
+        await Provider.of<DiaryProvider>(context, listen: false).reloadAfterPermission();
+        if (mounted) {
+          SkeuomorphicToast.success(context, '存储权限已获取');
+        }
+      }
+    });
   }
 
   /// 显示 WebDAV 配置提示

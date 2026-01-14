@@ -8,13 +8,21 @@ class DiaryProvider with ChangeNotifier {
   bool _isLoading = false;
   String _debugPath = '';
 
+  String _searchQuery = '';
+  
   List<DiaryEntry> get entries => _entries;
   bool get isLoading => _isLoading;
   String get debugPath => _debugPath;
   DiaryService get service => _service;
+  String get searchQuery => _searchQuery;
 
   DiaryProvider([DiaryService? service]) : _service = service ?? DiaryService() {
     loadEntries();
+  }
+
+  void setSearchQuery(String query) {
+    _searchQuery = query;
+    notifyListeners();
   }
 
   Future<void> loadEntries() async {
