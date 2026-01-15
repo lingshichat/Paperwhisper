@@ -31,8 +31,14 @@ class SyncProvider with ChangeNotifier {
   SyncConfig _config = SyncConfig();
   SyncStatus _status = SyncStatus.none;
   String _lastError = '';
-  String _progressMessage = ''; // NEW: Progress feedback
+  String _progressMessage = ''; 
   DateTime? _lastSyncTime;
+  
+  // Progress & Speed State
+  double _currentFileProgress = 0.0;
+  String _currentFileSpeed = '';
+  int _lastBytesCount = 0;
+  DateTime? _lastSpeedUpdate;
   
   Timer? _autoSyncTimer;
   static const int _notificationId = 888;
@@ -42,9 +48,12 @@ class SyncProvider with ChangeNotifier {
   SyncConfig get config => _config;
   SyncStatus get status => _status;
   String get lastError => _lastError;
-  String get progressMessage => _progressMessage; // NEW
+  String get progressMessage => _progressMessage; 
   DateTime? get lastSyncTime => _lastSyncTime;
   bool get isConfigured => _config.enabled && _config.serverUrl.isNotEmpty;
+  
+  double get currentFileProgress => _currentFileProgress;
+  String get currentFileSpeed => _currentFileSpeed;
 
   late Future<void> _initFuture;
 
@@ -55,6 +64,64 @@ class SyncProvider with ChangeNotifier {
 
   void updateDiaryProvider(DiaryProvider dp) {
     _diaryProvider = dp;
+  }
+  
+  // Helper to reset transfer stats
+  void _resetTransferStats() {
+    _currentFileProgress = 0.0;
+    _currentFileSpeed = '';
+    _lastBytesCount = 0;
+    _lastSpeedUpdate = null;
+    notifyListeners();
+  }
+
+  void _onTransferProgress(int count, int total) {
+    debugPrint('SyncProgress: $count / $total'); // DEBUG log
+    
+    final now = DateTime.now();
+    
+    // Calculate Progress
+    if (total > 0) {
+      _currentFileProgress = count / total;
+    } else {
+      _currentFileProgress = 0.0;
+    }
+    
+    // Initial speed display (avoid empty gap)
+    if (_currentFileSpeed.isEmpty) {
+       _currentFileSpeed = "Calculating..."; 
+    }
+    
+    if (_lastSpeedUpdate == null) {
+      _lastSpeedUpdate = now;
+      _lastBytesCount = count;
+      return;
+    }
+    
+    final diff = now.difference(_lastSpeedUpdate!).inMilliseconds;
+    // Update every 500ms
+    if (diff >= 500) {
+       if (count < _lastBytesCount) {
+          _lastBytesCount = count; 
+          return;
+       }
+       
+       final bytesDiff = count - _lastBytesCount;
+       if (diff > 0) {
+         final speedBytesPerSec = (bytesDiff / diff) * 1000;
+         _currentFileSpeed = _formatSpeed(speedBytesPerSec);
+       }
+       
+       _lastSpeedUpdate = now;
+       _lastBytesCount = count;
+       notifyListeners(); 
+    }
+  }
+  
+  String _formatSpeed(double bytesPerSec) {
+    if (bytesPerSec < 1024) return "${bytesPerSec.toStringAsFixed(0)} B/s";
+    if (bytesPerSec < 1024 * 1024) return "${(bytesPerSec / 1024).toStringAsFixed(1)} KB/s";
+    return "${(bytesPerSec / (1024 * 1024)).toStringAsFixed(1)} MB/s";
   }
   
   // Helper to update progress message and notify UI
@@ -667,6 +734,11 @@ class SyncProvider with ChangeNotifier {
   // ==========================================
   Future<void> _syncMoments(bool isAuto) async {
       await _momentService.init();
+      // [FIX] Reset service to ensure we load the latest manifest from disk
+      // This is critical because UI operations use a different MomentService instance,
+      // creating a stale cache in this long-lived SyncProvider instance.
+      _momentService.reset(); 
+      await _momentService.init();
       final localDir = _momentService.dataDir;
       if (localDir == null) return;
       
@@ -759,29 +831,44 @@ class SyncProvider with ChangeNotifier {
  
        // Downloads
        await _processBatch(toDownload, (filename) async {
-          await _webDavService.downloadFile(
-             WebDavSyncService.momentsBasePath + filename,
-             path.join(service.dataDir!.path, filename)
-          );
-          service.manifestService.updateItem(filename, 
-            timestamp: mergedItems[filename]!.versionTimestamp,
-            isDeleted: false
-          );
-          processed++;
-          if (!isAuto) _showNotification(processed, totalOps, body: "随心记下载: $filename");
+          _resetTransferStats(); // Reset for new file
+          try {
+            await _webDavService.downloadFile(
+               WebDavSyncService.momentsBasePath + filename,
+               path.join(service.dataDir!.path, filename),
+               onProgress: _onTransferProgress
+            );
+            // Only update manifest if success
+            service.manifestService.updateItem(filename, 
+              timestamp: mergedItems[filename]!.versionTimestamp,
+              isDeleted: false
+            );
+            processed++;
+            if (!isAuto) _showNotification(processed, totalOps, body: "随心记下载: $filename");
+          } catch (e) {
+             debugPrint("Failed to download $filename: $e");
+             // Generate error toast or status but don't stop entire sync?
+             // specific 404 check could go here
+          }
        });
        
        // Uploads
        await _processBatch(toUpload, (filename) async {
           final file = File(path.join(service.dataDir!.path, filename));
           if (await file.exists()) {
-            await _webDavService.uploadFile(
-               file.path,
-               WebDavSyncService.momentsBasePath + filename
-            );
+            _resetTransferStats(); // Reset for new file
+            try {
+              await _webDavService.uploadFile(
+                 file.path,
+                 WebDavSyncService.momentsBasePath + filename,
+                 onProgress: _onTransferProgress
+              );
+              processed++;
+              if (!isAuto) _showNotification(processed, totalOps, body: "随心记上传: $filename");
+            } catch (e) {
+               debugPrint("Failed to upload $filename: $e");
+            }
           }
-          processed++;
-          if (!isAuto) _showNotification(processed, totalOps, body: "随心记上传: $filename");
        });
        
        // Local Deletes

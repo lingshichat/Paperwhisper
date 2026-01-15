@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -644,6 +645,12 @@ class _DiaryListPageState extends State<DiaryListPage> {
         Expanded(
           child: BookFlipRefreshWidget(
             theme: theme,
+            onLongRefreshTap: () {
+               Navigator.push(
+                 context,
+                 SlidePageRoute(page: const SyncSettingsPage()),
+               );
+            },
             onRefresh: () async {
               final syncProvider = Provider.of<SyncProvider>(context, listen: false);
               

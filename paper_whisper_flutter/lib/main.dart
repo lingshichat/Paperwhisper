@@ -13,6 +13,7 @@ import 'pages/diary_list_page.dart';
 import 'config/app_theme.dart'; // Added missing import
 import 'pages/intro_page.dart';
 import 'pages/splash_page.dart';
+import 'services/storage_service.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -54,6 +55,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     // 冷启动自动同步
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // 启动时清理临时缓存
+      StorageService().cleanTemporaryCache();
+      
       if (mounted) {
          context.read<SyncProvider>().requestAutoSync(fromLifecycle: true);
       }

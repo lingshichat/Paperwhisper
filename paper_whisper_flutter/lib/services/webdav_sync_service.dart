@@ -34,6 +34,11 @@ class WebDavSyncService {
         password: password,
         debug: kDebugMode,
       );
+      
+      // Increase timeouts for slow networks / large files
+      // Connect: 60s, Receive: 300s (5 mins)
+      _client!.setConnectTimeout(60000);
+      _client!.setReceiveTimeout(300000); 
 
       _serverUrl = serverUrl;
       _username = username;
@@ -136,59 +141,101 @@ class WebDavSyncService {
     }
   }
 
-  Future<void> uploadFile(String localFilePath, String remoteFilePath) async {
-    if (_client == null) return;
+  /// 手动上传（带进度）
+  Future<void> uploadFile(String localFilePath, String remoteFilePath, {Function(int count, int total)? onProgress}) async {
+    if (_serverUrl == null) return;
     
-    // Helper to perform upload
-    Future<void> doUpload() async {
-       await _client!.writeFromFile(localFilePath, _formatPath(remoteFilePath));
-    }
-
+    // WebDAV PUT
+    final url = Uri.parse(_serverUrl! + _formatPath(remoteFilePath));
+    final file = File(localFilePath);
+    final totalBytes = await file.length();
+    
+    final client = HttpClient();
+    client.connectionTimeout = const Duration(seconds: 60);
+    
     try {
-      await doUpload();
-      debugPrint('Uploaded: $remoteFilePath');
+      final request = await client.putUrl(url);
+      
+      // Headers
+      request.headers.set(HttpHeaders.authorizationHeader, _getAuthHeader());
+      request.headers.contentType = ContentType.binary;
+      request.contentLength = totalBytes; // Important for server to know size
+
+      // Stream upload with progress
+      final stream = file.openRead();
+      int bytesSent = 0;
+      
+      await request.addStream(stream.map((chunk) {
+        bytesSent += chunk.length;
+        if (onProgress != null) onProgress(bytesSent, totalBytes);
+        return chunk;
+      }));
+
+      final response = await request.close();
+      
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+         debugPrint('Manual Upload Success: $remoteFilePath');
+      } else {
+         throw HttpException("Upload failed: ${response.statusCode} ${response.reasonPhrase}", uri: url);
+      }
     } catch (e) {
-      // Handle "Moved Permanently" (301) or "Conflict" (409) which often means a directory exists with the same name
-      bool isConflict = false;
-      // Check if it's a DioException (webdav_client uses dio internally usually, but exposes it?)
-      // We can check toString() or runtime type if we don't want to depend on Dio directly in this file
-      String errorStr = e.toString();
-      if (errorStr.contains('301') || errorStr.contains('Moved Permanently') || errorStr.contains('409') || errorStr.contains('Conflict')) {
-         isConflict = true;
-      }
-      
-      if (isConflict) {
-         debugPrint('WebDAV upload conflict (target might be a directory). Attempting cleanup: $remoteFilePath');
-         try {
-           // Try to delete the remote path (if it's a directory, this might need recursive delete, remove() usually handles it)
-           await _client!.removeAll(_formatPath(remoteFilePath)); // removeAll for recursive/force
-           debugPrint('Cleanup successful. Retrying upload...');
-           await doUpload();
-           debugPrint('Uploaded (Retry success): $remoteFilePath');
-           return;
-         } catch (retryError) {
-           debugPrint('Retry upload failed: $retryError');
-           throw retryError; // Throw the retry error
-         }
-      }
-      
-      debugPrint('WebDAV upload failed: $e');
-      rethrow;
+       debugPrint('Manual Upload Failed: $e');
+       rethrow;
+    } finally {
+       client.close();
     }
   }
 
-  /// 下载文件
-  /// [remoteFilePath] 云端完整路径
-  /// [localSavePath] 本地保存完整路径
-  Future<void> downloadFile(String remoteFilePath, String localSavePath) async {
-    if (_client == null) return;
+  /// 手动下载（带进度）
+  Future<void> downloadFile(String remoteFilePath, String localSavePath, {Function(int count, int total)? onProgress}) async {
+    if (_serverUrl == null) return;
+
+    final url = Uri.parse(_serverUrl! + _formatPath(remoteFilePath));
+    final client = HttpClient();
+    client.connectionTimeout = const Duration(seconds: 60); // Connect timeout
+    
     try {
-      await _client!.read2File(_formatPath(remoteFilePath), localSavePath);
-      debugPrint('Downloaded: $remoteFilePath');
+      final request = await client.getUrl(url);
+      request.headers.set(HttpHeaders.authorizationHeader, _getAuthHeader());
+      
+      final response = await request.close();
+      
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final totalBytes = response.contentLength; // might be -1
+        final file = File(localSavePath);
+        final sink = file.openWrite();
+        
+        int bytesReceived = 0;
+        
+        // Listen to stream
+        await response.listen((chunk) {
+           bytesReceived += chunk.length;
+           sink.add(chunk);
+           if (onProgress != null) onProgress(bytesReceived, totalBytes);
+        }, onDone: () async {
+           await sink.flush();
+           await sink.close();
+        }, onError: (e) {
+           sink.close();
+           throw e;
+        }).asFuture();
+        
+        debugPrint('Manual Download Success: $remoteFilePath');
+      } else {
+         throw HttpException("Download failed: ${response.statusCode} ${response.reasonPhrase}", uri: url);
+      }
     } catch (e) {
-      debugPrint('WebDAV download failed: $e');
+      debugPrint('Manual Download Failed: $e');
       rethrow;
+    } finally {
+      client.close();
     }
+  }
+
+  String _getAuthHeader() {
+    if (_username == null || _password == null) return "";
+    final bytes = utf8.encode('$_username:$_password');
+    return 'Basic ' + base64Encode(bytes);
   }
 
   /// 删除云端文件 (慎用，现建议移动到 Trash)

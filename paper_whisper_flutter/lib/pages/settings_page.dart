@@ -11,6 +11,7 @@ import '../widgets/update_dialog.dart';
 import '../widgets/skeuomorphic_toast.dart';
 import '../widgets/slide_page_route.dart';
 import '../pages/trash_page.dart';
+import '../services/storage_service.dart';
 import 'sync_settings_page.dart';
 
 
@@ -25,6 +26,49 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   bool _isCheckingUpdate = false;
   String? _currentVersion;
+  String _storageInfo = '计算中...';
+  String _currentDataPath = '';
+  String _internalStats = '';
+  bool _hasInternalClutter = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStorageInfo();
+  }
+
+  Future<void> _loadStorageInfo() async {
+    final service = StorageService();
+    final cacheSize = await service.getCacheSize();
+    final dataSize = await service.getUserDataSize();
+    final path = await service.getDataPath();
+    final total = cacheSize + dataSize;
+    
+    // Internal Check
+    final internal = await service.getInternalStorageStats();
+    final docSize = internal['doc'] as int? ?? 0;
+    final supportSize = internal['support'] as int? ?? 0;
+    final clutterSize = internal['clutter'] as int? ?? 0;
+    
+    // Check clutter: if using External path, but Internal has > 1MB *clutter* data (excl system files)
+    bool usingExternal = path.contains('/storage/emulated/0'); // Simple heuristic
+    bool hasClutter = usingExternal && clutterSize > 1024 * 1024; // >1MB clutter only
+
+    if (mounted) {
+      setState(() {
+         _storageInfo = "内容占用: ${_formatSize(total)} (缓存: ${_formatSize(cacheSize)})";
+         _currentDataPath = path;
+         _internalStats = "Doc: ${_formatSize(docSize)} / Support: ${_formatSize(supportSize)}";
+         _hasInternalClutter = hasClutter;
+      });
+    }
+  }
+
+  String _formatSize(int bytes) {
+    if (bytes < 1024) return "$bytes B";
+    if (bytes < 1024 * 1024) return "${(bytes / 1024).toStringAsFixed(1)} KB";
+    return "${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB";
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -129,6 +173,18 @@ class _SettingsPageState extends State<SettingsPage> {
               SlidePageRoute(page: SyncSettingsPage()),
             );
           },
+        ),
+        const SizedBox(height: 12),
+        // Storage Setting
+        _buildSettingsItem(
+           context: context,
+           icon: Icons.sd_storage_outlined,
+           title: '用户数据管理',
+           subtitle: _storageInfo, // Need to add this state
+           isSeaFlower: isSeaFlower,
+           isMidnight: isMidnight,
+           textColor: textColor,
+           onTap: () => _showStorageManager(context, isSeaFlower, isMidnight, textColor),
         ),
         const SizedBox(height: 12),
         // Recycle Bin
@@ -404,22 +460,149 @@ class _SettingsPageState extends State<SettingsPage> {
       )
     );
   }
+
+  void _showStorageManager(BuildContext context, bool isSeaFlower, bool isMidnight, Color ignoredTextColor) {
+    // Force dark text color because bottom sheet background is always AntiqueWhite
+    const Color sheetTextColor = Color(0xFF5D4037);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _buildGlassBottomSheet(
+        context,
+        title: '用户数据管理',
+        children: [
+           ListTile(
+             leading: const Icon(Icons.delete_sweep, color: sheetTextColor),
+             title: Text('清理无用图片 (深度清理)', style: GoogleFonts.notoSerifSc(color: sheetTextColor)),
+             subtitle: Text('扫描并删除未被任何随心记引用的冗余图片', style: GoogleFonts.notoSerifSc(color: sheetTextColor.withOpacity(0.6), fontSize: 12)),
+             onTap: () async {
+               Navigator.pop(ctx);
+               SkeuomorphicToast.info(context, '正在深度清理...');
+               int freed = await StorageService().cleanOrphanImages();
+               await _loadStorageInfo(); // Refresh
+               if (context.mounted) {
+                   SkeuomorphicToast.success(context, '清理完成，释放 ${_formatSize(freed)} 空间');
+               }
+             },
+           ),
+           Divider(color: sheetTextColor.withOpacity(0.1)),
+           ListTile(
+             leading: const Icon(Icons.cleaning_services, color: sheetTextColor),
+             title: Text('立即清理缓存', style: GoogleFonts.notoSerifSc(color: sheetTextColor)),
+             subtitle: Text('清理产生的临时文件 (不影响数据)', style: GoogleFonts.notoSerifSc(color: sheetTextColor.withOpacity(0.6), fontSize: 12)),
+             onTap: () async {
+               Navigator.pop(ctx);
+               await StorageService().cleanTemporaryCache();
+               await _loadStorageInfo(); // Refresh
+               if (context.mounted) {
+                   SkeuomorphicToast.success(context, '缓存已清理');
+               }
+             },
+           ),
+           const SizedBox(height: 10),
+           // Debug Info
+           const SizedBox(height: 10),
+           // System Data Section
+           Container(
+             padding: const EdgeInsets.all(12),
+             decoration: BoxDecoration(
+               color: Colors.black.withOpacity(0.05),
+               borderRadius: BorderRadius.circular(8),
+               border: Border.all(color: Colors.black.withOpacity(0.05)),
+             ),
+             child: Column(
+               crossAxisAlignment: CrossAxisAlignment.start,
+               children: [
+                 Row(
+                   children: [
+                      Icon(Icons.perm_device_information, size: 16, color: sheetTextColor.withOpacity(0.7)),
+                      const SizedBox(width: 8),
+                      Text('系统运行数据 (App必须)', style: GoogleFonts.notoSerifSc(color: sheetTextColor.withOpacity(0.8), fontWeight: FontWeight.bold, fontSize: 13)),
+                   ],
+                 ),
+                 const SizedBox(height: 8),
+                 Text(
+                   '包含字体缓存 (Support) 及 App 资源文件 (Doc)。\n此部分数据维持 App 正常运行，无需清理。',
+                   style: GoogleFonts.notoSerifSc(color: sheetTextColor.withOpacity(0.6), fontSize: 11, height: 1.4),
+                 ),
+                 const SizedBox(height: 8),
+                 Divider(color: Colors.black.withOpacity(0.05), height: 1),
+                 const SizedBox(height: 8),
+                 Row(
+                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                   children: [
+                     Text('占用空间: $_internalStats', style: GoogleFonts.notoSerifSc(color: sheetTextColor.withOpacity(0.5), fontSize: 10)),
+                     // Keep Font Cache clean as a hidden/advanced action if needed, or just small icon
+                   ],
+                 ),
+                 
+                 // Actions
+                   if (_hasInternalClutter)
+                     Padding(
+                       padding: const EdgeInsets.only(top: 8),
+                       child: InkWell(
+                         onTap: () async {
+                            Navigator.pop(ctx);
+                            SkeuomorphicToast.info(context, '正在清理私有残留...');
+                            int freed = await StorageService().cleanInternalClutter();
+                            await _loadStorageInfo();
+                            if (context.mounted) SkeuomorphicToast.success(context, '清理了 ${_formatSize(freed)} 旧数据');
+                         },
+                         child: Text('>> 发现残留数据，点击清理', style: GoogleFonts.notoSerifSc(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 12)),
+                       ),
+                     ),
+                   if (_internalStats.contains('Support') && !(_internalStats.contains('0 B')))
+                     Padding(
+                       padding: const EdgeInsets.only(top: 8),
+                       child: InkWell(
+                         onTap: () async {
+                            Navigator.pop(ctx);
+                            SkeuomorphicToast.info(context, '正在清理字体缓存...');
+                            int freed = await StorageService().cleanFontCache();
+                            await _loadStorageInfo();
+                            if (context.mounted) SkeuomorphicToast.success(context, '字体缓存已清除 (下次启动将自动重新下载)'); 
+                         },
+                         child: Text('>> 强制清除字体缓存 (修复显示异常)', style: GoogleFonts.notoSerifSc(color: Colors.orange[800], fontWeight: FontWeight.bold, fontSize: 10)),
+                       ),
+                     )
+               ],
+             ),
+           )
+        ]
+      )
+    );
+  }
   
   Widget _buildGlassBottomSheet(BuildContext context, {required String title, required List<Widget> children}) {
-    // Simple styled bottom sheet
+    // Simple styled bottom sheet with fixed AntiqueWhite background
+    // We enforce dark text color inside because the background is always light.
+    const Color bgColor = Color(0xFFFAEBD7); 
+    const Color titleColor = Color(0xFF5D4037);
+
     return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFFFAEBD7), // Antiquewhite-ish
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 10, offset: const Offset(0, -2))
+        ]
       ),
       padding: const EdgeInsets.all(24),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: GoogleFonts.notoSerifSc(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF5D4037))),
+          Text(title, style: GoogleFonts.notoSerifSc(fontSize: 18, fontWeight: FontWeight.bold, color: titleColor)),
           const SizedBox(height: 16),
-          ...children
+          Flexible(
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: children,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -427,6 +610,9 @@ class _SettingsPageState extends State<SettingsPage> {
   
   Widget _buildRadioItem(BuildContext context, String label, String value, String groupValue, Function(String) onChanged) {
     final isSelected = value == groupValue;
+    // Force dark colors for bottom sheet
+    final color = isSelected ? const Color(0xFF8D6E63) : const Color(0xFF5D4037).withOpacity(0.8);
+    
     return InkWell(
       onTap: () {
         onChanged(value);
@@ -436,7 +622,7 @@ class _SettingsPageState extends State<SettingsPage> {
         padding: const EdgeInsets.symmetric(vertical: 12),
         child: Row(
           children: [
-             Text(label, style: GoogleFonts.notoSerifSc(fontSize: 16, color: isSelected ? const Color(0xFF8D6E63) : Colors.black54)),
+             Text(label, style: GoogleFonts.notoSerifSc(fontSize: 16, color: color)),
              const Spacer(),
              if (isSelected) const Icon(Icons.check, color: Color(0xFF8D6E63))
           ],

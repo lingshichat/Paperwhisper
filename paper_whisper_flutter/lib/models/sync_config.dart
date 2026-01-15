@@ -4,8 +4,11 @@ class SyncConfig {
   final String password; // 应当加密存储，但在简易版中我们先明文存 SP，生产环境建议用 flutter_secure_storage
   final bool autoSync;
   final bool enabled;
+  final bool compressImages;
 
   static const String defaultServerUrl = 'https://dav.jianguoyun.com/dav/';
+
+
 
   SyncConfig({
     this.serverUrl = defaultServerUrl,
@@ -13,6 +16,7 @@ class SyncConfig {
     this.password = '',
     this.autoSync = false,
     this.enabled = false,
+    this.compressImages = true,
   });
 
   SyncConfig copyWith({
@@ -21,6 +25,7 @@ class SyncConfig {
     String? password,
     bool? autoSync,
     bool? enabled,
+    bool? compressImages,
   }) {
     return SyncConfig(
       serverUrl: serverUrl ?? this.serverUrl,
@@ -28,6 +33,7 @@ class SyncConfig {
       password: password ?? this.password,
       autoSync: autoSync ?? this.autoSync,
       enabled: enabled ?? this.enabled,
+      compressImages: compressImages ?? this.compressImages,
     );
   }
 
@@ -38,6 +44,7 @@ class SyncConfig {
       'password': password,
       'autoSync': autoSync,
       'enabled': enabled,
+      'compressImages': compressImages,
     };
   }
 
@@ -48,6 +55,7 @@ class SyncConfig {
       password: json['password'] ?? '',
       autoSync: json['autoSync'] ?? false,
       enabled: json['enabled'] ?? false,
+      compressImages: json['compressImages'] ?? true,
     );
   }
 }

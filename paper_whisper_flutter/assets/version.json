@@ -1,19 +1,20 @@
 {
-    "latestVersion": "1.3.3",
-    "latestBuildNumber": 6,
-    "releaseDate": "2026-01-14",
-    "title": "纸语 1.3.3 —— 搜寻你的一切记忆",
+    "latestVersion": "1.3.4",
+    "latestBuildNumber": 7,
+    "releaseDate": "2026-01-16",
+    "title": "纸语 1.3.4 —— 处处随心",
     "isForceUpdate": false,
     "changelog": [
-        "🛠️ 修复搜索功能在专注写作无响应问题（1.3.3修复）",
-        "-----以下为1.3.2更新内容-----",
+        "🆕 支持随心记图片多张上传，上传多张后可左右滑动预览，默认分享当前滑动到的图片",
+        "🛠️ 优化Windows下随心记视图为瀑布流（应该会有人在用Windows版....吧？）",
+        "-----以下为1.3更新内容-----",
         "🆕 新增：搜索功能，可以搜索专注写作、随心记等",
         "🛠️ 优化专注写作分享图片输出路径",
         "🛠️ 尝试优化鸿蒙相关权限申请（可能还是不会生效，不过可以建议绑定webdav比如坚果云）"
     ],
     "downloadUrl": {
-        "android": "https://dl.lingshichat.top/Android/paper_whisper_flutter_android_1.3.3.apk",
-        "windows": "https://dl.lingshichat.top/Windows/paper_whisper_flutter_windows_1.3.3.zip"
+        "android": "https://dl.lingshichat.top/Android/paper_whisper_flutter_android_1.3.4.apk",
+        "windows": "https://dl.lingshichat.top/Windows/paper_whisper_flutter_windows_1.3.4.zip"
     },
     "backupUrl": {
         "android": "https://pan.baidu.com/s/5yCz-SftTvyEAJl0oZRaN1Q?_at_=1768287810796#list/path=%2F",

@@ -2,8 +2,11 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart';
+import '../providers/sync_provider.dart';
+import '../widgets/skeuomorphic_dialog.dart';
 import '../config/app_theme.dart';
 
 class MomentInputWidget extends StatefulWidget {
@@ -21,7 +24,54 @@ class _MomentInputWidgetState extends State<MomentInputWidget> {
   final ImagePicker _picker = ImagePicker();
   
   void _pickImages() async {
-    final List<XFile> images = await _picker.pickMultiImage();
+    final syncProvider = context.read<SyncProvider>();
+    final prefs = await SharedPreferences.getInstance();
+    
+    // Check educational prompt (Same logic as EditorPage)
+    bool webDavConfigured = syncProvider.isConfigured;
+    bool hasShownPrompt = prefs.getBool('has_shown_compression_prompt') ?? false;
+
+    if (webDavConfigured && !hasShownPrompt) {
+       // Since this is a widget, we need to be careful with context. 
+       // But it is Stateful, so context is available.
+       bool? confirmCompression = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => SkeuomorphicDialog(
+          title: '图片上传设置',
+          headerIcon: Icons.cloud_upload,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: const [
+               Text('检测到您已开启 WebDAV 同步。为节省您的云端流量，建议开启图片压缩。'),
+               SizedBox(height: 10),
+               Text('• 压缩模式 (推荐)：保留清晰度的同时大幅减小体积。', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+               Text('• 原图模式：占用大量空间和流量。', style: TextStyle(fontSize: 13, color: Colors.grey)),
+            ],
+          ),
+          actions: [
+            SkeuomorphicDialogButton(label: '使用原图', isPrimary: false, onPressed: () => Navigator.pop(ctx, false)),
+            SkeuomorphicDialogButton(label: '开启压缩', onPressed: () => Navigator.pop(ctx, true)),
+          ],
+        ),
+      );
+      
+      if (confirmCompression != null) {
+          final newConfig = syncProvider.config.copyWith(compressImages: confirmCompression);
+          await syncProvider.saveConfig(newConfig);
+          await prefs.setBool('has_shown_compression_prompt', true);
+      } else {
+         return; 
+      }
+    }
+
+    bool compress = syncProvider.config.compressImages;
+    
+    final List<XFile> images = await _picker.pickMultiImage(
+       maxWidth: compress ? 1920 : null,
+       imageQuality: compress ? 80 : null,
+    );
+    
     if (images.isNotEmpty) {
       setState(() {
         _selectedImages.addAll(images);

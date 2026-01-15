@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -22,12 +23,14 @@ class BookFlipRefreshWidget extends StatefulWidget {
   final Widget child;
   final Future<void> Function() onRefresh;
   final String theme;
+  final VoidCallback? onLongRefreshTap; // Callback for the link
   
   const BookFlipRefreshWidget({
     super.key,
     required this.child,
     required this.onRefresh,
     required this.theme,
+    this.onLongRefreshTap,
   });
 
   @override
@@ -47,10 +50,14 @@ class _BookFlipRefreshWidgetState extends State<BookFlipRefreshWidget>
   late AnimationController _bounceController;
   late Animation<double> _bounceAnimation;
   
+  // Long refresh state
+  bool _showLongRefreshLink = false;
+  Timer? _longRefreshTimer;
+  
   // 阈值
   static const double _triggerOffset = 100.0;
   static const double _maxDragOffset = 180.0;
-  static const double _refreshAreaHeight = 120.0;
+  static const double _refreshAreaHeight = 150.0; // Increased height for link space
 
   @override
   void initState() {
@@ -68,10 +75,17 @@ class _BookFlipRefreshWidgetState extends State<BookFlipRefreshWidget>
   void dispose() {
     _pageFlipController.dispose();
     _bounceController.dispose();
+    _longRefreshTimer?.cancel();
     super.dispose();
   }
-
-  void _onOverscroll(double overscroll) {
+  
+  // ... (overscroll/scrollEnd untouched logic implicitly via keeping it or see next replace) 
+  // Simplified replacement: I am replacing fields and initState/dispose only here.
+  // Wait, I need to modify _startRefresh too. I'll do that in next chunk to be safe.
+  
+  // ... keeping _onOverscroll and _onScrollEnd same for now ...
+  
+   void _onOverscroll(double overscroll) {
     if (_status == BookRefreshStatus.refreshing || 
         _status == BookRefreshStatus.done) return;
     
@@ -95,7 +109,19 @@ class _BookFlipRefreshWidgetState extends State<BookFlipRefreshWidget>
   }
 
   void _startRefresh() async {
-    setState(() => _status = BookRefreshStatus.refreshing);
+    setState(() {
+      _status = BookRefreshStatus.refreshing;
+      _showLongRefreshLink = false;
+    });
+    
+    // Start 5s timer
+    _longRefreshTimer?.cancel();
+    _longRefreshTimer = Timer(const Duration(seconds: 5), () {
+      if (mounted && _status == BookRefreshStatus.refreshing) {
+        setState(() => _showLongRefreshLink = true);
+      }
+    });
+    
     _animateTo(_refreshAreaHeight);
     _pageFlipController.repeat();
     
@@ -110,11 +136,10 @@ class _BookFlipRefreshWidgetState extends State<BookFlipRefreshWidget>
     } catch (e) {
       setState(() => _status = BookRefreshStatus.failed);
       _pageFlipController.stop();
-      
-      if (mounted) {
-         // Toast handled by SyncProvider or caller
-      }
       await Future.delayed(const Duration(milliseconds: 500));
+    } finally {
+      _longRefreshTimer?.cancel();
+      _showLongRefreshLink = false;
     }
     
     // 收起
@@ -201,6 +226,8 @@ class _BookFlipRefreshWidgetState extends State<BookFlipRefreshWidget>
                 progress: progress,
                 flipProgress: _pageFlipController.value,
                 status: _status,
+                showLink: _showLongRefreshLink,
+                onLinkTap: widget.onLongRefreshTap,
               ),
             ),
           ),
@@ -224,6 +251,8 @@ class _RefreshAreaWidget extends StatelessWidget {
   final double progress;
   final double flipProgress;
   final BookRefreshStatus status;
+  final bool showLink;
+  final VoidCallback? onLinkTap;
   
   const _RefreshAreaWidget({
     required this.bookColor,
@@ -232,6 +261,8 @@ class _RefreshAreaWidget extends StatelessWidget {
     required this.progress,
     required this.flipProgress,
     required this.status,
+    this.showLink = false,
+    this.onLinkTap,
   });
 
   String get statusText {
@@ -340,6 +371,35 @@ class _RefreshAreaWidget extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(top: 4),
                 child: Icon(Icons.error, color: Colors.red, size: 18),
+              ),
+              
+            // Long Refresh Link
+            if (showLink && onLinkTap != null)
+              Padding(
+                 padding: const EdgeInsets.only(top: 8),
+                 child: InkWell(
+                   onTap: onLinkTap,
+                   borderRadius: BorderRadius.circular(12),
+                   child: Padding(
+                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                     child: Row(
+                       mainAxisSize: MainAxisSize.min,
+                       children: [
+                         Text(
+                           '查看进度详情',
+                           style: GoogleFonts.notoSerifSc(
+                             color: textColor.withOpacity(1.0),
+                             fontSize: 12,
+                             decoration: TextDecoration.underline,
+                             fontWeight: FontWeight.bold,
+                           ),
+                         ),
+                         const SizedBox(width: 2),
+                         Icon(Icons.arrow_forward_ios, size: 10, color: textColor),
+                       ],
+                     ),
+                   ),
+                 ),
               ),
           ],
         ),

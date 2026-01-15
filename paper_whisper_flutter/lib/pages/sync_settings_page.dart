@@ -22,6 +22,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
   late TextEditingController _usernameController;
   late TextEditingController _passwordController;
   bool _autoSync = false;
+  bool _compressImages = true;
   bool _isLoading = false;
 
   @override
@@ -32,6 +33,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
     _usernameController = TextEditingController(text: config.username);
     _passwordController = TextEditingController(text: config.password);
     _autoSync = config.autoSync;
+    _compressImages = config.compressImages;
   }
 
   @override
@@ -53,6 +55,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
       username: _usernameController.text.trim(),
       password: _passwordController.text.trim(),
       autoSync: _autoSync,
+      compressImages: _compressImages,
       enabled: true, // 保存即尝试启用
     );
 
@@ -185,6 +188,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                     icon: Icons.person_outline,
                   ),
                   const SizedBox(height: 16),
+                  const SizedBox(height: 16),
                   _buildTextField(
                     controller: _passwordController,
                     label: '密码 / 应用授权码',
@@ -195,6 +199,37 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                     isMidnight: isMidnight,
                     icon: Icons.lock_outline,
                     obscureText: true,
+                  ),
+                  
+                  const SizedBox(height: 24),
+                  
+                  // 图片压缩开关
+                  Container(
+                    decoration: BoxDecoration(
+                      color: isSeaFlower ? Colors.white.withOpacity(0.4) : (isMidnight ? const Color(0xFF0D1117).withOpacity(0.5) : Colors.black.withOpacity(0.05)),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: textColor.withOpacity(0.1)),
+                    ),
+                    padding: const EdgeInsets.all(12),
+                    child: SwitchListTile(
+                      value: _compressImages,
+                      onChanged: (val) => setState(() => _compressImages = val),
+                      activeColor: isSeaFlower ? const Color(0xFFAD1457) : (isMidnight ? const Color(0xFF7986cb) : const Color(0xFF5D4037)),
+                      activeTrackColor: isSeaFlower ? const Color(0xFFF48FB1) : (isMidnight ? const Color(0xFF9FA8DA) : const Color(0xFFA1887F)),
+                      title: Text(
+                        '开启图片压缩',
+                        style: GoogleFonts.notoSerifSc(color: textColor, fontWeight: FontWeight.bold, fontSize: 15),
+                      ),
+                      subtitle: Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          '开启后将压缩上传，显著节省云端存储和流量 (推荐)。\n关闭则上传原图，画质更好但耗流量。',
+                          style: GoogleFonts.notoSerifSc(color: textColor.withOpacity(0.7), fontSize: 12),
+                        ),
+                      ),
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                    ),
                   ),
                   
                   const SizedBox(height: 32),
@@ -224,21 +259,46 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                     ],
                   ),
                   
-                  if (_isLoading || provider.status == SyncStatus.syncing)
+                   if (_isLoading || provider.status == SyncStatus.syncing)
                      Padding(
-                       padding: const EdgeInsets.only(top: 20),
+                       padding: const EdgeInsets.only(top: 24),
                        child: Column(
+                         crossAxisAlignment: CrossAxisAlignment.center,
                          children: [
-                           CircularProgressIndicator(color: titleColor),
-                           const SizedBox(height: 12),
+                           // Action Text
                            Text(
-                             provider.progressMessage.isEmpty ? '正在加载...' : provider.progressMessage,
+                             provider.progressMessage.isEmpty ? '正在处理...' : provider.progressMessage,
                              style: GoogleFonts.notoSerifSc(
-                               color: textColor.withOpacity(0.8),
+                               color: textColor.withOpacity(0.9),
                                fontSize: 14,
-                               fontWeight: FontWeight.w500,
+                               fontWeight: FontWeight.bold,
+                             ),
+                             textAlign: TextAlign.center,
+                           ),
+                           const SizedBox(height: 12),
+                           
+                           // Progress Bar
+                           ClipRRect(
+                             borderRadius: BorderRadius.circular(4),
+                             child: LinearProgressIndicator(
+                               value: provider.currentFileProgress > 0 ? provider.currentFileProgress : null, // Null = Indeterminate
+                               backgroundColor: textColor.withOpacity(0.1),
+                               color: isSeaFlower ? const Color(0xFFD81B60) : (isMidnight ? const Color(0xFF7986cb) : const Color(0xFF795548)),
+                               minHeight: 6,
                              ),
                            ),
+                           
+                           // Speed Text
+                             Padding(
+                               padding: const EdgeInsets.only(top: 8),
+                               child: Text(
+                                 provider.currentFileSpeed,
+                                 style: GoogleFonts.robotoMono( // Monospace for numbers
+                                   color: textColor.withOpacity(0.6),
+                                   fontSize: 12,
+                                 ),
+                               ),
+                             ),
                          ],
                        ),
                      ),

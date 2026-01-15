@@ -21,15 +21,15 @@ class SkeuomorphicToast {
   }
 
   /// 显示信息提示
-  static void info(BuildContext context, String message) {
+  static void info(BuildContext context, String message, {SnackBarAction? action}) {
     final colors = _getThemeColors(context, _ToastType.info);
-    _show(context, message: message, icon: Icons.info_outline, colors: colors);
+    _show(context, message: message, icon: Icons.info_outline, colors: colors, action: action);
   }
 
   /// 显示警告提示
-  static void warning(BuildContext context, String message) {
+  static void warning(BuildContext context, String message, {SnackBarAction? action}) {
     final colors = _getThemeColors(context, _ToastType.warning);
-    _show(context, message: message, icon: Icons.warning_amber_outlined, colors: colors, duration: const Duration(seconds: 4));
+    _show(context, message: message, icon: Icons.warning_amber_outlined, colors: colors, duration: const Duration(seconds: 4), action: action);
   }
 
   /// 获取当前主题对应的颜色配置
@@ -169,6 +169,7 @@ class SkeuomorphicToast {
     required IconData icon,
     required _ToastColors colors,
     Duration duration = const Duration(seconds: 2),
+    SnackBarAction? action,
   }) {
     // 移除之前的 SnackBar
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
@@ -213,6 +214,7 @@ class SkeuomorphicToast {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       duration: duration,
       dismissDirection: DismissDirection.horizontal,
+      action: action, // Pass action here
     );
 
     ScaffoldMessenger.of(context).showSnackBar(snackBar);

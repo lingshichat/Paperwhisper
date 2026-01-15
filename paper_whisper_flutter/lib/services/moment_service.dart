@@ -143,16 +143,37 @@ class MomentService {
     await init();
     String filename = "moment_$uuid.json";
     File file = File(path.join(_dataDir!.path, filename));
+    
+    // 1. Read content to find associated images
     if (await file.exists()) {
+      try {
+        String content = await file.readAsString();
+        Moment moment = Moment.fromJsonString(content);
+        
+        // 2. Cascading Delete: Delete images
+        for (String relativePath in moment.images) {
+          // relativePath is usually "images/xxx.jpg"
+          String name = path.basename(relativePath);
+          File imageFile = File(path.join(_dataDir!.path, 'images', name));
+          if (await imageFile.exists()) {
+             try {
+               await imageFile.delete();
+               debugPrint("Deleted associated image: $name");
+             } catch (e) {
+               debugPrint("Error deleting image $name: $e");
+             }
+          }
+        }
+      } catch (e) {
+         debugPrint("Error parsing moment for cascading delete: $e");
+      }
+      
+      // 3. Delete the JSON file
       await file.delete();
     }
     
     // Update Manifest
     _manifestService.updateItem(filename, isDeleted: true);
-    
-    // Note: We are not automatically deleting images to avoid accidental data loss 
-    // if images are shared (though here they are copied). 
-    // Optimization: could add logic to delete images if they are unique to this moment.
   }
 
   /// Copy an image file to the moments images directory and return the relative path
