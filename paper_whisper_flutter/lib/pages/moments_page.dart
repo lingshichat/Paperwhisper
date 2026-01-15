@@ -352,115 +352,187 @@ class _MomentsPageState extends State<MomentsPage> {
           bottom: isDesktop, 
           child: Column(
             children: [
-              // On Desktop, we need a Header (replacement for AppBar)
-              if (isDesktop) 
-                _buildDesktopHeader(appBarTextColor, appBarIconColor),
-                
-              // If searching, show result list. Else show regular layout.
-              if (isSearchActive) 
-                 Expanded(child: _buildSearchResults(theme, textColor: rulerTextColor))
-              else ...[
-                // Ruler with Sync Listener
-                NotificationListener<ScrollNotification>(
-                  onNotification: (notification) {
-                     if (notification.depth == 0 && notification is ScrollUpdateNotification) {
-                       if (_isPageActive) return false;
-                       _isRulerActive = true;
-                       
-                       if (_pageController.hasClients && _rulerController.hasClients) {
-                         double rulerOffset = _rulerController.offset;
-                         double page = rulerOffset / 70.0;
-                         double pageWidth = _pageController.position.viewportDimension;
-                         _pageController.jumpTo(page * pageWidth);
-                       }
-                     } else if (notification is ScrollEndNotification) {
-                       _isRulerActive = false;
-                     }
-                     return false;
-                  },
-                  child: RulerDatePicker(
-                    selectedDate: _selectedDate, 
-                    onDateChanged: (d) => _onDateChanged(d),
-                    controller: _rulerController,
-                    accentColor: rulerAccent,
-                    backgroundColor: rulerBg,
-                    textColor: rulerTextColor,
-                    inactiveTextColor: rulerInactiveTextColor,
-                    subTextColor: rulerSubTextColor,
-                    inactiveSubTextColor: rulerInactiveSubTextColor,
-                    indicatorColor: rulerIndicatorColor,
-                    shadowColor: rulerShadowColor,
-                    borderColor: rulerBorderColor,
+                // On Desktop, we need a Header (replacement for AppBar)
+                if (isDesktop) 
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                       _buildDesktopHeader(appBarTextColor, appBarIconColor),
+                       // 恢复尺子
+                       SizedBox(
+                         height: 85,
+                         child: NotificationListener<ScrollNotification>(
+                            onNotification: (notification) {
+                               if (notification is ScrollUpdateNotification) {
+                                  // 仅处理尺子自身的滚动，不与列表联动(因为列表是全量的)
+                                  // 这里主要依靠 RulerDatePicker 内部或者 controller 变动来触发 _onDateChanged
+                                  // 但原逻辑是靠 PageView 驱动 Ruler，或 Ruler 驱动 PageView
+                                  // 这里我们让 Ruler 独立工作，只改变 _selectedDate
+                                  return false;
+                               }
+                               return false;
+                            },
+                            child: RulerDatePicker(
+                              selectedDate: _selectedDate, 
+                              onDateChanged: (d) => _onDateChanged(d, animate: false), // 不驱动 PageView
+                              controller: _rulerController,
+                              accentColor: rulerAccent,
+                              backgroundColor: rulerBg,
+                              textColor: rulerTextColor,
+                              inactiveTextColor: rulerInactiveTextColor,
+                              subTextColor: rulerSubTextColor,
+                              inactiveSubTextColor: rulerInactiveSubTextColor,
+                              indicatorColor: rulerIndicatorColor,
+                              shadowColor: rulerShadowColor,
+                              borderColor: rulerBorderColor,
+                            ),
+                         ),
+                       ),
+                    ],
                   ),
-                ),
-                
-                // List (PageView)
-                Expanded(
-                  child: NotificationListener<ScrollNotification>(
-                    onNotification: (notification) {
-                      if (notification.depth == 0 && notification is ScrollUpdateNotification) {
-                        if (_isRulerActive) return false;
-                        _isPageActive = true;
-                        
-                        if (_pageController.hasClients && _rulerController.hasClients) {
-                          double page = _pageController.page ?? 0;
-                          double rulerOffset = page * 70.0; 
-                          _rulerController.jumpTo(rulerOffset);
-                        }
-                      } else if (notification is ScrollEndNotification) {
-                         _isPageActive = false;
-                         if (!_isRulerActive && _pageController.hasClients) {
-                             int pageIndex = _pageController.page?.round() ?? 0;
-                             DateTime targetDate = _startDate.add(Duration(days: pageIndex));
-                             if (!_isSameDay(targetDate, _selectedDate)) {
-                                _onDateChanged(targetDate, animate: false);
-                             }
-                         }
-                      }
-                      return false;
-                    },
-                    child: PageView.builder(
-                      controller: _pageController,
-                      itemCount: _dayRange, 
-                      physics: const BouncingScrollPhysics(),
-                      onPageChanged: (index) {
-                         // Optional: Could trigger haptic feedback here
-                      },
-                      itemBuilder: (context, index) {
-                         DateTime date = _startDate.add(Duration(days: index));
-                         List<Moment> moments = _getMomentsForDate(date);
+                  
+                // If searching, show result list. Else show regular layout.
+                if (isSearchActive) 
+                   Expanded(child: _buildSearchResults(theme, textColor: rulerTextColor))
+                else if (isDesktop)
+                   // Desktop Waterfall Layout
+                   Expanded(
+                     child: Stack(
+                       children: [
+                         // Grid - 联动尺子日期
+                         _buildDesktopWaterfall(context, _getMomentsForDate(_selectedDate)),
                          
-                          if (moments.isEmpty) {
-                            return _buildEmptyStateForDate(date);
-                          }
-                          
-                          return ListView.builder(
-                              padding: const EdgeInsets.only(top: 20, bottom: 90), 
-                              itemCount: moments.length,
-                              itemBuilder: (context, i) {
-                                 return MomentCard(
-                                   moment: moments[i],
-                                   baseDir: _baseDir,
-                                   onDelete: () async {
-                                      await _momentService.deleteMoment(moments[i].uuid);
-                                      // Refresh
-                                      await _loadData();
-                                      if (mounted) {
-                                         SkeuomorphicToast.success(context, '随心记已删除');
-                                      }
-                                   },
-                                 );
-                              },
-                            );
-                      },
+                         // Floating Input (Bottom Center) - 拟物化悬浮岛设计
+                         Align(
+                           alignment: Alignment.bottomCenter,
+                           child: Padding(
+                             padding: const EdgeInsets.only(bottom: 30),
+                             child: Container(
+                               width: 600,
+                               decoration: BoxDecoration(
+                                 borderRadius: BorderRadius.circular(24),
+                                 boxShadow: [
+                                   BoxShadow(
+                                     color: Colors.black.withOpacity(0.2), // Deep shadow
+                                     blurRadius: 15,
+                                     offset: const Offset(0, 8),
+                                   ),
+                                   BoxShadow(
+                                     color: Colors.black.withOpacity(0.1), // Ambient shadow
+                                     blurRadius: 5,
+                                     offset: const Offset(0, 0),
+                                   ),
+                                 ],
+                               ),
+                               child: ClipRRect(
+                                 borderRadius: BorderRadius.circular(24), // Rounded corners for the widget
+                                 child: MomentInputWidget(onSend: _handleSend),
+                               ),
+                             ),
+                           ),
+                         )
+                       ],
+                     )
+                   )
+                else ...[
+                  // Mobile Layout (Ruler + List)
+                  // Ruler with Sync Listener
+                  NotificationListener<ScrollNotification>(
+                    onNotification: (notification) {
+                       if (notification.depth == 0 && notification is ScrollUpdateNotification) {
+                         if (_isPageActive) return false;
+                         _isRulerActive = true;
+                         
+                         if (_pageController.hasClients && _rulerController.hasClients) {
+                           double rulerOffset = _rulerController.offset;
+                           double page = rulerOffset / 70.0;
+                           double pageWidth = _pageController.position.viewportDimension;
+                           _pageController.jumpTo(page * pageWidth);
+                         }
+                       } else if (notification is ScrollEndNotification) {
+                         _isRulerActive = false;
+                       }
+                       return false;
+                    },
+                    child: RulerDatePicker(
+                      selectedDate: _selectedDate, 
+                      onDateChanged: (d) => _onDateChanged(d),
+                      controller: _rulerController,
+                      accentColor: rulerAccent,
+                      backgroundColor: rulerBg,
+                      textColor: rulerTextColor,
+                      inactiveTextColor: rulerInactiveTextColor,
+                      subTextColor: rulerSubTextColor,
+                      inactiveSubTextColor: rulerInactiveSubTextColor,
+                      indicatorColor: rulerIndicatorColor,
+                      shadowColor: rulerShadowColor,
+                      borderColor: rulerBorderColor,
                     ),
                   ),
-                ),
-              ],
-
-              // Input Widget Removed from here
-              // Display only if NOT searching and is Desktop
-              if (isDesktop && !isSearchActive) MomentInputWidget(onSend: _handleSend)
+                  
+                  // List (PageView)
+                  Expanded(
+                    child: NotificationListener<ScrollNotification>(
+                      onNotification: (notification) {
+                        if (notification.depth == 0 && notification is ScrollUpdateNotification) {
+                          if (_isRulerActive) return false;
+                          _isPageActive = true;
+                          
+                          if (_pageController.hasClients && _rulerController.hasClients) {
+                            double page = _pageController.page ?? 0;
+                            double rulerOffset = page * 70.0; 
+                            _rulerController.jumpTo(rulerOffset);
+                          }
+                        } else if (notification is ScrollEndNotification) {
+                           _isPageActive = false;
+                           if (!_isRulerActive && _pageController.hasClients) {
+                               int pageIndex = _pageController.page?.round() ?? 0;
+                               DateTime targetDate = _startDate.add(Duration(days: pageIndex));
+                               if (!_isSameDay(targetDate, _selectedDate)) {
+                                  _onDateChanged(targetDate, animate: false);
+                               }
+                           }
+                        }
+                        return false;
+                      },
+                      child: PageView.builder(
+                        controller: _pageController,
+                        itemCount: _dayRange, 
+                        physics: const BouncingScrollPhysics(),
+                        onPageChanged: (index) {
+                           // Optional: Could trigger haptic feedback here
+                        },
+                        itemBuilder: (context, index) {
+                           DateTime date = _startDate.add(Duration(days: index));
+                           List<Moment> moments = _getMomentsForDate(date);
+                           
+                            if (moments.isEmpty) {
+                              return _buildEmptyStateForDate(date);
+                            }
+                            
+                            return ListView.builder(
+                                padding: const EdgeInsets.only(top: 20, bottom: 90), 
+                                itemCount: moments.length,
+                                itemBuilder: (context, i) {
+                                   return MomentCard(
+                                     moment: moments[i],
+                                     baseDir: _baseDir,
+                                     onDelete: () async {
+                                        await _momentService.deleteMoment(moments[i].uuid);
+                                        // Refresh
+                                        await _loadData();
+                                        if (mounted) {
+                                           SkeuomorphicToast.success(context, '随心记已删除');
+                                        }
+                                     },
+                                   );
+                                },
+                              );
+                        },
+                      ),
+                    ),
+                  ),
+                ],
             ],
           ),
         );
@@ -703,6 +775,68 @@ class _MomentsPageState extends State<MomentsPage> {
            ),
          ],
       ),
+    );
+  }
+
+  Widget _buildDesktopWaterfall(BuildContext context, List<Moment> moments) {
+    if (moments.isEmpty) {
+      // Just pick a random date or today for empty state logic
+      return _buildEmptyStateForDate(DateTime.now());
+    }
+
+    // Sort by latest first for waterfall (Spontaneous inputs matter most)
+    final sortedMoments = List<Moment>.from(moments);
+    sortedMoments.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        // Logic from DiaryListPage
+        int columnCount = 1;
+        if (width > 1200) { // Slightly wider for moments card
+          columnCount = 3;
+        } else if (width > 750) {
+          columnCount = 2;
+        }
+
+        // Masonry Logic
+        List<List<Moment>> columns = List.generate(columnCount, (_) => []);
+        for (int i = 0; i < sortedMoments.length; i++) {
+          columns[i % columnCount].add(sortedMoments[i]);
+        }
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(40, 20, 40, 100), // Bottom padding for input widget
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (int i = 0; i < columnCount; i++)
+                Expanded(
+                  child: Padding(
+                    padding: i < columnCount - 1 
+                        ? const EdgeInsets.only(right: 24) 
+                        : EdgeInsets.zero,
+                    child: Column(
+                      children: columns[i].map((moment) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 24),
+                          child: MomentCard(
+                             moment: moment,
+                             baseDir: _baseDir,
+                             onDelete: () async {
+                                await _momentService.deleteMoment(moment.uuid);
+                                await _loadData();
+                             },
+                           ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
