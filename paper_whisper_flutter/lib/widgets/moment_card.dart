@@ -38,6 +38,7 @@ class MomentCard extends StatefulWidget {
 class _MomentCardState extends State<MomentCard> {
   final GlobalKey _globalKey = GlobalKey();
   bool _showWatermark = false;
+  int _currentIndex = 0;
 
   Future<void> _captureAndSave() async {
     try {
@@ -211,19 +212,127 @@ class _MomentCardState extends State<MomentCard> {
                 children: [
                    // 1. Image Section (Polaroid Style, truncated for feed?)
                    // Flomo shows full image usually.
+// 1. Image Section (Polaroid Style / Carousel)
                    if (hasImage)
-                     Container(
+                     Padding(
                        padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-                       child: ConstrainedBox(
-                         constraints: const BoxConstraints(maxHeight: 250), // Limit height
-                         child: Container(
-                           width: double.infinity,
-                           color: isAmber || isMidnight ? Colors.black12 : const Color(0xFFF5F5F5),
-                           child: ClipRRect(
-                             borderRadius: BorderRadius.circular(2),
-                             child: _buildImage(widget.moment.images.first)
-                            ),
-                         ),
+                       child: Column(
+                         children: [
+                           // Stack Effect + PageView
+                           SizedBox(
+                             height: 250, // Fixed height for carousel
+                             child: Stack(
+                               clipBehavior: Clip.none, // Allow stack effect to overflow slightly if needed
+                               alignment: Alignment.center,
+                               children: [
+                                 // "Pile" Effect (Background Layers)
+                                 if (widget.moment.images.length > 1) ...[
+                                   // Bottom Layer
+                                   Transform.rotate(
+                                     angle: -0.05,
+                                     child: Container(
+                                       margin: const EdgeInsets.symmetric(horizontal: 4),
+                                       decoration: BoxDecoration(
+                                         color: Colors.white,
+                                         borderRadius: BorderRadius.circular(2),
+                                         border: Border.all(color: Colors.grey.withOpacity(0.2)),
+                                         boxShadow: [
+                                            BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4, offset: const Offset(2, 4))
+                                         ]
+                                       ),
+                                     ),
+                                   ),
+                                   // Middle Layer
+                                   Transform.rotate(
+                                     angle: 0.03,
+                                     child: Container(
+                                       margin: const EdgeInsets.symmetric(horizontal: 4),
+                                       decoration: BoxDecoration(
+                                         color: Colors.white,
+                                          borderRadius: BorderRadius.circular(2),
+                                          border: Border.all(color: Colors.grey.withOpacity(0.2)),
+                                          boxShadow: [
+                                            BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4, offset: const Offset(2, 4))
+                                          ]
+                                       ),
+                                     ),
+                                   ),
+                                 ],
+                               
+                                 // Main Carousel Layer
+                                 Container(
+                                   width: double.infinity,
+                                   decoration: BoxDecoration(
+                                     color: isAmber || isMidnight ? Colors.black12 : const Color(0xFFF5F5F5),
+                                     borderRadius: BorderRadius.circular(2),
+                                     boxShadow: [
+                                       if (widget.moment.images.length > 1)
+                                          BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 5, offset: const Offset(0, 2))
+                                     ]
+                                   ),
+                                   child: ClipRRect(
+                                     borderRadius: BorderRadius.circular(2),
+                                     child: PageView.builder(
+                                       itemCount: widget.moment.images.length,
+                                       onPageChanged: (index) {
+                                         setState(() {
+                                           _currentIndex = index;
+                                         });
+                                       },
+                                       itemBuilder: (context, index) {
+                                          return GestureDetector(
+                                            onTap: () {
+                                               // Pass specific image index if Detail Page supports it
+                                               // For now, standard open.
+                                               Navigator.of(context).push(
+                                                 PageRouteBuilder(
+                                                   opaque: false, 
+                                                   pageBuilder: (_, __, ___) => MomentDetailPage(
+                                                     moment: widget.moment,
+                                                     baseDir: widget.baseDir,
+                                                     heroTag: heroTag, // Note: Hero might be tricky with Carousel, might need unique tag per image
+                                                     initialIndex: index, // TODO: Update MomentDetailPage to accept this
+                                                   ),
+                                                   transitionsBuilder: (_, animation, __, child) {
+                                                     return FadeTransition(opacity: animation, child: child);
+                                                   }
+                                                 )
+                                               );
+                                            },
+                                            child: _buildImage(widget.moment.images[index]),
+                                          );
+                                       },
+                                     ),
+                                   ),
+                                 ),
+                               ],
+                             ),
+                           ),
+                           
+                           // Indicators
+                           if (widget.moment.images.length > 1)
+                             Padding(
+                               padding: const EdgeInsets.only(top: 8),
+                               child: Row(
+                                 mainAxisAlignment: MainAxisAlignment.center,
+                                 children: List.generate(widget.moment.images.length, (index) {
+                                   bool isActive = _currentIndex == index;
+                                   return AnimatedContainer(
+                                     duration: const Duration(milliseconds: 300),
+                                     margin: const EdgeInsets.symmetric(horizontal: 3),
+                                     width: isActive ? 8 : 6,
+                                     height: isActive ? 8 : 6,
+                                     decoration: BoxDecoration(
+                                       color: isActive 
+                                         ? (isAmber ? Colors.orange : (isSeaFlower ? Colors.pinkAccent : const Color(0xFF8D6E63))) 
+                                         : Colors.grey.withOpacity(0.4),
+                                       shape: BoxShape.circle,
+                                     ),
+                                   );
+                                 }),
+                               ),
+                             ),
+                         ],
                        ),
                      ),
                    

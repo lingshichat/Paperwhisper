@@ -27,7 +27,10 @@ class MomentDetailPage extends StatefulWidget {
     required this.moment,
     required this.baseDir,
     required this.heroTag,
+    this.initialIndex = 0,
   });
+
+  final int initialIndex;
 
   @override
   State<MomentDetailPage> createState() => _MomentDetailPageState();
@@ -43,10 +46,12 @@ class _MomentDetailPageState extends State<MomentDetailPage> with SingleTickerPr
   final GlobalKey _backKey = GlobalKey();
   bool _isSaving = false;
   bool _isFront = true;
+  late int _currentIndex;
 
   @override
   void initState() {
     super.initState();
+    _currentIndex = widget.initialIndex;
     _controller = AnimationController(
       duration: const Duration(milliseconds: 600),
       vsync: this,
@@ -273,9 +278,73 @@ class _MomentDetailPageState extends State<MomentDetailPage> with SingleTickerPr
                 if (widget.moment.images.isNotEmpty)
                   AspectRatio(
                     aspectRatio: 1.0, 
-                    child: Container(
-                      color: Colors.grey[200],
-                      child: _buildImage(widget.moment.images.first),
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                         // Stack Effect (Background)
+                         if (widget.moment.images.length > 1) ...[
+                            Transform.rotate(
+                              angle: -0.04,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  border: Border.all(color: Colors.grey.withOpacity(0.3)),
+                                  boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4, offset: const Offset(2,2))]
+                                ),
+                              ),
+                            ),
+                            Transform.rotate(
+                              angle: 0.03,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  border: Border.all(color: Colors.grey.withOpacity(0.3)),
+                                  boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4, offset:const Offset(2,2))]
+                                ),
+                              ),
+                            ),
+                         ],
+                         
+                         // Carousel
+                         PageView.builder(
+                           controller: PageController(initialPage: widget.initialIndex),
+                           itemCount: widget.moment.images.length,
+                           onPageChanged: (index) {
+                             setState(() => _currentIndex = index);
+                           },
+                           itemBuilder: (context, index) {
+                             return Container(
+                               color: Colors.grey[200],
+                               child: _buildImage(widget.moment.images[index]),
+                             );
+                           },
+                         ),
+
+                         // Indicators (Inside Polaroid Image Area, bottom center)
+                         if (widget.moment.images.length > 1)
+                           Positioned(
+                             bottom: 10,
+                             left: 0,
+                             right: 0,
+                             child: Row(
+                               mainAxisAlignment: MainAxisAlignment.center,
+                               children: List.generate(widget.moment.images.length, (idx) {
+                                  bool active = idx == _currentIndex;
+                                  return AnimatedContainer(
+                                    duration: const Duration(milliseconds: 300),
+                                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                                    width: active ? 8 : 6,
+                                    height: active ? 8 : 6,
+                                    decoration: BoxDecoration(
+                                      color: active ? Colors.white : Colors.white.withOpacity(0.5),
+                                      shape: BoxShape.circle,
+                                      boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 2)]
+                                    ),
+                                  );
+                               }),
+                             ),
+                           )
+                      ],
                     ),
                   ),
                 const SizedBox(height: 24),

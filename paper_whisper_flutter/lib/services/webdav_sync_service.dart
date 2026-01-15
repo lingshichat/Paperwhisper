@@ -136,15 +136,42 @@ class WebDavSyncService {
     }
   }
 
-  /// 上传文件
-  /// [localFilePath] 本地文件绝对路径
-  /// [remoteFilePath] 云端完整路径，例如 '/PaperWhisper/diary_data/abc.txt'
   Future<void> uploadFile(String localFilePath, String remoteFilePath) async {
     if (_client == null) return;
+    
+    // Helper to perform upload
+    Future<void> doUpload() async {
+       await _client!.writeFromFile(localFilePath, _formatPath(remoteFilePath));
+    }
+
     try {
-      await _client!.writeFromFile(localFilePath, _formatPath(remoteFilePath));
+      await doUpload();
       debugPrint('Uploaded: $remoteFilePath');
     } catch (e) {
+      // Handle "Moved Permanently" (301) or "Conflict" (409) which often means a directory exists with the same name
+      bool isConflict = false;
+      // Check if it's a DioException (webdav_client uses dio internally usually, but exposes it?)
+      // We can check toString() or runtime type if we don't want to depend on Dio directly in this file
+      String errorStr = e.toString();
+      if (errorStr.contains('301') || errorStr.contains('Moved Permanently') || errorStr.contains('409') || errorStr.contains('Conflict')) {
+         isConflict = true;
+      }
+      
+      if (isConflict) {
+         debugPrint('WebDAV upload conflict (target might be a directory). Attempting cleanup: $remoteFilePath');
+         try {
+           // Try to delete the remote path (if it's a directory, this might need recursive delete, remove() usually handles it)
+           await _client!.removeAll(_formatPath(remoteFilePath)); // removeAll for recursive/force
+           debugPrint('Cleanup successful. Retrying upload...');
+           await doUpload();
+           debugPrint('Uploaded (Retry success): $remoteFilePath');
+           return;
+         } catch (retryError) {
+           debugPrint('Retry upload failed: $retryError');
+           throw retryError; // Throw the retry error
+         }
+      }
+      
       debugPrint('WebDAV upload failed: $e');
       rethrow;
     }

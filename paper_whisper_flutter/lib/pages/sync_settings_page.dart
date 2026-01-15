@@ -80,13 +80,21 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
   Future<void> _syncNow() async {
      setState(() => _isLoading = true);
      final provider = Provider.of<SyncProvider>(context, listen: false);
-     await provider.sync();
-     if (mounted) {
-       setState(() => _isLoading = false);
-       if (provider.status == SyncStatus.success) {
-         SkeuomorphicToast.success(context, '同步完成');
-       } else {
-         SkeuomorphicToast.error(context, '同步失败: ${provider.lastError}');
+     try {
+       await provider.sync(context: context);
+       if (mounted) {
+         setState(() => _isLoading = false);
+         // Feedback is already handled inside provider.sync with specific error messages
+         // But we can check status just in case
+         if (provider.status == SyncStatus.success) {
+           // SkeuomorphicToast.success(context, '同步完成'); // provider.sync does this now
+         }
+       }
+     } catch (e) {
+       if (mounted) {
+         setState(() => _isLoading = false);
+         // Error toast is also handled in provider.sync usually, but safe to show if not
+         // provider.sync throws, so we catch here to stop loading state
        }
      }
   }

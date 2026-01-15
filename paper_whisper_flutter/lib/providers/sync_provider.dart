@@ -231,7 +231,12 @@ class SyncProvider with ChangeNotifier {
 
   /// 执行完整同步
   Future<void> sync({bool isAuto = false, BuildContext? context}) async {
-    if (_status == SyncStatus.syncing) return;
+    if (_status == SyncStatus.syncing) {
+      if (context != null && !isAuto) {
+         SkeuomorphicToast.info(context, '正在同步中，请稍候...');
+      }
+      return;
+    }
     if (!_config.enabled) return;
 
     // 确保连接
@@ -243,7 +248,8 @@ class SyncProvider with ChangeNotifier {
         if (context != null) {
              SkeuomorphicToast.error(context, "无法连接到 WebDAV 服务器");
         }
-        return;
+        // THROW so callers like BookFlipRefreshWidget know it failed
+        throw Exception("无法连接到 WebDAV 服务器");
       }
     }
 
