@@ -1,17 +1,19 @@
 {
-    "latestVersion": "1.3.1",
-    "latestBuildNumber": 4,
-    "releaseDate": "2026-01-13",
-    "title": "纸语 1.3.1 —— 守护每一份记忆",
-    "isForceUpdate": true,
+    "latestVersion": "1.3.3",
+    "latestBuildNumber": 6,
+    "releaseDate": "2026-01-14",
+    "title": "纸语 1.3.3 —— 搜寻你的一切记忆",
+    "isForceUpdate": false,
     "changelog": [
-        "⚠️ 重要更新：本版本强制升级，修复了随心记webdav同步概率丢失的问题",
-        "🛠️ 修复了图片分享失败，目前可以直接调用app进行分享了",
-        "🛠️ 优化手动检测更新后更新弹窗显示异常"
+        "🛠️ 修复搜索功能在专注写作无响应问题（1.3.3修复）",
+        "-----以下为1.3.2更新内容-----",
+        "🆕 新增：搜索功能，可以搜索专注写作、随心记等",
+        "🛠️ 优化专注写作分享图片输出路径",
+        "🛠️ 尝试优化鸿蒙相关权限申请（可能还是不会生效，不过可以建议绑定webdav比如坚果云）"
     ],
     "downloadUrl": {
-        "android": "https://dl.lingshichat.top/Android/paper_whisper_flutter_android_1.3.1.apk",
-        "windows": "https://dl.lingshichat.top/Windows/paper_whisper_flutter_windows_1.3.1.zip"
+        "android": "https://dl.lingshichat.top/Android/paper_whisper_flutter_android_1.3.3.apk",
+        "windows": "https://dl.lingshichat.top/Windows/paper_whisper_flutter_windows_1.3.3.zip"
     },
     "backupUrl": {
         "android": "https://pan.baidu.com/s/5yCz-SftTvyEAJl0oZRaN1Q?_at_=1768287810796#list/path=%2F",

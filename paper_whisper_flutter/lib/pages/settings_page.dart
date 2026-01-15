@@ -192,8 +192,8 @@ class _SettingsPageState extends State<SettingsPage> {
         _buildSettingsItem(
           context: context,
           icon: Icons.info_outline,
-          title: '关于 PaperWhisper',
-          subtitle: 'v1.0.0',
+          title: '关于纸语PaperWhisper',
+          subtitle: '纸本无言，因你而语',
           isSeaFlower: isSeaFlower,
           isMidnight: isMidnight,
           textColor: textColor,

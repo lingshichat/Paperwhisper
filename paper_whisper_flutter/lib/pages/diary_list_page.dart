@@ -16,6 +16,7 @@ import '../widgets/visual_effects.dart';
 import '../widgets/book_flip_refresh_widget.dart';
 import '../widgets/dashed_line_painter.dart';
 import '../widgets/skeuomorphic_dialog.dart'; // Updated import
+import '../widgets/skeuomorphic_search_bar.dart'; // Added
 import '../widgets/skeuomorphic_toast.dart';
 import 'editor_page.dart';
 import 'diary_card.dart';
@@ -38,6 +39,7 @@ class DiaryListPage extends StatefulWidget {
 
 class _DiaryListPageState extends State<DiaryListPage> {
   String _searchQuery = '';
+  bool _isSearching = false; // Added search state
   // Removed duplicate declaration
   
   @override
@@ -540,55 +542,86 @@ class _DiaryListPageState extends State<DiaryListPage> {
                          ),
                        ],
                      ),
-                     child: Row(
-                       children: [
-                         IconButton(
-                           icon: Icon(Icons.menu, color: headerColors['iconColor']),
-                           onPressed: () => Scaffold.of(scaffoldContext).openDrawer(),
-                         ),
-                         Expanded(
-                           child: Row(
-                             mainAxisAlignment: MainAxisAlignment.center,
-                             crossAxisAlignment: CrossAxisAlignment.baseline,
-                             textBaseline: TextBaseline.alphabetic,
+                     child: AnimatedSwitcher(
+                       duration: const Duration(milliseconds: 300),
+                       child: _isSearching
+                         ? Row(
+                             key: const ValueKey('search_bar'),
                              children: [
-                               Text(
-                                 '纸语',
-                                 style: GoogleFonts.notoSerifSc(
-                                   fontSize: 18,
-                                   fontWeight: FontWeight.bold,
-                                   color: headerColors['titleColor'],
-                                   shadows: const [
-                                     Shadow(
-                                       color: Color.fromRGBO(0, 0, 0, 0.1),
-                                       offset: Offset(0, 1),
-                                       blurRadius: 1,
+                               IconButton(
+                                 icon: Icon(Icons.arrow_back, color: headerColors['iconColor']),
+                                 onPressed: () {
+                                   setState(() {
+                                     _isSearching = false;
+                                     _searchQuery = '';
+                                   });
+                                 },
+                               ),
+                               Expanded(
+                                 child: SkeuomorphicSearchBar(
+                                   value: _searchQuery,
+                                   autoFocus: true,
+                                   hintText: '搜索日记...',
+                                   onChanged: (val) {
+                                     setState(() {
+                                       _searchQuery = val;
+                                     });
+                                   },
+                                 ),
+                               ),
+                               const SizedBox(width: 16),
+                             ],
+                           )
+                         : Row(
+                             key: const ValueKey('title_bar'),
+                             children: [
+                               IconButton(
+                                 icon: Icon(Icons.menu, color: headerColors['iconColor']),
+                                 onPressed: () => Scaffold.of(scaffoldContext).openDrawer(),
+                               ),
+                               Expanded(
+                                 child: Row(
+                                   mainAxisAlignment: MainAxisAlignment.center,
+                                   crossAxisAlignment: CrossAxisAlignment.baseline,
+                                   textBaseline: TextBaseline.alphabetic,
+                                   children: [
+                                     Text(
+                                       '纸语',
+                                       style: GoogleFonts.notoSerifSc(
+                                         fontSize: 18,
+                                         fontWeight: FontWeight.bold,
+                                         color: headerColors['titleColor'],
+                                         shadows: const [
+                                           Shadow(
+                                             color: Color.fromRGBO(0, 0, 0, 0.1),
+                                             offset: Offset(0, 1),
+                                             blurRadius: 1,
+                                           ),
+                                         ],
+                                       ),
+                                     ),
+                                     const SizedBox(width: 6),
+                                     Text(
+                                       'PaperWhisper',
+                                       style: GoogleFonts.notoSerifSc(
+                                         fontSize: 10,
+                                         color: headerColors['subtitleColor'],
+                                       ),
                                      ),
                                    ],
                                  ),
                                ),
-                               const SizedBox(width: 6),
-                               Text(
-                                 'PaperWhisper',
-                                 style: GoogleFonts.notoSerifSc(
-                                   fontSize: 10,
-                                   color: headerColors['subtitleColor'],
-                                 ),
+                               IconButton(
+                                 icon: Icon(Icons.search, color: headerColors['iconColor']),
+                                 onPressed: () {
+                                   setState(() {
+                                     _isSearching = true;
+                                   });
+                                 },
                                ),
+                               const SizedBox(width: 4), 
                              ],
                            ),
-                         ),
-                         // Add Search Button
-                         IconButton(
-                           icon: Icon(Icons.search, color: headerColors['iconColor']),
-                           onPressed: () {
-                             // Simple search dialog or toggle search bar
-                             // For now, toggle a search field in the header or show a dialog
-                             // Let's assume we toggle a boolean _showSearch in state later
-                           },
-                         ),
-                         const SizedBox(width: 4), // adjusted padding
-                       ],
                      ),
                    );
 
