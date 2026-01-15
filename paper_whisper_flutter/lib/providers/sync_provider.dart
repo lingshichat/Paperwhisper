@@ -31,6 +31,7 @@ class SyncProvider with ChangeNotifier {
   SyncConfig _config = SyncConfig();
   SyncStatus _status = SyncStatus.none;
   String _lastError = '';
+  String _progressMessage = ''; // NEW: Progress feedback
   DateTime? _lastSyncTime;
   
   Timer? _autoSyncTimer;
@@ -41,6 +42,7 @@ class SyncProvider with ChangeNotifier {
   SyncConfig get config => _config;
   SyncStatus get status => _status;
   String get lastError => _lastError;
+  String get progressMessage => _progressMessage; // NEW
   DateTime? get lastSyncTime => _lastSyncTime;
   bool get isConfigured => _config.enabled && _config.serverUrl.isNotEmpty;
 
@@ -55,6 +57,20 @@ class SyncProvider with ChangeNotifier {
     _diaryProvider = dp;
   }
   
+  // Helper to update progress message and notify UI
+  void _updateProgress(String message) {
+    _progressMessage = message;
+    notifyListeners();
+  }
+
+  Future<void> _setStatus(SyncStatus status, {String? error}) async {
+    _status = status;
+    if (error != null) _lastError = error;
+    if (status == SyncStatus.success) _progressMessage = '同步完成';
+    if (status == SyncStatus.failed) _progressMessage = '同步失败';
+    notifyListeners();
+  }
+  
   Future<void> _initNotifications() async {
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/launcher_icon');
@@ -64,7 +80,9 @@ class SyncProvider with ChangeNotifier {
       android: initializationSettingsAndroid,
     );
     
-    await _notificationsPlugin.initialize(initializationSettings);
+    if (Platform.isAndroid || Platform.isIOS) {
+       await _notificationsPlugin.initialize(initializationSettings);
+    }
   }
 
   Future<void> _loadConfig() async {
@@ -115,6 +133,7 @@ class SyncProvider with ChangeNotifier {
   }
 
   Future<bool> connect({bool test = true}) async {
+    _updateProgress('正在连接服务器...');
     final success = await _webDavService.connect(
       _config.serverUrl,
       _config.username,
@@ -122,6 +141,7 @@ class SyncProvider with ChangeNotifier {
     );
     
     if (success && test) {
+      _updateProgress('正在验证连接...');
       return await _webDavService.testConnection();
     }
     return success;
@@ -175,6 +195,8 @@ class SyncProvider with ChangeNotifier {
 
   /// 检查并请求通知权限（带拟物化弹窗）
   Future<void> checkNotificationPermission(BuildContext context) async {
+     if (!Platform.isAndroid && !Platform.isIOS) return;
+
      var status = await Permission.notification.status;
      if (!status.isGranted) {
        // Show Explanation Dialog
@@ -214,6 +236,7 @@ class SyncProvider with ChangeNotifier {
 
     // 确保连接
     if (!_webDavService.isConnected) {
+      _updateProgress('正在连接服务器...');
       bool connected = await connect(test: false);
       if (!connected) {
         _setStatus(SyncStatus.failed, error: '无法连接到服务器');
@@ -225,6 +248,7 @@ class SyncProvider with ChangeNotifier {
     }
 
     _setStatus(SyncStatus.syncing);
+    _updateProgress('准备开始同步...');
     if (!isAuto) _showNotification(0, 0, indeterminate: true);
 
     try {
@@ -869,6 +893,11 @@ class SyncProvider with ChangeNotifier {
   // 通知管理
   // ==========================================
   Future<void> _showNotification(int? progress, int? max, {String? body, bool indeterminate = false}) async {
+    // Update local UI state
+    if (body != null) _updateProgress(body);
+
+    if (!Platform.isAndroid && !Platform.isIOS) return;
+
     final AndroidNotificationDetails androidPlatformChannelSpecifics =
         AndroidNotificationDetails(
             _channelId, 
@@ -897,6 +926,8 @@ class SyncProvider with ChangeNotifier {
   }
   
   Future<void> _showCompletionNotification(String message) async {
+      if (!Platform.isAndroid && !Platform.isIOS) return;
+
       final AndroidNotificationDetails androidPlatformChannelSpecifics =
         AndroidNotificationDetails(
             _channelId, 
@@ -919,13 +950,10 @@ class SyncProvider with ChangeNotifier {
   }
 
   Future<void> _cancelNotification() async {
+    if (!Platform.isAndroid && !Platform.isIOS) return;
     await _notificationsPlugin.cancel(_notificationId);
   }
 
-  void _setStatus(SyncStatus s, {String error = ''}) {
-    _status = s;
-    _lastError = error;
-    notifyListeners();
-  }
+
 }
 

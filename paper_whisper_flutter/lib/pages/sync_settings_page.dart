@@ -94,6 +94,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
   @override
   Widget build(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context);
+    final provider = Provider.of<SyncProvider>(context); // Import SyncProvider
     final theme = settings.currentTheme;
     final bool isSeaFlower = theme == AppTheme.themeSeaFlower;
     final bool isMidnight = theme == AppTheme.themeMidnight;
@@ -215,11 +216,22 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                     ],
                   ),
                   
-                  if (_isLoading)
+                  if (_isLoading || provider.status == SyncStatus.syncing)
                      Padding(
                        padding: const EdgeInsets.only(top: 20),
-                       child: Center(
-                         child: CircularProgressIndicator(color: titleColor),
+                       child: Column(
+                         children: [
+                           CircularProgressIndicator(color: titleColor),
+                           const SizedBox(height: 12),
+                           Text(
+                             provider.progressMessage.isEmpty ? '正在加载...' : provider.progressMessage,
+                             style: GoogleFonts.notoSerifSc(
+                               color: textColor.withOpacity(0.8),
+                               fontSize: 14,
+                               fontWeight: FontWeight.w500,
+                             ),
+                           ),
+                         ],
                        ),
                      ),
                      

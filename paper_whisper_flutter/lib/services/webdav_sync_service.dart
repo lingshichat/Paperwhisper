@@ -50,9 +50,20 @@ class WebDavSyncService {
     }
   }
 
+  /// 格式化路径：移除开头的 /，防止与 BaseURL 拼接成双斜杠
+  String _formatPath(String path) {
+    if (path.startsWith('/')) {
+      return path.substring(1);
+    }
+    return path;
+  }
+
   /// 递归确保目录存在
   Future<void> ensureDirectoryExists(String remotePath) async {
     if (_client == null) return;
+    
+    // 规范化路径：移除开头斜杠
+    remotePath = _formatPath(remotePath);
     
     // 移除末尾斜杠以便统一处理
     if (remotePath.endsWith('/')) {
@@ -60,10 +71,11 @@ class WebDavSyncService {
     }
     
     // 如果是根目录，忽略
-    if (remotePath.isEmpty) return;
+    if (remotePath.isEmpty || remotePath == '.') return;
 
     // 尝试直接读取，如果成功则目录存在
     try {
+       // readDir 需要以 / 结尾来列出目录内容，但开头不能有 /
        await _client!.readDir(remotePath + '/');
        return; 
     } catch (_) {
@@ -75,7 +87,7 @@ class WebDavSyncService {
     String parent = path.posix.dirname(remotePath);
     
     // 避免死循环
-    if (parent != remotePath && parent != '/' && parent != '.') {
+    if (parent != remotePath && parent != '.' && parent.isNotEmpty) {
        await ensureDirectoryExists(parent);
     }
     
@@ -110,7 +122,12 @@ class WebDavSyncService {
     try {
       // 确保目录存在
       await ensureDirectoryExists(remotePath); 
-      return await _client!.readDir(remotePath);
+      
+      // format path for readDir
+      String path = _formatPath(remotePath);
+      if (!path.endsWith('/')) path += '/';
+      
+      return await _client!.readDir(path);
     } catch (e) {
       debugPrint('WebDAV list files failed for $remotePath: $e');
       // 严重错误：如果列举失败，必须抛出异常，绝对不能返回空列表！
@@ -125,7 +142,7 @@ class WebDavSyncService {
   Future<void> uploadFile(String localFilePath, String remoteFilePath) async {
     if (_client == null) return;
     try {
-      await _client!.writeFromFile(localFilePath, remoteFilePath);
+      await _client!.writeFromFile(localFilePath, _formatPath(remoteFilePath));
       debugPrint('Uploaded: $remoteFilePath');
     } catch (e) {
       debugPrint('WebDAV upload failed: $e');
@@ -139,7 +156,7 @@ class WebDavSyncService {
   Future<void> downloadFile(String remoteFilePath, String localSavePath) async {
     if (_client == null) return;
     try {
-      await _client!.read2File(remoteFilePath, localSavePath);
+      await _client!.read2File(_formatPath(remoteFilePath), localSavePath);
       debugPrint('Downloaded: $remoteFilePath');
     } catch (e) {
       debugPrint('WebDAV download failed: $e');
@@ -151,7 +168,7 @@ class WebDavSyncService {
   Future<void> deleteFile(String remoteFilePath) async {
     if (_client == null) return;
     try {
-      await _client!.remove(remoteFilePath);
+      await _client!.remove(_formatPath(remoteFilePath));
       debugPrint('Deleted Remote: $remoteFilePath');
     } catch (e) {
       debugPrint('WebDAV delete failed: $e');
@@ -165,8 +182,7 @@ class WebDavSyncService {
       // 确保目标目录存在
       await ensureDirectoryExists(path.posix.dirname(newPath));
       
-      await _client!.rename(oldPath, newPath, false); // false = don't overwrite? wait, rename param overwrite
-      // pub webdav_client rename(path, newPath, overwrite)
+      await _client!.rename(_formatPath(oldPath), _formatPath(newPath), false); 
       debugPrint('Moved Remote: $oldPath -> $newPath');
     } catch (e) {
       debugPrint('WebDAV move failed: $e');
@@ -179,7 +195,7 @@ class WebDavSyncService {
     if (_client == null) return null;
     try {
       // 临时下载到缓冲区
-      List<int> bytes = await _client!.read(remotePath);
+      List<int> bytes = await _client!.read(_formatPath(remotePath));
       return utf8.decode(bytes);
     } catch (e) {
       // 404 is common for new manifest
@@ -193,7 +209,7 @@ class WebDavSyncService {
     if (_client == null) return;
     try {
       Uint8List bytes = Uint8List.fromList(utf8.encode(content));
-      await _client!.write(remotePath, bytes);
+      await _client!.write(_formatPath(remotePath), bytes);
       debugPrint('Wrote string to: $remotePath');
     } catch (e) {
       debugPrint('WebDAV write string failed: $e');
