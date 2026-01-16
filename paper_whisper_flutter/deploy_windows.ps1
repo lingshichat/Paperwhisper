@@ -4,8 +4,11 @@ $ErrorActionPreference = "Stop"
 # --- 🛠️ 配置区域 (与 deploy.sh 保持一致) ---
 $BucketName = "paper-whisper-releases"
 $R2Remote = "cfr2"
-$Domain = "https://dl.paperwhisper.com"
+$Domain = "https://dl.lingshichat.top"
 # ----------------------------------------
+
+Write-Host "🔄 [0/4] 正在从 version.json 同步版本号..." -ForegroundColor Cyan
+dart run tool/sync_version.dart
 
 Write-Host "🚀 [1/4] 开始构建 Release 版 Windows 应用..." -ForegroundColor Cyan
 flutter build windows --release
@@ -42,3 +45,5 @@ rclone copyto "$ZipPath" "$R2Remote`:$BucketName/Windows/latest.zip" --progress
 Write-Host "✅ [4/4] 发布成功！" -ForegroundColor Green
 Write-Host "⬇️ 最新版: $Domain/Windows/latest.zip"
 Write-Host "📦 历史存档: $Domain/Windows/$ZipName"
+Write-Host ""
+Write-Host "🔔 别忘了手动把 Zip 拖到百度网盘备份文件夹哦！" -ForegroundColor Yellow

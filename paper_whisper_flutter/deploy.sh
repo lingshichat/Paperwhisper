@@ -4,8 +4,12 @@ set -e
 # --- 🛠️ 配置区域 ---
 BUCKET_NAME="paper-whisper-releases"
 R2_REMOTE="cfr2"
-DOMAIN="https://dl.paperwhisper.com"
+DOMAIN="https://dl.lingshichat.top"
 # --------------------
+
+# 0. 同步版本号 (from releases/version.json)
+echo "🔄 [Sync] 正在从 version.json 同步版本号..."
+dart run tool/sync_version.dart
 
 # 1. 自动获取版本号
 VERSION=$(grep '^version:' pubspec.yaml | cut -d ' ' -f 2 | cut -d '+' -f 1)
@@ -22,7 +26,7 @@ APK_PATH="build/app/outputs/flutter-apk/app-release.apk"
 APK_NAME="paper_whisper_flutter_android_$VERSION.apk"
 
 echo "☁️ [Android] 正在上传 $APK_NAME..."
-rclone copy "$APK_PATH" "$R2_REMOTE:$BUCKET_NAME/Android/" --rename "$APK_NAME" --progress
+rclone copyto "$APK_PATH" "$R2_REMOTE:$BUCKET_NAME/Android/$APK_NAME" --progress
 rclone copyto "$APK_PATH" "$R2_REMOTE:$BUCKET_NAME/Android/latest.apk" --progress
 
 
@@ -33,3 +37,5 @@ echo "--------------------------------------"
 echo "🎉 Android 发布任务完成！"
 echo "⬇️ Android 最新版: $DOMAIN/Android/latest.apk"
 echo "📦 历史存档: $DOMAIN/Android/$APK_NAME"
+echo ""
+echo "🔔 别忘了手动把 APK 拖到网盘备份文件夹哦！"
