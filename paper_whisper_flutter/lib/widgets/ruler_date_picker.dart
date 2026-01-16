@@ -41,6 +41,8 @@ class _RulerDatePickerState extends State<RulerDatePicker> {
   final int _dayRange = 3650; 
   late DateTime _startDate; 
 
+  bool _isInternalController = false;
+
   @override
   void initState() {
     super.initState();
@@ -52,6 +54,7 @@ class _RulerDatePickerState extends State<RulerDatePicker> {
     // Note: If using external, parent is responsible for initial offset!
     if (widget.controller != null) {
       _controller = widget.controller!;
+      _isInternalController = false;
     } else {
       final selectedNormalized = DateTime(
         widget.selectedDate.year, 
@@ -61,6 +64,7 @@ class _RulerDatePickerState extends State<RulerDatePicker> {
       int initialIndex = selectedNormalized.difference(_startDate).inDays;
       if (initialIndex < 0) initialIndex = 0;
       _controller = FixedExtentScrollController(initialItem: initialIndex);
+      _isInternalController = true;
     }
   }
   
@@ -87,7 +91,9 @@ class _RulerDatePickerState extends State<RulerDatePicker> {
 
   @override
   void dispose() {
-    _controller.dispose();
+    if (_isInternalController) {
+      _controller.dispose();
+    }
     super.dispose();
   }
 

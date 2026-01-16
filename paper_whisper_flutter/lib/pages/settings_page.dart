@@ -414,7 +414,8 @@ class _SettingsPageState extends State<SettingsPage> {
   String _getThemeName(String theme) {
     switch (theme) {
       case AppTheme.themeSeaFlower: return '海底花海';
-      case AppTheme.themeMidnight: return '午夜深蓝';
+      case AppTheme.themeMidnight: return '午夜星尘';
+      case AppTheme.themeAmberLens: return '琥珀光圈';
       default: return '复古纸张';
     }
   }
@@ -438,7 +439,7 @@ class _SettingsPageState extends State<SettingsPage> {
         children: [
           _buildRadioItem(ctx, '复古纸张', 'default', settings.currentTheme, (val) => settings.setTheme(val)),
           _buildRadioItem(ctx, '海底花海', 'sea_flower', settings.currentTheme, (val) => settings.setTheme(val)),
-          _buildRadioItem(ctx, '午夜深蓝', 'midnight', settings.currentTheme, (val) => settings.setTheme(val)),
+          _buildRadioItem(ctx, '午夜星尘', 'midnight', settings.currentTheme, (val) => settings.setTheme(val)),
           _buildRadioItem(ctx, '琥珀光圈', 'amber_lens', settings.currentTheme, (val) => settings.setTheme(val)),
         ]
       )

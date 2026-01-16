@@ -76,7 +76,7 @@ class ThemeSelectionDialog extends StatelessWidget {
                       context,
                       settings,
                       AppTheme.themeDefault, // Actually 'default' key
-                      '经典木纹',
+                      '复古纸张',
                       '深色圆木，温润如玉',
                       const RadialGradient(
                         colors: [Color(0xFF4A3B32), Color(0xFF2D241F)],
@@ -87,11 +87,11 @@ class ThemeSelectionDialog extends StatelessWidget {
                     _buildThemeCard(
                       context,
                       settings,
-                      'vintage', // Assuming vintage key maps to something or just alias
-                      '时光旧物',
-                      '泛黄羊皮，怀旧岁月',
-                      const SolidColor(Color(0xFF3E2723)),
-                      currentTheme == 'vintage',
+                      AppTheme.themeAmberLens, // Correct key: 'amber_lens'
+                      '琥珀光圈',
+                      '深邃皮革，暖橙微光',
+                      const SolidColor(Color(0xFF2C2C2C)), // Dark grey leather base
+                      currentTheme == AppTheme.themeAmberLens,
                     ),
                     _buildThemeCard(
                       context,
