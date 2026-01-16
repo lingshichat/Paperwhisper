@@ -110,6 +110,15 @@ class _DiaryListPageState extends State<DiaryListPage> {
   }
 
   void _showUnifiedDialog(UpdateInfo info, {required bool isAnnouncement}) {
+    final settings = Provider.of<SettingsProvider>(context, listen: false);
+    final theme = settings.currentTheme;
+    // Determine secondary text color based on theme
+    final secondaryColor = (theme == AppTheme.themeMidnight) 
+        ? const Color(0xFF8b949e) // Midnight Secondary
+        : (theme == AppTheme.themeSeaFlower 
+            ? const Color(0xFFC2185B) // SeaFlower Secondary
+            : const Color(0xFF8D6E63)); // Vintage/Default Secondary
+
     showDialog(
       context: context,
       barrierDismissible: !info.isForceUpdate,
@@ -130,7 +139,7 @@ class _DiaryListPageState extends State<DiaryListPage> {
                   '发布日期：${info.releaseDate}',
                   style: GoogleFonts.notoSerifSc(
                     fontSize: 12,
-                    color: const Color(0xFF8D6E63),
+                    color: secondaryColor,
                   ),
                 ),
               ),
@@ -140,10 +149,13 @@ class _DiaryListPageState extends State<DiaryListPage> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                   // Icon color will be handled by DefaultTextStyle unless specified, 
+                   // but let's keep it simple or use secondaryColor for bullet if needed.
+                   // Since _getBulletIcon returns empty string now, this Text is just empty.
                   Text(
                      _getBulletIcon(line), 
-                     style: const TextStyle(fontSize: 14, height: 1.4) 
-                  ), // Use emoji bullet if detected or dot
+                     style: TextStyle(fontSize: 14, height: 1.4, color: secondaryColor) 
+                  ), 
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -151,7 +163,8 @@ class _DiaryListPageState extends State<DiaryListPage> {
                       style: GoogleFonts.notoSerifSc(
                         fontSize: 15,
                         height: 1.6,
-                        color: const Color(0xFF5D4037),
+                        // Remove hardcoded color: const Color(0xFF5D4037),
+                        // so it inherits from SkeuomorphicDialog's DefaultTextStyle
                       ),
                     ),
                   ),
@@ -164,7 +177,7 @@ class _DiaryListPageState extends State<DiaryListPage> {
                  "感谢您与纸语一同成长。", 
                  style: GoogleFonts.notoSerifSc(
                     fontSize: 13, 
-                    color: Colors.grey[600],
+                    color: secondaryColor,
                     fontStyle: FontStyle.italic,
                  )
                )
