@@ -15,7 +15,7 @@ flutter build windows --release
 
 # 获取版本号 (从 pubspec.yaml 读取)
 $PubspecContent = Get-Content -Path "pubspec.yaml" -Raw
-if ($PubspecContent -match '^version:\s+([^\s+]+)') {
+if ($PubspecContent -match '(?m)^version:\s+([^\s+]+)') {
     $Version = $matches[1]
 } else {
     Write-Error "❌ 无法从 pubspec.yaml 提取版本号！"
