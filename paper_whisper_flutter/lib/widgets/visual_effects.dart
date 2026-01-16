@@ -275,6 +275,8 @@ class PetalPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    final paint = Paint();
+    
     for (var petal in petals) {
       if (petal.opacity <= 0.01) continue;
 
@@ -288,24 +290,30 @@ class PetalPainter extends CustomPainter {
       canvas.rotate(petal.rotation);
       
       // 获取缓存的 TextPainter
-      final sizeKey = petal.size.toInt();
-      final displayColor = petal.color.withValues(alpha: petal.opacity);
+      // 优化：使用简单的几何图形代替 TextPainter 绘制花瓣
+      // TextPainter 在每一帧大量创建会导致 Texture 上传开销
       
-      // 直接创建带颜色的 TextPainter（每帧创建，但比 saveLayer 性能好）
-      final textPainter = TextPainter(
-        text: TextSpan(
-          text: '✿',
-          style: TextStyle(
-            fontSize: sizeKey.toDouble(),
-            color: displayColor,
-          ),
-        ),
-        textDirection: TextDirection.ltr,
-      );
-      textPainter.layout();
+      final double petalSize = petal.size;
+      final double radius = petalSize / 2;
+      final double petalRadius = radius * 0.4;
+      final double centerRadius = radius * 0.25;
       
-      textPainter.paint(canvas, Offset(-textPainter.width / 2, -textPainter.height / 2));
+      // 花瓣颜色 (带透明度)
+      paint.color = petal.color.withValues(alpha: petal.opacity);
+      paint.style = PaintingStyle.fill;
       
+      // 绘制5片花瓣
+      for (int i = 0; i < 5; i++) {
+        final double angle = (i * 72) * pi / 180;
+        final double ox = cos(angle) * (radius * 0.5);
+        final double oy = sin(angle) * (radius * 0.5);
+        canvas.drawCircle(Offset(ox, oy), petalRadius, paint);
+      }
+      
+      // 绘制花蕊 (稍微浅一点的颜色)
+      paint.color = Colors.white.withValues(alpha: petal.opacity * 0.8);
+      canvas.drawCircle(Offset.zero, centerRadius, paint);
+
       canvas.restore();
     }
   }
@@ -486,7 +494,7 @@ class StarPainter extends CustomPainter {
   }
 
   void _drawGlowingStar(Canvas canvas, Offset center, double radius, Paint paint, double opacity) {
-    // 1. Draw Glow using RadialGradient (Much cheaper than MaskFilter.blur)
+    // 1. Draw Glow using RadialGradient (Restored per user request, visuals > perf)
     final glowRadius = radius * 3.0;
     final glowPaint = Paint()
       ..shader = RadialGradient(
@@ -503,7 +511,6 @@ class StarPainter extends CustomPainter {
     paint.color = Colors.white.withValues(alpha: opacity);
     paint.maskFilter = null; // Ensure no blur
     // Use fill for core
-    paint.style = PaintingStyle.fill;
     
     final path = _createStarPath(center, radius, radius * 0.4);
     canvas.drawPath(path, paint);

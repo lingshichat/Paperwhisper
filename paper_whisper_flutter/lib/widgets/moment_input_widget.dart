@@ -11,8 +11,13 @@ import '../config/app_theme.dart';
 
 class MomentInputWidget extends StatefulWidget {
   final Function(String content, List<XFile> images) onSend;
+  final FocusNode? focusNode;
 
-  const MomentInputWidget({super.key, required this.onSend});
+  const MomentInputWidget({
+    super.key, 
+    required this.onSend,
+    this.focusNode,
+  });
 
   @override
   State<MomentInputWidget> createState() => _MomentInputWidgetState();
@@ -92,8 +97,13 @@ class _MomentInputWidgetState extends State<MomentInputWidget> {
   }
 
   @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // Get Theme
     // Get Theme
     final settings = Provider.of<SettingsProvider>(context);
     final theme = settings.currentTheme;
@@ -230,6 +240,7 @@ class _MomentInputWidgetState extends State<MomentInputWidget> {
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   child: TextField(
                     controller: _controller,
+                    focusNode: widget.focusNode,
                     maxLines: 4,
                     minLines: 1,
                     style: GoogleFonts.notoSerifSc(color: textColor),
@@ -239,7 +250,7 @@ class _MomentInputWidgetState extends State<MomentInputWidget> {
                       hintStyle: TextStyle(color: hintColor),
                       border: InputBorder.none,
                       isDense: true,
-contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
                     ),
                   ),
                 ),

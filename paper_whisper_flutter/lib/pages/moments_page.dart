@@ -46,6 +46,9 @@ class _MomentsPageState extends State<MomentsPage> {
 
   // Search State
   bool _isSearching = false; 
+  
+  // Focus Management
+  final FocusNode _inputFocusNode = FocusNode();
 
   @override
   void initState() {
@@ -53,6 +56,11 @@ class _MomentsPageState extends State<MomentsPage> {
     _initDates();
     _initControllers();
     _loadData();
+    
+    // Listen to focus changes to rebuild UI (toggle dismiss layer)
+    _inputFocusNode.addListener(() {
+        if (mounted) setState(() {});
+    });
   }
   
   void _initDates() {
@@ -87,6 +95,7 @@ class _MomentsPageState extends State<MomentsPage> {
   void dispose() {
     _pageController.dispose();
     _rulerController.dispose();
+    _inputFocusNode.dispose(); // Dispose focus node
     super.dispose();
   }
 
@@ -581,8 +590,14 @@ class _MomentsPageState extends State<MomentsPage> {
         return Scaffold(
           extendBodyBehindAppBar: true, 
           backgroundColor: Colors.transparent,
-          resizeToAvoidBottomInset: true, 
-          drawer: const SidebarWidget(),
+          resizeToAvoidBottomInset: true,
+          drawerScrimColor: isSeaFlower ? Colors.transparent : Colors.black54, // 统一遮罩逻辑
+          drawer: const Drawer(
+             width: 300,
+             elevation: 0,
+             backgroundColor: Colors.transparent,
+             child: SidebarWidget(),
+          ),
           appBar: AppBar(
             backgroundColor: isSeaFlower 
                 ? const Color(0xFFFCE4EC).withOpacity(0.8) 
@@ -643,14 +658,13 @@ class _MomentsPageState extends State<MomentsPage> {
                     child: content
                   ),
                   
-                  // 2. Dismiss Layer (Only when keyboard is open)
-                  // 方案 A: 直接条件渲染，而非通过 Builder 返回 Positioned
-                  if (isKeyboardOpen)
+                  // 2. Dismiss Layer (Only when keyboard is open OR input focused)
+                  if (isKeyboardOpen || _inputFocusNode.hasFocus)
                     Positioned.fill(
                       child: GestureDetector(
-                        behavior: HitTestBehavior.translucent,
+                        behavior: HitTestBehavior.opaque, // Block clicks
                         onTap: () {
-                          FocusScope.of(bodyContext).unfocus();
+                          _inputFocusNode.unfocus(); // Close keyboard / focus
                         },
                         child: Container(color: Colors.transparent),
                       ),
@@ -661,7 +675,10 @@ class _MomentsPageState extends State<MomentsPage> {
                   if (!isSearchActive)
                     Align(
                       alignment: Alignment.bottomCenter,
-                      child: MomentInputWidget(onSend: _handleSend),
+                      child: MomentInputWidget(
+                          onSend: _handleSend, 
+                          focusNode: _inputFocusNode
+                      ),
                     ),
                 ],
               );

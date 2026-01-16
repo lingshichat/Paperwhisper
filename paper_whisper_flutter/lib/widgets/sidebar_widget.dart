@@ -63,11 +63,11 @@ class _SidebarWidgetState extends State<SidebarWidget> {
     
     // 1. Sea Flower (Light/Pink)
     if (theme == AppTheme.themeSeaFlower) {
-       bgDecor = const BoxDecoration(
-          color: Color(0xFFFCE4EC), // Pink 50
+       bgDecor = BoxDecoration(
+          color: const Color(0xFFFCE4EC).withOpacity(0.6), // Pink 50 with opacity for blur
           // Removed leather texture for clean look, or use a soft paper texture if available
           // image: DecorationImage(image: AssetImage('assets/textures/paper_1.png'), opacity: 0.1, fit: BoxFit.cover),
-          boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(5, 0))]
+          boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(5, 0))]
        );
        textColor = const Color(0xFF880E4F); // Pink 900
        activeTextColor = const Color(0xFFD81B60); // Pink 600
@@ -100,7 +100,10 @@ class _SidebarWidgetState extends State<SidebarWidget> {
       bgDecor = const BoxDecoration(
           color: Color(0xFF2C2C2C),
           image: DecorationImage(
-            image: AssetImage('assets/textures/leather_dark.png'),
+            image: ResizeImage(
+               AssetImage('assets/textures/leather_dark.png'),
+               width: 1080,
+            ),
             fit: BoxFit.cover,
             opacity: 0.5,
           ),
@@ -121,7 +124,10 @@ class _SidebarWidgetState extends State<SidebarWidget> {
        bgDecor = const BoxDecoration(
           color: Color(0xFF3E2723), // Dark Brown
           image: DecorationImage(
-            image: AssetImage('assets/textures/leather_dark.png'), // Reuse leather
+            image: ResizeImage(
+               AssetImage('assets/textures/leather_dark.png'),
+               width: 1080
+            ), // Reuse leather
             fit: BoxFit.cover,
             opacity: 0.6,
           ),
@@ -138,10 +144,10 @@ class _SidebarWidgetState extends State<SidebarWidget> {
        pillBorder = null;
     }
 
-    return Container(
+    Widget sidebarContent = Container(
       width: 280, 
       decoration: bgDecor,
-        child: SafeArea(
+      child: SafeArea(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -422,6 +428,17 @@ class _SidebarWidgetState extends State<SidebarWidget> {
           ),
       ),
     );
+
+    if (theme == AppTheme.themeSeaFlower) {
+      return ClipRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+          child: sidebarContent,
+        ),
+      );
+    }
+
+    return sidebarContent;
   }
 
   Widget _buildMenuItem(BuildContext context, {

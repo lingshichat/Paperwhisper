@@ -220,6 +220,9 @@ class _DiaryCardState extends State<DiaryCard> {
     Widget containerBody;
 
     if (isSeaFlower) {
+       // 恢复高斯模糊 (用户要求保留视觉效果)
+       bgColor = Colors.white.withValues(alpha: 0.35);
+
        containerBody = ClipRRect(
          borderRadius: BorderRadius.circular(16),
          child: BackdropFilter(

@@ -821,7 +821,8 @@ class LinedPaperPainter extends CustomPainter {
     // We want the text to sit ON the line. Text height 1.77 * 18 ≈ 31.86 -> ~32px.
     // First line should be at roughly 32.
     // Draw lines until the end of the canvas + extra buffer to look nice
-    for (double y = lineHeight + 2; y < size.height; y += lineHeight) {
+    // Fix: Draw slightly beyond height to ensure last line is covered
+    for (double y = lineHeight + 2; y <= size.height + lineHeight; y += lineHeight) {
       canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
     }
   }
