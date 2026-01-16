@@ -53,7 +53,19 @@ void main() {
     exit(1);
   }
 
-  // 4. 写回文件
+  // 4. 写回 pubspec.yaml
   pubspecFile.writeAsStringSync(newLines.join('\n') + '\n');
+  print('✅ Updated pubspec.yaml to: version: $fullVersion');
+
+  // 5. 同步内容到 paper_whisper_flutter/assets/version.json
+  final assetsVersionPath = 'assets/version.json';
+  final assetsVersionFile = File(assetsVersionPath);
+  
+  // 直接把读取到的 releases/version.json 原文写入 assets/version.json
+  // 这样能确保 changelog 和 downloadUrl 等所有字段都完全一致
+  assetsVersionFile.createSync(recursive: true);
+  assetsVersionFile.writeAsStringSync(versionContent);
+  print('✅ Synced full content to $assetsVersionPath');
+
   print('🚀 Version sync complete!');
 }
