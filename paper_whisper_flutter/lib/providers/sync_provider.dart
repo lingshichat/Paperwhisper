@@ -260,44 +260,66 @@ class SyncProvider with ChangeNotifier {
     });
   }
 
-  /// 检查并请求通知权限（带拟物化弹窗）
-  Future<void> checkNotificationPermission(BuildContext context) async {
-     if (!Platform.isAndroid && !Platform.isIOS) return;
+  /// 检查并请求通知权限（强制）
+  /// 返回 true 表示已获得权限或无需权限，false 表示用户未授权或取消
+  Future<bool> checkNotificationPermission(BuildContext context) async {
+     if (!Platform.isAndroid && !Platform.isIOS) return true;
 
      var status = await Permission.notification.status;
-     if (!status.isGranted) {
-       // Show Explanation Dialog
-       if (context.mounted) {
-         await showDialog(
-           context: context,
-           builder: (ctx) => SkeuomorphicDialog(
-             title: '需要通知权限',
-             headerIcon: Icons.notifications_active,
-             content: const Text(
-               '为了防止同步过程被系统中断，并让您直观地看到上传进度，我们需要申请通知栏权限。\n\n这能确保您的日记和瞬间安全地备份到云端。',
-             ),
-             actions: [
-               SkeuomorphicDialogButton(
-                 label: '暂不开启', 
-                 isPrimary: false,
-                 onPressed: () => Navigator.pop(ctx),
-               ),
-               SkeuomorphicDialogButton(
-                 label: '去开启', 
-                 onPressed: () {
-                   Navigator.pop(ctx);
-                   Permission.notification.request();
-                 },
-               ),
-             ],
+     if (status.isGranted) return true;
+
+     // Show Explanation Dialog
+     if (context.mounted) {
+       final bool? result = await showDialog<bool>(
+         context: context,
+         barrierDismissible: true, // Allow click outside to cancel
+         builder: (ctx) => SkeuomorphicDialog(
+           title: '需要通知权限',
+           headerIcon: Icons.notifications_active,
+           content: const Text(
+             '为了防止同步过程被系统中断，并让您直观地看到上传进度，我们需要申请通知栏权限。\n\n请授予通知权限以启用同步功能。',
            ),
-         );
+           // Custom footer for single button
+           footer: SizedBox(
+             width: double.infinity,
+             child: SkeuomorphicDialogButton(
+                 label: '去授予通知权限', 
+                 onPressed: () async {
+                   Navigator.pop(ctx, true); // Close dialog first with flag
+                 },
+             ),
+           ),
+         ),
+       );
+
+       if (result == true) {
+         // User clicked "Enable"
+         final newStatus = await Permission.notification.request();
+         if (newStatus.isGranted) {
+           return true;
+         } else {
+           if (context.mounted) {
+             SkeuomorphicToast.info(context, '同步需要通知权限以保持后台运行');
+           }
+           return false;
+         }
        }
      }
+     
+     return false; // Dialog dismissed or ignored
   }
 
   /// 执行完整同步
   Future<void> sync({bool isAuto = false, BuildContext? context}) async {
+    // Manually triggered sync: Check Permission First
+    if (!isAuto && context != null) {
+       final hasPermission = await checkNotificationPermission(context);
+       if (!hasPermission) {
+         // User cancelled or denied permission. Abort silent.
+         return; 
+       }
+    }
+
     if (_status == SyncStatus.syncing) {
       if (context != null && !isAuto) {
          SkeuomorphicToast.info(context, '正在同步中，请稍候...');
