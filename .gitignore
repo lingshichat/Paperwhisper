@@ -56,3 +56,4 @@ releases/builds/*.apk
 releases/builds/*.exe
 releases/builds/*.zip
 releases/builds/*.msi
+paper_whisper_flutter/android/KEYSTORE_README.md
