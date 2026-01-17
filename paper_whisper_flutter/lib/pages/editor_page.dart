@@ -662,13 +662,13 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                  leadingDistribution: TextLeadingDistribution.even,
                ),
                cursorColor: theme == AppTheme.themeMidnight ? const Color(0xFF7986cb) : (theme == AppTheme.themeAmberLens ? const Color(0xFFFF9800) : const Color(0xFFC0392B)),
-               cursorHeight: 22, // Slightly increase cursor height to fill the line better or keep it same
+               cursorHeight: 22, 
                decoration: const InputDecoration(
                  border: InputBorder.none,
-                 contentPadding: EdgeInsets.zero,
-                 isCollapsed: true, // 移除所有默认内边距
-                 isDense: true, // 使用紧凑模式
-                 counterText: "", // Hide counter if any
+                 contentPadding: EdgeInsets.zero, // Important: keep zero to match Strut
+                 isCollapsed: true, 
+                 isDense: true, 
+                 counterText: "", 
                ),
                maxLines: null,
              )
@@ -679,6 +679,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                   color: textColor,
                   height: lineHeight / fontSize,
                ),
+               // Ensure display text matches input style exactly
                strutStyle: StrutStyle(
                  fontFamily: GoogleFonts.notoSerifSc().fontFamily,
                  fontSize: fontSize,
@@ -818,11 +819,9 @@ class LinedPaperPainter extends CustomPainter {
       ..strokeWidth = 1.0;
 
     // Start drawing lines from top
-    // We want the text to sit ON the line. Text height 1.77 * 18 ≈ 31.86 -> ~32px.
-    // First line should be at roughly 32.
-    // Draw lines until the end of the canvas + extra buffer to look nice
-    // Fix: Draw slightly beyond height to ensure last line is covered
-    for (double y = lineHeight + 2; y <= size.height + lineHeight; y += lineHeight) {
+    // We want the text to sit ON the line. Text height is fixed via StrutStyle.
+    // Draw lines exactly at multiples of lineHeight (bottom of each line box)
+    for (double y = lineHeight; y <= size.height + lineHeight; y += lineHeight) {
       canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
     }
   }

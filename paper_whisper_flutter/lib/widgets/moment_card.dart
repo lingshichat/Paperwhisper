@@ -198,7 +198,9 @@ class _MomentCardState extends State<MomentCard> {
             },
             child: Hero(
               tag: heroTag,
-              child: Container(
+              child: Material(
+                type: MaterialType.transparency,
+                child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 6), // Reduce vertical margin for list
               decoration: BoxDecoration(
                 color: cardBg,
@@ -407,6 +409,7 @@ class _MomentCardState extends State<MomentCard> {
                 ],
               ),
             ),
+          ),
           ),
         ),
       ),

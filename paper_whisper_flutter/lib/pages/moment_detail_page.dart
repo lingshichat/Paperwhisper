@@ -357,7 +357,19 @@ class _MomentDetailPageState extends State<MomentDetailPage> with SingleTickerPr
                     padding: const EdgeInsets.symmetric(horizontal: 4.0),
                     child: Text(
                       widget.moment.content,
-                      style: GoogleFonts.notoSerifSc(fontSize: 16, color: const Color(0xFF333333), height: 2.25),
+                      style: GoogleFonts.notoSerifSc(
+                        fontSize: 16, 
+                        color: const Color(0xFF333333), 
+                        height: 2.25
+                      ),
+                      strutStyle: StrutStyle(
+                        fontFamily: GoogleFonts.notoSerifSc().fontFamily,
+                        fontSize: 16,
+                        height: 2.25,
+                        leading: 0,
+                        forceStrutHeight: true,
+                        leadingDistribution: TextLeadingDistribution.even,
+                      ),
                     ),
                   ),
                 ),
@@ -437,8 +449,7 @@ class _PostcardLinePainter extends CustomPainter {
       ..style = PaintingStyle.stroke;
 
     for (double y = lineHeight; y <= size.height + lineHeight; y += lineHeight) {
-      double dy = y - 8;
-      canvas.drawLine(Offset(0, dy), Offset(size.width, dy), paint);
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
     }
   }
 
