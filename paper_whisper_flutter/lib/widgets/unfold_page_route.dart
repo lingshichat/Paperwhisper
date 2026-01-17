@@ -63,9 +63,23 @@ class _UnfoldTransition extends StatelessWidget {
       reverseCurve: Curves.easeInQuart,
     );
 
+    // 5. 准备静态子树 (Performance Optimization)
+    // 将 OverflowBox 和 RepaintBoundary 提前构建，作为 child 传入 AnimatedBuilder
+    // 确保在动画过程中这部分子树完全不会重建/重绘，仅做变换
+    final staticChild = OverflowBox(
+      minWidth: screenSize.width,
+      maxWidth: screenSize.width,
+      minHeight: screenSize.height,
+      maxHeight: screenSize.height,
+      child: RepaintBoundary(
+        child: child,
+      ),
+    );
+
     return AnimatedBuilder(
       animation: curvedAnimation,
-      builder: (context, _) {
+      child: staticChild, // Pass static subtree here
+      builder: (context, cachedChild) {
         final progress = curvedAnimation.value;
         
         // 1. 位置和大小插值
@@ -86,6 +100,12 @@ class _UnfoldTransition extends StatelessWidget {
         // 4. 背景遮罩
         final scrimOpacity = (progress * 0.6).clamp(0.0, 0.6);
 
+        // Safety check for screen size to prevent division by zero
+        if (screenSize.isEmpty) return const SizedBox();
+
+        // Calculate scale manually to avoid FittedBox infinite scale issues
+        final double contentScale = screenSize.width > 0 ? currentRect.width / screenSize.width : 1.0;
+
         return Stack(
           children: [
             // 背景遮罩
@@ -103,18 +123,27 @@ class _UnfoldTransition extends StatelessWidget {
               top: currentRect.top,
               width: currentRect.width,
               height: currentRect.height,
-              child: Transform(
-                alignment: Alignment.topCenter,
-                transform: Matrix4.identity()
-                  ..setEntry(3, 2, 0.001) // 透视
-                  ..rotateX(foldAngle), // 折纸效果
-                child: Opacity(
-                  opacity: opacity,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(
-                      _lerpDouble(12, 0, progress), // 圆角渐变消失
+              child: IgnorePointer(
+                ignoring: animation.status != AnimationStatus.completed,
+                child: Transform(
+                  alignment: Alignment.topCenter,
+                  transform: Matrix4.identity()
+                    ..setEntry(3, 2, 0.001) // 透视
+                    ..rotateX(foldAngle), // 折纸效果
+                  child: Opacity(
+                    opacity: opacity,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(
+                        _lerpDouble(12, 0, progress), // 圆角渐变消失
+                      ),
+                      // 核心修复：使用 manual Transform + OverflowBox 替代 FittedBox
+                      // 更加稳健，避免 'scaleX.isFinite' 断言错误
+                      child: Transform.scale(
+                        scale: contentScale,
+                        alignment: Alignment.topCenter,
+                        child: cachedChild!, 
+                      ),
                     ),
-                    child: child,
                   ),
                 ),
               ),

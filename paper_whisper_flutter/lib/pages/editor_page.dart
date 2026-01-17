@@ -45,6 +45,9 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   late String _currentDateStr;
   
   // Draft Logic
+  // Focus Node
+  final FocusNode _focusNode = FocusNode();
+  
   final _draftService = DraftService();
   Timer? _autoSaveTimer;
   bool _hasDraftChanges = false;
@@ -78,6 +81,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     _autoSaveTimer?.cancel();
     _titleController.dispose();
     _contentController.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
   
@@ -379,8 +383,11 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     return shouldPop ?? false;
   }
 
+  bool _isCaptureMode = false;
+
   @override
   Widget build(BuildContext context) {
+    // print('DEBUG: EditorPage build called'); // Temporary debug
     // ... (Keep existing build method unchanged)
     final theme = Provider.of<SettingsProvider>(context).currentTheme;
     final textColor = AppTheme.getTextColor(theme);
@@ -392,86 +399,201 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     return WillPopScope(
       onWillPop: _onWillPop,
       child: Scaffold(
-        backgroundColor: Colors.transparent, // Background handled by Stack in main layout, but here we cover full screen?
-        // Actually EditorPage is pushed, so it needs its own background
+        backgroundColor: Colors.transparent, 
         body: Stack(
           children: [
-            // Background（不再添加动画效果组件，由下层页面提供）
              Container(decoration: AppTheme.getBackground(theme)),
   
-            // Main View
-            Column(
-              children: [
-                // Top Bar
-                _buildTopBar(context, theme, textColor),
-                
-                // Scrollable Paper
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.only(bottom: 50),
-                    child: RepaintBoundary(
-                      key: _sheetKey,
-                      child: PaperSheetWidget(
-                        padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 40),
-                        child: Column(
-                           crossAxisAlignment: CrossAxisAlignment.stretch,
-                           children: [
-                              // 1. Header (Title + Meta)
-                              _buildHeader(textColor, secondaryColor),
-                              const SizedBox(height: 30),
-                              
-                              // 2. Decorative Line
-                              Center(
-                                child: Container(
-                                  width: 60,
-                                  height: 2, 
-                                  color: (isSeaFlower
-                                      ? const Color(0xFFEC407A) 
-                                      : (isAmber ? const Color(0xFFFF9800) : (theme == AppTheme.themeMidnight ? const Color(0xFF7986cb) : const Color(0xFFC0392B)))).withValues(alpha: 0.5),
+             if (!_isCaptureMode)
+               Column(
+                 children: [
+                   _buildTopBar(context, theme, textColor),
+                   
+                   _buildAdaptiveContent(textColor, secondaryColor, theme),
+                 ],
+               ),
+
+             // Export View (Hidden overlay for screenshot generation)
+             if (_isCaptureMode)
+               Positioned.fill(
+                 child: Container(
+                   decoration: AppTheme.getBackground(theme),
+                   child: SingleChildScrollView(
+                     child: Center(
+                       child: RepaintBoundary(
+                         key: _sheetKey,
+                         child: PaperSheetWidget(
+                           padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 40),
+                           child: Column(
+                             mainAxisSize: MainAxisSize.min,
+                             crossAxisAlignment: CrossAxisAlignment.stretch,
+                             children: [
+                                _buildHeader(textColor, secondaryColor),
+                                const SizedBox(height: 30),
+                                Center(
+                                  child: Container(
+                                    width: 60,
+                                    height: 2, 
+                                    color: (theme == AppTheme.themeSeaFlower
+                                        ? const Color(0xFFEC407A) 
+                                        : (theme == AppTheme.themeAmberLens ? const Color(0xFFFF9800) : (theme == AppTheme.themeMidnight ? const Color(0xFF7986cb) : const Color(0xFFC0392B)))).withValues(alpha: 0.5),
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 30),
-  
-                              // 3. Content Area
-                              _buildContentArea(textColor, theme),
-  
-                              // 4. Footer
-                              const SizedBox(height: 60),
-                              Center(
-                                child: Column(
-                                  children: [
-                                    Text(
-                                      'CREATED WITH',
-                                      style: GoogleFonts.courierPrime(
-                                         fontSize: 10, 
-                                         color: secondaryColor.withValues(alpha: 0.4),
-                                         letterSpacing: 2
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      '纸语 PaperWhisper',
-                                      style: GoogleFonts.notoSerifSc(
-                                         fontSize: 12,
-                                         color: secondaryColor.withValues(alpha: 0.6),
-                                         fontWeight: FontWeight.bold
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              )
-                           ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+                                const SizedBox(height: 30),
+                                // Force standard text rendering for export
+                                _buildContentArea(textColor, theme),
+                                const SizedBox(height: 60),
+                                _buildBrandingFooter(secondaryColor),
+                             ],
+                           ),
+                         ),
+                       ),
+                     ),
+                   ),
+                 ),
+               ),
+               
+             if (_isCaptureMode)
+               Container(
+                 color: Colors.black54,
+                 child: const Center(
+                   child: Column(
+                     mainAxisSize: MainAxisSize.min,
+                     children: [
+                       CircularProgressIndicator(color: Colors.white),
+                       SizedBox(height: 20),
+                       Text("正在生成长图...", style: TextStyle(color: Colors.white, fontSize: 16)),
+                     ],
+                   )
+                 ),
+               ),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildBrandingFooter(Color secondaryColor) {
+      return Center(
+        child: Column(
+          children: [
+            if (_isEditing) ...[
+               TextButton.icon(
+                 onPressed: _save,
+                 icon: Icon(Icons.check, size: 16, color: secondaryColor),
+                 label: Text('完成', style: _metaStyle(secondaryColor)),
+               ),
+               const SizedBox(height: 20),
+            ],
+            Text(
+              'CREATED WITH',
+              style: GoogleFonts.courierPrime(
+                 fontSize: 10, 
+                 color: secondaryColor.withValues(alpha: 0.4),
+                 letterSpacing: 2
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '纸语 PaperWhisper',
+              style: GoogleFonts.notoSerifSc(
+                 fontSize: 12,
+                 color: secondaryColor.withValues(alpha: 0.6),
+                 fontWeight: FontWeight.bold
+              ),
+            ),
+            const SizedBox(height: 10), // Bottom padding
+          ],
+        ),
+      );
+  }
+
+  Widget _buildAdaptiveContent(Color textColor, Color secondaryColor, String theme) {
+      // Threshold for switching to performance mode
+      // ~200 lines or ~5000 chars
+      bool usePerformanceMode = _contentController.text.length > 3000; 
+
+      if (usePerformanceMode) {
+         // --- Performance Mode (Slivers) ---
+         // Fully expanded, no outer padding
+         return Expanded(
+            child: RepaintBoundary(
+              // key: _sheetKey, // Removed to avoid conflict with export view
+              child: PaperSheetWidget(
+                padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 40),
+                child: CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 20),
+                        child: _buildHeader(textColor, secondaryColor),
+                      ),
+                    ),
+                    SliverToBoxAdapter(
+                         child: Padding(
+                           padding: const EdgeInsets.only(bottom: 30),
+                           child: Center(
+                             child: Container(
+                               width: 60,
+                               height: 2, 
+                               color: (theme == AppTheme.themeSeaFlower
+                                   ? const Color(0xFFEC407A) 
+                                   : (theme == AppTheme.themeAmberLens ? const Color(0xFFFF9800) : (theme == AppTheme.themeMidnight ? const Color(0xFF7986cb) : const Color(0xFFC0392B)))).withValues(alpha: 0.5),
+                             ),
+                           ),
+                         ),
+                      ),
+                    _buildContentSliver(textColor, theme),
+                    SliverToBoxAdapter(child: const SizedBox(height: 60)),
+                    SliverToBoxAdapter(
+                       child: _buildBrandingFooter(secondaryColor),
+                    ),
+                    // Sufficient bottom padding inside the scroll view
+                    const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
+                  ],
+                ),
+              ),
+            ),
+         );
+      } else {
+         // --- Standard Mode (SingleChildScrollView) ---
+         // Uses shrinkWrap to float as a card when short, fills screen when long
+         return Expanded(
+            child: RepaintBoundary(
+               // key: _sheetKey, // Removed to avoid conflict with export view
+               child: PaperSheetWidget(
+                 padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 40),
+                 child: SingleChildScrollView(
+                   physics: const AlwaysScrollableScrollPhysics(),
+                   child: Column(
+                     crossAxisAlignment: CrossAxisAlignment.stretch,
+                     children: [
+                        _buildHeader(textColor, secondaryColor),
+                        const SizedBox(height: 30),
+                        Center(
+                          child: Container(
+                            width: 60,
+                            height: 2, 
+                            color: (theme == AppTheme.themeSeaFlower
+                                ? const Color(0xFFEC407A) 
+                                : (theme == AppTheme.themeAmberLens ? const Color(0xFFFF9800) : (theme == AppTheme.themeMidnight ? const Color(0xFF7986cb) : const Color(0xFFC0392B)))).withValues(alpha: 0.5),
+                          ),
+                        ),
+                        const SizedBox(height: 30),
+                        // Standard Content Area (TextField/Text)
+                        _buildContentArea(textColor, theme),
+                        const SizedBox(height: 60),
+                        _buildBrandingFooter(secondaryColor),
+                        // Bottom padding inside scroll view
+                        const SizedBox(height: 100),
+                     ],
+                   ),
+                 ),
+               ),
+            ),
+         );
+      }
   }
 
   Widget _buildTopBar(BuildContext context, String theme, Color textColor) {
@@ -743,17 +865,26 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
 
   Future<void> _captureAndSave() async {
      try {
-       // Wait for build
-       await Future.delayed(const Duration(milliseconds: 50));
+       setState(() => _isCaptureMode = true);
+       
+       // Wait for build and layout
+       await Future.delayed(const Duration(milliseconds: 500)); // Give it enough time to perform full layout
 
        RenderRepaintBoundary? boundary = _sheetKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
-       if (boundary == null) return;
+       if (boundary == null) {
+          setState(() => _isCaptureMode = false);
+          SkeuomorphicToast.error(context, '生成失败: 无法获取视图');
+          return;
+       }
 
-       SkeuomorphicToast.info(context, '正在生成图片...');
+       // ... Capture logic
        
        ui.Image image = await boundary.toImage(pixelRatio: 3.0);
        var byteData = await image.toByteData(format: ui.ImageByteFormat.png);
        var pngBytes = byteData!.buffer.asUint8List();
+
+       // Exit capture mode immediately after capture
+       setState(() => _isCaptureMode = false);
 
        final directory = await getApplicationDocumentsDirectory(); 
        String exportPath;
@@ -797,10 +928,132 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
           await showExportSuccessDialog(context, file.path);
        }
      } catch (e) {
+       setState(() => _isCaptureMode = false); // Ensure reset
        if (mounted) {
          SkeuomorphicToast.error(context, '导出失败: $e');
        }
      }
+  }
+
+  // --- New Helper Methods for CustomScrollView Refactor ---
+
+  Widget _buildContentSliver(Color textColor, String theme) {
+    if (_isEditing) {
+      return SliverToBoxAdapter(
+        child: _buildEditorField(textColor, theme),
+      );
+    } else {
+      // Split content into lines for performance
+      final lines = _contentController.text.split('\n');
+      if (lines.isEmpty) lines.add('');
+      
+      const double fontSize = 18.0;
+      const double lineHeight = 32.0;
+
+      final style = GoogleFonts.notoSerifSc(
+        fontSize: fontSize,
+        height: lineHeight / fontSize,
+        color: textColor,
+      );
+
+      return SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            final line = lines[index];
+            return CustomPaint(
+              foregroundPainter: LinedPaperPainter(
+                 lineColor: theme == AppTheme.themeMidnight 
+                    ? Colors.white.withValues(alpha: 0.08) 
+                    : (theme == AppTheme.themeAmberLens ? const Color(0x1FFFFFFF) : const Color(0xFF5D4037).withValues(alpha: 0.12)),
+                 lineHeight: lineHeight,
+              ),
+              child: Container(
+                constraints: const BoxConstraints(minHeight: lineHeight),
+                padding: const EdgeInsets.symmetric(horizontal: 0), // Already padded by PaperSheetWidget
+                alignment: Alignment.centerLeft, // Ensure text starts from left
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _isEditing = true;
+                    });
+                    Future.delayed(const Duration(milliseconds: 50), () {
+                      FocusScope.of(context).requestFocus(_focusNode);
+                    });
+                  },
+                  child: Text(
+                    line.isEmpty ? ' ' : line, 
+                    style: style,
+                    strutStyle: StrutStyle(
+                       fontFamily: GoogleFonts.notoSerifSc().fontFamily,
+                       fontSize: fontSize,
+                       height: lineHeight / fontSize,
+                       forceStrutHeight: true,
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+          childCount: lines.length,
+        ),
+      );
+    }
+  }
+
+  Widget _buildEditorField(Color textColor, String theme) {
+     const double fontSize = 18.0;
+     const double lineHeight = 32.0;
+     
+     return CustomPaint(
+        foregroundPainter: LinedPaperPainter(
+          lineColor: theme == AppTheme.themeMidnight 
+             ? Colors.white.withValues(alpha: 0.08) 
+             : (theme == AppTheme.themeAmberLens ? const Color(0x1FFFFFFF) : const Color(0xFF5D4037).withValues(alpha: 0.12)),
+          lineHeight: lineHeight,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 0),
+          child: TextField(
+            controller: _contentController,
+            focusNode: _focusNode,
+            maxLines: null,
+            style: GoogleFonts.notoSerifSc(
+               fontSize: fontSize,
+               color: textColor,
+               height: lineHeight / fontSize,
+            ),
+            strutStyle: StrutStyle(
+              fontFamily: GoogleFonts.notoSerifSc().fontFamily,
+              fontSize: fontSize,
+              height: (lineHeight / fontSize),
+              leading: 0,
+              forceStrutHeight: true,
+            ),
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.zero,
+              isCollapsed: true,
+              isDense: true,
+            ),
+            cursorColor: textColor,
+          ),
+        ),
+      );
+  }
+  
+  Widget _buildFooter(Color textColor, Color secondaryColor) {
+     if (!_isEditing) return const SizedBox.shrink(); // 非编辑模式下不显示任何底部内容
+
+     return Padding(
+       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+       child: Center(
+         child: TextButton.icon(
+           onPressed: _save,
+           icon: Icon(Icons.check, size: 16, color: textColor),
+           label: Text('完成', style: _metaStyle(textColor)),
+         )
+       ),
+     );
   }
 }
 

@@ -53,9 +53,21 @@ class _LetterFoldTransition extends StatelessWidget {
       reverseCurve: Curves.easeInOutCubic,
     );
 
+    // 5. 准备静态子树 (Performance Optimization)
+    final staticChild = OverflowBox(
+      minWidth: screenSize.width,
+      maxWidth: screenSize.width,
+      minHeight: screenSize.height,
+      maxHeight: screenSize.height,
+      child: RepaintBoundary(
+        child: child,
+      ),
+    );
+
     return AnimatedBuilder(
       animation: curvedAnimation,
-      builder: (context, _) {
+      child: staticChild,
+      builder: (context, cachedChild) {
         final double t = curvedAnimation.value;
         
         // --- 核心动画参数计算 ---
@@ -205,15 +217,48 @@ class _LetterFoldTransition extends StatelessWidget {
 
                       // 4. 内容层 (Content)
                       // 覆盖在纸张之上
+                        // 4. 内容层 (Content)
+                      // 覆盖在纸张之上
+                        // 4. 内容层 (Content)
+                      // 覆盖在纸张之上
                       if (contentOpacity > 0.01)
                         Positioned.fill(
-                          child: Opacity(
-                            opacity: contentOpacity,
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(borderRadius),
-                              child: child,
-                            ),
-                          ),
+                           child: Builder( // 使用 Builder 获取 constraints 上下文，或者直接使用 screenSize
+                             builder: (context) {
+                               // Calculate explicit scale
+                               // 信纸动画中，container 宽度已经在变化 (currentWidth)，我们希望内容是以 screenSize 为基础缩放适配 currentWidth
+                               // 但是这里 currentWidth 是 Container 的宽度。
+                               // 我们的目标是: Content 固定 width=screenSize.width (或 700px on desktop?)
+                               // 
+                               // 之前 LetterFoldPageRoute 中的 child 是 _LetterFoldTransition 的 child，即 EditorPage。
+                               // 这里的布局逻辑：
+                               // Container (currentWidth, currentHeight)
+                               //   -> Stack
+                               //     -> Positioned.fill
+                               //       -> Opacity
+                               //         -> ClipRRect
+                               //           -> FittedBox (OLD) / Transform (NEW)
+                               //             -> OverflowBox(screenSize) -> Child
+                               
+                               final double contentScale = screenSize.width > 0 ? currentWidth / screenSize.width : 1.0;
+
+                               return IgnorePointer(
+                                 ignoring: animation.status != AnimationStatus.completed,
+                                 child: Opacity(
+                                   opacity: contentOpacity,
+                                   child: ClipRRect(
+                                     borderRadius: BorderRadius.circular(borderRadius),
+                                     // 核心修复：使用 manual Transform 替代 FittedBox
+                                     child: Transform.scale(
+                                       scale: contentScale,
+                                       alignment: Alignment.topCenter,
+                                       child: cachedChild!,
+                                     ),
+                                   ),
+                                 ),
+                               );
+                             }
+                           ),
                         ),
                     ],
                   ),
@@ -227,6 +272,7 @@ class _LetterFoldTransition extends StatelessWidget {
   }
 
   // --- 辅助方法 ---
+
 
   double _clampInterval(double value, double min, double max) {
     if (max <= min) return 0.0;
