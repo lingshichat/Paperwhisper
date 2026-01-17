@@ -590,7 +590,7 @@ class _MomentsPageState extends State<MomentsPage> {
         return Scaffold(
           extendBodyBehindAppBar: true, 
           backgroundColor: Colors.transparent,
-          resizeToAvoidBottomInset: true,
+          resizeToAvoidBottomInset: false,
           drawerScrimColor: isSeaFlower ? Colors.transparent : Colors.black54, // 统一遮罩逻辑
           drawer: const Drawer(
              width: 300,
@@ -643,8 +643,8 @@ class _MomentsPageState extends State<MomentsPage> {
           ),
           body: Builder(
             builder: (bodyContext) {
-              // 在 Builder 内部获取键盘状态，避免通过 Builder 返回 Positioned
-              final isKeyboardOpen = MediaQuery.of(bodyContext).viewInsets.bottom > 0;
+              final bottomInset = MediaQuery.of(bodyContext).viewInsets.bottom;
+              final isKeyboardOpen = bottomInset > 0;
               
               return Stack(
                 children: [
@@ -654,27 +654,38 @@ class _MomentsPageState extends State<MomentsPage> {
                   ),
 
                   // 1. Main Content
-                  Positioned.fill(
+                  // Use AnimatedPositioned for smooth resizing content area
+                  AnimatedPositioned(
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeOut,
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: isKeyboardOpen ? bottomInset : 0, 
                     child: content
                   ),
                   
-                  // 2. Dismiss Layer (Only when keyboard is open OR input focused)
+                  // 2. Dismiss Layer
                   if (isKeyboardOpen || _inputFocusNode.hasFocus)
                     Positioned.fill(
                       child: GestureDetector(
-                        behavior: HitTestBehavior.opaque, // Block clicks
+                        behavior: HitTestBehavior.opaque, 
                         onTap: () {
-                          _inputFocusNode.unfocus(); // Close keyboard / focus
+                          _inputFocusNode.unfocus(); 
                         },
                         child: Container(color: Colors.transparent),
                       ),
                     ),
                   
-                  // 3. Input Widget (Aligned to bottom)
-                  // Only if NOT searching
+                  // 3. Input Widget
+                  // Use AnimatedPositioned to smooth out the jump if ViewInsets updates late
                   if (!isSearchActive)
-                    Align(
-                      alignment: Alignment.bottomCenter,
+                    AnimatedPositioned(
+                      duration: const Duration(milliseconds: 200),
+                      curve: Curves.easeOut,
+                      left: 0,
+                      right: 0,
+                      bottom: bottomInset, // Will animate to this target
                       child: MomentInputWidget(
                           onSend: _handleSend, 
                           focusNode: _inputFocusNode
