@@ -20,7 +20,8 @@ class SettingsProvider with ChangeNotifier {
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     _currentTheme = prefs.getString(_themeKey) ?? 'default';
-    _startupPage = prefs.getString(_startupPageKey) ?? 'last'; // default to 'last' (Last Visited)
+    _startupPage = prefs.getString(_startupPageKey) ?? 'last'; 
+    _compatibilityMode = prefs.getBool('compatibility_mode') ?? false;
     _applySystemUiStyle(_currentTheme);
     notifyListeners();
   }
@@ -37,6 +38,17 @@ class SettingsProvider with ChangeNotifier {
     _startupPage = page;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_startupPageKey, page);
+    notifyListeners();
+  }
+
+  // Compatibility Mode (No Lines)
+  bool _compatibilityMode = false;
+  bool get compatibilityMode => _compatibilityMode;
+
+  Future<void> setCompatibilityMode(bool value) async {
+    _compatibilityMode = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('compatibility_mode', value);
     notifyListeners();
   }
 

@@ -1,20 +1,22 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // For PlatformException if any
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:permission_handler/permission_handler.dart'; 
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/app_theme.dart';
 import '../providers/settings_provider.dart';
 import '../providers/sync_provider.dart';
 import '../services/update_service.dart';
+import '../utils/platform_utils.dart';
 import '../widgets/update_dialog.dart';
 import '../widgets/skeuomorphic_toast.dart';
+import '../widgets/skeuomorphic_dialog.dart';
 import '../widgets/slide_page_route.dart';
 import '../pages/trash_page.dart';
 import '../services/storage_service.dart';
 import 'sync_settings_page.dart';
-
-
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -23,18 +25,62 @@ class SettingsPage extends StatefulWidget {
   State<SettingsPage> createState() => _SettingsPageState();
 }
 
-class _SettingsPageState extends State<SettingsPage> {
+class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver {
   bool _isCheckingUpdate = false;
   String? _currentVersion;
   String _storageInfo = '计算中...';
   String _currentDataPath = '';
   String _internalStats = '';
   bool _hasInternalClutter = false;
+  
+  // Permission State
+  Map<String, PermissionStatus> _permStatuses = {};
+  String _permSummary = '检测中...';
+  bool _isAllGranted = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadStorageInfo();
+    _checkAllPermissions();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+       _checkAllPermissions();
+    }
+  }
+
+  Future<void> _checkAllPermissions() async {
+    // Check key permissions
+    final pStorage = await Permission.manageExternalStorage.status;
+    final pPhotos = await Permission.photos.status; // Android 13+ specific usually, or generic
+    final pNotification = await Permission.notification.status;
+    
+    setState(() {
+      _permStatuses = {
+        'storage': pStorage,
+        'photos': pPhotos,
+        'notification': pNotification,
+      };
+      
+      _isAllGranted = pStorage.isGranted && pNotification.isGranted; // Storage is critical
+      
+      int grantedCount = 0;
+      if (pStorage.isGranted) grantedCount++;
+      if (pPhotos.isGranted || pPhotos.isLimited) grantedCount++;
+      if (pNotification.isGranted) grantedCount++;
+      
+      _permSummary = "权限状态: $grantedCount / 3 已获取";
+    });
   }
 
   Future<void> _loadStorageInfo() async {
@@ -128,17 +174,9 @@ class _SettingsPageState extends State<SettingsPage> {
     );
 
     if (isSeaFlower) {
-      // 海底花海：背景(渐变) + 全局模糊(可选，如果需要整页毛玻璃感) + 内容
-      // Sidebar 是局部模糊。这里是整页。如果整页模糊，背景渐变会变糊。
-      // 用户反馈"背景异常"，可能是指只有粉色底色。
-      // 我们直接展示渐变背景，内容项自己有半透明背景。
-      // 如果想要那种"磨砂玻璃板"的感觉覆盖全屏，可以在背景和 Scaffod 之间加一层模糊。
-      // 但那样会把漂亮的渐变糊掉。
-      // 让我们先只恢复背景渐变。
       return Stack(
         children: [
            Positioned.fill(child: background),
-           // 可选：加一层极淡的白雾，增强通透感
            Positioned.fill(child: Container(color: Colors.white.withOpacity(0.1))),
            Positioned.fill(child: content),
         ],
@@ -157,133 +195,458 @@ class _SettingsPageState extends State<SettingsPage> {
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        _buildSectionHeader('通用', textColor),
-        const SizedBox(height: 10),
-        _buildSettingsItem(
-          context: context,
-          icon: Icons.cloud_sync_outlined,
-          title: '数据同步',
-          subtitle: _getSyncStatusText(context),
-          isSeaFlower: isSeaFlower,
-          isMidnight: isMidnight,
-          textColor: textColor,
-          onTap: () {
-            Navigator.push(
-              context,
-              SlidePageRoute(page: SyncSettingsPage()),
-            );
-          },
+        // 1. 核心服务 (Core)
+        _buildSectionHeader('账号与云同步', textColor),
+        _buildGroupContainer(
+          isSeaFlower, isMidnight,
+          children: [
+            _buildSettingsItem(
+              context: context,
+              icon: Icons.cloud_sync_outlined,
+              title: '数据同步',
+              subtitle: _getSyncStatusText(context),
+              isSeaFlower: isSeaFlower,
+              isMidnight: isMidnight,
+              textColor: textColor,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  SlidePageRoute(page: SyncSettingsPage()),
+                );
+              },
+            ),
+          ]
         ),
-        const SizedBox(height: 12),
-        // Storage Setting
-        _buildSettingsItem(
-           context: context,
-           icon: Icons.sd_storage_outlined,
-           title: '用户数据管理',
-           subtitle: _storageInfo, // Need to add this state
-           isSeaFlower: isSeaFlower,
-           isMidnight: isMidnight,
-           textColor: textColor,
-           onTap: () => _showStorageManager(context, isSeaFlower, isMidnight, textColor),
+        const SizedBox(height: 24),
+
+        // 2. 外观与体验 (Appearance & Experience)
+        _buildSectionHeader('外观与体验', textColor),
+        _buildGroupContainer(
+          isSeaFlower, isMidnight,
+          children: [
+            _buildSettingsItem(
+              context: context,
+              icon: Icons.palette_outlined,
+              title: '主题风格',
+              subtitle: _getThemeName(settings.currentTheme),
+              isSeaFlower: isSeaFlower,
+              isMidnight: isMidnight,
+              textColor: textColor,
+              onTap: () => _showThemePicker(context, settings),
+            ),
+            _buildDivider(isSeaFlower, isMidnight),
+            _buildSettingsItem(
+              context: context,
+              icon: Icons.start_outlined,
+              title: '启动页',
+              subtitle: _getStartupPageName(settings.startupPage),
+              isSeaFlower: isSeaFlower,
+              isMidnight: isMidnight,
+              textColor: textColor,
+              onTap: () => _showStartupPagePicker(context, settings),
+            ),
+             _buildDivider(isSeaFlower, isMidnight),
+             // Compatibility Mode Switch
+             _buildSwitchItem(
+               context: context,
+               icon: Icons.layers_clear_outlined,
+               title: '兼容模式',
+               subtitle: '隐藏信纸横线，仅显示文字',
+               value: settings.compatibilityMode,
+               onChanged: (val) => settings.setCompatibilityMode(val),
+               isSeaFlower: isSeaFlower,
+               isMidnight: isMidnight,
+               textColor: textColor,
+             )
+          ]
         ),
-        const SizedBox(height: 12),
-        // Recycle Bin
-        _buildSettingsItem(
-          context: context,
-          icon: Icons.delete_outline,
-          title: '回收站',
-          subtitle: '找回误删的日记',
-          isSeaFlower: isSeaFlower,
-          isMidnight: isMidnight,
-          textColor: textColor,
-          onTap: () {
-            Navigator.push(
-              context,
-              SlidePageRoute(page: TrashPage()),
-            );
-          },
+        const SizedBox(height: 24),
+
+        // 3. 数据与隐私 (Data & Privacy)
+        _buildSectionHeader('数据与隐私', textColor),
+        _buildGroupContainer(
+          isSeaFlower, isMidnight,
+          children: [
+            _buildSettingsItem(
+              context: context,
+              icon: _isAllGranted ? Icons.verified_user_outlined : Icons.gpp_maybe_outlined,
+              title: '系统权限管理',
+              subtitle: _permSummary,
+              isSeaFlower: isSeaFlower,
+              isMidnight: isMidnight,
+              textColor: textColor,
+              onTap: () => _showPermissionManager(context),
+            ),
+            _buildDivider(isSeaFlower, isMidnight),
+            _buildSettingsItem(
+               context: context,
+               icon: Icons.sd_storage_outlined,
+               title: '存储空间管理',
+               subtitle: _storageInfo, 
+               isSeaFlower: isSeaFlower,
+               isMidnight: isMidnight,
+               textColor: textColor,
+               onTap: () => _showStorageManager(context, isSeaFlower, isMidnight, textColor),
+            ),
+            _buildDivider(isSeaFlower, isMidnight),
+            _buildSettingsItem(
+              context: context,
+              icon: Icons.delete_outline,
+              title: '回收站',
+              subtitle: '找回误删的日记',
+              isSeaFlower: isSeaFlower,
+              isMidnight: isMidnight,
+              textColor: textColor,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  SlidePageRoute(page: TrashPage()),
+                );
+              },
+            ),
+          ]
         ),
-        const SizedBox(height: 30),
-        _buildSectionHeader('外观', textColor),
-        const SizedBox(height: 10),
-        // Theme Setting
-        _buildSettingsItem(
-          context: context,
-          icon: Icons.palette_outlined,
-          title: '主题风格',
-          subtitle: _getThemeName(settings.currentTheme),
-          isSeaFlower: isSeaFlower,
-          isMidnight: isMidnight,
-          textColor: textColor,
-          onTap: () => _showThemePicker(context, settings),
-        ),
-        const SizedBox(height: 12),
-        // Startup Page Setting
-        _buildSettingsItem(
-          context: context,
-          icon: Icons.start_outlined,
-          title: '启动页',
-          subtitle: _getStartupPageName(settings.startupPage),
-          isSeaFlower: isSeaFlower,
-          isMidnight: isMidnight,
-          textColor: textColor,
-          onTap: () => _showStartupPagePicker(context, settings),
-        ),
-        const SizedBox(height: 30),
+        const SizedBox(height: 24),
+
+        // 4. 关于 (About)
         _buildSectionHeader('关于', textColor),
-        const SizedBox(height: 10),
-        // 检测更新项
-        _buildSettingsItem(
-          context: context,
-          icon: Icons.system_update_outlined,
-          title: '检测更新',
-          subtitle: _isCheckingUpdate ? '检测中...' : (_currentVersion != null ? 'v$_currentVersion' : '点击检查新版本'),
-          isSeaFlower: isSeaFlower,
-          isMidnight: isMidnight,
-          textColor: textColor,
-          isLoading: _isCheckingUpdate,
-          onTap: _isCheckingUpdate ? () {} : () => _checkForUpdate(context),
+        _buildGroupContainer(
+          isSeaFlower, isMidnight,
+          children: [
+            _buildSettingsItem(
+              context: context,
+              icon: Icons.system_update_outlined,
+              title: '检测更新',
+              subtitle: _isCheckingUpdate ? '检测中...' : (_currentVersion != null ? 'v$_currentVersion' : '点击检查新版本'),
+              isSeaFlower: isSeaFlower,
+              isMidnight: isMidnight,
+              textColor: textColor,
+              isLoading: _isCheckingUpdate,
+              onTap: _isCheckingUpdate ? () {} : () => _checkForUpdate(context),
+            ),
+            _buildDivider(isSeaFlower, isMidnight),
+            _buildSettingsItem(
+              context: context,
+              icon: Icons.info_outline,
+              title: '关于纸语PaperWhisper',
+              subtitle: '纸本无言，因你而语',
+              isSeaFlower: isSeaFlower,
+              isMidnight: isMidnight,
+              textColor: textColor,
+              onTap: () {
+                // TODO: Show About Dialog
+              },
+            ),
+          ]
         ),
-        const SizedBox(height: 12),
-        _buildSettingsItem(
-          context: context,
-          icon: Icons.info_outline,
-          title: '关于纸语PaperWhisper',
-          subtitle: '纸本无言，因你而语',
-          isSeaFlower: isSeaFlower,
-          isMidnight: isMidnight,
-          textColor: textColor,
-          onTap: () {
-            // TODO: Show About Dialog
-          },
-        ),
+        const SizedBox(height: 40),
       ],
     );
+  }
+
+  // --- Helpers ---
+
+  Widget _buildSectionHeader(String title, Color textColor) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 10, bottom: 8),
+      child: Text(
+        title,
+        style: GoogleFonts.notoSerifSc(
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+          color: textColor.withOpacity(0.7),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGroupContainer(bool isSeaFlower, bool isMidnight, {required List<Widget> children}) {
+     final BoxDecoration decoration = BoxDecoration(
+      color: isSeaFlower 
+          ? Colors.white.withValues(alpha: 0.3) 
+          : (isMidnight ? const Color(0xFF161b22).withValues(alpha: 0.6) : Colors.black.withValues(alpha: 0.03)),
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(
+        color: isSeaFlower 
+            ? Colors.white.withValues(alpha: 0.4) 
+            : (isMidnight ? const Color(0xFF30363d) : Colors.white.withValues(alpha: 0.1)),
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: isSeaFlower ? const Color(0xFFF48FB1).withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05),
+          blurRadius: 4,
+          offset: const Offset(0, 2),
+        )
+      ],
+    );
+
+    return Container(
+      decoration: decoration,
+      clipBehavior: Clip.antiAlias, // Ensure children don't overflow rounded corners
+      child: Column(
+        children: children,
+      ),
+    );
+  }
+
+  Widget _buildDivider(bool isSeaFlower, bool isMidnight) {
+    return Divider(
+      height: 1, 
+      thickness: 1, 
+      color: isSeaFlower 
+         ? Colors.white.withOpacity(0.3) 
+         : (isMidnight ? const Color(0xFF30363d) : Colors.grey.withOpacity(0.1)),
+    );
+  }
+
+  Widget _buildSettingsItem({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required bool isSeaFlower,
+    required bool isMidnight,
+    required Color textColor,
+    required VoidCallback onTap,
+    bool isLoading = false,
+  }) {
+    // Note: Background is now handled by Group Container. Inner items are transparent.
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          child: Row(
+            children: [
+              Icon(icon, color: textColor.withOpacity(0.8), size: 24),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: GoogleFonts.notoSerifSc(
+                        fontSize: 16,
+                        color: textColor,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: GoogleFonts.notoSerifSc(
+                        fontSize: 13,
+                        color: textColor.withOpacity(0.6),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (isLoading)
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(textColor.withOpacity(0.6)),
+                  ),
+                )
+              else
+                Icon(Icons.arrow_forward_ios, color: textColor.withOpacity(0.4), size: 14),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSwitchItem({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required bool value,
+    required Function(bool) onChanged,
+    required bool isSeaFlower,
+    required bool isMidnight,
+    required Color textColor,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        child: Row(
+          children: [
+            Icon(icon, color: textColor.withOpacity(0.8), size: 24),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.notoSerifSc(
+                      fontSize: 16,
+                      color: textColor,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.notoSerifSc(
+                      fontSize: 13,
+                      color: textColor.withOpacity(0.6),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Switch(
+              value: value,
+              onChanged: onChanged,
+              activeColor: isSeaFlower ? const Color(0xFFEC407A) : (isMidnight ? const Color(0xFF7986cb) : const Color(0xFF8D6E63)),
+              activeTrackColor: isSeaFlower ? const Color(0xFFF48FB1).withOpacity(0.3) : const Color(0xFFD7CCC8).withOpacity(0.3),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
+  // --- Existing View Logic ---
+
+  void _showPermissionManager(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _buildGlassBottomSheet(
+        context,
+        title: '应用权限管理',
+        children: [
+           _buildPermissionRow(
+             context, 
+             '文件存储 (核心)', 
+             '用于日记数据的读取与备份', 
+             Icons.folder_copy_outlined,
+             _permStatuses['storage'], 
+             Permission.manageExternalStorage,
+             isCritical: true,
+           ),
+           Divider(color: const Color(0xFF5D4037).withOpacity(0.1), height: 1),
+           _buildPermissionRow(
+             context, 
+             '相册访问', 
+             '用于在日记中插入图片', 
+             Icons.photo_library_outlined, 
+             _permStatuses['photos'], 
+             Permission.photos
+           ),
+           Divider(color: const Color(0xFF5D4037).withOpacity(0.1), height: 1),
+           _buildPermissionRow(
+             context, 
+             '通知提醒', 
+             '显示数据同步进度与状态', 
+             Icons.notifications_outlined, 
+             _permStatuses['notification'], 
+             Permission.notification
+           ),
+           const SizedBox(height: 20),
+           SkeuomorphicDialogButton(
+             label: '前往系统设置页',
+             isPrimary: false,
+             onPressed: () {
+               Navigator.pop(ctx);
+               openAppSettings();
+             },
+           )
+        ],
+      )
+    );
+  }
+
+  Widget _buildPermissionRow(BuildContext context, String title, String subtitle, IconData icon, PermissionStatus? status, Permission perm, {bool isCritical = false}) {
+     bool isGranted = status?.isGranted == true;
+     bool isLimited = status?.isLimited == true; 
+     
+     Color statusColor = isGranted ? Colors.green : (isCritical ? Colors.red : Colors.orange.shade800);
+     String statusText = isGranted ? '已获取' : (isLimited ? '部分允许' : '未获取');
+     
+     return ListTile(
+       contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+       leading: Container(
+         padding: const EdgeInsets.all(8),
+         decoration: BoxDecoration(
+           color: const Color(0xFF5D4037).withOpacity(0.05),
+           borderRadius: BorderRadius.circular(8),
+         ),
+         child: Icon(icon, color: const Color(0xFF5D4037), size: 20),
+       ),
+       title: Text(title, style: GoogleFonts.notoSerifSc(color: const Color(0xFF5D4037), fontWeight: FontWeight.bold, fontSize: 15)),
+       subtitle: Text(subtitle, style: GoogleFonts.notoSerifSc(color: const Color(0xFF5D4037).withOpacity(0.6), fontSize: 11)),
+       trailing: Row(
+         mainAxisSize: MainAxisSize.min,
+         children: [
+           if (isGranted)
+              Text(statusText, style: TextStyle(color: statusColor, fontSize: 12, fontWeight: FontWeight.bold))
+           else
+             TextButton(
+               style: TextButton.styleFrom(
+                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                 backgroundColor: statusColor.withOpacity(0.1),
+                 minimumSize: const Size(60, 28),
+                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6))
+               ),
+               onPressed: () async {
+                 Navigator.pop(context);
+                 
+                 final isHarmony = await PlatformUtils.isHarmonyOS();
+                 if (isHarmony) {
+                    SkeuomorphicToast.info(context, '正在跳转设置页...');
+                    await openAppSettings();
+                 } else {
+                    final newStatus = await perm.request();
+                    if (context.mounted) {
+                       if (newStatus.isGranted) {
+                         SkeuomorphicToast.success(context, '授权成功');
+                       } else if (newStatus.isPermanentlyDenied) {
+                         SkeuomorphicToast.warning(context, '请在设置中手动开启');
+                         openAppSettings();
+                       } else {
+                         SkeuomorphicToast.info(context, '权限未授予');
+                       }
+                       // Check again
+                       await Future.delayed(const Duration(milliseconds: 500));
+                       _checkAllPermissions();
+                    }
+                 }
+               },
+               child: Text('去授权', style: TextStyle(color: statusColor, fontSize: 12, fontWeight: FontWeight.bold)),
+             )
+         ],
+       ),
+     );
   }
 
   /// 手动检测更新
   Future<void> _checkForUpdate(BuildContext context) async {
     setState(() => _isCheckingUpdate = true);
-    
     try {
       final updateService = UpdateService();
       final currentVersion = await updateService.getCurrentVersion();
-      
       setState(() => _currentVersion = currentVersion);
-      
       final updateInfo = await updateService.checkForUpdate();
-      
       if (!mounted) return;
-      
       if (updateInfo != null) {
-        // 有新版本，显示更新弹窗
         UpdateDialog.show(
           context,
           updateInfo: updateInfo,
           currentVersion: currentVersion,
         );
       } else {
-        // 已是最新版本
         SkeuomorphicToast.success(context, '已是最新版本 ✔');
       }
     } catch (e) {
@@ -312,104 +675,7 @@ class _SettingsPageState extends State<SettingsPage> {
     return "${time.year}-${time.month}-${time.day} ${time.hour}:${time.minute}";
   }
 
-  Widget _buildSectionHeader(String title, Color textColor) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 10, bottom: 5),
-      child: Text(
-        title,
-        style: GoogleFonts.notoSerifSc(
-          fontSize: 14,
-          fontWeight: FontWeight.bold,
-          color: textColor.withOpacity(0.6),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSettingsItem({
-    required BuildContext context,
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required bool isSeaFlower,
-    required bool isMidnight,
-    required Color textColor,
-    required VoidCallback onTap,
-    bool isLoading = false,
-  }) {
-    // 容器样式
-    final BoxDecoration decoration = BoxDecoration(
-      color: isSeaFlower 
-          ? Colors.white.withValues(alpha: 0.3) 
-          : (isMidnight ? const Color(0xFF161b22).withValues(alpha: 0.6) : Colors.black.withValues(alpha: 0.05)),
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(
-        color: isSeaFlower 
-            ? Colors.white.withValues(alpha: 0.4) 
-            : (isMidnight ? const Color(0xFF30363d) : Colors.white.withValues(alpha: 0.1)),
-      ),
-      boxShadow: [
-        BoxShadow(
-          color: isSeaFlower ? const Color(0xFFF48FB1).withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05),
-          blurRadius: 4,
-          offset: const Offset(0, 2),
-        )
-      ],
-    );
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          decoration: decoration,
-          child: Row(
-            children: [
-              Icon(icon, color: textColor.withOpacity(0.8), size: 24),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: GoogleFonts.notoSerifSc(
-                        fontSize: 16,
-                        color: textColor,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: GoogleFonts.notoSerifSc(
-                        fontSize: 13,
-                        color: textColor.withOpacity(0.6),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // 加载中显示指示器，否则显示箭头
-              if (isLoading)
-                SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(textColor.withOpacity(0.6)),
-                  ),
-                )
-              else
-                Icon(Icons.arrow_forward_ios, color: textColor.withOpacity(0.4), size: 16),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  // --- Theme & Storage Helpers (Unchanged Logic, just helper methods) ---
 
   String _getThemeName(String theme) {
     switch (theme) {
@@ -456,16 +722,13 @@ class _SettingsPageState extends State<SettingsPage> {
         children: [
           _buildRadioItem(ctx, '专注书写', 'writer', settings.startupPage, (val) => settings.setStartupPage(val)),
           _buildRadioItem(ctx, '随心记', 'moments', settings.startupPage, (val) => settings.setStartupPage(val)),
-          // _buildRadioItem(ctx, '恢复上次状态', 'last', settings.startupPage, (val) => settings.setStartupPage(val)),
         ]
       )
     );
   }
 
   void _showStorageManager(BuildContext context, bool isSeaFlower, bool isMidnight, Color ignoredTextColor) {
-    // Force dark text color because bottom sheet background is always AntiqueWhite
     const Color sheetTextColor = Color(0xFF5D4037);
-
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -502,9 +765,6 @@ class _SettingsPageState extends State<SettingsPage> {
              },
            ),
            const SizedBox(height: 10),
-           // Debug Info
-           const SizedBox(height: 10),
-           // System Data Section
            Container(
              padding: const EdgeInsets.all(12),
              decoration: BoxDecoration(
@@ -534,11 +794,8 @@ class _SettingsPageState extends State<SettingsPage> {
                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                    children: [
                      Text('占用空间: $_internalStats', style: GoogleFonts.notoSerifSc(color: sheetTextColor.withOpacity(0.5), fontSize: 10)),
-                     // Keep Font Cache clean as a hidden/advanced action if needed, or just small icon
                    ],
                  ),
-                 
-                 // Actions
                    if (_hasInternalClutter)
                      Padding(
                        padding: const EdgeInsets.only(top: 8),
@@ -576,11 +833,8 @@ class _SettingsPageState extends State<SettingsPage> {
   }
   
   Widget _buildGlassBottomSheet(BuildContext context, {required String title, required List<Widget> children}) {
-    // Simple styled bottom sheet with fixed AntiqueWhite background
-    // We enforce dark text color inside because the background is always light.
     const Color bgColor = Color(0xFFFAEBD7); 
     const Color titleColor = Color(0xFF5D4037);
-
     return Container(
       decoration: BoxDecoration(
         color: bgColor,
@@ -611,9 +865,7 @@ class _SettingsPageState extends State<SettingsPage> {
   
   Widget _buildRadioItem(BuildContext context, String label, String value, String groupValue, Function(String) onChanged) {
     final isSelected = value == groupValue;
-    // Force dark colors for bottom sheet
     final color = isSelected ? const Color(0xFF8D6E63) : const Color(0xFF5D4037).withOpacity(0.8);
-    
     return InkWell(
       onTap: () {
         onChanged(value);

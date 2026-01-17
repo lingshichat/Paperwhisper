@@ -477,14 +477,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
       return Center(
         child: Column(
           children: [
-            if (_isEditing) ...[
-               TextButton.icon(
-                 onPressed: _save,
-                 icon: Icon(Icons.check, size: 16, color: secondaryColor),
-                 label: Text('完成', style: _metaStyle(secondaryColor)),
-               ),
-               const SizedBox(height: 20),
-            ],
+
             Text(
               'CREATED WITH',
               style: GoogleFonts.courierPrime(
@@ -739,6 +732,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
          // Meta
          Row(
            mainAxisAlignment: MainAxisAlignment.center,
+           crossAxisAlignment: CrossAxisAlignment.center,
            children: [
               Text(_currentDateStr, style: _metaStyle(secondaryColor)),
               _metaSeparator(secondaryColor),
@@ -756,12 +750,13 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     const double lineHeight = 32.0;
     
     // Strict alignment: height = 32/18 = 1.7777...
+    final bool hideLines = Provider.of<SettingsProvider>(context).compatibilityMode;
     
     return CustomPaint(
       foregroundPainter: LinedPaperPainter(
-         lineColor: theme == AppTheme.themeMidnight 
+         lineColor: hideLines ? Colors.transparent : (theme == AppTheme.themeMidnight 
             ? Colors.white.withValues(alpha: 0.08) 
-            : (theme == AppTheme.themeAmberLens ? const Color(0x1FFFFFFF) : const Color(0xFF5D4037).withValues(alpha: 0.12)),
+            : (theme == AppTheme.themeAmberLens ? const Color(0x1FFFFFFF) : const Color(0xFF5D4037).withValues(alpha: 0.12))),
          lineHeight: lineHeight,
       ),
       child: Container(
@@ -827,14 +822,43 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     if (!_isEditing) {
        return Text(_weather.name.toUpperCase(), style: _metaStyle(color));
     }
-    // Simple dropdown for now
+    
+    final settings = Provider.of<SettingsProvider>(context, listen: false);
+    final theme = settings.currentTheme;
+    final bool isMidnight = theme == AppTheme.themeMidnight;
+    final bool isSeaFlower = theme == AppTheme.themeSeaFlower;
+    final bool isAmber = theme == AppTheme.themeAmberLens;
+
+    // Dropdown Menu Style
+    final Color dropdownBg = isMidnight ? const Color(0xFF2D333B) : (isSeaFlower ? const Color(0xFFFFF0F5) : const Color(0xFFFAF9F6));
+    final Color dropdownText = isMidnight ? const Color(0xFFc9d1d9) : (isSeaFlower ? const Color(0xFF880E4F) : const Color(0xFF5D4037));
+
     return DropdownButton<WeatherType>(
        value: _weather,
        underline: const SizedBox(),
-       icon: const SizedBox(), // Hide icon, make text clickable
+       icon: const SizedBox(),
+       dropdownColor: dropdownBg,
+       isDense: true,
+       alignment: AlignmentDirectional.center, // Center text in button
+       // The text shown on the button (when closed)
+       selectedItemBuilder: (BuildContext context) {
+         return WeatherType.values.map((w) {
+           return Container(
+             alignment: Alignment.center,
+             child: Text(
+               w.name.toUpperCase(),
+               style: _metaStyle(color), 
+             ),
+           );
+         }).toList();
+       },
        items: WeatherType.values.map((w) => DropdownMenuItem(
          value: w,
-         child: Text(w.name.toUpperCase(), style: _metaStyle(color)),
+         alignment: AlignmentDirectional.center,
+         child: Text(
+           w.name.toUpperCase(), 
+           style: GoogleFonts.courierPrime(fontSize: 14, color: dropdownText),
+         ),
        )).toList(),
        onChanged: (val) {
          if (val != null) setState(() => _weather = val);
@@ -846,17 +870,37 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     if (!_isEditing) {
        return Text(_mood.name.toUpperCase(), style: _metaStyle(color));
     }
-    return DropdownButton<MoodType>(
-       value: _mood,
-       underline: const SizedBox(),
-       icon: const SizedBox(),
-       items: MoodType.values.map((m) => DropdownMenuItem(
+
+    final settings = Provider.of<SettingsProvider>(context, listen: false);
+    final theme = settings.currentTheme;
+    final bool isMidnight = theme == AppTheme.themeMidnight;
+    final bool isSeaFlower = theme == AppTheme.themeSeaFlower;
+
+    final Color menuBg = isMidnight ? const Color(0xFF2D333B) : (isSeaFlower ? const Color(0xFFFFF0F5) : const Color(0xFFFAF9F6));
+    final Color menuText = isMidnight ? const Color(0xFFc9d1d9) : (isSeaFlower ? const Color(0xFF880E4F) : const Color(0xFF5D4037));
+
+    return PopupMenuButton<MoodType>(
+       initialValue: _mood,
+       color: menuBg,
+       padding: EdgeInsets.zero,
+       tooltip: '',
+       elevation: 4,
+       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+       onSelected: (val) => setState(() => _mood = val),
+       itemBuilder: (context) => MoodType.values.map((m) => PopupMenuItem(
          value: m,
-         child: Text(m.name.toUpperCase(), style: _metaStyle(color)),
+         child: Text(
+           m.name.toUpperCase(), 
+           style: GoogleFonts.courierPrime(fontSize: 14, color: menuText),
+         ),
        )).toList(),
-       onChanged: (val) {
-         if (val != null) setState(() => _mood = val);
-       },
+       child: Padding(
+         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+         child: Text(
+           _mood.name.toUpperCase(),
+           style: _metaStyle(color).copyWith(fontWeight: FontWeight.w600),
+         ),
+       ),
     );
   }
 
@@ -960,11 +1004,13 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         delegate: SliverChildBuilderDelegate(
           (context, index) {
             final line = lines[index];
+            final bool hideLines = Provider.of<SettingsProvider>(context).compatibilityMode;
+            
             return CustomPaint(
               foregroundPainter: LinedPaperPainter(
-                 lineColor: theme == AppTheme.themeMidnight 
+                 lineColor: hideLines ? Colors.transparent : (theme == AppTheme.themeMidnight 
                     ? Colors.white.withValues(alpha: 0.08) 
-                    : (theme == AppTheme.themeAmberLens ? const Color(0x1FFFFFFF) : const Color(0xFF5D4037).withValues(alpha: 0.12)),
+                    : (theme == AppTheme.themeAmberLens ? const Color(0x1FFFFFFF) : const Color(0xFF5D4037).withValues(alpha: 0.12))),
                  lineHeight: lineHeight,
               ),
               child: Container(
@@ -1003,12 +1049,13 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   Widget _buildEditorField(Color textColor, String theme) {
      const double fontSize = 18.0;
      const double lineHeight = 32.0;
+     final bool hideLines = Provider.of<SettingsProvider>(context).compatibilityMode;
      
      return CustomPaint(
         foregroundPainter: LinedPaperPainter(
-          lineColor: theme == AppTheme.themeMidnight 
+          lineColor: hideLines ? Colors.transparent : (theme == AppTheme.themeMidnight 
              ? Colors.white.withValues(alpha: 0.08) 
-             : (theme == AppTheme.themeAmberLens ? const Color(0x1FFFFFFF) : const Color(0xFF5D4037).withValues(alpha: 0.12)),
+             : (theme == AppTheme.themeAmberLens ? const Color(0x1FFFFFFF) : const Color(0xFF5D4037).withValues(alpha: 0.12))),
           lineHeight: lineHeight,
         ),
         child: Padding(
@@ -1042,18 +1089,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   }
   
   Widget _buildFooter(Color textColor, Color secondaryColor) {
-     if (!_isEditing) return const SizedBox.shrink(); // 非编辑模式下不显示任何底部内容
-
-     return Padding(
-       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-       child: Center(
-         child: TextButton.icon(
-           onPressed: _save,
-           icon: Icon(Icons.check, size: 16, color: textColor),
-           label: Text('完成', style: _metaStyle(textColor)),
-         )
-       ),
-     );
+     return const SizedBox(height: 100); // Bottom padding for comfortable scrolling
   }
 }
 

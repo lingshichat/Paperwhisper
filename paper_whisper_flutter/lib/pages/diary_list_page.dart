@@ -244,6 +244,11 @@ class _DiaryListPageState extends State<DiaryListPage> {
 
 
   void _showPermissionRationale() async {
+    // 0. Check preference: Don't ask again
+    final prefs = await SharedPreferences.getInstance();
+    final bool? dontAskAgain = prefs.getBool('permission_dont_ask_again');
+    if (dontAskAgain == true) return;
+
     // 检测是否为鸿蒙系统
     final isHarmony = await PlatformUtils.isHarmonyOS();
     
@@ -265,6 +270,18 @@ class _DiaryListPageState extends State<DiaryListPage> {
           ),
         ),
         actions: [
+          SkeuomorphicDialogButton(
+            label: '不再提醒',
+            isPrimary: false,
+            // Use a subtle color or style if possible, or just standard secondary
+            onPressed: () async {
+              await prefs.setBool('permission_dont_ask_again', true);
+              Navigator.pop(ctx);
+              if (mounted) {
+                 SkeuomorphicToast.info(context, '已设为不再自动提示，可在设置中手动开启');
+              }
+            },
+          ),
           SkeuomorphicDialogButton(
             label: '暂不授权',
             isPrimary: false,

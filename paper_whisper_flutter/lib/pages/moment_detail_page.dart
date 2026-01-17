@@ -348,10 +348,13 @@ class _MomentDetailPageState extends State<MomentDetailPage> with SingleTickerPr
                     ),
                   ),
                 const SizedBox(height: 24),
+                const SizedBox(height: 24),
                 CustomPaint(
                   painter: _PostcardLinePainter(
                     lineHeight: 36.0,
-                    color: Colors.black.withOpacity(0.08),
+                    color: context.watch<SettingsProvider>().compatibilityMode 
+                           ? Colors.transparent 
+                           : Colors.black.withOpacity(0.08),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4.0),

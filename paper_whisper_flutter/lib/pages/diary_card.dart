@@ -80,20 +80,23 @@ class _DiaryCardState extends State<DiaryCard> {
           margin: const EdgeInsets.only(bottom: 12),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
                 widget.entry.dateString,
                 style: GoogleFonts.courierPrime(
                   fontSize: 12,
+                  height: 1.2, // Ensure clean baseline
                   color: dateColor,
                   fontWeight: isSeaFlower || isAmber ? FontWeight.w600 : FontWeight.normal,
                 ),
               ),
               Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Icon(Icons.wb_sunny_outlined, size: 16, color: iconColor),
+                  Icon(_getWeatherIcon(widget.entry.weather), size: 16, color: iconColor),
                   const SizedBox(width: 5),
-                  Icon(Icons.sentiment_satisfied, size: 16, color: iconColor),
+                  Icon(_getMoodIcon(widget.entry.mood), size: 16, color: iconColor),
                 ],
               )
             ],
@@ -416,5 +419,25 @@ class _DiaryCardState extends State<DiaryCard> {
 
   double _lerp(double a, double b, double t) {
     return a + (b - a) * t;
+  }
+
+  IconData _getWeatherIcon(WeatherType w) {
+    switch (w) {
+      case WeatherType.sunny: return Icons.wb_sunny_outlined;
+      case WeatherType.cloudy: return Icons.cloud_outlined;
+      case WeatherType.rainy: return Icons.grain;
+      case WeatherType.snowy: return Icons.ac_unit;
+      case WeatherType.windy: return Icons.air;
+    }
+  }
+
+  IconData _getMoodIcon(MoodType m) {
+    switch (m) {
+      case MoodType.happy: return Icons.sentiment_satisfied_alt;
+      case MoodType.calm: return Icons.spa;
+      case MoodType.sad: return Icons.sentiment_dissatisfied;
+      case MoodType.excited: return Icons.sentiment_very_satisfied;
+      case MoodType.tired: return Icons.airline_seat_flat_angled; 
+    }
   }
 }
