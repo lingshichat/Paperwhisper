@@ -17,13 +17,21 @@ flutter build windows --release
 $PubspecContent = Get-Content -Path "pubspec.yaml" -Raw
 if ($PubspecContent -match '(?m)^version:\s+([^\s+]+)') {
     $Version = $matches[1]
-} else {
+}
+else {
     Write-Error "❌ 无法从 pubspec.yaml 提取版本号！"
 }
 
 $ZipName = "paper_whisper_flutter_windows_$Version.zip"
 $BuildDir = "build\windows\x64\runner\Release"
-$ZipPath = $ZipName  # 放在根目录
+$ReleasesDir = "..\releases\builds"
+
+# 确保输出目录存在
+if (-not (Test-Path $ReleasesDir)) {
+    New-Item -ItemType Directory -Path $ReleasesDir -Force | Out-Null
+}
+
+$ZipPath = Join-Path $ReleasesDir $ZipName
 
 Write-Host "📦 [2/4] 正在根据版本 $Version 打包..." -ForegroundColor Cyan
 
