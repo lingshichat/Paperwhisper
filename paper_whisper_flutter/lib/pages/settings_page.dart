@@ -715,14 +715,45 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
   Future<void> _launchUrl(String url) async {
     final Uri uri = Uri.parse(url);
     try {
-      if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-        if (mounted) {
-           SkeuomorphicToast.error(context, '无法打开链接');
+      // 1. 优先尝试 "应用内浏览器" (Chrome Custom Tabs / Safari View Controller)
+      // 这通常提供最佳体验（共享 Cookie，支持上传等）
+      // 但其表现依赖于系统默认浏览器（如 Chrome, Edge 等支持较好；部分国产浏览器可能会直接跳出）
+      bool launched = await launchUrl(
+        uri,
+        mode: LaunchMode.inAppBrowserView,
+        browserConfiguration: const BrowserConfiguration(
+          showTitle: true,
+        ),
+      );
+
+      if (!launched) {
+        // 2. 尝试使用 WebView 模式 (传统 WebView)
+        // 保证在 App 内部打开
+        launched = await launchUrl(
+            uri,
+            mode: LaunchMode.inAppWebView,
+            webViewConfiguration: const WebViewConfiguration(enableJavaScript: true, enableDomStorage: true)
+        );
+      } else {
+         return; 
+      }
+      
+      if (!launched) {
+        // 3. 最后降级去系统浏览器
+        if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+          if (mounted) {
+             SkeuomorphicToast.error(context, '无法打开链接');
+          }
         }
       }
     } catch (e) {
       if (mounted) {
-         SkeuomorphicToast.error(context, '无法打开链接: $e');
+         // 尝试降级打开
+         try {
+           await launchUrl(uri, mode: LaunchMode.externalApplication);
+         } catch (e2) {
+           SkeuomorphicToast.error(context, '无法打开链接: $e');
+         }
       }
     }
   }
