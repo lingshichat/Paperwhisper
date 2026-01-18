@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:permission_handler/permission_handler.dart'; 
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../config/app_theme.dart';
 import '../providers/settings_provider.dart';
@@ -308,7 +309,37 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
         ),
         const SizedBox(height: 24),
 
-        // 4. 关于 (About)
+        // 4. 帮助与反馈 (Help & Feedback)
+        _buildSectionHeader('帮助与反馈', textColor),
+        _buildGroupContainer(
+          isSeaFlower, isMidnight,
+          children: [
+            _buildSettingsItem(
+              context: context,
+              icon: Icons.help_outline,
+              title: '常见问题',
+              subtitle: '查看使用指南与疑问解答',
+              isSeaFlower: isSeaFlower,
+              isMidnight: isMidnight,
+              textColor: textColor,
+              onTap: () => _launchUrl('https://lingshichat.feishu.cn/docx/JvzDdhLXEo3OVaxWEc9cygDqnMc?from=from_copylink'),
+            ),
+            _buildDivider(isSeaFlower, isMidnight),
+            _buildSettingsItem(
+              context: context,
+              icon: Icons.feedback_outlined,
+              title: '意见反馈',
+              subtitle: '提交Bug或功能建议',
+              isSeaFlower: isSeaFlower,
+              isMidnight: isMidnight,
+              textColor: textColor,
+              onTap: () => _launchUrl('https://lingshichat.feishu.cn/share/base/form/shrcnx9xnwJU6cxmz6F5tLNQzi2'),
+            ),
+          ]
+        ),
+        const SizedBox(height: 24),
+
+        // 5. 关于 (About)
         _buildSectionHeader('关于', textColor),
         _buildGroupContainer(
           isSeaFlower, isMidnight,
@@ -323,6 +354,28 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
               textColor: textColor,
               isLoading: _isCheckingUpdate,
               onTap: _isCheckingUpdate ? () {} : () => _checkForUpdate(context),
+            ),
+            _buildDivider(isSeaFlower, isMidnight),
+            _buildSettingsItem(
+              context: context,
+              icon: Icons.description_outlined,
+              title: '用户协议',
+              subtitle: '查阅用户服务协议',
+              isSeaFlower: isSeaFlower,
+              isMidnight: isMidnight,
+              textColor: textColor,
+              onTap: () => _launchUrl('https://lingshichat.feishu.cn/docx/ODY0dLSF4okfuzximQuctlMon7g?from=from_copylink'),
+            ),
+            _buildDivider(isSeaFlower, isMidnight),
+            _buildSettingsItem(
+              context: context,
+              icon: Icons.privacy_tip_outlined,
+              title: '隐私政策',
+              subtitle: '了解不仅限于数据的隐私保护',
+              isSeaFlower: isSeaFlower,
+              isMidnight: isMidnight,
+              textColor: textColor,
+              onTap: () => _launchUrl('https://lingshichat.feishu.cn/docx/Gd6sdvdmRonHO9x6fMccUr3qnXg?from=from_copylink'),
             ),
             _buildDivider(isSeaFlower, isMidnight),
             _buildSettingsItem(
@@ -655,6 +708,21 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
     } finally {
       if (mounted) {
         setState(() => _isCheckingUpdate = false);
+      }
+    }
+  }
+
+  Future<void> _launchUrl(String url) async {
+    final Uri uri = Uri.parse(url);
+    try {
+      if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+        if (mounted) {
+           SkeuomorphicToast.error(context, '无法打开链接');
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+         SkeuomorphicToast.error(context, '无法打开链接: $e');
       }
     }
   }
