@@ -14,6 +14,7 @@ import '../widgets/skeuomorphic_dialog.dart';
 import '../widgets/skeuomorphic_toast.dart';
 import '../services/draft_service.dart'; // Added
 import '../widgets/slide_page_route.dart'; // Needed for "Save As New" navigation
+import '../widgets/skeuomorphic_date_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 import 'dart:io';
@@ -841,7 +842,29 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
            mainAxisAlignment: MainAxisAlignment.center,
            crossAxisAlignment: CrossAxisAlignment.center,
            children: [
-              Text(_currentDateStr, style: _metaStyle(secondaryColor)),
+              GestureDetector(
+                onTap: () {
+                   DateTime initialDate;
+                   try {
+                     initialDate = DateTime.parse(_currentDateStr);
+                   } catch (_) {
+                     initialDate = DateTime.now();
+                   }
+                   
+                   showDialog(
+                     context: context,
+                     builder: (ctx) => SkeuomorphicDatePicker(
+                       initialDate: initialDate,
+                       onDateSelected: (date) {
+                          setState(() {
+                             _currentDateStr = date.toString().split(' ')[0]; // yyyy-MM-dd
+                          });
+                       },
+                     ),
+                   );
+                },
+                child: Text(_currentDateStr, style: _metaStyle(secondaryColor)), // _metaStyle sends color
+              ),
               _metaSeparator(secondaryColor),
               _buildWeatherSelector(secondaryColor),
               _metaSeparator(secondaryColor),
