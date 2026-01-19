@@ -5,6 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'dart:async';
 
 import 'dart:io';
 import 'package:provider/provider.dart';
@@ -39,6 +41,71 @@ class _MomentCardState extends State<MomentCard> {
   final GlobalKey _globalKey = GlobalKey();
   bool _showWatermark = false;
   int _currentIndex = 0;
+  
+  // Audio Player State
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  bool _isPlaying = false;
+  Duration _audioPosition = Duration.zero;
+  Duration _audioDuration = Duration.zero;
+  StreamSubscription? _playerCompleteSub;
+  StreamSubscription? _playerStateSub;
+  StreamSubscription? _playerPositionSub;
+  StreamSubscription? _playerDurationSub;
+
+  @override
+  void initState() {
+    super.initState();
+    _initAudio();
+  }
+  
+  void _initAudio() {
+    _playerStateSub = _audioPlayer.onPlayerStateChanged.listen((state) {
+        if (mounted) setState(() => _isPlaying = state == PlayerState.playing);
+    });
+    
+    _playerDurationSub = _audioPlayer.onDurationChanged.listen((d) {
+        if (mounted) setState(() => _audioDuration = d);
+    });
+    
+    _playerPositionSub = _audioPlayer.onPositionChanged.listen((p) {
+        if (mounted) setState(() => _audioPosition = p);
+    });
+    
+    _playerCompleteSub = _audioPlayer.onPlayerComplete.listen((_) {
+        if (mounted) {
+           setState(() {
+             _isPlaying = false;
+             _audioPosition = Duration.zero;
+           });
+        }
+    });
+  }
+  
+  @override
+  void dispose() {
+    _audioPlayer.dispose();
+    _playerStateSub?.cancel();
+    _playerCompleteSub?.cancel();
+    _playerPositionSub?.cancel();
+    _playerDurationSub?.cancel();
+    super.dispose();
+  }
+  
+  Future<void> _toggleAudio() async {
+    if (widget.moment.audioPath == null || widget.baseDir == null) return;
+    
+    if (_isPlaying) {
+      await _audioPlayer.pause();
+    } else {
+      // Construct path - audioPath is relative "audio/xxx.m4a"
+      File audioFile = File(path.join(widget.baseDir!.path, widget.moment.audioPath!));
+      if (await audioFile.exists()) {
+          await _audioPlayer.play(DeviceFileSource(audioFile.path));
+      } else {
+          SkeuomorphicToast.error(context, '音频文件丢失');
+      }
+    }
+  }
 
   Future<void> _captureAndSave() async {
     try {
@@ -212,9 +279,27 @@ class _MomentCardState extends State<MomentCard> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                   // 1. Image Section (Polaroid Style, truncated for feed?)
-                   // Flomo shows full image usually.
-// 1. Image Section (Polaroid Style / Carousel)
+                   // 1. Text Content (Top)
+                   Padding(
+                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                     child: Text(
+                       widget.moment.content,
+                       style: GoogleFonts.notoSerifSc(
+                         fontSize: 16,
+                         color: textColor,
+                         height: 1.6,
+                       ),
+                     ),
+                   ),
+
+                   // 2. Audio Player (Middle)
+                   if (widget.moment.audioPath != null)
+                     Padding(
+                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                       child: _buildSkeuomorphicPlayer(textColor, iconColor),
+                     ),
+
+                   // 3. Image Section (Bottom)
                    if (hasImage)
                      Padding(
                        padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
@@ -338,40 +423,26 @@ class _MomentCardState extends State<MomentCard> {
                        ),
                      ),
                    
-                   // 2. Text & Metadata
-                   Padding(
-                     padding: const EdgeInsets.all(16),
-                     child: Column(
-                       crossAxisAlignment: CrossAxisAlignment.start,
-                       children: [
-                         // Content
-                         Text(
-                           widget.moment.content,
-                           style: GoogleFonts.notoSerifSc( // Use Noto Serif as base, or Try 'Long Cang' if needed
-                             fontSize: 16,
-                             color: textColor,
-                             height: 1.6,
-                           ),
-                         ),
-                         const SizedBox(height: 12),
-                         // Metadata Row
-                         Row(
-                           children: [
-                             Text(
-                               _formatTime(widget.moment.createdAt),
-                               style: GoogleFonts.notoSerifSc(
-                                 fontSize: 12,
-                                 color: metaColor,
-                               ),
-                             ),
-                             const Spacer(),
-                             if (widget.moment.weather != null) Text(widget.moment.weather! + " ", style: TextStyle(fontSize: 12, color: metaColor)),
-                             if (widget.moment.mood != null) Text(widget.moment.mood!, style: TextStyle(fontSize: 12, color: metaColor)),
-                           ],
-                         ),
-                       ],
-                     ),
-                   ),
+
+                   
+                   // Metadata Footer
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      child: Row(
+                        children: [
+                          Text(
+                            _formatTime(widget.moment.createdAt),
+                            style: GoogleFonts.notoSerifSc(
+                              fontSize: 12,
+                              color: metaColor,
+                            ),
+                          ),
+                          const Spacer(),
+                          if (widget.moment.weather != null) Text(widget.moment.weather! + " ", style: TextStyle(fontSize: 12, color: metaColor)),
+                          if (widget.moment.mood != null) Text(widget.moment.mood!, style: TextStyle(fontSize: 12, color: metaColor)),
+                        ],
+                      ),
+                    ),
                    // 3. Watermark Footer (Only visible during export)
                    if (_showWatermark)
                      Padding(
@@ -420,7 +491,7 @@ class _MomentCardState extends State<MomentCard> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-               // Delete (Only delete remains)
+               // Delete
                if (widget.onDelete != null)
                  InkWell(
                   onTap: _confirmDelete,
@@ -436,6 +507,7 @@ class _MomentCardState extends State<MomentCard> {
     );
   }
 
+
   Widget _buildImage(String relativePath) {
     if (widget.baseDir == null) return const SizedBox();
     
@@ -450,5 +522,103 @@ class _MomentCardState extends State<MomentCard> {
 
   String _formatTime(DateTime dt) {
     return "${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}";
+  }
+  
+  Widget _buildSkeuomorphicPlayer(Color textColor, Color accentColor) {
+     // Skeuomorphic Player: Looks like a tape side view or a mini player strip
+     
+     // Calculate Progress
+     double progress = 0.0;
+     if (_audioDuration.inMilliseconds > 0) {
+        progress = _audioPosition.inMilliseconds / _audioDuration.inMilliseconds;
+        if (progress > 1.0) progress = 1.0;
+     }
+
+     return GestureDetector(
+        onTap: _toggleAudio,
+        child: Container(
+           height: 40,
+           decoration: BoxDecoration(
+             color: Colors.grey.withOpacity(0.1),
+             borderRadius: BorderRadius.circular(20),
+             border: Border.all(color: Colors.grey.withOpacity(0.2)),
+           ),
+           padding: const EdgeInsets.symmetric(horizontal: 4),
+           child: Row(
+              children: [
+                 // Play Button Circle
+                 Container(
+                   width: 32, height: 32,
+                   margin: const EdgeInsets.only(left: 2),
+                   decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: accentColor,
+                      boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 2, offset: Offset(0,1))]
+                   ),
+                   child: Icon(
+                      _isPlaying ? Icons.pause : Icons.play_arrow,
+                      color: Colors.white,
+                      size: 20,
+                   ),
+                 ),
+                 
+                 const SizedBox(width: 8),
+                 
+                 // Waveform / Progress Bar
+                 Expanded(
+                    child: Column(
+                       mainAxisAlignment: MainAxisAlignment.center,
+                       crossAxisAlignment: CrossAxisAlignment.start,
+                       children: [
+                          // Title or "Voice Note"
+                          Text(
+                             widget.moment.audioTitle ?? "语音记录",
+                             style: GoogleFonts.notoSerifSc(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: textColor,
+                             ),
+                             maxLines: 1, overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          // Progress Bar
+                          SizedBox(
+                            height: 4,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(2),
+                              child: LinearProgressIndicator(
+                                value: progress,
+                                backgroundColor: Colors.grey.withOpacity(0.3),
+                                valueColor: AlwaysStoppedAnimation<Color>(accentColor.withOpacity(0.7)),
+                              ),
+                            ),
+                          )
+                       ],
+                    )
+                 ),
+                 
+                 const SizedBox(width: 12),
+                 
+                 // Duration Text
+                 Text(
+                    _formatDuration(_isPlaying ? _audioPosition : _audioDuration),
+                    style: GoogleFonts.roboto(
+                      color: textColor.withOpacity(0.6),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500
+                    ),
+                 ),
+                 const SizedBox(width: 12),
+              ],
+           ),
+        ),
+     );
+  }
+  
+  String _formatDuration(Duration d) {
+    String twoDigits(int n) => n.toString().padLeft(2, "0");
+    String twoDigitMinutes = twoDigits(d.inMinutes.remainder(60));
+    String twoDigitSeconds = twoDigits(d.inSeconds.remainder(60));
+    return "$twoDigitMinutes:$twoDigitSeconds";
   }
 }

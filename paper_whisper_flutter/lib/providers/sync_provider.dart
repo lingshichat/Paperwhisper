@@ -772,6 +772,12 @@ class SyncProvider with ChangeNotifier {
       if (await imagesDir.exists()) {
          await _syncMomentImages(imagesDir, isAuto);
       }
+      
+      // 3. Sync Audio (Append/Check only)
+      final audioDir = Directory(path.join(localDir.path, 'audio'));
+      if (await audioDir.exists()) {
+         await _syncMomentAudio(audioDir, isAuto);
+      }
   }
 
   Future<void> _syncMomentJsonFiles(bool isAuto) async {
@@ -1001,6 +1007,75 @@ class SyncProvider with ChangeNotifier {
            );
            processed++;
            if (!isAuto) _showNotification(processed, total, body: "图片下载: $name");
+      });
+  }
+
+  Future<void> _syncMomentAudio(Directory localAudioDir, bool isAuto) async {
+      if (!isAuto) _showNotification(null, null, body: "正在同步语音...");
+      
+      // 1. Get Remote List
+      List<webdav.File> remoteAudioRaw = await _webDavService.listRemoteFiles(
+        remotePath: WebDavSyncService.momentsAudioPath
+      );
+      Set<String> remoteAudioNames = remoteAudioRaw
+         .where((f) => f.name != null)
+         .map((f) => f.name!)
+         .toSet();
+
+      // 2. Get Local List
+      List<FileSystemEntity> localAudioFiles = localAudioDir.listSync();
+      
+      // 3. Collect Uploads
+      List<File> toUpload = [];
+      for (var f in localAudioFiles) {
+         if (f is File) {
+            String name = path.basename(f.path);
+            if (!remoteAudioNames.contains(name)) {
+               toUpload.add(f);
+            }
+         }
+      }
+      
+      // Safety Check
+      if (isAuto && toUpload.length > 20) {
+         debugPrint('AutoSync Safety: Skipping upload of ${toUpload.length} audio files.');
+         return;
+      }
+      
+      // 4. Collect Downloads
+      List<String> toDownload = [];
+      for (var remoteFile in remoteAudioRaw) {
+         String? name = remoteFile.name;
+         if (name == null) continue;
+         File localFile = File(path.join(localAudioDir.path, name));
+         if (!localFile.existsSync()) {
+            toDownload.add(name);
+         }
+      }
+
+      int total = toUpload.length + toDownload.length;
+      int processed = 0;
+
+      // Parallel Upload
+      await _processBatch(toUpload, (f) async {
+          String name = path.basename(f.path);
+          await _webDavService.uploadFile(
+             f.path, 
+             WebDavSyncService.momentsAudioPath + name
+          );
+          processed++;
+          if (!isAuto) _showNotification(processed, total, body: "语音上传: $name");
+      });
+
+      // Parallel Download
+      await _processBatch(toDownload, (name) async {
+          File localFile = File(path.join(localAudioDir.path, name));
+           await _webDavService.downloadFile(
+              WebDavSyncService.momentsAudioPath + name, 
+              localFile.path
+           );
+           processed++;
+           if (!isAuto) _showNotification(processed, total, body: "语音下载: $name");
       });
   }
 

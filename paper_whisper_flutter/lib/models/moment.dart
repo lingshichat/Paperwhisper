@@ -9,6 +9,8 @@ class Moment {
   final String? weather;
   final String? mood;
   final String? location;
+  final String? audioPath; // 录音文件相对路径
+  final String? audioTitle; // 录音标题
 
   Moment({
     required this.uuid,
@@ -18,6 +20,8 @@ class Moment {
     this.weather,
     this.mood,
     this.location,
+    this.audioPath,
+    this.audioTitle,
   });
 
   factory Moment.create({
@@ -26,6 +30,8 @@ class Moment {
     String? weather,
     String? mood,
     String? location,
+    String? audioPath,
+    String? audioTitle,
   }) {
     return Moment(
       uuid: const Uuid().v4(),
@@ -35,6 +41,8 @@ class Moment {
       weather: weather,
       mood: mood,
       location: location,
+      audioPath: audioPath,
+      audioTitle: audioTitle,
     );
   }
 
@@ -47,6 +55,8 @@ class Moment {
       'weather': weather,
       'mood': mood,
       'location': location,
+      'audioPath': audioPath,
+      'audioTitle': audioTitle,
     };
   }
 
@@ -59,6 +69,8 @@ class Moment {
       weather: json['weather'] as String?,
       mood: json['mood'] as String?,
       location: json['location'] as String?,
+      audioPath: json['audioPath'] as String?,
+      audioTitle: json['audioTitle'] as String?,
     );
   }
   

@@ -17,6 +17,7 @@ class WebDavSyncService {
   static const String trashBasePath = '/PaperWhisper/trash/'; // New Trash Path
   static const String momentsBasePath = '/PaperWhisper/moments_data/';
   static const String momentsImagesPath = '/PaperWhisper/moments_data/images/';
+  static const String momentsAudioPath = '/PaperWhisper/moments_data/audio/';
 
   bool get isConnected => _client != null;
 

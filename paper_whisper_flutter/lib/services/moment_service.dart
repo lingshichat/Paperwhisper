@@ -12,6 +12,7 @@ import 'manifest_service.dart';
 class MomentService {
   Directory? _dataDir;
   Directory? _imagesDir;
+  Directory? _audioDir;
 
   // 获取数据目录路径，供 UI 显示调试用
   String get currentDataPath => _dataDir?.path ?? 'Unknown';
@@ -20,7 +21,9 @@ class MomentService {
   void reset() {
     _dataDir = null;
     _imagesDir = null;
+    _audioDir = null;
   }
+
 
   Future<void> init() async {
     if (_dataDir != null) return;
@@ -96,6 +99,12 @@ class MomentService {
       // Init Manifest
       await _manifestService.init(_dataDir!, manifestFileName: 'local_moments_manifest.json');
       await _manifestService.ensureConsistency(_dataDir!, fileExtension: '.json');
+
+      // Create Audio Dir
+      _audioDir = Directory(path.join(_dataDir!.path, 'audio'));
+      if (!await _audioDir!.exists()) {
+        await _audioDir!.create(recursive: true);
+      }
     }
   }
 
@@ -163,6 +172,20 @@ class MomentService {
                debugPrint("Error deleting image $name: $e");
              }
           }
+        }
+
+        // Delete Audio if exists
+        if (moment.audioPath != null) {
+           String audioName = path.basename(moment.audioPath!);
+           File audioFile = File(path.join(_dataDir!.path, 'audio', audioName));
+           if (await audioFile.exists()) {
+              try {
+                await audioFile.delete();
+                debugPrint("Deleted associated audio: $audioName");
+              } catch (e) {
+                debugPrint("Error deleting audio $audioName: $e");
+              }
+           }
         }
       } catch (e) {
          debugPrint("Error parsing moment for cascading delete: $e");
@@ -249,4 +272,28 @@ class MomentService {
     
     return await diaryService.saveEntry(entry);
   }
+
+  /// Copy an audio file to the moments audio directory and return the relative path
+  Future<String> saveAudio(String sourcePath) async {
+    await init();
+    File sourceFile = File(sourcePath);
+    String ext = path.extension(sourcePath); // usually .m4a or .wav
+    if (ext.isEmpty) ext = '.m4a';
+    
+    String filename = "${DateTime.now().millisecondsSinceEpoch}_audio${ext}";
+    String destinationPath = path.join(_audioDir!.path, filename);
+
+    await sourceFile.copy(destinationPath);
+    
+    // Return relative path: audio/filename
+    String relativePath = path.join('audio', filename);
+    return relativePath.replaceAll('\\', '/');
+  }
+
+  Future<String?> getAbsoluteAudioPath(String relativePath) async {
+    await init();
+    if (_dataDir == null) return null;
+    return path.join(_dataDir!.path, relativePath);
+  }
+
 }

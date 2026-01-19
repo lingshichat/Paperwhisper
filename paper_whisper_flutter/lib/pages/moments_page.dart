@@ -131,7 +131,7 @@ class _MomentsPageState extends State<MomentsPage> {
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
-  Future<void> _handleSend(String content, List<XFile> images) async {
+  Future<void> _handleSend(String content, List<XFile> images, {String? audioPath, String? audioTitle}) async {
     // 1. Save images
     List<String> savedPaths = [];
     for (var img in images) {
@@ -139,10 +139,18 @@ class _MomentsPageState extends State<MomentsPage> {
       savedPaths.add(path);
     }
     
-    // 2. Create Moment (Force time to be selected date? No, moments are "Now")
-    // If user selected yesterday, adding a moment should probably be date of yesterday? 
-    // Usually Moments are instantaneous. But for journal app, maybe user wants to backdate?
-    // Let's assume write for Current Selected Date, current time.
+    // 2. Save Audio
+    String? savedAudioPath;
+    if (audioPath != null) {
+      try {
+        savedAudioPath = await _momentService.saveAudio(audioPath);
+      } catch (e) {
+        debugPrint("Error saving audio: $e");
+      }
+    }
+    
+    // 3. Create Moment
+    // ...
     
     DateTime timestamp = DateTime(
       _selectedDate.year, _selectedDate.month, _selectedDate.day,
@@ -152,6 +160,8 @@ class _MomentsPageState extends State<MomentsPage> {
     Moment newMoment = Moment.create(
       content: content,
       images: savedPaths,
+      audioPath: savedAudioPath,
+      audioTitle: audioTitle,
       // Default weather/mood for quick input? Or random? Or none.
     );
     // Adjust timestamp
