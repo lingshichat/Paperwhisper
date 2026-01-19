@@ -54,6 +54,7 @@ dependencies:
   image_picker: ^1.2.1
   flutter_local_notifications: ^19.5.0
   open_filex: ^4.5.0
+  scrollable_positioned_list: ^0.3.8
 
 dev_dependencies:
   flutter_test:
@@ -99,6 +100,7 @@ flutter:
   assets:
     - assets/icon.png
     - assets/textures/
+    - assets/illustrations/
     - assets/version.json
 
   # An image asset can refer to one or more resolution-specific "variants", see

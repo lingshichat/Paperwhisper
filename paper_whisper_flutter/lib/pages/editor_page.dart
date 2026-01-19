@@ -23,11 +23,17 @@ import 'package:permission_handler/permission_handler.dart';
 
 class EditorPage extends StatefulWidget {
   final DiaryEntry? entry;
-  
-  // 如果是从 draft 恢复的，则传入 content，否则为空
-  // 但我们通过 service 恢复，不需要传参，直接内部加载
-  
-  const EditorPage({super.key, this.entry});
+  final bool lazyLoad; // 是否延迟加载内容（长日记优化）
+  final void Function(VoidCallback)? onContentReady; // 内容准备好的回调
+  final bool usePreviewMode; // 首屏渲染优化模式
+
+  const EditorPage({
+    super.key,
+    this.entry,
+    this.lazyLoad = false,
+    this.onContentReady,
+    this.usePreviewMode = false,
+  });
 
   @override
   State<EditorPage> createState() => _EditorPageState();
@@ -36,6 +42,7 @@ class EditorPage extends StatefulWidget {
 class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   late TextEditingController _titleController;
   late TextEditingController _contentController;
+  late TextEditingController _previewController; // Controller for truncated text
   
   late WeatherType _weather;
   late MoodType _mood;
@@ -44,6 +51,10 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   bool _isEditing = false;
   late String _currentDateStr;
   
+  // 懒加载状态
+  bool _isContentLoaded = false; // 内容是否已加载
+  bool _isPreviewMode = false; // 是否处于首屏预览模式
+
   // Draft Logic
   // Focus Node
   final FocusNode _focusNode = FocusNode();
@@ -59,13 +70,37 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     
     final e = widget.entry;
+    final fullText = e?.content ?? '';
     _titleController = TextEditingController(text: e?.title ?? '');
-    _contentController = TextEditingController(text: e?.content ?? '');
+    _contentController = TextEditingController(text: fullText);
+    
+    // 初始化预览控制器：只截取前 200 字符（约一屏），极致减少渲染压力
+    // 1000字符依然会导致显著卡顿，200字符是性能与视觉填充的平衡点
+    _previewController = TextEditingController(
+      text: fullText.length > 200 ? fullText.substring(0, 200) : fullText
+    );
+    
     _weather = e?.weather ?? WeatherType.sunny;
     _mood = e?.mood ?? MoodType.calm;
     _isMarkdown = e?.isMarkdown ?? false; 
     _isEditing = (e == null);
     _currentDateStr = e?.dateString ?? DateTime.now().toString().split(' ')[0];
+    
+    // 初始化状态
+    _isContentLoaded = !widget.lazyLoad;
+    _isPreviewMode = widget.usePreviewMode;
+    
+    // 注册内容加载回调（复用 onContentReady 回调机制来关闭预览模式）
+    if (widget.onContentReady != null) {
+      widget.onContentReady!(() {
+        if (mounted) {
+          setState(() {
+            _isContentLoaded = true;
+            _isPreviewMode = false; // 动画结束，切换回完整渲染
+          });
+        }
+      });
+    }
     
     // Listeners for auto-save
     _titleController.addListener(_onTextChanged);
@@ -75,9 +110,43 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkDraft());
   }
 
+  // 监听路由动画状态
+  Animation<double>? _routeAnimation;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 获取当前路由的动画对象
+    final route = ModalRoute.of(context);
+    if (route != null && route is PageRoute && _routeAnimation == null) {
+      _routeAnimation = route.animation;
+      _routeAnimation!.addStatusListener(_onRouteAnimationStatusChanged);
+    }
+  }
+
+  void _onRouteAnimationStatusChanged(AnimationStatus status) {
+    // 当路由动画开始反向运行（退出/返回）时
+    if (status == AnimationStatus.reverse) {
+      // 必须同步最新的编辑内容到预览控制器
+      if (!_isPreviewMode) {
+        final fullText = _contentController.text;
+        final trunk = fullText.length > 200 ? fullText.substring(0, 200) : fullText;
+        if (_previewController.text != trunk) {
+          _previewController.text = trunk;
+        }
+
+        setState(() {
+          _isPreviewMode = true; // 开启优化的预览模式
+        });
+      }
+    }
+  }
+
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    // 移除监听
+    _routeAnimation?.removeStatusListener(_onRouteAnimationStatusChanged);
     _autoSaveTimer?.cancel();
     _titleController.dispose();
     _contentController.dispose();
@@ -501,6 +570,40 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
       );
   }
 
+  Widget _buildWordCount(Color color) {
+    if (_contentController.text.isEmpty) return const SizedBox.shrink();
+    
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 20),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            height: 1,
+            width: 20,
+            color: color.withValues(alpha: 0.2),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Text(
+              '${_contentController.text.length} 字',
+              style: GoogleFonts.notoSerifSc(
+                fontSize: 12,
+                color: color.withValues(alpha: 0.4),
+                letterSpacing: 1,
+              ),
+            ),
+          ),
+          Container(
+            height: 1,
+            width: 20,
+            color: color.withValues(alpha: 0.2),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildAdaptiveContent(Color textColor, Color secondaryColor, String theme) {
       // Threshold for switching to performance mode
       // ~200 lines or ~5000 chars
@@ -538,7 +641,9 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                          ),
                       ),
                     _buildContentSliver(textColor, theme),
-                    SliverToBoxAdapter(child: const SizedBox(height: 60)),
+                    SliverToBoxAdapter(child: const SizedBox(height: 40)),
+                     SliverToBoxAdapter(child: _buildWordCount(secondaryColor)), // Word Count
+                     SliverToBoxAdapter(child: const SizedBox(height: 20)),
                     SliverToBoxAdapter(
                        child: _buildBrandingFooter(secondaryColor),
                     ),
@@ -576,7 +681,9 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                         const SizedBox(height: 30),
                         // Standard Content Area (TextField/Text)
                         _buildContentArea(textColor, theme),
-                        const SizedBox(height: 60),
+                        const SizedBox(height: 30),
+                        _buildWordCount(secondaryColor), // Word Count
+                        const SizedBox(height: 10),
                         _buildBrandingFooter(secondaryColor),
                         // Bottom padding inside scroll view
                         const SizedBox(height: 100),
@@ -764,7 +871,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         constraints: const BoxConstraints(minHeight: 300),
         child: _isEditing
            ? TextField(
-                controller: _contentController,
+                controller: _isPreviewMode ? _previewController : _contentController, // Fix 1
                style: GoogleFonts.notoSerifSc(
                   fontSize: fontSize,
                   color: textColor,
@@ -790,7 +897,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                maxLines: null,
              )
            : Text(
-               _contentController.text,
+               _isPreviewMode ? _previewController.text : _contentController.text, // Fix 2: Critical for preview lag
                style: GoogleFonts.notoSerifSc(
                   fontSize: fontSize,
                   color: textColor,
@@ -988,7 +1095,9 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
       );
     } else {
       // Split content into lines for performance
-      final lines = _contentController.text.split('\n');
+      // 在预览模式下，使用截断的文本，这会生成非常少的 lines，极大提升首屏渲染性能
+      final text = _isPreviewMode ? _previewController.text : _contentController.text;
+      final lines = text.split('\n');
       if (lines.isEmpty) lines.add('');
       
       const double fontSize = 18.0;
@@ -1061,7 +1170,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 0),
           child: TextField(
-            controller: _contentController,
+            controller: _isPreviewMode ? _previewController : _contentController, // 预览模式使用截断文本
             focusNode: _focusNode,
             maxLines: null,
             style: GoogleFonts.notoSerifSc(

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import '../providers/settings_provider.dart';
 import '../models/diary_entry.dart';
 import '../config/app_theme.dart';
@@ -17,7 +18,8 @@ import '../widgets/visual_effects.dart';
 import '../widgets/book_flip_refresh_widget.dart';
 import '../widgets/dashed_line_painter.dart';
 import '../widgets/skeuomorphic_dialog.dart'; // Updated import
-import '../widgets/skeuomorphic_search_bar.dart'; // Added
+import '../widgets/skeuomorphic_search_bar.dart';
+import '../widgets/month_divider.dart';
 import '../widgets/skeuomorphic_toast.dart';
 import 'editor_page.dart';
 import 'diary_card.dart';
@@ -25,14 +27,21 @@ import 'sync_settings_page.dart';
 import '../widgets/slide_page_route.dart';
 import '../widgets/unfold_page_route.dart';
 import '../widgets/paper_fold_page_route.dart'; // LetterFoldPageRoute
+import '../widgets/book_flip_page_route.dart'; // BookFlipPageRoute
+import '../widgets/smooth_cover_page_route.dart'; // SmoothCoverPageRoute
 import 'dart:io' show Platform;
 import 'package:permission_handler/permission_handler.dart';
 import '../models/update_info.dart';
 import '../services/update_service.dart';
 import '../utils/platform_utils.dart';
+import 'bookshelf_page.dart';
+import 'book_directory_page.dart';
 
 class DiaryListPage extends StatefulWidget {
-  const DiaryListPage({super.key});
+  final int? initialYear;
+  final int? initialMonth;
+
+  const DiaryListPage({super.key, this.initialYear, this.initialMonth});
 
   @override
   State<DiaryListPage> createState() => _DiaryListPageState();
@@ -40,18 +49,41 @@ class DiaryListPage extends StatefulWidget {
 
 class _DiaryListPageState extends State<DiaryListPage> {
   String _searchQuery = '';
-  bool _isSearching = false; // Added search state
-  // Removed duplicate declaration
+  bool _isSearching = false;
+  
+  // Filter and Navigation
+  late int _filterYear;
+  final ItemScrollController _itemScrollController = ItemScrollController();
+  final ItemPositionsListener _itemPositionsListener = ItemPositionsListener.create();
+  
+  // Cache for responsive layout
+  List<Widget> _uiItems = [];
+  Map<String, int> _monthTargetMap = {};
   
   @override
   void initState() {
     super.initState();
+    _filterYear = widget.initialYear ?? DateTime.now().year;
+    
     _checkAndroidPermissions();
-    _checkAndShowAnnouncement(); // Check for version update and show announcement
+    _checkAndShowAnnouncement();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkRemoteUpdate();
-      // Ensure data is refreshed whenever this page is initialized (e.g. after pushReplacement from Moments)
-      Provider.of<DiaryProvider>(context, listen: false).loadEntries();
+      Provider.of<DiaryProvider>(context, listen: false).loadEntries().then((_) {
+        if (widget.initialMonth != null) {
+          _scrollToMonth(_filterYear, widget.initialMonth!);
+        }
+      });
+    });
+  }
+  
+  void _scrollToMonth(int year, int month) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final key = '${year}_$month';
+      if (_monthTargetMap.containsKey(key)) {
+        final index = _monthTargetMap[key]!;
+        _itemScrollController.jumpTo(index: index, alignment: 0.0);
+      }
     });
   }
 
@@ -390,10 +422,33 @@ class _DiaryListPageState extends State<DiaryListPage> {
         LetterFoldPageRoute(page: EditorPage(entry: null)),
       );
     } else if (cardRect != null) {
+      // 智能分级：超过 300 字符启用性能模式，优化长日记体验
+      final bool isLongDiary = (entry.content.length > 300);
+      
+      // 这里的闭包变量用于连接 UnfoldPageRoute 的动画结束事件和 EditorPage 的状态更新
+      VoidCallback? showFullContent;
+
       // 点击卡片：使用展开动画
       Navigator.push(
         context, 
-        UnfoldPageRoute(page: EditorPage(entry: entry), sourceRect: cardRect),
+        UnfoldPageRoute(
+          // 传递 EditorPage，并注入状态回调
+          page: EditorPage(
+            entry: entry,
+            usePreviewMode: isLongDiary, // 开启首屏渲染优化
+            onContentReady: (callback) {
+              showFullContent = callback; // 捕获编辑器的刷新方法
+            },
+          ), 
+          sourceRect: cardRect,
+          // 关键恢复：虽然是长日记，但因为我们有了数据截断优化，
+          // 所以可以放心使用完整的 800ms 动态圆角动画，无需性能降级！
+          usePerformanceMode: false, 
+          onAnimationComplete: () {
+            // 动画结束后，通知编辑器加载完整内容
+            showFullContent?.call();
+          },
+        ),
       );
     } else {
       // 降级：使用平滑动画
@@ -418,7 +473,8 @@ class _DiaryListPageState extends State<DiaryListPage> {
 
         // Content Area (The Waterfall Layout)
         // We will put this in a Widget to reuse
-        final Widget contentArea = _buildContentArea(context, theme, !isDesktop);
+        // Pass width to generate layout
+        final Widget contentArea = _buildContentArea(context, theme, !isDesktop, constraints.maxWidth);
 
         if (isDesktop) {
           // Desktop: Fixed Sidebar + Content
@@ -539,14 +595,41 @@ class _DiaryListPageState extends State<DiaryListPage> {
     );
   }
   
-  Widget _buildContentArea(BuildContext context, String theme, bool isMobile) {
+  Widget _buildContentArea(BuildContext context, String theme, bool isMobile, double availableWidth) {
     final diaryProvider = Provider.of<DiaryProvider>(context);
     
-    // Filter
-    final list = diaryProvider.entries.where((e) {
-      if (_searchQuery.isEmpty) return true;
-      return e.title.contains(_searchQuery) || e.content.contains(_searchQuery) || e.dateString.contains(_searchQuery);
-    }).toList();
+    // Prepare Data
+    List<dynamic> rawFlatEntries = [];
+    
+    if (_searchQuery.isNotEmpty) {
+      // Search Mode
+      rawFlatEntries = diaryProvider.entries.where((e) => 
+         e.title.contains(_searchQuery) || e.content.contains(_searchQuery) || e.dateString.contains(_searchQuery)
+      ).toList();
+    } else {
+      // Continuous Flow Mode
+      final yearEntries = diaryProvider.entries.where((e) {
+         final parts = e.dateString.split('-');
+         if (parts.isEmpty) return false;
+         final y = int.tryParse(parts[0]) ?? 0;
+         return y == _filterYear;
+      }).toList();
+      
+      int currentMonth = -1;
+      for (var entry in yearEntries) {
+         final parts = entry.dateString.split('-');
+         final m = int.tryParse(parts[1]) ?? 0;
+         
+         if (m != currentMonth) {
+            currentMonth = m;
+            rawFlatEntries.add(MonthHeader(year: _filterYear, month: currentMonth));
+         }
+         rawFlatEntries.add(entry);
+      }
+    }
+
+    // Generate UI Layout
+    _generateResponsiveLayout(rawFlatEntries, availableWidth, theme, diaryProvider);
 
     return Column(
       children: [
@@ -610,38 +693,46 @@ class _DiaryListPageState extends State<DiaryListPage> {
                                  icon: Icon(Icons.menu, color: headerColors['iconColor']),
                                  onPressed: () => Scaffold.of(scaffoldContext).openDrawer(),
                                ),
-                               Expanded(
-                                 child: Row(
-                                   mainAxisAlignment: MainAxisAlignment.center,
-                                   crossAxisAlignment: CrossAxisAlignment.baseline,
-                                   textBaseline: TextBaseline.alphabetic,
-                                   children: [
-                                     Text(
-                                       '纸语',
-                                       style: GoogleFonts.notoSerifSc(
-                                         fontSize: 18,
-                                         fontWeight: FontWeight.bold,
-                                         color: headerColors['titleColor'],
-                                         shadows: const [
-                                           Shadow(
-                                             color: Color.fromRGBO(0, 0, 0, 0.1),
-                                             offset: Offset(0, 1),
-                                             blurRadius: 1,
-                                           ),
-                                         ],
-                                       ),
-                                     ),
-                                     const SizedBox(width: 6),
-                                     Text(
-                                       'PaperWhisper',
-                                       style: GoogleFonts.notoSerifSc(
-                                         fontSize: 10,
-                                         color: headerColors['subtitleColor'],
-                                       ),
-                                     ),
-                                   ],
-                                 ),
-                               ),
+                                Expanded(
+                                  child: GestureDetector(
+                                    onTap: () async {
+                                      final result = await Navigator.push(
+                                        context,
+                                        SmoothCoverPageRoute(page: BookDirectoryPage(year: _filterYear)),
+                                      );
+                                      if (result != null && result is int) {
+                                        _scrollToMonth(_filterYear, result);
+                                      }
+                                    },
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          diaryProvider.getBookTitle(_filterYear),
+                                          style: GoogleFonts.notoSerifSc(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                            color: headerColors['titleColor'],
+                                            shadows: const [
+                                              Shadow(
+                                                color: Color.fromRGBO(0, 0, 0, 0.1),
+                                                offset: Offset(0, 1),
+                                                blurRadius: 1,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        Text(
+                                          '点击翻阅目录',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            color: headerColors['subtitleColor'],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
                                IconButton(
                                  icon: Icon(Icons.search, color: headerColors['iconColor']),
                                  onPressed: () {
@@ -670,8 +761,7 @@ class _DiaryListPageState extends State<DiaryListPage> {
              },
            ),
 
-        
-        // Waterfall List with Book Flip Refresh
+        // List with Continuous Flow
         Expanded(
           child: BookFlipRefreshWidget(
             theme: theme,
@@ -683,20 +773,15 @@ class _DiaryListPageState extends State<DiaryListPage> {
             },
             onRefresh: () async {
               final syncProvider = Provider.of<SyncProvider>(context, listen: false);
-              
-              // 检查 WebDAV 是否已配置
               if (!syncProvider.isConfigured) {
-                // 显示提示并引导用户配置
                 if (mounted) {
                   _showWebDavConfigPrompt();
                 }
                 return;
               }
-              
-              // 触发同步
               await syncProvider.sync(context: context);
             },
-            child: list.isEmpty 
+            child: _uiItems.isEmpty 
                 ? SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
                     child: SizedBox(
@@ -704,9 +789,18 @@ class _DiaryListPageState extends State<DiaryListPage> {
                       child: _buildEmptyState(theme),
                     ),
                   )
-                : _buildWaterfallGrid(context, list, theme),
+                : Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: ScrollablePositionedList.builder(
+                      itemCount: _uiItems.length,
+                      itemScrollController: _itemScrollController,
+                      itemPositionsListener: _itemPositionsListener,
+                      itemBuilder: (context, index) => _uiItems[index],
+                    ),
+                  ),
           ),
         ),
+     
       ],
     );
   }
@@ -913,5 +1007,59 @@ class _DiaryListPageState extends State<DiaryListPage> {
       theme: theme,
       onTapWithRect: (rect) => _openEditor(entry, rect),
     );
+  }
+
+  void _generateResponsiveLayout(List<dynamic> rawItems, double width, String theme, DiaryProvider provider) {
+    _uiItems = [];
+    _monthTargetMap = {};
+    
+    double contentWidth = width;
+    if (width > 800) contentWidth -= 300;
+    
+    int columnCount = 1;
+    if (contentWidth > 1100) columnCount = 3;
+    else if (contentWidth > 700) columnCount = 2;
+    
+    List<DiaryEntry> buffer = [];
+
+    void flushBuffer() {
+       if (buffer.isNotEmpty) {
+          _uiItems.add(
+            Padding(
+              padding: const EdgeInsets.only(bottom: 30),
+              child: Row(
+                 crossAxisAlignment: CrossAxisAlignment.start,
+                 children: buffer.map((e) => Expanded(
+                    child: Padding(
+                       padding: const EdgeInsets.symmetric(horizontal: 15),
+                       child: _buildDiaryCard(context, e, theme),
+                    )
+                 )).toList()
+                   ..addAll(List.generate(columnCount - buffer.length, (_) => const Expanded(child: SizedBox()))),
+              ),
+            )
+          );
+          buffer = [];
+       }
+    }
+
+    for (var item in rawItems) {
+       if (item is MonthHeader) {
+          flushBuffer();
+          _monthTargetMap['${item.year}_${item.month}'] = _uiItems.length;
+          _uiItems.add(
+             MonthDivider(
+                year: item.year, 
+                month: item.month, 
+                title: provider.getMonthTitle(item.year, item.month),
+                theme: theme,
+             )
+          );
+       } else if (item is DiaryEntry) {
+          buffer.add(item);
+          if (buffer.length == columnCount) flushBuffer();
+       }
+    }
+    flushBuffer();
   }
 }

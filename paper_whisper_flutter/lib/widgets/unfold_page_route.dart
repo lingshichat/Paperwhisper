@@ -9,22 +9,36 @@ class UnfoldPageRoute<T> extends PageRouteBuilder<T> {
   final Widget page;
   final Rect? sourceRect; // 源卡片的位置和大小
   final Color? backgroundColor;
+  final VoidCallback? onAnimationComplete; // 动画完成回调（用于懒加载优化）
+  final bool usePerformanceMode; // 是否启用性能模式（针对长日记）
+
 
   UnfoldPageRoute({
     required this.page,
     this.sourceRect,
     this.backgroundColor,
+    this.onAnimationComplete,
+    this.usePerformanceMode = false,
   }) : super(
           pageBuilder: (context, animation, secondaryAnimation) => page,
-          transitionDuration: const Duration(milliseconds: 800), // Slower: 800ms
-          reverseTransitionDuration: const Duration(milliseconds: 700),
+          // 性能模式下缩短动画时长 (550ms vs 800ms)
+          transitionDuration: Duration(milliseconds: usePerformanceMode ? 550 : 800), 
+          reverseTransitionDuration: Duration(milliseconds: usePerformanceMode ? 500 : 700),
           opaque: false,
           barrierColor: Colors.transparent,
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            // 监听动画状态，完成时触发回调
+            animation.addStatusListener((status) {
+              if (status == AnimationStatus.completed && onAnimationComplete != null) {
+                onAnimationComplete();
+              }
+            });
+            
             return _UnfoldTransition(
               animation: animation,
               sourceRect: sourceRect,
               backgroundColor: backgroundColor,
+              usePerformanceMode: usePerformanceMode,
               child: child,
             );
           },
@@ -35,12 +49,14 @@ class _UnfoldTransition extends StatelessWidget {
   final Animation<double> animation;
   final Rect? sourceRect;
   final Color? backgroundColor;
+  final bool usePerformanceMode;
   final Widget child;
 
   const _UnfoldTransition({
     required this.animation,
     required this.sourceRect,
     required this.backgroundColor,
+    this.usePerformanceMode = false,
     required this.child,
   });
 
@@ -134,7 +150,12 @@ class _UnfoldTransition extends StatelessWidget {
                     opacity: opacity,
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(
-                        _lerpDouble(12, 0, progress), // 圆角渐变消失
+                        // 智能分级策略：
+                        // 性能模式（长日记）：全程固定圆角，利用 Raster Cache
+                        // 全特效模式（短日记）：动态渐变圆角，追求极致视觉
+                        usePerformanceMode 
+                            ? (progress >= 0.99 ? 0 : 12.0)
+                            : _lerpDouble(12, 0, progress), 
                       ),
                       // 核心修复：使用 manual Transform + OverflowBox 替代 FittedBox
                       // 更加稳健，避免 'scaleX.isFinite' 断言错误
