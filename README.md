@@ -4,116 +4,113 @@
 
 # 纸语 PaperWhisper 📖
 
-一款优雅的桌面日记应用,专注于书写体验与视觉美学。
+> 一款优雅的拟物风日记应用。
 
-## ✨ 特性
+**纸语 (Paper Whisper)** 是一款基于 Flutter 重构的跨平台日记应用（支持 Windows 和 Android）。它致力于通过极致的**拟物化设计 (Skeuomorphism)**，还原真实物理世界的书写体验，让记录生活变得更加温暖和有触感。
 
-### 🎨 精美主题
-- **默认主题** - 经典木质纹理,温暖舒适
-- **午夜星尘** - 深邃夜空,星光点点
-- **海底花海** - 粉紫渐变,花瓣飘落,梦幻轻盈
+## ✨ 核心特性
 
-### 📝 强大功能
-- **Markdown支持** - 实时预览,格式自由
-- **天气心情** - 记录当天天气和心情状态
-- **图片导出** - 将日记导出为精美图片
-- **主题持久化** - 保存您喜欢的主题设置
-- **全文搜索** - 快速查找历史日记
+### 🎨 极致拟物
+- **真实材质**: 精细打磨的木纹、纸张纹理、皮革质感，拒绝扁平化，回归真实。
+- **光影交互**: 细腻的阴影、内阴影和高光处理，按钮和卡片具有真实的按压反馈。
+- **流畅动画**: 包含书籍翻页、磁带转动、旋钮调节等符合物理直觉的微交互动画。
 
-### 🏗️ 技术特点
-- 拟物化设计,毛玻璃效果
-- 流畅动画,细腻交互
-- 单文件打包,开箱即用
-- 数据本地存储,隐私安全
+### 📝 双模记录
+- **随心记 (Moments)** 📸:
+  - 类似聊天界面的轻量级记录方式。
+  - **磁带录音**: 独特的磁带交互 UI，支持语音录制与回放。
+  - 支持图文混排，快速捕捉生活瞬间。
+- **专注写作 (Diary)** 🖋️:
+  - 沉浸式的长文写作体验。
+  - **书籍翻页**: 逼真的 3D 翻页效果，模拟真实日记本的阅读感受。
+  - 支持 Markdown 实时预览。
+
+### ☁️ 数据同步
+- **WebDAV 支持**: 内置 WebDAV 客户端，支持坚果云等第三方云服务。
+- **数据自主**: 所有数据存储在本地或用户自己的云盘中，隐私完全掌握在自己手中。
+
+### 🛠️ 更多功能
+- **多主题**: 提供“海底花海”、“午夜星尘”等多种精美拟物主题。
+- **隐私锁**: 支持密码保护，守护你的秘密。
+- **全文搜索**: 快速检索历史日记和随心记。
+- **跨平台**: 完美适配 Windows 桌面端与 Android 移动端。
+
+## 🏗️ 技术栈
+
+本项目使用 Flutter 进行开发，核心依赖包括：
+
+- **UI 框架**: Flutter (Dart)
+- **状态管理**: Provider
+- **动画**: `simple_animations` (自定义补间动画)
+- **数据存储**: `sqflite` (本地数据库), `shared_preferences`
+- **网络与同步**: `webdav_client` (WebDAV 协议), `http`
+- **多媒体**: `audioplayers` (音频播放), `record` (录音)
+- **其他**: `flutter_markdown` (Markdown 渲染), `intl` (国际化)
 
 ## 🚀 快速开始
 
-### 直接使用
-1. 下载`app.exe`
-2. 双击运行
-3. 开始书写
+### 环境要求
+- Flutter SDK 3.7.0+
+- Dart SDK 3.0.0+
+- Windows 10/11 或 Android 环境
 
-### 从源码运行
+### 运行项目
 
-**环境要求**:
-- Python 3.12+
-- Windows 10/11
+1. **克隆项目**
+   ```bash
+   git clone https://github.com/your-repo/paperwhisper.git
+   cd paperwhisper
+   ```
 
-**安装依赖**:
+2. **进入 Flutter 目录**
+   ```bash
+   cd paper_whisper_flutter
+   ```
+
+3. **安装依赖**
+   ```bash
+   flutter pub get
+   ```
+
+4. **运行应用**
+   ```bash
+   # Windows
+   flutter run -d windows
+
+   # Android (需连接设备或启动模拟器)
+   flutter run -d android
+   ```
+
+### 打包构建
+
 ```bash
-pip install flask pywebview pythonnet
+# 构建 Windows 安装包
+flutter build windows
+
+# 构建 Android APK
+flutter build apk --release
 ```
 
-**启动应用**:
-```bash
-python app.py
-```
-
-## 📦 打包
-
-```bash
-pip install pyinstaller
-pyinstaller app.spec
-```
-
-打包后的可执行文件位于`dist/app.exe`
-
-## 📁 项目结构
+## 📁 目录结构 (Flutter)
 
 ```
-MyDiary/
-├── app.py              # 主程序
-├── app.spec            # PyInstaller配置
-├── icon.svg            # 应用图标(矢量源文件)
-├── icon.png            # 应用图标(PNG格式)
-├── templates/
-│   └── index.html      # 前端页面
-├── static/             # 静态资源(如有)
-├── diary_data/         # 日记数据目录(运行后自动创建)
-├── exports/            # 导出图片目录(运行后自动创建)
-└── README.md           # 项目说明
+paper_whisper_flutter/
+├── lib/
+│   ├── config/         # 应用配置 (主题、常量)
+│   ├── models/         # 数据模型 (Diary, Moment, User)
+│   ├── pages/          # 页面视图 (HomePage, DiaryPage, MomentsPage)
+│   ├── providers/      # 状态管理 (ThemeProvider, SyncProvider)
+│   ├── services/       # 核心服务 (DatabaseService, WebDavService)
+│   ├── utils/          # 工具类
+│   ├── widgets/        # 通用组件 (拟物按钮, 卡片, 输入框)
+│   └── main.dart       # 入口文件
+├── assets/             # 静态资源 (图片, 字体, 材质贴图)
+└── pubspec.yaml        # 项目依赖配置
 ```
-
-## 🛠️ 技术栈
-
-- **后端**: Flask (Python)
-- **前端**: HTML + CSS + JavaScript
-- **桌面**: pywebview
-- **打包**: PyInstaller
-
-## 📸 应用截图
-
-### 主题风格
-
-**经典木纹** - 深色圆木,温润如玉
-![经典木纹主题](screenshots/经典木纹.png)
-
-**时光旧物** - 泛黄羊皮,怀旧岁月
-![时光旧物主题](screenshots/时光旧物.png)
-
-**海底花海** - 深邃梦境,繁花相拥
-![海底花海主题](screenshots/海底花海.png)
-
-**午夜星尘** - 静谧深夜,独处时光
-![午夜星尘主题](screenshots/午夜星尘.png)
-
-### 功能特性
-
-**Markdown 支持** - 实时预览,格式自由
-![Markdown支持](screenshots/markdown支持.png)
 
 ## 📄 许可证
 
-MIT License
-
-## 🤝 贡献
-
-欢迎提交Issue和Pull Request!
-
-## 📝 版本历史
-
-查看 [VERSION.md](VERSION.md) 了解详细更新记录
+[MIT License](LICENSE)
 
 ---
-
-**Made with ❤️**
+**Made with ❤️ by Lingshi**
