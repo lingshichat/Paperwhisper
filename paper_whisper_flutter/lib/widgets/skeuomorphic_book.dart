@@ -227,8 +227,8 @@ class SkeuomorphicBook extends StatelessWidget {
   /// 获取封面背景颜色
   Color _getCoverBackgroundColor(String theme, Color primaryColor) {
     if (theme == AppTheme.themeSeaFlower) {
-      // 海底花海：浅白色半透明，更明显
-      return const Color(0xFFFFFFFF).withOpacity(0.35);
+      // 海底花海：亮白色，微透磨砂质感
+      return const Color(0xFFFFFFFF).withOpacity(0.85);
     } else if (theme == AppTheme.themeMidnight) {
       // 午夜星尘：深色半透明
       return const Color(0xFF0D1117).withOpacity(0.9);

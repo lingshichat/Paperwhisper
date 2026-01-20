@@ -633,8 +633,7 @@ class _DiaryListPageState extends State<DiaryListPage> {
 
     return Column(
       children: [
-        // Mobile Header
-        if (isMobile)
+        // Mobile Header (Now also for Desktop, but without Menu button)
            Builder(
              builder: (scaffoldContext) {
                final headerColors = AppTheme.getMobileHeaderColors(theme);
@@ -689,10 +688,14 @@ class _DiaryListPageState extends State<DiaryListPage> {
                          : Row(
                              key: const ValueKey('title_bar'),
                              children: [
-                               IconButton(
-                                 icon: Icon(Icons.menu, color: headerColors['iconColor']),
-                                 onPressed: () => Scaffold.of(scaffoldContext).openDrawer(),
-                               ),
+                               if (isMobile)
+                                 IconButton(
+                                   icon: Icon(Icons.menu, color: headerColors['iconColor']),
+                                   onPressed: () => Scaffold.of(scaffoldContext).openDrawer(),
+                                 )
+                               else
+                                 const SizedBox(width: 16), // Desktop spacer
+
                                 Expanded(
                                   child: GestureDetector(
                                     onTap: () async {
@@ -760,6 +763,7 @@ class _DiaryListPageState extends State<DiaryListPage> {
                return headerContent;
              },
            ),
+
 
         // List with Continuous Flow
         Expanded(

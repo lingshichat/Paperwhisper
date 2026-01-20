@@ -20,11 +20,12 @@ class BookshelfPage extends StatefulWidget {
 }
 
 class _BookshelfPageState extends State<BookshelfPage> {
-  final PageController _pageController = PageController(viewportFraction: 0.85);
+  PageController? _pageController;
+  int _currentPage = 0; // Track current page to restore position on resize
 
   @override
   void dispose() {
-    _pageController.dispose();
+    _pageController?.dispose();
     super.dispose();
   }
   
@@ -35,7 +36,7 @@ class _BookshelfPageState extends State<BookshelfPage> {
     final theme = settings.currentTheme;
 
     return Scaffold(
-      extendBodyBehindAppBar: true, // Allow background to extend behind AppBar
+      extendBodyBehindAppBar: true, 
       appBar: AppBar(
         title: Text(
           '我的书籍', 
@@ -44,7 +45,10 @@ class _BookshelfPageState extends State<BookshelfPage> {
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.transparent, 
-        // Ensure icon color adapts to theme if needed, or stick to default themes
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: Stack(
         children: [
@@ -55,79 +59,118 @@ class _BookshelfPageState extends State<BookshelfPage> {
           if (theme == AppTheme.themeSeaFlower) const PetalRainWidget(),
           if (theme == AppTheme.themeMidnight) const StarrySkyWidget(),
           
-          // 3. Carousel Content
-          Consumer<DiaryProvider>(
-            builder: (context, provider, child) {
-              final grouped = provider.getEntriesGroupedByYearMonth();
-              final years = grouped.keys.toList();
+          // 3. Carousel Content with Responsive Layout
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final double width = constraints.maxWidth;
+              final double height = constraints.maxHeight;
               
-              final currentYear = DateTime.now().year;
-              if (!years.contains(currentYear)) {
-                 years.insert(0, currentYear);
+              // Responsive Logic
+              // 1. Width Base: 85% of screen width
+              double targetBookWidth = width * 0.85;
+              
+              // 2. Max Width Constraint: 420px (Prevent oversized books on desktop/large tablets)
+              if (targetBookWidth > 420) {
+                 targetBookWidth = 420;
+              }
+              
+              // 3. Height Constraint: Ensure it fits vertically
+              // Book Ratio = 0.7 (Width / Height) => Height = Width / 0.7
+              // We want Book Height <= height * 0.8 (Leave 20% vertical buffer)
+              // So: Width / 0.7 <= height * 0.8  =>  Width <= height * 0.8 * 0.7
+              final double maxHeightBasedWidth = height * 0.8 * 0.7;
+              if (targetBookWidth > maxHeightBasedWidth) {
+                 targetBookWidth = maxHeightBasedWidth;
+              }
+              
+              // Calculate viewport fraction
+              // We add a small margin (e.g. 1.1x) to allow some spacing between items
+              double fraction = (targetBookWidth * 1.1) / width;
+              // Clamp fraction to be safe
+              fraction = fraction.clamp(0.2, 0.9);
+              
+              // Re-initialize controller if fraction changes significantly
+              if (_pageController == null || (_pageController!.viewportFraction - fraction).abs() > 0.01) {
+                 final oldPage = _pageController?.page ?? _currentPage.toDouble();
+                 _pageController?.dispose();
+                 _pageController = PageController(viewportFraction: fraction, initialPage: oldPage.round());
               }
 
-              return PageView.builder(
-                controller: _pageController,
-                itemCount: years.length,
-                physics: const BouncingScrollPhysics(),
-                itemBuilder: (context, index) {
-                  final year = years[index];
-                  final title = provider.getBookTitle(year);
-                  final subtitle = provider.getBookSubtitle(year);
-                  final coverPath = provider.getBookCoverPath(year);
+              return Consumer<DiaryProvider>(
+                builder: (context, provider, child) {
+                  final grouped = provider.getEntriesGroupedByYearMonth();
+                  final years = grouped.keys.toList();
                   
-                  return Center(
-                    child: AspectRatio(
-                      aspectRatio: 0.7, // Pleasant book/card ratio
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
-                        child: Hero(
-                          tag: 'book_cover_$year',
-                          child: SkeuomorphicBook(
-                            year: year,
-                            title: title,
-                            subtitle: subtitle,
-                            coverImagePath: coverPath,
-                            onTap: () {
-                               // First, pop until we're back to the root DiaryListPage
-                               Navigator.popUntil(context, (route) => route.isFirst);
-                               // Then push the directory
-                               Navigator.push(
-                                 context,
-                                 SmoothCoverPageRoute(page: BookDirectoryPage(year: year)),
-                               );
-                            },
-                            onMenuAction: (action) async {
-                              switch (action) {
-                                case 'edit_cover':
-                                  final ImagePicker picker = ImagePicker();
-                                  final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-                                  if (image != null) {
-                                     provider.setBookInfo(year, coverPath: image.path);
+                  final currentYear = DateTime.now().year;
+                  if (!years.contains(currentYear)) {
+                     years.insert(0, currentYear);
+                  }
+
+                  return PageView.builder(
+                    controller: _pageController,
+                    itemCount: years.length,
+                    physics: const BouncingScrollPhysics(),
+                    onPageChanged: (index) {
+                      _currentPage = index;
+                    },
+                    itemBuilder: (context, index) {
+                      final year = years[index];
+                      final title = provider.getBookTitle(year);
+                      final subtitle = provider.getBookSubtitle(year);
+                      final coverPath = provider.getBookCoverPath(year);
+                      
+                      return Center(
+                        child: SizedBox(
+                          width: targetBookWidth,
+                          child: AspectRatio(
+                            aspectRatio: 0.7, // Pleasant book/card ratio
+                            child: Hero(
+                              tag: 'book_cover_$year',
+                              child: SkeuomorphicBook(
+                                year: year,
+                                title: title,
+                                subtitle: subtitle,
+                                coverImagePath: coverPath,
+                                onTap: () {
+                                   Navigator.popUntil(context, (route) => route.isFirst);
+                                   Navigator.push(
+                                     context,
+                                     SmoothCoverPageRoute(page: BookDirectoryPage(year: year)),
+                                   );
+                                },
+                                onMenuAction: (action) async {
+                                  switch (action) {
+                                    case 'edit_cover':
+                                      final ImagePicker picker = ImagePicker();
+                                      final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+                                      if (image != null) {
+                                         provider.setBookInfo(year, coverPath: image.path);
+                                      }
+                                      break;
+                                    case 'edit_title':
+                                      _showEditTitleDialog(context, provider, year, title, subtitle);
+                                      break;
+                                    case 'reset_cover':
+                                      provider.resetBookInfo(year, cover: true);
+                                      break;
+                                    case 'reset_title':
+                                      provider.resetBookInfo(year, title: true);
+                                      break;
+                                    case 'reset_subtitle':
+                                      provider.resetBookInfo(year, subtitle: true);
+                                      break;
                                   }
-                                  break;
-                                case 'edit_title':
-                                  _showEditTitleDialog(context, provider, year, title, subtitle);
-                                  break;
-                                case 'reset_cover':
-                                  provider.resetBookInfo(year, cover: true);
-                                  break;
-                                case 'reset_title':
-                                  provider.resetBookInfo(year, title: true);
-                                  break;
-                                case 'reset_subtitle':
-                                  provider.resetBookInfo(year, subtitle: true);
-                                  break;
-                              }
-                            },
+                                },
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                    ),
+                      );
+                    },
                   );
                 },
               );
-            },
+            }
           ),
         ],
       ),
