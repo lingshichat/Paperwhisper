@@ -22,7 +22,10 @@ else {
     Write-Error "❌ 无法从 pubspec.yaml 提取版本号！"
 }
 
+
 $ZipName = "paper_whisper_flutter_windows_$Version.zip"
+$ExeName = "PaperWhisper_Setup_$Version.exe"
+
 $BuildDir = "build\windows\x64\runner\Release"
 $ReleasesDir = "..\releases\builds"
 
@@ -42,16 +45,62 @@ if (Test-Path $ZipPath) {
 # 压缩 Release 文件夹内容到 Zip
 Compress-Archive -Path "$BuildDir\*" -DestinationPath $ZipPath -Force
 
+Write-Host "💿 [2.5/4] 正在编译 Inno Setup 安装包..." -ForegroundColor Cyan
+$ISCC = "ISCC.exe" # 假设已添加到环境变量
+$IssFile = "installers\paper_whisper.iss"
+
+# 检查 ISCC 是否可用
+$ISCCPath = "ISCC.exe"
+if (-not (Get-Command $ISCCPath -ErrorAction SilentlyContinue)) {
+    # 尝试常用路径 (Fallback)
+    $FallbackPath = "D:\Softwares\Inno Setup 6\ISCC.exe"
+    if (Test-Path $FallbackPath) {
+        $ISCCPath = $FallbackPath
+        Write-Host "⚠️ PATH 中未找到 ISCC，使用硬编码路径: $ISCCPath" -ForegroundColor Yellow
+    }
+    else {
+        Write-Warning "⚠️ 未找到 ISCC.exe，跳过安装包生成！请确保 Inno Setup 已安装并添加到 PATH。"
+        $ISCCPath = $null
+    }
+}
+
+if ($ISCCPath) {
+    & $ISCCPath "/DMyAppVersion=$Version" $IssFile | Out-Null
+}
+
+
+
 Write-Host "☁️ [3/4] 正在上传 $ZipName 到 R2..." -ForegroundColor Cyan
 
-# 1. 上传存档版
+# 1. 上传存档版 (Zip)
 rclone copy "$ZipPath" "$R2Remote`:$BucketName/Windows/" --progress
-
-# 2. 上传最新版 (重命名为 latest.zip)
+# 2. 上传最新版 (Zip)
 rclone copyto "$ZipPath" "$R2Remote`:$BucketName/Windows/latest.zip" --progress
 
+$ExePath = Join-Path $ReleasesDir $ExeName
+# 给予文件系统一点缓冲时间，并显式检查
+Start-Sleep -Seconds 1
+
+Write-Host "🔎 正在检查安装包: $ExePath" -ForegroundColor Gray
+
+if (Test-Path $ExePath) {
+    Write-Host "✅ 找到安装包，准备上传..." -ForegroundColor Green
+    
+    # 3. 上传安装包 (Exe)
+    Write-Host "☁️ [3.1/4] 上传安装包: $ExeName" -ForegroundColor Cyan
+    rclone copy "$ExePath" "$R2Remote`:$BucketName/Windows/" --progress
+    
+    # 4. 上传最新安装包 (Exe)
+    Write-Host "☁️ [3.2/4] 更新 Latest 指针: PaperWhisper_Setup_latest.exe" -ForegroundColor Cyan
+    rclone copyto "$ExePath" "$R2Remote`:$BucketName/Windows/PaperWhisper_Setup_latest.exe" --progress
+} else {
+    Write-Error "❌ 未找到安装包文件: $ExePath"
+}
+
 Write-Host "✅ [4/4] 发布成功！" -ForegroundColor Green
-Write-Host "⬇️ 最新版: $Domain/Windows/latest.zip"
+Write-Host "⬇️ 最新版 (Zip): $Domain/Windows/latest.zip"
+Write-Host "⬇️ 最新版 (Exe): $Domain/Windows/PaperWhisper_Setup_latest.exe"
 Write-Host "📦 历史存档: $Domain/Windows/$ZipName"
 Write-Host ""
-Write-Host "🔔 别忘了手动把 Zip 拖到百度网盘备份文件夹哦！" -ForegroundColor Yellow
+Write-Host "🔔 别忘了手动把 Zip/Exe 拖到百度网盘备份文件夹哦！" -ForegroundColor Yellow
+
