@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/diary_provider.dart';
@@ -9,7 +10,9 @@ import '../widgets/update_dialog.dart';
 import 'diary_list_page.dart';
 import 'intro_page.dart';
 import 'moments_page.dart';
-import '../providers/settings_provider.dart'; // Ensure provider is imported
+import '../providers/settings_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../widgets/privacy_agreement_dialog.dart';
 
 /// 启动屏：等待数据预加载完成后再导航到主页/引导页
 /// 同时预热字体、shader 和网络请求，避免首次交互卡顿
@@ -29,6 +32,36 @@ class _SplashPageState extends State<SplashPage> {
   }
 
   Future<void> _initAndNavigate() async {
+    // 0. 检查是否同意过用户协议
+    final prefs = await SharedPreferences.getInstance();
+    final bool agreed = prefs.getBool('privacy_agreed') ?? false;
+
+    if (!agreed && mounted) {
+      // 显示协议弹窗
+      final result = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => PrivacyAgreementDialog(
+          onAgree: () {
+            Navigator.of(context).pop(true);
+          },
+          onDisagree: () {
+            Navigator.of(context).pop(false);
+          },
+        ),
+      );
+
+      if (result == true) {
+        await prefs.setBool('privacy_agreed', true);
+      } else {
+        // 退出应用
+        await SystemChannels.platform.invokeMethod('SystemNavigator.pop');
+        return;
+      }
+    }
+
+    if (!mounted) return;
+
     final diaryProvider = context.read<DiaryProvider>();
     
     // 1. 并行执行预热任务，最多等待 2.5 秒（加上过渡动画约 3 秒）
