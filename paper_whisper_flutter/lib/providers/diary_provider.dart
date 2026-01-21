@@ -45,8 +45,8 @@ class DiaryProvider with ChangeNotifier {
       _debugPath = _service.currentDataPath;
       _entries = await _service.getEntries();
       
-      // Sort Ascending (Chronological: Oldest -> Newest)
-      _entries.sort((a, b) => a.dateString.compareTo(b.dateString));
+      // Sort Descending (Reverse Chronological: Newest -> Oldest)
+      _entries.sort((a, b) => b.dateString.compareTo(a.dateString));
       
       _buildFlatList();
     } catch (e) {

@@ -13,7 +13,8 @@ import 'book_directory_page.dart';
 import '../widgets/skeuomorphic_dialog.dart';
 
 class BookshelfPage extends StatefulWidget {
-  const BookshelfPage({super.key});
+  final int? initialYear;
+  const BookshelfPage({super.key, this.initialYear});
 
   @override
   State<BookshelfPage> createState() => _BookshelfPageState();
@@ -91,9 +92,10 @@ class _BookshelfPageState extends State<BookshelfPage> {
               
               // Re-initialize controller if fraction changes significantly
               if (_pageController == null || (_pageController!.viewportFraction - fraction).abs() > 0.01) {
-                 final oldPage = _pageController?.page ?? _currentPage.toDouble();
-                 _pageController?.dispose();
-                 _pageController = PageController(viewportFraction: fraction, initialPage: oldPage.round());
+                 // Defer controller creation to Consumer if dependent on data, 
+                 // but we can start it here if we know the page index.
+                 // Actually, we need the list of years to know the index.
+                 // So we'll delay controller creation until inside Consumer.
               }
 
               return Consumer<DiaryProvider>(
@@ -103,7 +105,28 @@ class _BookshelfPageState extends State<BookshelfPage> {
                   
                   final currentYear = DateTime.now().year;
                   if (!years.contains(currentYear)) {
-                     years.insert(0, currentYear);
+                     years.add(currentYear);
+                  }
+                  
+                  // Sort Ascending (Past -> Future)
+                  years.sort();
+
+                  // Find initial index
+                  // Use widget.initialYear if provided, otherwise default logic
+                  int targetYear = widget.initialYear ?? currentYear;
+                  int initialIndex = years.indexOf(targetYear);
+                  // If specified year not found, fallback to current year, then last year
+                  if (initialIndex == -1) {
+                     targetYear = currentYear;
+                     initialIndex = years.indexOf(currentYear);
+                  }
+                  if (initialIndex == -1) initialIndex = years.length - 1;
+                  
+                  // Initialize PageController only once or if viewport fraction changes
+                  if (_pageController == null || (_pageController!.viewportFraction - fraction).abs() > 0.01) {
+                     _currentPage = initialIndex;
+                     _pageController?.dispose();
+                     _pageController = PageController(viewportFraction: fraction, initialPage: _currentPage);
                   }
 
                   return PageView.builder(

@@ -319,7 +319,9 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   }
 
   void _save() async {
-    // 强制保存一次可能未保存的 draft? 不需要，因为我们马上要存正式文件了
+    // 1. STOP AUTO SAVE! Prevent race condition where auto-save writes draft AFTER we clear it
+    _autoSaveTimer?.cancel();
+    _hasDraftChanges = false;
     
     final provider = Provider.of<DiaryProvider>(context, listen: false);
     final newEntry = DiaryEntry(
@@ -362,6 +364,11 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
 
   void _delete() async {
     if (widget.entry == null) return;
+    
+    // STOP AUTO SAVE
+    _autoSaveTimer?.cancel();
+    _hasDraftChanges = false;
+
     final provider = Provider.of<DiaryProvider>(context, listen: false);
     final confirm = await showDialog<bool>(
       context: context,

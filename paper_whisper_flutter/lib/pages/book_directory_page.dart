@@ -73,11 +73,14 @@ class BookDirectoryPage extends StatelessWidget {
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: GestureDetector(
-          onTap: () {
-            Navigator.push(
+          onTap: () async {
+            final result = await Navigator.push(
               context,
-              SmoothCoverPageRoute(page: const BookshelfPage()),
+              SmoothCoverPageRoute(page: BookshelfPage(initialYear: year)),
             );
+            if (result != null) {
+               if (context.mounted) Navigator.pop(context, result);
+            }
           },
           child: Row(
             mainAxisSize: MainAxisSize.min,

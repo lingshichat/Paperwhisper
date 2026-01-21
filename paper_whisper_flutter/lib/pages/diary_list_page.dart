@@ -53,27 +53,38 @@ class _DiaryListPageState extends State<DiaryListPage> with WidgetsBindingObserv
   bool _isSearching = false;
   
   // Filter and Navigation
-  late int _filterYear;
+  // Filter and Navigation
+  // late int _filterYear; // Removed strict filter
+  int _displayYear = DateTime.now().year; // For AppBar display
   final ItemScrollController _itemScrollController = ItemScrollController();
   final ItemPositionsListener _itemPositionsListener = ItemPositionsListener.create();
   
   // Cache for responsive layout
   List<Widget> _uiItems = [];
   Map<String, int> _monthTargetMap = {};
+  List<int> _itemYearMap = []; // Map UI item index to Year
   
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _filterYear = widget.initialYear ?? DateTime.now().year;
+    // _filterYear = widget.initialYear ?? DateTime.now().year; 
+    _displayYear = widget.initialYear ?? DateTime.now().year;
+
+    _itemPositionsListener.itemPositions.addListener(_onScrollChanged);
     
     _checkAndroidPermissions();
     _checkAndShowAnnouncement();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkRemoteUpdate();
       Provider.of<DiaryProvider>(context, listen: false).loadEntries().then((_) {
-        if (widget.initialMonth != null) {
-          _scrollToMonth(_filterYear, widget.initialMonth!);
+        if (widget.initialYear != null && widget.initialMonth != null) {
+          _scrollToMonth(widget.initialYear!, widget.initialMonth!);
+        } else if (widget.initialYear != null) {
+           // Scroll to the first month of that year if only year is provided
+           // Finding the "first" (which might be Dec or Jan depending on sort) month logic can be complex
+           // Simpler: Scroll to the start of that year's block
+           _scrollToYear(widget.initialYear!);
         }
       });
     });
@@ -81,8 +92,28 @@ class _DiaryListPageState extends State<DiaryListPage> with WidgetsBindingObserv
   
   @override
   void dispose() {
+    _itemPositionsListener.itemPositions.removeListener(_onScrollChanged);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  void _onScrollChanged() {
+    final positions = _itemPositionsListener.itemPositions.value;
+    if (positions.isEmpty) return;
+    
+    // Find top-most visible item
+    // items are not always sorted by index in the 'positions' iterable
+    final sorted = positions.toList()..sort((a,b) => a.index.compareTo(b.index));
+    final firstIndex = sorted.first.index;
+    
+    if (firstIndex >= 0 && firstIndex < _itemYearMap.length) {
+       final year = _itemYearMap[firstIndex];
+       if (year != _displayYear) {
+         setState(() {
+           _displayYear = year;
+         });
+       }
+    }
   }
 
   @override
@@ -108,12 +139,67 @@ class _DiaryListPageState extends State<DiaryListPage> with WidgetsBindingObserv
 
   void _scrollToMonth(int year, int month) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_itemScrollController.isAttached) return; // Safety check
+      
       final key = '${year}_$month';
       if (_monthTargetMap.containsKey(key)) {
         final index = _monthTargetMap[key]!;
         _itemScrollController.jumpTo(index: index, alignment: 0.0);
+      } else {
+         debugPrint('Navigation Warning: Key $key not found. Fallback to year.');
+         _scrollToYear(year);
       }
     });
+  }
+
+
+
+  void _scrollToYear(int year) {
+    // Find the first occurrence of this year in _itemYearMap
+    // Since map is sorted (descending/ascending), fast scan is okay
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+       final index = _itemYearMap.indexOf(year);
+       if (index != -1) {
+          _itemScrollController.jumpTo(index: index, alignment: 0.0);
+       }
+    });
+  }
+
+
+
+  Future<void> _openDirectory() async {
+    int targetYear = _displayYear;
+    while (true) {
+       final result = await Navigator.push(
+          context,
+          SmoothCoverPageRoute(page: BookDirectoryPage(year: targetYear)),
+       );
+       
+       if (result == null) break; // Back button pressed
+       
+       if (result is int) {
+          debugPrint('Navigation Debug: Directory returned result: $result');
+          if (result <= 12) {
+             // It's a month
+             debugPrint('Navigation Debug: Recognized as month $result for year $targetYear');
+             
+             // Wait for transition to finish
+             await Future.delayed(const Duration(milliseconds: 300));
+             
+             _scrollToMonth(targetYear, result);
+             break; 
+          } else {
+             // It's a year (from Bookshelf)
+             targetYear = result;
+             debugPrint('Navigation Debug: Recognized as new year $targetYear. Looping...');
+             
+             // Wait for transition/rebuild
+             await Future.delayed(const Duration(milliseconds: 100));
+             _scrollToYear(targetYear);
+             // Loop continues -> Re-opens directory with new year
+          }
+       }
+    }
   }
 
   Future<void> _checkAndroidPermissions() async {
@@ -642,25 +728,10 @@ class _DiaryListPageState extends State<DiaryListPage> with WidgetsBindingObserv
          e.title.contains(_searchQuery) || e.content.contains(_searchQuery) || e.dateString.contains(_searchQuery)
       ).toList();
     } else {
+
       // Continuous Flow Mode
-      final yearEntries = diaryProvider.entries.where((e) {
-         final parts = e.dateString.split('-');
-         if (parts.isEmpty) return false;
-         final y = int.tryParse(parts[0]) ?? 0;
-         return y == _filterYear;
-      }).toList();
-      
-      int currentMonth = -1;
-      for (var entry in yearEntries) {
-         final parts = entry.dateString.split('-');
-         final m = int.tryParse(parts[1]) ?? 0;
-         
-         if (m != currentMonth) {
-            currentMonth = m;
-            rawFlatEntries.add(MonthHeader(year: _filterYear, month: currentMonth));
-         }
-         rawFlatEntries.add(entry);
-      }
+      // CURRENT: Use Provider's flat entries directly (sorted descending/Mixed)
+      rawFlatEntries = diaryProvider.flatEntries;
     }
 
     // Generate UI Layout
@@ -733,20 +804,12 @@ class _DiaryListPageState extends State<DiaryListPage> with WidgetsBindingObserv
 
                                 Expanded(
                                   child: GestureDetector(
-                                    onTap: () async {
-                                      final result = await Navigator.push(
-                                        context,
-                                        SmoothCoverPageRoute(page: BookDirectoryPage(year: _filterYear)),
-                                      );
-                                      if (result != null && result is int) {
-                                        _scrollToMonth(_filterYear, result);
-                                      }
-                                    },
+                                    onTap: _openDirectory,
                                     child: Column(
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
                                         Text(
-                                          diaryProvider.getBookTitle(_filterYear),
+                                          diaryProvider.getBookTitle(_displayYear),
                                           style: GoogleFonts.notoSerifSc(
                                             fontSize: 16,
                                             fontWeight: FontWeight.bold,
@@ -1050,6 +1113,7 @@ class _DiaryListPageState extends State<DiaryListPage> with WidgetsBindingObserv
   void _generateResponsiveLayout(List<dynamic> rawItems, double width, String theme, DiaryProvider provider) {
     _uiItems = [];
     _monthTargetMap = {};
+    _itemYearMap = [];
     
     double contentWidth = width;
     if (width > 800) contentWidth -= 300;
@@ -1060,8 +1124,17 @@ class _DiaryListPageState extends State<DiaryListPage> with WidgetsBindingObserv
     
     List<DiaryEntry> buffer = [];
 
+    // Helper to determine year of items in buffer
+    // All items in buffer should belong to one "block" typically, but let's be safe
+    // Actually, we can just use the year of the first item in buffer
+    
     void flushBuffer() {
        if (buffer.isNotEmpty) {
+          // Determine year for this row (use first item's year)
+          int rowYear = 0;
+          final parts = buffer.first.dateString.split('-');
+          if (parts.isNotEmpty) rowYear = int.tryParse(parts[0]) ?? 0;
+
           _uiItems.add(
             Padding(
               padding: const EdgeInsets.only(bottom: 30),
@@ -1077,6 +1150,7 @@ class _DiaryListPageState extends State<DiaryListPage> with WidgetsBindingObserv
               ),
             )
           );
+          _itemYearMap.add(rowYear);
           buffer = [];
        }
     }
@@ -1093,6 +1167,7 @@ class _DiaryListPageState extends State<DiaryListPage> with WidgetsBindingObserv
                 theme: theme,
              )
           );
+          _itemYearMap.add(item.year);
        } else if (item is DiaryEntry) {
           buffer.add(item);
           if (buffer.length == columnCount) flushBuffer();
