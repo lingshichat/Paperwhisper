@@ -244,7 +244,6 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
           textAlign: TextAlign.center,
           style: GoogleFonts.notoSerifSc(
             fontSize: 16,
-            color: const Color(0xFF5D4037),
             height: 1.6,
           ),
         ),
@@ -374,7 +373,6 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
            textAlign: TextAlign.center,
            style: GoogleFonts.notoSerifSc(
              fontSize: 16,
-             color: const Color(0xFF5D4037),
              height: 1.6,
            ),
         ),
@@ -426,7 +424,6 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
           textAlign: TextAlign.center,
           style: GoogleFonts.notoSerifSc(
             fontSize: 16,
-            color: const Color(0xFF5D4037),
             height: 1.6,
           ),
         ),
@@ -472,8 +469,13 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         backgroundColor: Colors.transparent, 
         body: Stack(
           children: [
+             // 1. Background
              Container(decoration: AppTheme.getBackground(theme)),
-  
+             
+             // 2. Visual Effects
+             if (isSeaFlower) const PetalRainWidget(),
+             if (theme == AppTheme.themeMidnight) const StarrySkyWidget(),
+
              if (!_isCaptureMode)
                Column(
                  children: [

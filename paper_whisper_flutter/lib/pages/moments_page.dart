@@ -15,9 +15,12 @@ import '../providers/sync_provider.dart'; // Added
 import '../config/app_theme.dart'; // Added
 import '../widgets/skeuomorphic_toast.dart'; // Added
 import '../widgets/skeuomorphic_dialog.dart'; // Added
+import 'package:flutter_svg/flutter_svg.dart'; // Added
+
 
 import '../providers/diary_provider.dart'; // Added
 import '../widgets/skeuomorphic_search_bar.dart'; // Added
+import '../widgets/visual_effects.dart'; // Added for petal effects
 
 class MomentsPage extends StatefulWidget {
   const MomentsPage({super.key});
@@ -49,6 +52,9 @@ class _MomentsPageState extends State<MomentsPage> {
   
   // Focus Management
   final FocusNode _inputFocusNode = FocusNode();
+  
+  // Dynamic Input Height
+  double _inputHeight = 80.0;
 
   @override
   void initState() {
@@ -131,7 +137,7 @@ class _MomentsPageState extends State<MomentsPage> {
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
-  Future<void> _handleSend(String content, List<XFile> images, {String? audioPath, String? audioTitle}) async {
+  Future<void> _handleSend(String content, List<XFile> images, {String? audioPath, String? audioTitle, int? audioDuration}) async {
     // 1. Save images
     List<String> savedPaths = [];
     for (var img in images) {
@@ -162,6 +168,7 @@ class _MomentsPageState extends State<MomentsPage> {
       images: savedPaths,
       audioPath: savedAudioPath,
       audioTitle: audioTitle,
+      audioDuration: audioDuration,
       // Default weather/mood for quick input? Or random? Or none.
     );
     // Adjust timestamp
@@ -197,11 +204,18 @@ class _MomentsPageState extends State<MomentsPage> {
     // Show Dialog
     String title = "今日份的日记";
     String inputVal = "";
+
+    // Prepare theme-aware colors
+    final settings = Provider.of<SettingsProvider>(context, listen: false);
+    final theme = settings.currentTheme;
+    final isMidnight = theme == AppTheme.themeMidnight;
     
-    // Using SkeuomorphicDialog
-    // We need a StatefulBuilder to manage input state if we want validation or just use a controller defined outside.
-    // Dialog execution is async, so local variable capture is fine.
-    
+    final inputBg = isMidnight ? Colors.black.withOpacity(0.3) : Colors.white.withValues(alpha: 0.5);
+    final inputBorder = isMidnight ? Colors.white.withOpacity(0.1) : Colors.brown.shade300;
+    final hintColor = isMidnight ? Colors.white38 : Colors.brown.shade700;
+    final textColor = isMidnight ? Colors.white70 : Colors.brown.shade900;
+    final descColor = isMidnight ? Colors.white60 : Colors.black87;
+
     String? result = await showDialog<String>(
       context: context,
       builder: (ctx) {
@@ -212,14 +226,14 @@ class _MomentsPageState extends State<MomentsPage> {
              mainAxisSize: MainAxisSize.min,
              crossAxisAlignment: CrossAxisAlignment.start,
              children: [
-               Text('将今天的记录汇聚成篇，存入专注书写模块。', style: GoogleFonts.notoSerifSc(fontSize: 14)),
+               Text('将今天的记录汇聚成篇，存入专注书写模块。', style: GoogleFonts.notoSerifSc(fontSize: 14, color: descColor)),
                const SizedBox(height: 20),
                
                // Skeuomorphic Input Field (Simple version)
                Container(
                  decoration: BoxDecoration(
-                   color: Colors.white.withValues(alpha: 0.5),
-                   border: Border(bottom: BorderSide(color: Colors.brown.shade300, width: 2)),
+                   color: inputBg,
+                   border: Border(bottom: BorderSide(color: inputBorder, width: 2)),
                  ),
                  child: TextField(
                     autofocus: true,
@@ -228,9 +242,10 @@ class _MomentsPageState extends State<MomentsPage> {
                       hintText: '默认: 今日份的日记',
                       border: InputBorder.none,
                       contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                      labelStyle: GoogleFonts.notoSerifSc(color: Colors.brown.shade700),
+                      labelStyle: GoogleFonts.notoSerifSc(color: hintColor),
+                      hintStyle: GoogleFonts.notoSerifSc(color: hintColor.withOpacity(0.5)),
                     ),
-                    style: GoogleFonts.notoSerifSc(color: Colors.brown.shade900),
+                    style: GoogleFonts.notoSerifSc(color: textColor),
                     onChanged: (v) => inputVal = v,
                  ),
                )
@@ -530,7 +545,7 @@ class _MomentsPageState extends State<MomentsPage> {
                             }
                             
                             return ListView.builder(
-                                padding: const EdgeInsets.only(top: 20, bottom: 90), 
+                                padding: EdgeInsets.only(top: 20, bottom: _inputHeight + 20), 
                                 itemCount: moments.length,
                                 itemBuilder: (context, i) {
                                    return MomentCard(
@@ -561,8 +576,14 @@ class _MomentsPageState extends State<MomentsPage> {
              backgroundColor: Colors.transparent, 
              body: Stack(
                children: [
-                 // Global Background
+                 // 1. Background
                  Container(decoration: AppTheme.getBackground(theme)),
+                 
+                 // 2. Visual Effects
+                 if (isSeaFlower) const PetalRainWidget(),
+                 if (isMidnight) const StarrySkyWidget(),
+                 
+                 // 3. Main Layout
                  Row(
                    children: [
                       const SizedBox(width: 300, child: SidebarWidget()),
@@ -658,10 +679,14 @@ class _MomentsPageState extends State<MomentsPage> {
               
               return Stack(
                 children: [
-                  // 0. Background (Always Rendered)
+                  // 0. Background
                   Positioned.fill(
                     child: Container(decoration: AppTheme.getBackground(theme))
                   ),
+                  
+                  // 0.5. Visual Effects
+                  if (isSeaFlower) Positioned.fill(child: const PetalRainWidget()),
+                  if (isMidnight) Positioned.fill(child: const StarrySkyWidget()),
 
                   // 1. Main Content
                   // Use AnimatedPositioned for smooth resizing content area
@@ -698,7 +723,14 @@ class _MomentsPageState extends State<MomentsPage> {
                       bottom: bottomInset, // Will animate to this target
                       child: MomentInputWidget(
                           onSend: _handleSend, 
-                          focusNode: _inputFocusNode
+                          focusNode: _inputFocusNode,
+                          onHeightChanged: (h) {
+                             if ((_inputHeight - h).abs() > 1) { // Debounce/Throttling check
+                                WidgetsBinding.instance.addPostFrameCallback((_) {
+                                   if (mounted) setState(() => _inputHeight = h);
+                                });
+                             }
+                          },
                       ),
                     ),
                 ],
@@ -728,7 +760,7 @@ class _MomentsPageState extends State<MomentsPage> {
             )
           )
         : ListView.builder(
-            padding: const EdgeInsets.only(top: 20, bottom: 90),
+            padding: EdgeInsets.only(top: 20, bottom: _inputHeight + 20),
             itemCount: _filteredMoments.length,
             itemBuilder: (context, i) {
                return MomentCard(
@@ -787,26 +819,43 @@ class _MomentsPageState extends State<MomentsPage> {
     
     final theme = Provider.of<SettingsProvider>(context, listen: false).currentTheme;
     final bool isSeaFlower = theme == AppTheme.themeSeaFlower;
+    final bool isMidnight = theme == AppTheme.themeMidnight;
     
-    Color iconColor;
     Color messageColor;
+    Color blendColor;
+    final bool isAmber = theme == AppTheme.themeAmberLens;
     
     if (isSeaFlower) {
-       // 海底花海 (浅色背景)：使用深粉紫色，提高对比度
-       iconColor = const Color(0xFF880E4F).withOpacity(0.3); 
-       messageColor = const Color(0xFF880E4F).withOpacity(0.6); 
+       // 海底花海：深粉色，更高对比度
+       messageColor = const Color(0xFF880E4F).withValues(alpha: 0.85);
+       blendColor = const Color(0xFFF06292); // Pink blend
+    } else if (isMidnight) {
+       // 午夜星尘：更亮的白色
+       messageColor = Colors.white.withValues(alpha: 0.7);
+       blendColor = const Color(0xFF7986CB); // Indigo blend
+    } else if (isAmber) {
+       // 琥珀镜头：暖灰色
+       messageColor = const Color(0xFFBDBDBD);
+       blendColor = const Color(0xFF8D6E63);
     } else {
-       // 其他深色背景 (Vintage, Midnight, Amber)：使用半透明白色
-       iconColor = Colors.white.withOpacity(0.2);
-       messageColor = Colors.white.withOpacity(0.3);
+       // Vintage：浅米色，与背景形成对比
+       messageColor = const Color(0xFFD7CCC8);
+       blendColor = const Color(0xFF8D6E63); // Brown blend
     }
 
     return Center(
       child: Column(
          mainAxisSize: MainAxisSize.min,
          children: [
-           Icon(Icons.edit_note, size: 64, color: iconColor),
-           const SizedBox(height: 16),
+           Opacity(
+             opacity: isMidnight ? 0.8 : 0.9,
+             child: SvgPicture.asset(
+               'assets/illustrations/undraw_fall_zh0m.svg',
+               width: 200,
+               // 移除 colorFilter 保持 SVG 原始透明背景
+             ),
+           ),
+           const SizedBox(height: 24),
            Text(
              isToday ? "这一天不仅是空白，更是无限可能" : "这天没有留下记录", 
              style: GoogleFonts.notoSerifSc(fontSize: 14, color: messageColor)

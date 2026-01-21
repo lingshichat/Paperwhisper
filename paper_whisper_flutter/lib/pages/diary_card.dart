@@ -223,13 +223,15 @@ class _DiaryCardState extends State<DiaryCard> {
     Widget containerBody;
 
     if (isSeaFlower) {
-       // 恢复高斯模糊 (用户要求保留视觉效果)
-       bgColor = Colors.white.withValues(alpha: 0.35);
+       // 优化：增加背景不透明度，降低模糊强度，减少滚动时的视觉跳变
+       // 使用更高的不透明度让背景填充更"实"，减少对模糊的依赖
+       bgColor = Colors.white.withValues(alpha: 0.65);
 
        containerBody = ClipRRect(
          borderRadius: BorderRadius.circular(16),
          child: BackdropFilter(
-           filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+           // 降低模糊强度：sigma 20 -> 8，性能更好且滚动时变化更小
+           filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
            child: AnimatedContainer(
              duration: const Duration(milliseconds: 300),
              curve: Curves.easeOut,

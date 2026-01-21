@@ -109,11 +109,11 @@ class BookDirectoryPage extends StatelessWidget {
       body: Stack(
         children: [
           // 1. Background
-          Container(decoration: AppTheme.getBackground(theme)),
+          // Container(decoration: AppTheme.getBackground(theme)), // GLOBALIZED
           
           // 2. Visual Effects
-          if (theme == AppTheme.themeSeaFlower) const PetalRainWidget(),
-          if (theme == AppTheme.themeMidnight) const StarrySkyWidget(),
+          // if (theme == AppTheme.themeSeaFlower) const PetalRainWidget(), // GLOBALIZED
+          // if (theme == AppTheme.themeMidnight) const StarrySkyWidget(), // GLOBALIZED
           
           // 3. Content - Single Paper Sheet
           Center(
@@ -255,6 +255,16 @@ class BookDirectoryPage extends StatelessWidget {
   void _showEditMonthDialog(BuildContext context, DiaryProvider provider, int year, int month, String currentTitle) {
     final titleController = TextEditingController(text: currentTitle.contains('月') ? '' : currentTitle);
 
+    final settings = Provider.of<SettingsProvider>(context, listen: false);
+    final theme = settings.currentTheme;
+    final isMidnight = theme == AppTheme.themeMidnight;
+
+    final textColor = isMidnight ? Colors.white70 : Colors.black87;
+    final hintColor = isMidnight ? Colors.white30 : Colors.black38;
+    final borderColor = isMidnight ? Colors.white24 : Colors.black26;
+    final focusedBorderColor = isMidnight ? Colors.white54 : Colors.black54;
+    final iconColor = isMidnight ? Colors.white38 : Colors.black38;
+
     showDialog(
       context: context,
       builder: (ctx) => SkeuomorphicDialog(
@@ -266,22 +276,22 @@ class BookDirectoryPage extends StatelessWidget {
              const SizedBox(height: 8),
              Text(
                '为 $year年 $month月 定义一个独特的名字',
-               style: const TextStyle(color: Colors.black54, fontSize: 13),
+               style: TextStyle(color: isMidnight ? Colors.white54 : Colors.black54, fontSize: 13),
              ),
              const SizedBox(height: 16),
              TextField(
                controller: titleController,
-               style: const TextStyle(color: Colors.black87), // Ensure dark text
+               style: TextStyle(color: textColor), 
                decoration: InputDecoration(
                  labelText: '章节标题',
                  hintText: '例如：初夏、启程、邂逅',
-                 labelStyle: const TextStyle(color: Colors.black87),
-                 hintStyle: const TextStyle(color: Colors.black38),
-                 enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.black26)),
-                 focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.black54, width: 2)),
+                 labelStyle: TextStyle(color: textColor),
+                 hintStyle: TextStyle(color: hintColor),
+                 enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: borderColor)),
+                 focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: focusedBorderColor, width: 2)),
                  border: const OutlineInputBorder(),
                  suffixIcon: IconButton(
-                   icon: const Icon(Icons.clear, color: Colors.black38),
+                   icon: Icon(Icons.clear, color: iconColor),
                    onPressed: () => titleController.clear(),
                  ),
                ),

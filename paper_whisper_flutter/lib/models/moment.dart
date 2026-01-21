@@ -11,6 +11,7 @@ class Moment {
   final String? location;
   final String? audioPath; // 录音文件相对路径
   final String? audioTitle; // 录音标题
+  final int? audioDuration; // 录音时长(秒)
 
   Moment({
     required this.uuid,
@@ -22,6 +23,7 @@ class Moment {
     this.location,
     this.audioPath,
     this.audioTitle,
+    this.audioDuration,
   });
 
   factory Moment.create({
@@ -32,6 +34,7 @@ class Moment {
     String? location,
     String? audioPath,
     String? audioTitle,
+    int? audioDuration,
   }) {
     return Moment(
       uuid: const Uuid().v4(),
@@ -43,6 +46,7 @@ class Moment {
       location: location,
       audioPath: audioPath,
       audioTitle: audioTitle,
+      audioDuration: audioDuration,
     );
   }
 
@@ -57,6 +61,7 @@ class Moment {
       'location': location,
       'audioPath': audioPath,
       'audioTitle': audioTitle,
+      'audioDuration': audioDuration,
     };
   }
 
@@ -71,6 +76,7 @@ class Moment {
       location: json['location'] as String?,
       audioPath: json['audioPath'] as String?,
       audioTitle: json['audioTitle'] as String?,
+      audioDuration: json['audioDuration'] as int?,
     );
   }
   

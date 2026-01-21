@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import '../providers/settings_provider.dart';
 import '../models/diary_entry.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../config/app_theme.dart';
 import '../widgets/skeuomorphic_container.dart';
 import '../widgets/sidebar_widget.dart';
@@ -47,7 +48,7 @@ class DiaryListPage extends StatefulWidget {
   State<DiaryListPage> createState() => _DiaryListPageState();
 }
 
-class _DiaryListPageState extends State<DiaryListPage> {
+class _DiaryListPageState extends State<DiaryListPage> with WidgetsBindingObserver {
   String _searchQuery = '';
   bool _isSearching = false;
   
@@ -63,6 +64,7 @@ class _DiaryListPageState extends State<DiaryListPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _filterYear = widget.initialYear ?? DateTime.now().year;
     
     _checkAndroidPermissions();
@@ -77,6 +79,33 @@ class _DiaryListPageState extends State<DiaryListPage> {
     });
   }
   
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+       _checkPermissionAndReload();
+    }
+  }
+
+  Future<void> _checkPermissionAndReload() async {
+     if (Platform.isAndroid) {
+        if (await Permission.manageExternalStorage.isGranted) {
+           if (mounted) {
+              await Provider.of<DiaryProvider>(context, listen: false).loadEntries();
+           }
+        }
+     } else {
+        if (mounted) {
+           await Provider.of<DiaryProvider>(context, listen: false).loadEntries();
+        }
+     }
+  }
+
   void _scrollToMonth(int year, int month) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final key = '${year}_$month';
@@ -509,6 +538,7 @@ class _DiaryListPageState extends State<DiaryListPage> {
           final bool isSeaFlower = theme == AppTheme.themeSeaFlower;
           
           return Scaffold(
+            backgroundColor: Colors.transparent,
             drawerScrimColor: isSeaFlower ? Colors.transparent : Colors.black54, // 海底花海去遮罩，透出背景
             drawer: const Drawer(
               width: 300,
@@ -519,9 +549,14 @@ class _DiaryListPageState extends State<DiaryListPage> {
             // Mobile Body
             body: Stack(
               children: [
+                // 1. Background
                 Container(decoration: AppTheme.getBackground(theme)),
+                
+                // 2. Visual Effects
                 if (theme == AppTheme.themeSeaFlower) const PetalRainWidget(),
                 if (theme == AppTheme.themeMidnight) const StarrySkyWidget(),
+                
+                // 3. Content
                 contentArea,
               ],
             ),
@@ -837,15 +872,14 @@ class _DiaryListPageState extends State<DiaryListPage> {
        child: Column(
          mainAxisAlignment: MainAxisAlignment.center,
          children: [
-           // 图标
+           // SVG 插画
+           // SVG 插画
            Opacity(
-             opacity: 0.5,
-             child: Text(
-               '🕸️', 
-               style: TextStyle(
-                 fontSize: 64,
-                 color: emptyTextColor,
-               ),
+             opacity: (theme == AppTheme.themeMidnight) ? 0.8 : 0.9,
+             child: SvgPicture.asset(
+               'assets/illustrations/undraw_reading-time_gcvc.svg',
+               width: 250, 
+               // 移除 colorFilter 保持 SVG 原始透明背景
              ),
            ),
            const SizedBox(height: 20),

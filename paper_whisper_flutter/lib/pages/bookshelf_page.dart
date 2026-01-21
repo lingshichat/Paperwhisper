@@ -53,11 +53,11 @@ class _BookshelfPageState extends State<BookshelfPage> {
       body: Stack(
         children: [
           // 1. Background (Syncs with Home Page)
-          Container(decoration: AppTheme.getBackground(theme)),
+          // Container(decoration: AppTheme.getBackground(theme)), // GLOBALIZED
           
           // 2. Visual Effects
-          if (theme == AppTheme.themeSeaFlower) const PetalRainWidget(),
-          if (theme == AppTheme.themeMidnight) const StarrySkyWidget(),
+          // if (theme == AppTheme.themeSeaFlower) const PetalRainWidget(), // GLOBALIZED
+          // if (theme == AppTheme.themeMidnight) const StarrySkyWidget(), // GLOBALIZED
           
           // 3. Carousel Content with Responsive Layout
           LayoutBuilder(
@@ -181,6 +181,15 @@ class _BookshelfPageState extends State<BookshelfPage> {
     final titleController = TextEditingController(text: currentTitle);
     final subtitleController = TextEditingController(text: currentSubtitle);
     
+    final settings = Provider.of<SettingsProvider>(context, listen: false);
+    final theme = settings.currentTheme;
+    final isMidnight = theme == AppTheme.themeMidnight;
+
+    final textColor = isMidnight ? Colors.white70 : Colors.black87;
+    final hintColor = isMidnight ? Colors.white30 : Colors.black38;
+    final borderColor = isMidnight ? Colors.white24 : Colors.black26;
+    final focusedBorderColor = isMidnight ? Colors.white54 : Colors.black54;
+
     showDialog(
       context: context,
       builder: (ctx) => SkeuomorphicDialog(
@@ -192,29 +201,29 @@ class _BookshelfPageState extends State<BookshelfPage> {
              const SizedBox(height: 16),
              TextField(
                controller: titleController,
-               style: const TextStyle(color: Colors.black87), // Ensure dark text
-               decoration: const InputDecoration(
+               style: TextStyle(color: textColor), 
+               decoration: InputDecoration(
                  labelText: '主标题 (默认为"你的专属故事")',
                  hintText: '例如：我的故事',
-                 labelStyle: TextStyle(color: Colors.black87),
-                 hintStyle: TextStyle(color: Colors.black38),
-                 enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.black26)),
-                 focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.black54, width: 2)),
-                 border: OutlineInputBorder(),
+                 labelStyle: TextStyle(color: textColor),
+                 hintStyle: TextStyle(color: hintColor),
+                 enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: borderColor)),
+                 focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: focusedBorderColor, width: 2)),
+                 border: const OutlineInputBorder(),
                ),
              ),
              const SizedBox(height: 16),
              TextField(
                controller: subtitleController,
-               style: const TextStyle(color: Colors.black87), // Ensure dark text
-               decoration: const InputDecoration(
+               style: TextStyle(color: textColor), 
+               decoration: InputDecoration(
                  labelText: '副标题',
                  hintText: '例如：2026年',
-                 labelStyle: TextStyle(color: Colors.black87),
-                 hintStyle: TextStyle(color: Colors.black38),
-                 enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.black26)),
-                 focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.black54, width: 2)),
-                 border: OutlineInputBorder(),
+                 labelStyle: TextStyle(color: textColor),
+                 hintStyle: TextStyle(color: hintColor),
+                 enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: borderColor)),
+                 focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: focusedBorderColor, width: 2)),
+                 border: const OutlineInputBorder(),
                ),
              ),
              const SizedBox(height: 8),

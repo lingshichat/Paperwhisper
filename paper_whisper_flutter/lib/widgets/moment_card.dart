@@ -55,6 +55,9 @@ class _MomentCardState extends State<MomentCard> {
   @override
   void initState() {
     super.initState();
+    if (widget.moment.audioDuration != null) {
+       _audioDuration = Duration(seconds: widget.moment.audioDuration!);
+    }
     _initAudio();
   }
   
@@ -102,11 +105,12 @@ class _MomentCardState extends State<MomentCard> {
       if (await audioFile.exists()) {
           await _audioPlayer.play(DeviceFileSource(audioFile.path));
       } else {
-          SkeuomorphicToast.error(context, '音频文件丢失');
+          if (mounted) SkeuomorphicToast.error(context, '音频文件丢失');
       }
     }
   }
 
+  // ignore: unused_element
   Future<void> _captureAndSave() async {
     try {
       // 1. Show watermark

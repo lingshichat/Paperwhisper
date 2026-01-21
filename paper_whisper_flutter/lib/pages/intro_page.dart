@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:math';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../config/app_theme.dart';
@@ -63,30 +64,10 @@ class _IntroPageState extends State<IntroPage> {
     // final theme = Theme.of(context); // Not used directly, using AppTheme logic implicitly
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF9F4E6), // 还原暖色背景
       body: Stack(
         children: [
-          // 1. 全局背景 (纸张纹理 + 基础色)
-          Positioned.fill(
-            child: Container(
-              color: const Color(0xFFF4ECD8), // 基础纸张色
-              child: Opacity(
-                opacity: 0.05,
-                child: Image.asset(
-                  'assets/images/paper_texture.jpg', // Assuming this exists or using a substitute
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const SizedBox(), // Fallback if no image
-                ),
-              ),
-            ),
-          ),
-          
-          // 2. 花瓣雨特效 (只在最后一页显示)
-          if (_currentPage == _slides.length - 1)
-            const Positioned.fill(
-              child: PetalRainWidget(burst: true),
-            ),
-
-          // 3. PageView 内容
+          // 1. PageView 内容
           PageView.builder(
             controller: _pageController,
             itemCount: _slides.length,
@@ -100,7 +81,7 @@ class _IntroPageState extends State<IntroPage> {
             },
           ),
 
-          // 4. 底部指示器 (Page Indicators)
+          // 2. 底部指示器 (Page Indicators)
           Positioned(
             bottom: 40,
             left: 0,
@@ -115,8 +96,8 @@ class _IntroPageState extends State<IntroPage> {
                   height: 10,
                   decoration: BoxDecoration(
                     color: _currentPage == index
-                        ? const Color(0xFF8D6E63) // Active dot color
-                        : const Color(0xFFD7CCC8), // Inactive dot color
+                        ? const Color(0xFF8D6E63) 
+                        : const Color(0xFFD7CCC8), 
                     borderRadius: BorderRadius.circular(5),
                     boxShadow: [
                       if (_currentPage == index)
@@ -125,7 +106,7 @@ class _IntroPageState extends State<IntroPage> {
                           blurRadius: 4,
                           offset: const Offset(0, 2),
                         )
-                      else // Inactive gets inner shadow style (inset) via color simulation or simple flat
+                      else 
                          const BoxShadow(color: Colors.transparent),
                     ],
                   ),
@@ -134,8 +115,9 @@ class _IntroPageState extends State<IntroPage> {
             ),
           ),
            
-           // 5. 跳过按钮 (Skip) - Only show if not last page
-           // Skip button removed
+          // 3. 礼花特效 (只在最后一页显示)
+          if (_currentPage == _slides.length - 1)
+             const Positioned.fill(child: PetalRainWidget(burst: true)),
         ],
       ),
     );
@@ -366,3 +348,8 @@ class _EnterButtonState extends State<_EnterButton> with SingleTickerProviderSta
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// 简单的礼花/散落动画组件
+// ---------------------------------------------------------------------------
+

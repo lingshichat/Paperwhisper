@@ -10,7 +10,7 @@ import 'services/diary_service.dart';
 import 'providers/settings_provider.dart';
 import 'providers/sync_provider.dart';
 import 'pages/diary_list_page.dart';
-import 'config/app_theme.dart'; // Added missing import
+import 'config/app_theme.dart';
 import 'pages/intro_page.dart';
 import 'pages/splash_page.dart';
 import 'services/storage_service.dart';
@@ -90,6 +90,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           // 使用 AppTheme 生成的动态 Theme，包含背景色修复和自定义转场
           theme: AppTheme.getThemeData(settings.currentTheme),
           builder: (context, child) {
+            // 注意：全局效果会导致页面切换时叠加问题
+            // 所以改为让各页面自己负责渲染背景和特效
             return AnnotatedRegion<SystemUiOverlayStyle>(
               value: AppTheme.getSystemUiOverlayStyle(settings.currentTheme),
               child: child!,

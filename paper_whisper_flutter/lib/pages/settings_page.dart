@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // For PlatformException if any
 import 'package:google_fonts/google_fonts.dart';
@@ -15,6 +16,7 @@ import '../widgets/update_dialog.dart';
 import '../widgets/skeuomorphic_toast.dart';
 import '../widgets/skeuomorphic_dialog.dart';
 import '../widgets/slide_page_route.dart';
+import '../widgets/visual_effects.dart';
 import '../pages/trash_page.dart';
 import '../services/storage_service.dart';
 import 'sync_settings_page.dart';
@@ -146,12 +148,7 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
             blurRadius: 4,
           );
 
-    // 背景处理
-    Widget background = Container(
-      decoration: AppTheme.getBackground(theme),
-    );
-
-    // 毛玻璃容器
+    // Scaffold 内容
     Widget content = Scaffold(
       backgroundColor: Colors.transparent, // 让底层背景透出来
       appBar: AppBar(
@@ -173,23 +170,23 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
       ),
       body: _buildList(context, isSeaFlower, isMidnight, textColor, settings),
     );
-
-    if (isSeaFlower) {
-      return Stack(
-        children: [
-           Positioned.fill(child: background),
-           Positioned.fill(child: Container(color: Colors.white.withOpacity(0.1))),
-           Positioned.fill(child: content),
-        ],
-      );
-    } else {
-      return Stack(
-        children: [
-          Positioned.fill(child: background),
-          Positioned.fill(child: content),
-        ],
-      );
-    }
+    
+    // 返回带背景和特效的 Stack
+    return Stack(
+      children: [
+        // 1. 背景
+        Positioned.fill(
+          child: Container(decoration: AppTheme.getBackground(theme)),
+        ),
+        
+        // 2. Visual Effects
+        if (isSeaFlower) Positioned.fill(child: const PetalRainWidget()),
+        if (isMidnight) Positioned.fill(child: const StarrySkyWidget()),
+        
+        // 3. 内容
+        Positioned.fill(child: content),
+      ],
+    );
   }
 
   Widget _buildList(BuildContext context, bool isSeaFlower, bool isMidnight, Color textColor, SettingsProvider settings) {
@@ -575,7 +572,7 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => _buildGlassBottomSheet(
+      builder: (ctx) => _buildSkeuomorphicBottomSheet(
         context,
         title: '应用权限管理',
         children: [
@@ -798,14 +795,14 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => _buildGlassBottomSheet(
+      builder: (ctx) => _buildSkeuomorphicBottomSheet(
         context,
         title: '选择主题',
         children: [
-          _buildRadioItem(ctx, '复古纸张', 'default', settings.currentTheme, (val) => settings.setTheme(val)),
-          _buildRadioItem(ctx, '海底花海', 'sea_flower', settings.currentTheme, (val) => settings.setTheme(val)),
-          _buildRadioItem(ctx, '午夜星尘', 'midnight', settings.currentTheme, (val) => settings.setTheme(val)),
-          _buildRadioItem(ctx, '琥珀光圈', 'amber_lens', settings.currentTheme, (val) => settings.setTheme(val)),
+          _buildRadioItem(ctx, '复古纸张', 'default', settings.currentTheme, (val) => settings.setTheme(val), closeOnSelect: false),
+          _buildRadioItem(ctx, '海底花海', 'sea_flower', settings.currentTheme, (val) => settings.setTheme(val), closeOnSelect: false),
+          _buildRadioItem(ctx, '午夜星尘', 'midnight', settings.currentTheme, (val) => settings.setTheme(val), closeOnSelect: false),
+          _buildRadioItem(ctx, '琥珀光圈', 'amber_lens', settings.currentTheme, (val) => settings.setTheme(val), closeOnSelect: false),
         ]
       )
     );
@@ -815,7 +812,7 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => _buildGlassBottomSheet(
+      builder: (ctx) => _buildSkeuomorphicBottomSheet(
         context,
         title: '选择启动页',
         children: [
@@ -831,7 +828,7 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => _buildGlassBottomSheet(
+      builder: (ctx) => _buildSkeuomorphicBottomSheet(
         context,
         title: '用户数据管理',
         children: [
@@ -931,30 +928,114 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
     );
   }
   
-  Widget _buildGlassBottomSheet(BuildContext context, {required String title, required List<Widget> children}) {
-    const Color bgColor = Color(0xFFFAEBD7); 
-    const Color titleColor = Color(0xFF5D4037);
+  Widget _buildSkeuomorphicBottomSheet(BuildContext context, {required String title, required List<Widget> children}) {
+    final settings = Provider.of<SettingsProvider>(context, listen: false);
+    final theme = settings.currentTheme;
+
+    // --- Dialog Style Colors (Directly matching SkeuomorphicDialog) ---
+    Color bgColor;
+    Color titleColor;
+    Color tapeColor;
+    List<BoxShadow> shadows;
+    BoxBorder? border;
+
+    if (theme == AppTheme.themeSeaFlower) {
+      // Sea Flower: Solid Pink Paper
+      bgColor = const Color(0xFFFCE4EC);
+      titleColor = const Color(0xFF880E4F);
+      tapeColor = const Color(0xFFF8BBD0);
+      shadows = [const BoxShadow(color: Color.fromRGBO(173, 20, 87, 0.25), blurRadius: 20, offset: Offset(0, -5))];
+      border = Border.all(color: const Color(0xFFF48FB1), width: 1);
+    } else if (theme == AppTheme.themeMidnight) {
+      // Midnight: Solid Dark Gray
+      bgColor = const Color(0xFF161b22);
+      titleColor = const Color(0xFFe6edf3);
+      tapeColor = const Color(0xFF30363d);
+      shadows = [const BoxShadow(color: Colors.black, blurRadius: 20, offset: Offset(0, -5))];
+      border = Border.all(color: const Color(0xFF30363d), width: 1);
+    } else if (theme == AppTheme.themeAmberLens) {
+        // Amber: Solid Black/Gray
+        bgColor = const Color(0xFF1E1E1E);
+        titleColor = const Color(0xFFE0E0E0);
+        tapeColor = const Color(0xFFFF9800).withOpacity(0.5);
+        shadows = [const BoxShadow(color: Colors.black, blurRadius: 20, offset: Offset(0, -5))];
+        border = Border.all(color: const Color(0xFFFF9800).withOpacity(0.3), width: 1);
+    } else {
+      // Vintage: Solid Paper + Tape
+      bgColor = const Color(0xFFF4ECD8);
+      titleColor = const Color(0xFF5D4037);
+      tapeColor = const Color(0xD9E0E0E0);
+      shadows = [const BoxShadow(color: Color.fromRGBO(0, 0, 0, 0.2), blurRadius: 20, offset: Offset(0, -5))];
+      border = null; // No border for vintage paper look
+    }
+
     return Container(
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 10, offset: const Offset(0, -2))
-        ]
+        boxShadow: shadows,
+        border: border,
       ),
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.topCenter,
         children: [
-          Text(title, style: GoogleFonts.notoSerifSc(fontSize: 18, fontWeight: FontWeight.bold, color: titleColor)),
-          const SizedBox(height: 16),
-          Flexible(
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: children,
+          // Tape Decoration (Top Center)
+          if (theme == AppTheme.themeDefault)
+            Positioned(
+              top: -15,
+              child: Transform.rotate(
+                angle: -0.02,
+                child: Container(
+                  width: 80,
+                  height: 25,
+                  decoration: BoxDecoration(
+                    color: tapeColor,
+                    boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 2, offset: Offset(0, 1))],
+                  ),
+                ),
               ),
+            ),
+            
+          // Handle for other themes
+           if (theme != AppTheme.themeDefault)
+            Container(
+              margin: const EdgeInsets.only(top: 12),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: titleColor.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+
+          Padding(
+            padding: const EdgeInsets.only(top: 40), // Space for tape/handle
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch, // Stretch items
+              children: [
+                Text(
+                  title, 
+                  style: GoogleFonts.notoSerifSc(
+                    fontSize: 18, 
+                    fontWeight: FontWeight.bold, 
+                    color: titleColor
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                Flexible(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: children,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -962,21 +1043,99 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
     );
   }
   
-  Widget _buildRadioItem(BuildContext context, String label, String value, String groupValue, Function(String) onChanged) {
+  Widget _buildRadioItem(BuildContext context, String label, String value, String groupValue, Function(String) onChanged, {bool closeOnSelect = true}) {
+    return _buildOptionTile(context, label, value, groupValue, onChanged, closeOnSelect: closeOnSelect);
+  }
+
+  Widget _buildOptionTile(BuildContext context, String label, String value, String groupValue, Function(String) onChanged, {bool closeOnSelect = true}) {
+    final settings = Provider.of<SettingsProvider>(context, listen: false);
+    final theme = settings.currentTheme;
     final isSelected = value == groupValue;
-    final color = isSelected ? const Color(0xFF8D6E63) : const Color(0xFF5D4037).withOpacity(0.8);
-    return InkWell(
+
+    // --- Button Style Colors (Matching SkeuomorphicDialogButton) ---
+    Color bgColor;
+    Color textColor;
+    BoxShadow? shadow;
+    Border? border;
+
+    if (theme == AppTheme.themeSeaFlower) {
+      if (isSelected) {
+        bgColor = const Color(0xFFEC407A); // Primary Pink
+        textColor = Colors.white;
+        shadow = const BoxShadow(color: Color.fromRGBO(236, 64, 122, 0.4), offset: Offset(0, 4), blurRadius: 8);
+      } else {
+        bgColor = Colors.white.withOpacity(0.5);
+        textColor = const Color(0xFFAD1457);
+        border = Border.all(color: const Color(0xFFF48FB1).withOpacity(0.5));
+      }
+    } else if (theme == AppTheme.themeMidnight) {
+      if (isSelected) {
+        bgColor = const Color(0xFF5C6BC0); // Primary Indigo
+        textColor = const Color(0xFFe6edf3);
+        shadow = const BoxShadow(color: Color.fromRGBO(92, 107, 192, 0.4), offset: Offset(0, 4), blurRadius: 8);
+      } else {
+        bgColor = const Color(0xFF21262d);
+        textColor = const Color(0xFF8b949e);
+        border = Border.all(color: const Color(0xFF30363d));
+      }
+    } else if (theme == AppTheme.themeAmberLens) {
+        if (isSelected) {
+            bgColor = const Color(0xFFFF9800);
+            textColor = const Color(0xFFE0E0E0);
+             shadow = const BoxShadow(color: Colors.black26, offset: Offset(0, 4), blurRadius: 8);
+        } else {
+            bgColor = const Color(0xFF2C2C2C);
+            textColor = const Color(0xFF9E9E9E);
+             border = Border.all(color: const Color(0xFFFF9800).withOpacity(0.3));
+        }
+    } else {
+      // Vintage
+      if (isSelected) {
+        bgColor = const Color(0xFF5D4037); // Primary Brown
+        textColor = const Color(0xFFF4ECD8);
+        shadow = const BoxShadow(color: Color.fromRGBO(93, 64, 55, 0.4), offset: Offset(0, 4), blurRadius: 8);
+      } else {
+        bgColor = const Color(0xFFEFEBE9);
+        textColor = const Color(0xFF8D6E63);
+        shadow = const BoxShadow(color: Color.fromRGBO(0, 0, 0, 0.05), offset: Offset(0, 2), blurRadius: 4);
+      }
+    }
+
+    return GestureDetector(
       onTap: () {
         onChanged(value);
-        Navigator.pop(context);
+        if (closeOnSelect) {
+           Navigator.pop(context);
+        }
+        // Play click sound?
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(4), // Dialog style small radius
+          boxShadow: shadow != null ? [shadow] : null,
+          border: border,
+        ),
         child: Row(
+          mainAxisAlignment: MainAxisAlignment.center, // Center text like a button
           children: [
-             Text(label, style: GoogleFonts.notoSerifSc(fontSize: 16, color: color)),
-             const Spacer(),
-             if (isSelected) const Icon(Icons.check, color: Color(0xFF8D6E63))
+             Text(
+               label, 
+               style: GoogleFonts.notoSerifSc(
+                 fontSize: 16, 
+                 color: textColor, 
+                 fontWeight: FontWeight.bold // Always bold like buttons
+               )
+             ),
+             // Optional: Add Check icon if selected? 
+             // Dialog buttons usually don't have check icons, just distinct style.
+             // But for selection, a check might be nice.
+             if (isSelected) ...[
+                const SizedBox(width: 8),
+                Icon(Icons.check, size: 18, color: textColor.withOpacity(0.8)),
+             ]
           ],
         ),
       ),

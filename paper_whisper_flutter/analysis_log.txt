@@ -1,19 +1,33 @@
-Analyzing 2 items...                                            
+Resolving dependencies...
+Downloading packages...
+  characters 1.4.0 (1.4.1 available)
+  code_assets 0.19.10 (1.0.0 available)
+  flutter_launcher_icons 0.13.1 (0.14.4 available)
+  flutter_lints 5.0.0 (6.0.0 available)
+  flutter_markdown 0.6.23 (discontinued replaced by flutter_markdown_plus)
+  hooks 0.20.5 (1.0.0 available)
+  lints 5.1.1 (6.0.0 available)
+  matcher 0.12.17 (0.12.18 available)
+  material_color_utilities 0.11.1 (0.13.0 available)
+  meta 1.17.0 (1.18.0 available)
+  native_toolchain_c 0.17.2 (0.17.4 available)
+  package_info_plus 8.3.1 (9.0.0 available)
+  permission_handler 11.4.0 (12.0.1 available)
+  permission_handler_android 12.1.0 (13.0.1 available)
+  record 5.2.1 (6.1.2 available)
+! record_linux 1.2.1 (overridden)
+  test_api 0.7.7 (0.7.9 available)
+  timezone 0.10.1 (0.11.0 available)
+Got dependencies!
+1 package is discontinued.
+17 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+Analyzing moment_input_widget.dart...                           
 
-warning - Unused import: '../models/diary_entry.dart' - lib\providers\sync_provider.dart:5:8 - unused_import
-   info - The import of 'package:flutter/foundation.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' - lib\providers\sync_provider.dart:6:8 - unnecessary_import
-   info - Use interpolation to compose strings and values - lib\providers\sync_provider.dart:238:9 - prefer_interpolation_to_compose_strings
-   info - Statements in an if should be enclosed in a block - lib\providers\sync_provider.dart:293:32 - curly_braces_in_flow_control_structures
-   info - Statements in an if should be enclosed in a block - lib\providers\sync_provider.dart:294:36 - curly_braces_in_flow_control_structures
-   info - Use interpolation to compose strings and values - lib\providers\sync_provider.dart:361:10 - prefer_interpolation_to_compose_strings
-warning - The declaration '_syncDiariesLegacy' isn't referenced - lib\providers\sync_provider.dart:429:16 - unused_element
-   info - Statements in a for should be enclosed in a block - lib\providers\sync_provider.dart:479:44 - curly_braces_in_flow_control_structures
-   info - Statements in a for should be enclosed in a block - lib\providers\sync_provider.dart:614:44 - curly_braces_in_flow_control_structures
-   info - Statements in a for should be enclosed in a block - lib\providers\sync_provider.dart:638:50 - curly_braces_in_flow_control_structures
-warning - Unused import: 'dart:io' - lib\services\webdav_sync_service.dart:2:8 - unused_import
-   info - The import of 'dart:typed_data' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/foundation.dart' - lib\services\webdav_sync_service.dart:3:8 - unnecessary_import
-warning - The value of the field '_serverUrl' isn't used - lib\services\webdav_sync_service.dart:10:11 - unused_field
-warning - The value of the field '_username' isn't used - lib\services\webdav_sync_service.dart:11:11 - unused_field
-warning - The value of the field '_password' isn't used - lib\services\webdav_sync_service.dart:12:11 - unused_field
-   info - Use interpolation to compose strings and values - lib\services\webdav_sync_service.dart:67:31 - prefer_interpolation_to_compose_strings
+warning - Unused import: 'package:permission_handler/permission_handler.dart' - lib\widgets\moment_input_widget.dart:8:8 - unused_import
+   info - Don't use 'BuildContext's across async gaps - lib\widgets\moment_input_widget.dart:150:9 - use_build_context_synchronously
+warning - The value of the local variable 'isAmber' isn't used - lib\widgets\moment_input_widget.dart:226:16 - unused_local_variable
+  error - The named parameter 'inset' isn't defined - lib\widgets\moment_input_widget.dart:437:77 - undefined_named_parameter
+  error - Arguments of a constant creation must be constant expressions - lib\widgets\moment_input_widget.dart:517:25 - const_with_non_constant_argument
+  error - The getter 'cassette' isn't defined for the type 'Icons' - lib\widgets\moment_input_widget.dart:517:31 - undefined_getter
 

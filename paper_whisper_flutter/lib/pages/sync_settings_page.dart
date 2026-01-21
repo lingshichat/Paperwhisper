@@ -8,6 +8,7 @@ import '../models/sync_config.dart';
 import '../providers/settings_provider.dart';
 import '../providers/sync_provider.dart';
 import '../widgets/skeuomorphic_toast.dart';
+import '../widgets/visual_effects.dart';
 
 class SyncSettingsPage extends StatefulWidget {
   const SyncSettingsPage({super.key});
@@ -119,25 +120,18 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
         : (isMidnight ? const Color(0xFFc9d1d9) : const Color(0xFFD7CCC8));
     final Color hintColor = textColor.withOpacity(0.5);
 
-    // 背景图
-    Widget background = Container(
-      decoration: AppTheme.getBackground(theme),
-    );
-    
-    // 如果是 SeaFlower，可以在背景之上加一层极淡的白色遮罩，增加层次感，但不要模糊背景，
-    // 因为这会把渐变弄成一团浆糊，且消耗性能。
-    if (isSeaFlower) {
-       background = Stack(
-         children: [
-            background,
-            Container(color: Colors.white.withOpacity(0.1)),
-         ],
-       );
-    }
-
     return Stack(
       children: [
-        Positioned.fill(child: background),
+        // 1. 背景
+        Positioned.fill(
+          child: Container(decoration: AppTheme.getBackground(theme)),
+        ),
+        
+        // 2. Visual Effects
+        if (isSeaFlower) Positioned.fill(child: const PetalRainWidget()),
+        if (isMidnight) Positioned.fill(child: const StarrySkyWidget()),
+        
+        // 3. 内容
         Scaffold(
           backgroundColor: Colors.transparent,
           appBar: AppBar(
