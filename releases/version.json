@@ -1,20 +1,15 @@
 {
-    "latestVersion": "1.4.0",
-    "latestBuildNumber": 11,
-    "releaseDate": "2026-01-19",
-    "title": "纸语 1.4.0 —— 你的人生书籍已上线",
+    "latestVersion": "1.4.1",
+    "latestBuildNumber": 12,
+    "releaseDate": "2026-01-21",
+    "title": "纸语 1.4.1 —— 你的人生书籍已上线",
     "isForceUpdate": false,
     "changelog": [
-        "🆕 新增：书籍与目录，首页点击顶栏即可体验，可自定义书籍标题与目录标题",
-        "🆕 新增：撰写页面新增日历选择器，可以补写过去的日子，也可以畅想未来的计划！",
-        "🆕 新增：录音，在随心记可体验，像刻录磁带一样刻录自己的声音",
-        "🆕 新增：反馈页面，可在里面提交bug或者许愿功能！",
-        "🛠️ 优化：长日记过渡动画体验，更加丝滑了！",
-        "🛠️ 优化：些许体验优化"
+        "🛠️ 一些体验优化（更新日志写不动了QAQ）"
     ],
     "downloadUrl": {
         "android": "https://dl.lingshichat.top/Android/latest.apk",
-        "windows": "https://dl.lingshichat.top/Windows/latest.zip"
+        "windows": "https://dl.lingshichat.top/Windows/latest.exe"
     },
     "backupUrl": {
         "android": "https://www.123865.com/s/US1Jjv-OY9Dv",

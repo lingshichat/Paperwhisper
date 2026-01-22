@@ -156,49 +156,49 @@ class UpdateDialog extends StatelessWidget {
                 ],
 
                 // 按钮区域
-                Row(
-                  children: [
-                    // 主下载按钮
-                    Expanded(
-                      child: _PrimaryButton(
-                        label: '立即更新',
-                        onPressed: () async {
-                          await updateService.openDownloadUrl(updateInfo);
-                        },
-                      ),
-                    ),
-                    // 备用下载按钮（如果有）
-                    if (hasBackup) ...[
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _SecondaryButton(
-                          label: '备用下载',
-                          icon: Icons.cloud_outlined,
-                          onPressed: () async {
-                            await updateService.openDownloadUrl(updateInfo, useBackup: true);
-                          },
-                        ),
-                      ),
-                    ],
-                  ],
+                // 1. 官网下载 (最高优先级)
+                SizedBox(
+                  width: double.infinity,
+                  child: _PrimaryButton(
+                    label: '立即更新',
+                    onPressed: () async {
+                      await updateService.openDownloadUrl(updateInfo);
+                    },
+                  ),
                 ),
                 
-                // 稍后更新按钮（非强制更新时显示）
-                if (onLater != null) ...[
+                // 2. 备用下载 (次级优先级)
+                if (hasBackup) ...[
                   const SizedBox(height: 12),
-                  TextButton(
-                    onPressed: onLater,
-                    style: TextButton.styleFrom(
-                      foregroundColor: const Color(0xFF8D6E63),
+                  SizedBox(
+                    width: double.infinity,
+                    child: _SecondaryButton(
+                      label: '备用下载',
+                      icon: Icons.cloud_outlined,
+                      onPressed: () async {
+                        await updateService.openDownloadUrl(updateInfo, useBackup: true);
+                      },
                     ),
+                  ),
+                ],
+                
+                // 3. 稍后更新 (最低优先级，非强制更新时显示)
+                if (onLater != null) ...[
+                  const SizedBox(height: 16),
+                  GestureDetector(
+                    onTap: onLater,
                     child: Text(
-                      '稍后更新',
+                      '暂不更新',
                       style: GoogleFonts.notoSerifSc(
-                        fontSize: 14,
+                        fontSize: 13,
                         fontWeight: FontWeight.w500,
+                        color: const Color(0xFF8D6E63).withValues(alpha: 0.8),
+                        decoration: TextDecoration.underline,
+                        decorationColor: const Color(0xFF8D6E63).withValues(alpha: 0.5),
                       ),
                     ),
                   ),
+                  const SizedBox(height: 4),
                 ],
               ],
             ),

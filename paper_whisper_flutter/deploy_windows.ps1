@@ -7,10 +7,11 @@ $R2Remote = "cfr2"
 $Domain = "https://dl.lingshichat.top"
 # ----------------------------------------
 
-Write-Host "🔄 [0/4] 正在从 version.json 同步版本号..." -ForegroundColor Cyan
+
+Write-Host "🔄 [1/5] 正在从 version.json 同步版本号..." -ForegroundColor Cyan
 dart run tool/sync_version.dart
 
-Write-Host "🚀 [1/4] 开始构建 Release 版 Windows 应用..." -ForegroundColor Cyan
+Write-Host "🚀 [2/5] 开始构建 Release 版 Windows 应用..." -ForegroundColor Cyan
 flutter build windows --release
 
 # 获取版本号 (从 pubspec.yaml 读取)
@@ -36,7 +37,7 @@ if (-not (Test-Path $ReleasesDir)) {
 
 $ZipPath = Join-Path $ReleasesDir $ZipName
 
-Write-Host "📦 [2/4] 正在根据版本 $Version 打包..." -ForegroundColor Cyan
+Write-Host "📦 [3/5] 正在根据版本 $Version 打包绿色版 (Zip)..." -ForegroundColor Cyan
 
 if (Test-Path $ZipPath) {
     Remove-Item $ZipPath -Force
@@ -45,7 +46,7 @@ if (Test-Path $ZipPath) {
 # 压缩 Release 文件夹内容到 Zip
 Compress-Archive -Path "$BuildDir\*" -DestinationPath $ZipPath -Force
 
-Write-Host "💿 [2.5/4] 正在编译 Inno Setup 安装包..." -ForegroundColor Cyan
+Write-Host "💿 [4/5] 正在编译 Inno Setup 安装包..." -ForegroundColor Cyan
 $ISCC = "ISCC.exe" # 假设已添加到环境变量
 $IssFile = "installers\paper_whisper.iss"
 
@@ -70,12 +71,10 @@ if ($ISCCPath) {
 
 
 
-Write-Host "☁️ [3/4] 正在上传 $ZipName 到 R2..." -ForegroundColor Cyan
+Write-Host "☁️ [5/5] 正在上传构建产物到 R2..." -ForegroundColor Cyan
 
 # 1. 上传存档版 (Zip)
 rclone copy "$ZipPath" "$R2Remote`:$BucketName/Windows/" --progress
-# 2. 上传最新版 (Zip)
-rclone copyto "$ZipPath" "$R2Remote`:$BucketName/Windows/latest.zip" --progress
 
 $ExePath = Join-Path $ReleasesDir $ExeName
 # 给予文件系统一点缓冲时间，并显式检查
@@ -86,21 +85,17 @@ Write-Host "🔎 正在检查安装包: $ExePath" -ForegroundColor Gray
 if (Test-Path $ExePath) {
     Write-Host "✅ 找到安装包，准备上传..." -ForegroundColor Green
     
-    # 3. 上传安装包 (Exe)
-    Write-Host "☁️ [3.1/4] 上传安装包: $ExeName" -ForegroundColor Cyan
-    rclone copy "$ExePath" "$R2Remote`:$BucketName/Windows/" --progress
-    
-    # 4. 上传最新安装包 (Exe)
-    Write-Host "☁️ [3.2/4] 更新 Latest 指针: PaperWhisper_Setup_latest.exe" -ForegroundColor Cyan
-    rclone copyto "$ExePath" "$R2Remote`:$BucketName/Windows/PaperWhisper_Setup_latest.exe" --progress
-} else {
+    # 3. 上传最新安装包 (Exe) -> 重命名为 latest.exe
+    Write-Host "☁️ [5.1/5] 上传最新安装包: latest.exe" -ForegroundColor Cyan
+    rclone copyto "$ExePath" "$R2Remote`:$BucketName/Windows/latest.exe" --progress
+}
+else {
     Write-Error "❌ 未找到安装包文件: $ExePath"
 }
 
-Write-Host "✅ [4/4] 发布成功！" -ForegroundColor Green
-Write-Host "⬇️ 最新版 (Zip): $Domain/Windows/latest.zip"
-Write-Host "⬇️ 最新版 (Exe): $Domain/Windows/PaperWhisper_Setup_latest.exe"
+Write-Host "✅ 发布成功！" -ForegroundColor Green
+Write-Host "⬇️ 最新版 (Exe): $Domain/Windows/latest.exe"
 Write-Host "📦 历史存档: $Domain/Windows/$ZipName"
 Write-Host ""
-Write-Host "🔔 别忘了手动把 Zip/Exe 拖到百度网盘备份文件夹哦！" -ForegroundColor Yellow
+Write-Host "🔔 别忘了手动把 Zip/Exe 拖到网盘备份文件夹哦！" -ForegroundColor Yellow
 
