@@ -20,6 +20,7 @@ import '../widgets/visual_effects.dart';
 import '../pages/trash_page.dart';
 import '../services/storage_service.dart';
 import 'sync_settings_page.dart';
+import 'security_settings_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -265,6 +266,22 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
         _buildGroupContainer(
           isSeaFlower, isMidnight,
           children: [
+            _buildSettingsItem(
+              context: context,
+              icon: Icons.lock_outline,
+              title: '密码锁',
+              subtitle: '指纹与密码保护',
+              isSeaFlower: isSeaFlower,
+              isMidnight: isMidnight,
+              textColor: textColor,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  SlidePageRoute(page: const SecuritySettingsPage()),
+                );
+              },
+            ),
+            _buildDivider(isSeaFlower, isMidnight),
             _buildSettingsItem(
               context: context,
               icon: _isAllGranted ? Icons.verified_user_outlined : Icons.gpp_maybe_outlined,

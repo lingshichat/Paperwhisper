@@ -1,11 +1,11 @@
 package com.lingshichat.paper_whisper_flutter
 
 import android.os.Build
-import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
-class MainActivity : FlutterActivity() {
+class MainActivity : FlutterFragmentActivity() {
     private val CHANNEL = "paper_whisper/platform"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {

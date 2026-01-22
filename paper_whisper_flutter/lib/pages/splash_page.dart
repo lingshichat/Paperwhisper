@@ -13,6 +13,8 @@ import 'moments_page.dart';
 import '../providers/settings_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/privacy_agreement_dialog.dart';
+import '../services/auth_service.dart';
+import '../widgets/lock_screen.dart';
 
 /// 启动屏：等待数据预加载完成后再导航到主页/引导页
 /// 同时预热字体、shader 和网络请求，避免首次交互卡顿
@@ -64,17 +66,30 @@ class _SplashPageState extends State<SplashPage> {
 
     final diaryProvider = context.read<DiaryProvider>();
     
-    // 1. 并行执行预热任务，最多等待 2.5 秒（加上过渡动画约 3 秒）
-    await Future.any([
-      // 正常完成所有预热
-      Future.wait([
+    // 1. 并行执行预热任务
+    // 如果已锁定（有锁屏覆盖），则不需等待动画，尽快加载数据并跳转
+    // 如果未锁定，则至少等待 2.5 秒保证启动页展示效果
+    
+    final bool isLocked = AuthService().isLocked; 
+    print('DEBUG: SplashPage isLocked: $isLocked'); // debug log
+    
+    if (isLocked) {
+      // 锁定状态下，仅等待必要数据加载
+      await Future.wait([
         _waitForDiaryLoading(diaryProvider),
         _preloadHitokoto(),
-        Future.delayed(const Duration(milliseconds: 300)),
-      ]),
-      // 硬性超时 2.5 秒
-      Future.delayed(const Duration(milliseconds: 2500)),
-    ]);
+      ]);
+    } else {
+      // 正常启动，等待加载 + 最小展示时间
+      await Future.any([
+        Future.wait([
+          _waitForDiaryLoading(diaryProvider),
+          _preloadHitokoto(),
+          Future.delayed(const Duration(milliseconds: 300)),
+        ]),
+        Future.delayed(const Duration(milliseconds: 2500)),
+      ]);
+    }
     
     if (!mounted) return;
 
@@ -87,7 +102,6 @@ class _SplashPageState extends State<SplashPage> {
     if (widget.showIntro) {
       targetPage = const IntroPage();
     } else {
-      // Check startup preference
       switch (settings.startupPage) {
         case 'moments':
           targetPage = const MomentsPage();
@@ -97,27 +111,58 @@ class _SplashPageState extends State<SplashPage> {
           break;
         case 'last':
         default:
-          // TODO: Implement actual 'last' logic or default to writer
-          // For now default to writer if last is not tracked
           targetPage = const DiaryListPage();
           break;
       }
     }
     
-    Navigator.of(context).pushReplacement(
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => targetPage,
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(opacity: animation, child: child);
-        },
-        transitionDuration: const Duration(milliseconds: 600),
-      ),
-    );
-
-    // 3. 启动时自动检测更新（仅非引导页时检查）
-    if (!widget.showIntro) {
-      _checkForUpdateAfterNavigation();
+    // 如果锁定，导航到锁屏页面 (替换 Splash)
+    // 解锁后的回调导航到 targetPage
+    if (isLocked) {
+      Navigator.of(context).pushReplacement(
+        PageRouteBuilder(
+          pageBuilder: (ctx, _, __) => _buildLockScreenWrapper(ctx, targetPage), // Pass new context
+          transitionsBuilder: (_, animation, __, child) => FadeTransition(opacity: animation, child: child),
+          transitionDuration: const Duration(milliseconds: 600),
+        ),
+      );
+    } else {
+       Navigator.of(context).pushReplacement(
+        PageRouteBuilder(
+          pageBuilder: (_, __, ___) => targetPage,
+          transitionsBuilder: (_, animation, __, child) => FadeTransition(opacity: animation, child: child),
+          transitionDuration: const Duration(milliseconds: 600),
+        ),
+      );
+      
+      // 3. 启动时自动检测更新（仅非引导页时检查）
+      if (!widget.showIntro) {
+        _checkForUpdateAfterNavigation();
+      }
     }
+  }
+
+  Widget _buildLockScreenWrapper(BuildContext context, Widget targetPage) {
+    // 引入锁屏组件
+    return LockScreen(
+      enableBack: false,
+      onUnlocked: () {
+        // 解锁成功，替换为目标页面
+        // 使用传入的 context (LockScreen路由的context)，而不是 SplashPage 的 context
+        Navigator.of(context).pushReplacement(
+          PageRouteBuilder(
+            pageBuilder: (_, __, ___) => targetPage,
+            transitionsBuilder: (_, animation, __, child) => FadeTransition(opacity: animation, child: child),
+            transitionDuration: const Duration(milliseconds: 600),
+          ),
+        );
+        
+        // 检测更新
+        if (!widget.showIntro) {
+          _checkForUpdateAfterNavigation();
+        }
+      },
+    );
   }
 
   Future<void> _waitForDiaryLoading(DiaryProvider provider) async {

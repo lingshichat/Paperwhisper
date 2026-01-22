@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -908,104 +909,106 @@ class _DiaryListPageState extends State<DiaryListPage> with WidgetsBindingObserv
   }
 
   Widget _buildEmptyState(String theme) {
-    // 使用侧栏文字颜色 - 在深色背景上可见的浅色
-    // 参考 web端 CSS: --sidebar-text: #d7ccc8 (浅米色)
-    final Color emptyTextColor;
-    final Color accentColor;
-    
-    switch (theme) {
-      case AppTheme.themeMidnight:
-        emptyTextColor = const Color(0xFFc9d1d9); // 浅灰白色
-        accentColor = const Color(0xFF7986cb);    // 靛蓝色
-        break;
-      case AppTheme.themeSeaFlower:
-        emptyTextColor = const Color(0xFFC2185B); // 洋红色
-        accentColor = const Color(0xFFF50057);    // 玫瑰红
-        break;
-      case AppTheme.themeAmberLens:
-        emptyTextColor = const Color(0xFF9E9E9E); // Grey
-        accentColor = const Color(0xFFFF9800);    // Amber
-        break;
-      default: // vintage/default
-        emptyTextColor = const Color(0xFFd7ccc8); // 浅米色 (与侧栏文字一致)
-        accentColor = const Color(0xFFc0392b);    // 红色
-    }
-    
-    return Center(
-       child: Column(
-         mainAxisAlignment: MainAxisAlignment.center,
-         children: [
-           // SVG 插画
-           // SVG 插画
-           Opacity(
-             opacity: (theme == AppTheme.themeMidnight) ? 0.8 : 0.9,
-             child: SvgPicture.asset(
-               'assets/illustrations/undraw_reading-time_gcvc.svg',
-               width: 250, 
-               // 移除 colorFilter 保持 SVG 原始透明背景
-             ),
-           ),
-           const SizedBox(height: 20),
-           // 提示文字 - 使用浅色以在深色背景上可见
-           Opacity(
-             opacity: 0.8,
-             child: Text(
-               _searchQuery.isNotEmpty 
-                 ? '没有找到关于"$_searchQuery"的回忆呢...'
-                 : '这里似乎落了一层灰，等待你来翻阅',
-               textAlign: TextAlign.center,
+    if (_searchQuery.isNotEmpty) {
+      // 搜索无结果状态
+      final Color emptyTextColor = AppTheme.getTextColor(theme).withOpacity(0.7);
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+             Icon(Icons.search_off, size: 80, color: emptyTextColor),
+             const SizedBox(height: 24),
+             Text(
+               '没有找到关于"$_searchQuery"的篇章...',
                style: GoogleFonts.notoSerifSc(
                  color: emptyTextColor,
                  fontSize: 16,
                  fontStyle: FontStyle.italic,
-                 letterSpacing: 2,
                ),
              ),
-           ),
-           // 只在非搜索模式下显示"写一篇"按钮
-           if (_searchQuery.isEmpty) ...[
-             const SizedBox(height: 30),
-             // "去写一篇"按钮 - 参考web端: 底部虚线边框样式
-             GestureDetector(
-               onTap: () => _openEditor(null),
-               child: MouseRegion(
-                 cursor: SystemMouseCursors.click,
-                 child: Column(
-                   mainAxisSize: MainAxisSize.min,
-                   children: [
-                     Row(
-                       mainAxisSize: MainAxisSize.min,
-                       children: [
-                         Text(
-                           '去擦拭灰尘 (写一篇)',
-                           style: GoogleFonts.notoSerifSc(
-                             color: accentColor,
-                             fontSize: 14,
-                           ),
-                         ),
-                         const SizedBox(width: 4),
-                         Text(
-                           '→',
-                           style: TextStyle(
-                             color: accentColor,
-                             fontSize: 14,
-                           ),
-                         ),
-                       ],
-                     ),
-                     const SizedBox(height: 2),
-                     // 虚线边框
-                     CustomPaint(
-                       size: const Size(150, 1),
-                       painter: DashedLinePainter(color: accentColor),
-                     ),
-                   ],
-                 ),
-               ),
-             ),
-           ],
-         ],
-       ),
+          ],
+        ),
+      );
+    }
+
+    // 获取主题适配的颜色
+    // 复古纸张（themeDefault）使用白色，海底花海使用深色，午夜星尘和琥珀镜头使用灰色
+    Color iconColor;
+    Color textColor;
+    Color linkColor;
+    
+    switch (theme) {
+      case AppTheme.themeSeaFlower:
+        // 浅色背景，使用深色图标和文字
+        iconColor = const Color(0xFF6D5D5D).withValues(alpha: 0.6);
+        textColor = const Color(0xFF6D5D5D).withValues(alpha: 0.8);
+        linkColor = const Color(0xFFC2185B); // 粉红强调色
+        break;
+      case AppTheme.themeMidnight:
+      case AppTheme.themeAmberLens:
+        // 深色背景，使用灰色图标和文字
+        iconColor = Colors.grey.shade500.withValues(alpha: 0.7);
+        textColor = Colors.grey.shade400;
+        linkColor = AppTheme.getAccentColor(theme);
+        break;
+      case AppTheme.themeDefault:
+      default:
+        // 复古纸张：图标和文字为暖灰/白（如设计图），链接为鲜艳的朱红色
+        iconColor = const Color(0xFFD7CCC8).withValues(alpha: 0.5); // 稍微调高不透明度
+        textColor = const Color(0xFFD7CCC8).withValues(alpha: 0.8); // 暖灰色文字
+        linkColor = const Color(0xFFFF5252); // 设计图中的鲜红色
+        break;
+    }
+    
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // 蜘蛛网图标 - 使用 CustomPaint 绘制
+          CustomPaint(
+            size: const Size(64, 64), // 设计图中图标不需要太大
+            painter: _SpiderWebIconPainter(color: iconColor),
+          ),
+          const SizedBox(height: 32),
+          Text(
+            '这里似乎落了一层灰，等待你来翻阅',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.notoSerifSc(
+              fontSize: 16,
+              color: textColor,
+              height: 1.5,
+              fontStyle: FontStyle.italic, // 恢复斜体
+            ),
+          ),
+          const SizedBox(height: 48), // 增加间距
+          
+          // "去擦拭灰尘（写一篇）→" 按钮 - 带虚线
+          GestureDetector(
+            onTap: () => _openEditor(null),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '去擦拭灰尘 (写一篇) →',
+                  style: GoogleFonts.notoSerifSc(
+                    fontSize: 15,
+                    color: linkColor,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 4), // 文字和虚线的间距
+                SizedBox(
+                  width: 180, // 根据文字长度估算，确保虚线覆盖文字
+                  height: 1,
+                  child: CustomPaint(
+                    painter: DashedLinePainter(color: linkColor.withValues(alpha: 0.6)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1176,3 +1179,149 @@ class _DiaryListPageState extends State<DiaryListPage> with WidgetsBindingObserv
     flushBuffer();
   }
 }
+
+class RuledPaperPainter extends CustomPainter {
+  final Color lineColor;
+  RuledPaperPainter({required this.lineColor});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = lineColor
+      ..strokeWidth =1;
+    
+    double y = 40;
+    while (y < size.height - 20) {
+      canvas.drawLine(Offset(20, y), Offset(size.width - 20, y), paint);
+      y += 28;
+    }
+    
+    final marginPaint = Paint()
+      ..color = Colors.red.withOpacity(0.05)
+      ..strokeWidth = 1;
+    
+    canvas.drawLine(Offset(40, 0), Offset(40, size.height), marginPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+/// 蜘蛛网图标绘制器 - 用于空状态显示
+/// 设计：六边形框架 + 内部蜘蛛网线条，体现"落灰"的意象
+class _SpiderWebIconPainter extends CustomPainter {
+  final Color color;
+  
+  _SpiderWebIconPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.0 // 加粗外框
+      ..strokeJoin = StrokeJoin.round;
+
+    final centerX = size.width / 2;
+    final centerY = size.height / 2;
+    
+    // 六边形顶点（从顶部开始顺时针）
+    final double radius = size.width * 0.45;
+    final List<Offset> hexPoints = [];
+    for (int i = 0; i < 6; i++) {
+      final angle = (i * 60 - 90) * math.pi / 180; // 从顶部开始
+      hexPoints.add(Offset(
+        centerX + radius * math.cos(angle),
+        centerY + radius * math.sin(angle),
+      ));
+    }
+    
+    // 绘制六边形外框（拟物化：使用贝塞尔曲线向内凹陷）
+    final hexPath = Path();
+    hexPath.moveTo(hexPoints[0].dx, hexPoints[0].dy);
+    for (int i = 0; i < 6; i++) {
+        // 当前点
+        final p1 = hexPoints[i];
+        // 下一个点
+        final p2 = hexPoints[(i + 1) % 6];
+        
+        // 计算中点
+        final midX = (p1.dx + p2.dx) / 2;
+        final midY = (p1.dy + p2.dy) / 2;
+        
+        // 计算控制点：向中心凹陷
+        const curveFactor = 0.12; // 外框稍微绷紧一点
+        final controlX = midX + (centerX - midX) * curveFactor;
+        final controlY = midY + (centerY - midY) * curveFactor;
+        
+        hexPath.quadraticBezierTo(controlX, controlY, p2.dx, p2.dy);
+    }
+    // hexPath.close(); // Closed by loop logic
+    canvas.drawPath(hexPath, paint);
+    
+    // 绘制从中心到六个顶点的辐射线
+    final thinPaint = Paint()
+      ..color = color.withValues(alpha: 0.8) // 稍微加深
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0; // 加粗线条
+      
+    final center = Offset(centerX, centerY);
+    for (final point in hexPoints) {
+      canvas.drawLine(center, point, thinPaint);
+    }
+    
+    // 绘制内部蜘蛛网同心六边形（2层）
+    final webPaint = Paint()
+      ..color = color.withValues(alpha: 0.6)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+    
+    for (double scale in [0.33, 0.66]) {
+      final innerPath = Path();
+      // 计算这一层的顶点
+      final List<Offset> layerPoints = [];
+      for (int i = 0; i < 6; i++) {
+        layerPoints.add(Offset(
+          centerX + (hexPoints[i].dx - centerX) * scale,
+          centerY + (hexPoints[i].dy - centerY) * scale,
+        ));
+      }
+
+      innerPath.moveTo(layerPoints[0].dx, layerPoints[0].dy);
+      
+      for (int i = 0; i < 6; i++) {
+        // 当前点
+        final p1 = layerPoints[i];
+        // 下一个点
+        final p2 = layerPoints[(i + 1) % 6];
+        
+        // 计算中点
+        final midX = (p1.dx + p2.dx) / 2;
+        final midY = (p1.dy + p2.dy) / 2;
+        
+        // 计算控制点：向中心凹陷
+        // 简单的做法是取中点和中心的连线上的某一点
+        // 凹陷程度因子 (0.0 = 直线, 1.0 = 到中心)
+        const curveFactor = 0.15; 
+        final controlX = midX + (centerX - midX) * curveFactor;
+        final controlY = midY + (centerY - midY) * curveFactor;
+        
+        innerPath.quadraticBezierTo(controlX, controlY, p2.dx, p2.dy);
+      }
+      // innerPath.close(); // quadraticBezierTo 已经闭合回去了（最后一个点连回第一个点）
+      canvas.drawPath(innerPath, webPaint);
+    }
+    
+    // 中心小圆点
+    final dotPaint = Paint()
+      ..color = color.withValues(alpha: 0.8)
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(center, 3, dotPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _SpiderWebIconPainter oldDelegate) {
+    return oldDelegate.color != color;
+  }
+}
+

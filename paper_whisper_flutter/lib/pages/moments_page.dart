@@ -816,51 +816,51 @@ class _MomentsPageState extends State<MomentsPage> {
 
   Widget _buildEmptyStateForDate(DateTime date) {
     bool isToday = _isSameDay(date, DateTime.now());
-    
     final theme = Provider.of<SettingsProvider>(context, listen: false).currentTheme;
-    final bool isSeaFlower = theme == AppTheme.themeSeaFlower;
-    final bool isMidnight = theme == AppTheme.themeMidnight;
     
-    Color messageColor;
-    Color blendColor;
-    final bool isAmber = theme == AppTheme.themeAmberLens;
+    // 简洁拟物化配置 - 仅颜色适配
+    Color iconColor;
+    Color textColor;
     
-    if (isSeaFlower) {
-       // 海底花海：深粉色，更高对比度
-       messageColor = const Color(0xFF880E4F).withValues(alpha: 0.85);
-       blendColor = const Color(0xFFF06292); // Pink blend
-    } else if (isMidnight) {
-       // 午夜星尘：更亮的白色
-       messageColor = Colors.white.withValues(alpha: 0.7);
-       blendColor = const Color(0xFF7986CB); // Indigo blend
-    } else if (isAmber) {
-       // 琥珀镜头：暖灰色
-       messageColor = const Color(0xFFBDBDBD);
-       blendColor = const Color(0xFF8D6E63);
-    } else {
-       // Vintage：浅米色，与背景形成对比
-       messageColor = const Color(0xFFD7CCC8);
-       blendColor = const Color(0xFF8D6E63); // Brown blend
+    switch (theme) {
+      case AppTheme.themeMidnight:
+        iconColor = const Color(0xFF7986cb);
+        textColor = const Color(0xFFc9d1d9);
+        break;
+      case AppTheme.themeSeaFlower:
+        iconColor = const Color(0xFFF50057);
+        textColor = const Color(0xFF880E4F);
+        break;
+      case AppTheme.themeAmberLens:
+        iconColor = const Color(0xFFFF9800);
+        textColor = const Color(0xFFE0E0E0);
+        break;
+      default: // Vintage
+        // 适配专注写作的风格：暖灰色/半透明白
+        iconColor = const Color(0xFFD7CCC8).withValues(alpha: 0.5);
+        textColor = const Color(0xFFD7CCC8).withValues(alpha: 0.8); 
     }
 
     return Center(
       child: Column(
-         mainAxisSize: MainAxisSize.min,
-         children: [
-           Opacity(
-             opacity: isMidnight ? 0.8 : 0.9,
-             child: SvgPicture.asset(
-               'assets/illustrations/undraw_fall_zh0m.svg',
-               width: 200,
-               // 移除 colorFilter 保持 SVG 原始透明背景
-             ),
-           ),
-           const SizedBox(height: 24),
-           Text(
-             isToday ? "这一天不仅是空白，更是无限可能" : "这天没有留下记录", 
-             style: GoogleFonts.notoSerifSc(fontSize: 14, color: messageColor)
-           ),
-         ],
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isToday ? Icons.lightbulb_outline : Icons.edit_note,
+            size: 80,
+            color: iconColor.withValues(alpha: 0.7), // 叠加透明度
+          ),
+          const SizedBox(height: 24),
+          Text(
+            isToday ? "这一天不仅是空白，更是无限可能" : "这天没有留下记录",
+            textAlign: TextAlign.center,
+            style: GoogleFonts.notoSerifSc(
+              fontSize: 16,
+              color: textColor,
+              height: 1.5,
+            ),
+          ),
+        ],
       ),
     );
   }
