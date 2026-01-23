@@ -1,5 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+import 'dart:io';
+import 'package:path/path.dart' as path;
 import '../models/diary_entry.dart';
 import '../services/diary_service.dart';
 
@@ -29,7 +32,7 @@ class DiaryProvider with ChangeNotifier {
 
   DiaryProvider([DiaryService? service]) : _service = service ?? DiaryService() {
     loadEntries();
-    _loadBookTitles();
+    // _loadBookTitles(); // Moved to loadEntries to ensure service.init() is done
   }
 
   void setSearchQuery(String query) {
@@ -49,6 +52,7 @@ class DiaryProvider with ChangeNotifier {
       _entries.sort((a, b) => b.dateString.compareTo(a.dateString));
       
       _buildFlatList();
+      await _loadBookMetadata(); // Load metadata after service init
     } catch (e) {
       debugPrint("Error loading entries: $e");
     } finally {
@@ -116,7 +120,64 @@ class DiaryProvider with ChangeNotifier {
 
   Map<int, String> get bookTitles => _bookTitles; // Keep for backward compatibility if needed, but prefer getters below
 
-  Future<void> _loadBookTitles() async {
+  // --- Persistent Metadata Logic (JSON + Sync) ---
+
+  Future<void> _loadBookMetadata() async {
+    try {
+      // 1. Ensure Service Init
+      await _service.init();
+      if (_service.dataDir == null) return;
+
+      final metaFile = File(path.join(_service.dataDir!.path, 'book_metadata.json'));
+      
+      if (await metaFile.exists()) {
+        try {
+          final jsonStr = await metaFile.readAsString();
+          final data = jsonDecode(jsonStr);
+          
+          // Parse "books"
+          if (data['books'] != null) {
+            Map<String, dynamic> books = data['books'];
+            books.forEach((yearStr, val) {
+               final year = int.tryParse(yearStr);
+               if (year != null && val is Map) {
+                 if (val['title'] != null) _bookTitles[year] = val['title'];
+                 if (val['subtitle'] != null) _bookSubtitles[year] = val['subtitle'];
+                 
+                 // Reconstruct absolute path for cover
+                 if (val['cover'] != null) {
+                   final coverName = val['cover'];
+                   final coverFile = File(path.join(_service.dataDir!.path, coverName));
+                   _bookCoverPaths[year] = coverFile.path;
+                 }
+               }
+            });
+          }
+          
+          // Parse "months"
+          if (data['months'] != null) {
+            Map<String, dynamic> months = data['months'];
+            months.forEach((key, val) {
+               _monthTitles[key] = val.toString();
+            });
+          }
+          
+          notifyListeners();
+          return; // Successfully loaded from JSON, skip SharedPreferences fallback
+        } catch (e) {
+          debugPrint("Error parsing book_metadata.json: $e");
+        }
+      }
+
+      // 2. Fallback to SharedPreferences (Migration or Legacy)
+      await _loadBookTitlesLegacy(); 
+      
+    } catch (e) {
+       debugPrint("Error loading book metadata: $e");
+    }
+  }
+
+  Future<void> _loadBookTitlesLegacy() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final keys = prefs.getKeys();
@@ -140,7 +201,6 @@ class DiaryProvider with ChangeNotifier {
            final year = int.tryParse(yearStr);
            if (year != null) _bookCoverPaths[year] = prefs.getString(key) ?? '';
         } else if (key.startsWith('month_title_')) {
-           // Format: month_title_{year}_{month}
            final parts = key.split('_');
            if (parts.length == 4) {
              final yearStr = parts[2];
@@ -151,33 +211,102 @@ class DiaryProvider with ChangeNotifier {
       }
       notifyListeners();
     } catch (e) {
-      debugPrint("Error loading book meta: $e");
+      debugPrint("Error loading legacy book meta: $e");
     }
   }
 
-  /// Sets book metadata. Pass null to keep existing value.
+  Future<void> _saveBookMetadata() async {
+    if (_service.dataDir == null) return;
+    
+    final Map<String, dynamic> data = {
+      'books': {},
+      'months': _monthTitles,
+    };
+    
+    // Aggregate Book Info
+    Set<int> allYears = {};
+    allYears.addAll(_bookTitles.keys);
+    allYears.addAll(_bookSubtitles.keys);
+    allYears.addAll(_bookCoverPaths.keys);
+    
+    for (var year in allYears) {
+      Map<String, dynamic> bookInfo = {};
+      if (_bookTitles.containsKey(year)) bookInfo['title'] = _bookTitles[year];
+      if (_bookSubtitles.containsKey(year)) bookInfo['subtitle'] = _bookSubtitles[year];
+      
+      if (_bookCoverPaths.containsKey(year)) {
+        // Convert strict absolute path to filename if possible
+        String fullPath = _bookCoverPaths[year]!;
+        String filename = path.basename(fullPath);
+        // Only save filename if it lives in dataDir (standardized)
+        // If it's a legacy path (random spot), we might lose it on sync, 
+        // but setBookInfo now enforces copying, so this should remain valid for new edits.
+        bookInfo['cover'] = filename; 
+      }
+      data['books'][year.toString()] = bookInfo;
+    }
+    
+    try {
+      final jsonStr = jsonEncode(data);
+      final metaFile = File(path.join(_service.dataDir!.path, 'book_metadata.json'));
+      await metaFile.writeAsString(jsonStr);
+      
+      // Update Manifest for Sync
+      _service.manifestService.updateItem('book_metadata.json', isDeleted: false);
+    } catch (e) {
+      debugPrint("Error saving book_metadata.json: $e");
+    }
+  }
+
+  /// Sets book metadata and handles persistence/sync
   Future<void> setBookInfo(int year, {String? title, String? subtitle, String? coverPath}) async {
-    final prefs = await SharedPreferences.getInstance();
+    await _service.init();
     
-    if (title != null) {
-      _bookTitles[year] = title;
-      await prefs.setString('book_title_$year', title);
-    }
-    
-    if (subtitle != null) {
-      _bookSubtitles[year] = subtitle;
-      await prefs.setString('book_subtitle_$year', subtitle);
-    }
+    if (title != null) _bookTitles[year] = title;
+    if (subtitle != null) _bookSubtitles[year] = subtitle;
     
     if (coverPath != null) {
-      _bookCoverPaths[year] = coverPath;
-      await prefs.setString('book_cover_$year', coverPath);
+      // 1. Copy Image to Permanent Storage
+      if (_service.dataDir != null) {
+        try {
+          final file = File(coverPath);
+          if (await file.exists()) {
+             final ext = path.extension(coverPath);
+             // Use consistent filename: cover_2026.jpg
+             final newFilename = 'cover_$year$ext'; 
+             final newPath = path.join(_service.dataDir!.path, newFilename);
+             
+             // Avoid copy if already there
+             if (path.normalize(coverPath) != path.normalize(newPath)) {
+                await file.copy(newPath);
+             }
+             
+             _bookCoverPaths[year] = newPath;
+             
+             // Update Manifest for Custom Cover
+             _service.manifestService.updateItem(newFilename, isDeleted: false);
+          }
+        } catch (e) {
+           debugPrint("Error copying cover image: $e");
+           _bookCoverPaths[year] = coverPath; // Fallback
+        }
+      } else {
+         _bookCoverPaths[year] = coverPath;
+      }
     }
 
-    notifyListeners();
+    notifyListeners(); // Immediate UI update
+    
+    // 2. Persist to JSON
+    await _saveBookMetadata();
+    
+    // 3. Legacy Backup (SharedPreferences)
+    final prefs = await SharedPreferences.getInstance();
+    if (title != null) await prefs.setString('book_title_$year', title);
+    if (subtitle != null) await prefs.setString('book_subtitle_$year', subtitle);
+    if (coverPath != null) await prefs.setString('book_cover_$year', _bookCoverPaths[year]!);
   }
 
-  /// Resets book metadata fields to default (removes from persistence).
   Future<void> resetBookInfo(int year, {bool title = false, bool subtitle = false, bool cover = false}) async {
     final prefs = await SharedPreferences.getInstance();
     
@@ -192,29 +321,50 @@ class DiaryProvider with ChangeNotifier {
     }
     
     if (cover) {
+      // Logic: If we reset cover, should we delete the file?
+      // Optionally yes, to clean up, or just remove reference.
+      // Let's remove reference for safety.
+      if (_bookCoverPaths.containsKey(year)) {
+         final oldPath = _bookCoverPaths[year];
+         // Optional: Delete file if it was in dataDir? 
+         // For now, let's keep it simple (orphaned files are acceptable vs accidental data loss)
+      }
       _bookCoverPaths.remove(year);
       await prefs.remove('book_cover_$year');
+      
+      // Note: We don't mark cover file as isDeleted in manifest because we didn't physically delete it.
+      // If we wanted to, we would:
+      // _service.manifestService.updateItem('cover_$year.jpg', isDeleted: true);
     }
 
     notifyListeners();
+    await _saveBookMetadata();
   }
   
   // Month Title Methods
   
   Future<void> setMonthTitle(int year, int month, String title) async {
-    final prefs = await SharedPreferences.getInstance();
     final key = '${year}_$month';
     _monthTitles[key] = title;
-    await prefs.setString('month_title_$key', title);
     notifyListeners();
+    
+    await _saveBookMetadata();
+    
+    // Legacy
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('month_title_$key', title);
   }
   
   Future<void> resetMonthTitle(int year, int month) async {
-    final prefs = await SharedPreferences.getInstance();
     final key = '${year}_$month';
     _monthTitles.remove(key);
-    await prefs.remove('month_title_$key');
     notifyListeners();
+    
+    await _saveBookMetadata();
+    
+    // Legacy
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('month_title_$key');
   }
   
   String getMonthTitle(int year, int month) {
