@@ -233,6 +233,18 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
               textColor: textColor,
               onTap: () => _showThemePicker(context, settings),
             ),
+             _buildDivider(isSeaFlower, isMidnight),
+             _buildSwitchItem(
+               context: context,
+               icon: Icons.brightness_auto_outlined,
+               title: '跟随系统深色模式',
+               subtitle: '开启后，深色模式自动使用午夜星尘主题',
+               value: settings.followSystemTheme,
+               onChanged: (val) => settings.setFollowSystemTheme(val),
+               isSeaFlower: isSeaFlower,
+               isMidnight: isMidnight,
+               textColor: textColor,
+             ),
             _buildDivider(isSeaFlower, isMidnight),
             _buildSettingsItem(
               context: context,

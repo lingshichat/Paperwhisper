@@ -165,6 +165,15 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     }
   }
 
+  @override
+  void didChangePlatformBrightness() {
+    super.didChangePlatformBrightness();
+    if (mounted) {
+      final brightness = View.of(context).platformDispatcher.platformBrightness;
+      context.read<SettingsProvider>().updateThemeFromSystem(brightness);
+    }
+  }
+
   void _checkLock() {
     if (AuthService().isLocked) {
       _showLockScreen();
