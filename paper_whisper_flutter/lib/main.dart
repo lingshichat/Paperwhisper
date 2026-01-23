@@ -18,6 +18,7 @@ import 'services/storage_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'services/auth_service.dart';
 import 'widgets/lock_screen.dart';
+import 'models/diary_entry.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -25,9 +26,25 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final prefs = await SharedPreferences.getInstance();
   final bool showIntro = !(prefs.getBool('intro_shown') ?? false);
+  AuthService().init(prefs);
   
   final diaryService = DiaryService();
-  AuthService().init(prefs);
+  
+  // 预加载：尝试快速读取缓存，实现“秒开”体验
+  // 设置 500ms 超时，避免特殊情况下阻塞启动过久
+  List<DiaryEntry>? initialEntries;
+  try {
+     // 必须先 init 才能读取缓存
+     await diaryService.init();
+     initialEntries = await diaryService.loadCache().timeout(
+       const Duration(milliseconds: 500), 
+       onTimeout: () => null
+     );
+  } catch (e) {
+    debugPrint("Pre-loading failed or timed out: $e");
+    // Fallback: initialEntries remains null, Provider will load normally
+  }
+
   // 冷启动检查锁状态
   AuthService().lockApp();
 
@@ -35,7 +52,8 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
-        ChangeNotifierProvider(create: (_) => DiaryProvider(diaryService)),
+        // 注入预加载的数据，实现所见即所得
+        ChangeNotifierProvider(create: (_) => DiaryProvider(diaryService, initialEntries)),
         ChangeNotifierProxyProvider<DiaryProvider, SyncProvider>(
           create: (_) => SyncProvider(),
           update: (_, diary, syncProvider) => syncProvider!..updateDiaryProvider(diary),

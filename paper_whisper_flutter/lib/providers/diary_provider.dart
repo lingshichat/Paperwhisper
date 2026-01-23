@@ -30,9 +30,18 @@ class DiaryProvider with ChangeNotifier {
   DiaryService get service => _service;
   String get searchQuery => _searchQuery;
 
-  DiaryProvider([DiaryService? service]) : _service = service ?? DiaryService() {
-    loadEntries();
-    // _loadBookTitles(); // Moved to loadEntries to ensure service.init() is done
+  DiaryProvider([DiaryService? service, List<DiaryEntry>? initialEntries]) : _service = service ?? DiaryService() {
+    if (initialEntries != null && initialEntries.isNotEmpty) {
+      _entries = initialEntries;
+      _isLoading = false;
+      _buildFlatList();
+      // Metadata needs service init, which might not be fully ready if we just passed entries? 
+      // Actually main.dart will call service.init(), so it should be fine.
+      // We still run loadEntries in background to sync with file system
+      loadEntries(silent: true);
+    } else {
+      loadEntries();
+    }
   }
 
   void setSearchQuery(String query) {
@@ -40,36 +49,42 @@ class DiaryProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> loadEntries() async {
-    _isLoading = true;
-    notifyListeners(); // 触发 UI 显示 loading（如果第一次且无缓存）
+  Future<void> loadEntries({bool silent = false}) async {
+    if (!silent) {
+      _isLoading = true;
+      notifyListeners(); 
+    }
+    
     try {
       await _service.init();
       _debugPath = _service.currentDataPath;
 
-      // 1. 尝试优先读取缓存 (Fast Path)
-      final cachedEntries = await _service.loadCache();
-      if (cachedEntries != null && cachedEntries.isNotEmpty) {
-        _entries = cachedEntries;
-        _buildFlatList();
-        notifyListeners(); // 立即渲染缓存内容
-        // 注意：此处不将 isLoading 设为 false，因为还在后台加载真实文件
-        // 或者可以设为 false 让骨架屏消失，用户体验更好
-        _isLoading = false; 
-        notifyListeners();
+      // 1. 尝试优先读取缓存 (Fast Path) - Only if not silent (if silent, we assume cache is already loaded via constructor)
+      if (!silent) {
+        final cachedEntries = await _service.loadCache();
+        if (cachedEntries != null && cachedEntries.isNotEmpty) {
+          _entries = cachedEntries;
+          _buildFlatList();
+          notifyListeners(); 
+          // Keep isLoading false to show content while loading files in background?
+          // Strategy: If we show cache, we are "loaded".
+          // But 'silent' is false here, so we are in standard load.
+          // Let's set isLoading = false so user sees content.
+          _isLoading = false; 
+          notifyListeners();
+        }
       }
 
-      // 2. 读取真实文件 (Source of Thruth)
-      // 可以在后台悄悄进行
+      // 2. 读取真实文件 (Source of Truth)
       final fileEntries = await _service.getEntries();
       
-      // Sort Descending (Reverse Chronological: Newest -> Oldest)
+      // Sort Descending
       fileEntries.sort((a, b) => b.dateString.compareTo(a.dateString));
       
-      // 3. 更新内存并刷新 UI
+      // 3. 更新内存 (Diff check could be optimized, but for now just replace)
       _entries = fileEntries;
       _buildFlatList();
-      await _loadBookMetadata(); // Load metadata after service init
+      await _loadBookMetadata(); 
       
       // 4. 更新缓存文件
       await _service.saveCache(_entries);
@@ -77,8 +92,15 @@ class DiaryProvider with ChangeNotifier {
     } catch (e) {
       debugPrint("Error loading entries: $e");
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      if (!silent) {
+         _isLoading = false;
+         notifyListeners();
+      } else {
+         // If silent, we still need to notify if data changed (which it likely did or didn't)
+         // Since we just replaced _entries, we MUST notify to ensure UI reflects latest file state
+         // (e.g. if cache was stale)
+         notifyListeners();
+      }
     }
   }
 
