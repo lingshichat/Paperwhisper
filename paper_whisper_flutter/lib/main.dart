@@ -12,8 +12,10 @@ import 'providers/sync_provider.dart';
 import 'pages/diary_list_page.dart';
 import 'config/app_theme.dart';
 import 'pages/intro_page.dart';
-import 'pages/splash_page.dart';
+import 'pages/moments_page.dart';
 import 'services/storage_service.dart';
+import 'services/hitokoto_service.dart';
+import 'widgets/privacy_agreement_dialog.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'services/auth_service.dart';
@@ -24,74 +26,123 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final prefs = await SharedPreferences.getInstance();
+  
+  // 并行初始化：极限压缩启动时间
+  final diaryService = DiaryService();
+  final results = await Future.wait([
+    SharedPreferences.getInstance(),
+    diaryService.init().then((_) => diaryService.loadCache().timeout(
+      const Duration(milliseconds: 150), 
+      onTimeout: () => null
+    )),
+  ]);
+  
+  final prefs = results[0] as SharedPreferences;
+  final List<DiaryEntry>? initialEntries = results[1] as List<DiaryEntry>?;
+  
   final bool showIntro = !(prefs.getBool('intro_shown') ?? false);
   AuthService().init(prefs);
   
-  final diaryService = DiaryService();
+  // 确定启动页
+  final String startupPage = prefs.getString('startup_page') ?? 'writer';
   
-  // 预加载：尝试快速读取缓存，实现“秒开”体验
-  // 设置 500ms 超时，避免特殊情况下阻塞启动过久
-  List<DiaryEntry>? initialEntries;
-  try {
-     // 必须先 init 才能读取缓存
-     await diaryService.init();
-     initialEntries = await diaryService.loadCache().timeout(
-       const Duration(milliseconds: 500), 
-       onTimeout: () => null
-     );
-  } catch (e) {
-    debugPrint("Pre-loading failed or timed out: $e");
-    // Fallback: initialEntries remains null, Provider will load normally
-  }
-
-  // 冷启动检查锁状态
+  // 检查锁状态
   AuthService().lockApp();
+  final bool isLocked = AuthService().isLocked;
+  
+  // 预热一言 (Fire and forget, 不阻塞)
+  HitokotoService().fetchHitokoto();
 
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
-        // 注入预加载的数据，实现所见即所得
         ChangeNotifierProvider(create: (_) => DiaryProvider(diaryService, initialEntries)),
         ChangeNotifierProxyProvider<DiaryProvider, SyncProvider>(
           create: (_) => SyncProvider(),
           update: (_, diary, syncProvider) => syncProvider!..updateDiaryProvider(diary),
         ),
       ],
-      child: MyApp(showIntro: showIntro),
+      child: MyApp(
+        showIntro: showIntro, 
+        startupPage: startupPage,
+        isLocked: isLocked,
+      ),
     ),
   );
 }
 
 class MyApp extends StatefulWidget {
   final bool showIntro;
-  const MyApp({super.key, required this.showIntro});
+  final String startupPage;
+  final bool isLocked;
+  
+  const MyApp({
+    super.key, 
+    required this.showIntro, 
+    required this.startupPage,
+    required this.isLocked,
+  });
 
   @override
   State<MyApp> createState() => _MyAppState();
 }
 
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+  bool _privacyChecked = false;
+  bool _privacyAgreed = true;
   
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    // 冷启动自动同步 & 锁屏检查
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // 启动时清理临时缓存
       StorageService().cleanTemporaryCache();
+      _checkPrivacy();
       
-      // 检查是否需要锁屏
-      // if (AuthService().isLocked) {
-      //   _checkLock();
-      // }
+      // 冷启动时如果锁定，显示锁屏
+      if (widget.isLocked) {
+        _showLockScreen();
+      }
       
       if (mounted) {
          context.read<SyncProvider>().requestAutoSync(fromLifecycle: true);
       }
     });
+  }
+  
+  Future<void> _checkPrivacy() async {
+    final prefs = await SharedPreferences.getInstance();
+    final agreed = prefs.getBool('privacy_agreed') ?? false;
+    if (!agreed && mounted) {
+      final result = await showDialog<bool>(
+        context: navigatorKey.currentContext!,
+        barrierDismissible: false,
+        builder: (ctx) => PrivacyAgreementDialog(
+          onAgree: () => Navigator.of(ctx).pop(true),
+          onDisagree: () => Navigator.of(ctx).pop(false),
+        ),
+      );
+      if (result == true) {
+        await prefs.setBool('privacy_agreed', true);
+      } else {
+        SystemChannels.platform.invokeMethod('SystemNavigator.pop');
+      }
+    }
+    if (mounted) setState(() { _privacyChecked = true; });
+  }
+  
+  void _showLockScreen() {
+    if (AuthService().isLockScreenVisible) return;
+    navigatorKey.currentState?.push(
+      PageRouteBuilder(
+        opaque: false,
+        pageBuilder: (_, __, ___) => LockScreen(
+          enableBack: false,
+          onUnlocked: () => navigatorKey.currentState?.pop(),
+        ),
+      ),
+    );
   }
   
   @override
@@ -103,12 +154,10 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused) {
-      //切后台，若开启了锁则标记为锁定
       AuthService().lockApp();
     }
     
     if (state == AppLifecycleState.resumed) {
-       // 切回前台自动同步
        if (mounted) {
          context.read<SyncProvider>().requestAutoSync(fromLifecycle: true);
        }
@@ -118,22 +167,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
   void _checkLock() {
     if (AuthService().isLocked) {
-      // Prevent multiple lock screens
-      if (AuthService().isLockScreenVisible) {
-        return;
-      }
-      
-      navigatorKey.currentState?.push(
-        PageRouteBuilder(
-          opaque: false, // Transparent enabling blur effect (or not, since we use opaque now)
-          pageBuilder: (_, __, ___) => LockScreen(
-            enableBack: false,
-            onUnlocked: () {
-               navigatorKey.currentState?.pop();
-            },
-          ),
-        ),
-      );
+      _showLockScreen();
     }
   }
 
@@ -145,11 +179,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           title: '纸语 PaperWhisper',
           navigatorKey: navigatorKey,
           debugShowCheckedModeBanner: false,
-          // 使用 AppTheme 生成的动态 Theme，包含背景色修复和自定义转场
           theme: AppTheme.getThemeData(settings.currentTheme),
           builder: (context, child) {
-            // 注意：全局效果会导致页面切换时叠加问题
-            // 所以改为让各页面自己负责渲染背景和特效
             return AnnotatedRegion<SystemUiOverlayStyle>(
               value: AppTheme.getSystemUiOverlayStyle(settings.currentTheme),
               child: child!,
@@ -164,12 +195,21 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
              Locale('zh', 'CN'),
              Locale('en', 'US'),
           ],
-            home: SplashPage(showIntro: widget.showIntro),
-            scrollBehavior: AppScrollBehavior(),
-          );
-        },
-      );
+          home: _buildHomePage(),
+          scrollBehavior: AppScrollBehavior(),
+        );
+      },
+    );
+  }
+  
+  Widget _buildHomePage() {
+    if (widget.showIntro) return const IntroPage();
+    switch (widget.startupPage) {
+      case 'moments': return const MomentsPage();
+      case 'writer':
+      default: return const DiaryListPage();
     }
+  }
 }
 
 class AppScrollBehavior extends MaterialScrollBehavior {
