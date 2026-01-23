@@ -298,7 +298,7 @@ class _LockScreenState extends State<LockScreen> with TickerProviderStateMixin {
                    top: MediaQuery.of(context).padding.top + 10,
                    left: 10,
                    child: IconButton(
-                     icon: Icon(Icons.close, color: AppTheme.getTextColor(theme).withOpacity(0.7)),
+                     icon: Icon(Icons.close, color: (theme == AppTheme.themeDefault ? const Color(0xFFF4ECD8) : AppTheme.getTextColor(theme)).withOpacity(0.7)),
                      onPressed: () => Navigator.of(context).pop(),
                    ),
                  ),
@@ -333,7 +333,7 @@ class _LockScreenState extends State<LockScreen> with TickerProviderStateMixin {
             title,
             style: GoogleFonts.notoSerifSc(
               fontSize: 18,
-              color: textColor.withOpacity(0.8),
+              color: (theme == AppTheme.themeDefault ? const Color(0xFFF4ECD8) : textColor).withOpacity(0.8),
               fontWeight: FontWeight.w500,
               letterSpacing: 2,
             ),
@@ -589,7 +589,7 @@ class _LockScreenState extends State<LockScreen> with TickerProviderStateMixin {
         width: 72, 
         height: 72,
         child: enabled && onTap != null ? IconButton(
-          icon: Icon(icon, color: AppTheme.getTextColor(theme).withOpacity(0.6)),
+          icon: Icon(icon, color: (theme == AppTheme.themeDefault ? const Color(0xFFF4ECD8) : AppTheme.getTextColor(theme)).withOpacity(0.6)),
           onPressed: () {
              HapticFeedback.lightImpact();
              onTap();
