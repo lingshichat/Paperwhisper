@@ -1,9 +1,9 @@
 $ErrorActionPreference = "Stop"
 
 # --- 🛠️ 配置区域 ---
-$BUCKET_NAME = "paper-whisper-releases"
-$R2_REMOTE = "cfr2"
-$DOMAIN = "https://dl.lingshichat.top"
+$BUCKET_NAME = "paperwhisper"
+$R2_REMOTE = "bitiful"
+$DOMAIN = "https://paperwhisper.s3.bitiful.net"
 # --------------------
 
 # 0. 同步版本号
@@ -15,7 +15,8 @@ $pubspec = Get-Content pubspec.yaml
 $versionLine = $pubspec | Where-Object { $_ -match "^version:" }
 if ($versionLine) {
     $VERSION = $versionLine.ToString().Trim().Split(' ')[1].Split('+')[0]
-} else {
+}
+else {
     Write-Error "无法在 pubspec.yaml 中找到版本号"
 }
 
@@ -35,7 +36,8 @@ if (Test-Path $APK_PATH) {
     Write-Host "☁️ [Android] 正在上传 $APK_NAME..." -ForegroundColor Yellow
     rclone copyto "$APK_PATH" "$R2_REMOTE`:$BUCKET_NAME/Android/$APK_NAME" --progress
     rclone copyto "$APK_PATH" "$R2_REMOTE`:$BUCKET_NAME/Android/latest.apk" --progress
-} else {
+}
+else {
     Write-Error "APK 构建失败或找不到文件: $APK_PATH"
 }
 

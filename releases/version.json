@@ -1,15 +1,16 @@
 {
-    "latestVersion": "1.4.1",
-    "latestBuildNumber": 12,
-    "releaseDate": "2026-01-21",
-    "title": "纸语 1.4.1 —— 你的人生书籍已上线",
+    "latestVersion": "1.4.2",
+    "latestBuildNumber": 13,
+    "releaseDate": "2026-01-22",
+    "title": "纸语 1.4.2 —— 你的人生书籍已上线",
     "isForceUpdate": false,
     "changelog": [
-        "🛠️ 一些体验优化（更新日志写不动了QAQ）"
+        "🆕 支持指纹解锁",
+        "🛠️ 一些体验优化"
     ],
     "downloadUrl": {
-        "android": "https://dl.lingshichat.top/Android/latest.apk",
-        "windows": "https://dl.lingshichat.top/Windows/latest.exe"
+        "android": "https://paperwhisper.s3.bitiful.net/Android/latest.apk",
+        "windows": "https://paperwhisper.s3.bitiful.net/Windows/latest.exe"
     },
     "backupUrl": {
         "android": "https://www.123865.com/s/US1Jjv-OY9Dv",

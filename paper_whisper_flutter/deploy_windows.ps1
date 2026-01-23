@@ -2,9 +2,9 @@
 $ErrorActionPreference = "Stop"
 
 # --- 🛠️ 配置区域 (与 deploy.sh 保持一致) ---
-$BucketName = "paper-whisper-releases"
-$R2Remote = "cfr2"
-$Domain = "https://dl.lingshichat.top"
+$BucketName = "paperwhisper"
+$R2Remote = "bitiful"
+$Domain = "https://paperwhisper.s3.bitiful.net"
 # ----------------------------------------
 
 

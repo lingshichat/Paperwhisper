@@ -10,7 +10,7 @@ import '../models/update_info.dart';
 /// 负责检查远程版本、比较版本号、打开下载链接
 class UpdateService {
   // 远程版本配置 URL
-  static const String _versionUrl = 'https://dl.lingshichat.top/version.json';
+  static const String _versionUrl = 'https://paperwhisper.s3.bitiful.net/version.json';
   
   // 请求超时时间
   static const Duration _timeout = Duration(seconds: 10);

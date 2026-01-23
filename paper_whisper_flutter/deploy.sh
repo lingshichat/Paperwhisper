@@ -2,9 +2,9 @@
 set -e
 
 # --- 🛠️ 配置区域 ---
-BUCKET_NAME="paper-whisper-releases"
-R2_REMOTE="cfr2"
-DOMAIN="https://dl.lingshichat.top"
+BUCKET_NAME="paperwhisper"
+R2_REMOTE="bitiful"
+DOMAIN="https://paperwhisper.s3.bitiful.net"
 # --------------------
 
 # 0. 同步版本号 (from releases/version.json)
