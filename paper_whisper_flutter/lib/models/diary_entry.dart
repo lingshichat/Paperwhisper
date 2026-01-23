@@ -133,4 +133,29 @@ class DiaryEntry {
 
   static String _weatherToString(WeatherType w) => w.name;
   static String _moodToString(MoodType m) => m.name;
+
+  // JSON Serialization for Cache
+  Map<String, dynamic> toJson() {
+    return {
+      'filename': filename,
+      'dateString': dateString,
+      'title': title,
+      'weather': _weatherToString(weather),
+      'mood': _moodToString(mood),
+      'content': content,
+      'isMarkdown': isMarkdown,
+    };
+  }
+
+  factory DiaryEntry.fromJson(Map<String, dynamic> json) {
+    return DiaryEntry(
+      filename: json['filename'] ?? '',
+      dateString: json['dateString'] ?? '',
+      title: json['title'] ?? '无题',
+      weather: _parseWeather(json['weather'] ?? ''),
+      mood: _parseMood(json['mood'] ?? ''),
+      content: json['content'] ?? '',
+      isMarkdown: json['isMarkdown'] ?? false,
+    );
+  }
 }

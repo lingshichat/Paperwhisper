@@ -30,7 +30,10 @@ class _SplashPageState extends State<SplashPage> {
   @override
   void initState() {
     super.initState();
-    _initAndNavigate();
+    // 使用 addPostFrameCallback 确保在首帧渲染后立即执行跳转逻辑
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initAndNavigate();
+    });
   }
 
   Future<void> _initAndNavigate() async {
@@ -64,35 +67,9 @@ class _SplashPageState extends State<SplashPage> {
 
     if (!mounted) return;
 
-    final diaryProvider = context.read<DiaryProvider>();
+    // 1. 触发预热 (不等待)
+    _preloadHitokoto();
     
-    // 1. 并行执行预热任务
-    // 如果已锁定（有锁屏覆盖），则不需等待动画，尽快加载数据并跳转
-    // 如果未锁定，则至少等待 2.5 秒保证启动页展示效果
-    
-    final bool isLocked = AuthService().isLocked; 
-    print('DEBUG: SplashPage isLocked: $isLocked'); // debug log
-    
-    if (isLocked) {
-      // 锁定状态下，仅等待必要数据加载
-      await Future.wait([
-        _waitForDiaryLoading(diaryProvider),
-        _preloadHitokoto(),
-      ]);
-    } else {
-      // 正常启动，等待加载 + 最小展示时间
-      await Future.any([
-        Future.wait([
-          _waitForDiaryLoading(diaryProvider),
-          _preloadHitokoto(),
-          Future.delayed(const Duration(milliseconds: 300)),
-        ]),
-        Future.delayed(const Duration(milliseconds: 2500)),
-      ]);
-    }
-    
-    if (!mounted) return;
-
     // 2. 导航到目标页面
     
     // Determine target page based on settings
@@ -116,14 +93,16 @@ class _SplashPageState extends State<SplashPage> {
       }
     }
     
+    final bool isLocked = AuthService().isLocked; 
+
     // 如果锁定，导航到锁屏页面 (替换 Splash)
     // 解锁后的回调导航到 targetPage
     if (isLocked) {
       Navigator.of(context).pushReplacement(
         PageRouteBuilder(
-          pageBuilder: (ctx, _, __) => _buildLockScreenWrapper(ctx, targetPage), // Pass new context
+          pageBuilder: (ctx, _, __) => _buildLockScreenWrapper(ctx, targetPage),
           transitionsBuilder: (_, animation, __, child) => FadeTransition(opacity: animation, child: child),
-          transitionDuration: const Duration(milliseconds: 600),
+          transitionDuration: const Duration(milliseconds: 300), // 加快转场
         ),
       );
     } else {
@@ -131,7 +110,7 @@ class _SplashPageState extends State<SplashPage> {
         PageRouteBuilder(
           pageBuilder: (_, __, ___) => targetPage,
           transitionsBuilder: (_, animation, __, child) => FadeTransition(opacity: animation, child: child),
-          transitionDuration: const Duration(milliseconds: 600),
+          transitionDuration: const Duration(milliseconds: 300), // 加快转场
         ),
       );
       
@@ -148,12 +127,11 @@ class _SplashPageState extends State<SplashPage> {
       enableBack: false,
       onUnlocked: () {
         // 解锁成功，替换为目标页面
-        // 使用传入的 context (LockScreen路由的context)，而不是 SplashPage 的 context
         Navigator.of(context).pushReplacement(
           PageRouteBuilder(
             pageBuilder: (_, __, ___) => targetPage,
             transitionsBuilder: (_, animation, __, child) => FadeTransition(opacity: animation, child: child),
-            transitionDuration: const Duration(milliseconds: 600),
+            transitionDuration: const Duration(milliseconds: 300),
           ),
         );
         
@@ -165,28 +143,17 @@ class _SplashPageState extends State<SplashPage> {
     );
   }
 
-  Future<void> _waitForDiaryLoading(DiaryProvider provider) async {
-    int waitCount = 0;
-    const maxWait = 100; // 最多等待 5 秒
-    while (provider.isLoading && waitCount < maxWait) {
-      await Future.delayed(const Duration(milliseconds: 50));
-      waitCount++;
-    }
-  }
-
   Future<void> _preloadHitokoto() async {
     try {
-      // 预热一言请求，结果会被缓存在 HitokotoService 中
-      await HitokotoService().fetchHitokoto();
-    } catch (_) {
-      // 忽略错误，不影响启动
-    }
+      // 预热一言请求 (Fire and forget)
+      HitokotoService().fetchHitokoto();
+    } catch (_) {}
   }
 
   /// 导航完成后延迟检测更新
   Future<void> _checkForUpdateAfterNavigation() async {
     // 等待页面动画完成
-    await Future.delayed(const Duration(milliseconds: 1200));
+    await Future.delayed(const Duration(milliseconds: 1000));
     
     if (!mounted) return;
 
@@ -197,12 +164,9 @@ class _SplashPageState extends State<SplashPage> {
       if (updateInfo != null && mounted) {
         final currentVersion = await updateService.getCurrentVersion();
         
-        // 获取当前 Navigator 的 context（从新页面）
-        // 由于导航已完成，需要通过全局 key 或 overlay 来显示弹窗
-        // 这里使用延迟确保 context 可用
+        // 获取当前 Navigator 的 context
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
-            // 使用 Navigator 的 overlay context
             final navigatorContext = Navigator.of(context).context;
             UpdateDialog.show(
               navigatorContext,
@@ -213,105 +177,16 @@ class _SplashPageState extends State<SplashPage> {
         });
       }
     } catch (e) {
-      // 静默失败，不影响用户体验
-      print('启动时检测更新失败: $e');
+      debugPrint('启动时检测更新失败: $e');
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // 仅显示背景色，根据主题适配，避免颜色跳变
     return Scaffold(
-      backgroundColor: const Color(0xFFF4ECD8),
-      body: Stack(
-        children: [
-          // 主要内容
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // App 图标
-                Container(
-                  width: 100,
-                  height: 100,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.15),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: Image.asset(
-                      'assets/icon.png',
-                      errorBuilder: (_, __, ___) => const Icon(
-                        Icons.book,
-                        size: 60,
-                        color: Color(0xFF8D6E63),
-                      ),
-                    ),
-                  ),
-                ),
-                
-                const SizedBox(height: 30),
-                
-                // App 名称（同时预热 GoogleFonts）
-                Text(
-                  '纸语',
-                  style: GoogleFonts.notoSerifSc(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF3E2723),
-                  ),
-                ),
-                
-                const SizedBox(height: 8),
-                
-                Text(
-                  'PaperWhisper',
-                  style: GoogleFonts.playfairDisplay(
-                    fontSize: 14,
-                    fontStyle: FontStyle.italic,
-                    color: const Color(0xFF8D6E63),
-                  ),
-                ),
-                
-                const SizedBox(height: 40),
-                
-                // 加载指示器
-                const SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF8D6E63)),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // 隐藏的 BackdropFilter 预热层
-          // 渲染一个不可见的 BackdropFilter 来预编译 shader
-          Positioned(
-            left: -100,
-            top: -100,
-            child: SizedBox(
-              width: 10,
-              height: 10,
-              child: ClipRRect(
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                  child: Container(color: Colors.transparent),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: const SizedBox.shrink(), // 不显示任何 Logo 或加载圈
     );
   }
 }

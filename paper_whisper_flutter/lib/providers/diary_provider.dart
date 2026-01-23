@@ -42,17 +42,38 @@ class DiaryProvider with ChangeNotifier {
 
   Future<void> loadEntries() async {
     _isLoading = true;
-    notifyListeners(); // 触发 UI 显示 loading
+    notifyListeners(); // 触发 UI 显示 loading（如果第一次且无缓存）
     try {
       await _service.init();
       _debugPath = _service.currentDataPath;
-      _entries = await _service.getEntries();
+
+      // 1. 尝试优先读取缓存 (Fast Path)
+      final cachedEntries = await _service.loadCache();
+      if (cachedEntries != null && cachedEntries.isNotEmpty) {
+        _entries = cachedEntries;
+        _buildFlatList();
+        notifyListeners(); // 立即渲染缓存内容
+        // 注意：此处不将 isLoading 设为 false，因为还在后台加载真实文件
+        // 或者可以设为 false 让骨架屏消失，用户体验更好
+        _isLoading = false; 
+        notifyListeners();
+      }
+
+      // 2. 读取真实文件 (Source of Thruth)
+      // 可以在后台悄悄进行
+      final fileEntries = await _service.getEntries();
       
       // Sort Descending (Reverse Chronological: Newest -> Oldest)
-      _entries.sort((a, b) => b.dateString.compareTo(a.dateString));
+      fileEntries.sort((a, b) => b.dateString.compareTo(a.dateString));
       
+      // 3. 更新内存并刷新 UI
+      _entries = fileEntries;
       _buildFlatList();
       await _loadBookMetadata(); // Load metadata after service init
+      
+      // 4. 更新缓存文件
+      await _service.saveCache(_entries);
+
     } catch (e) {
       debugPrint("Error loading entries: $e");
     } finally {

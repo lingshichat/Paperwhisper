@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
@@ -190,7 +191,47 @@ class DiaryService {
       await _trashService.moveToTrash(file);
     }
     
-    // Update Manifest: Mark as deleted (soft delete)
     _manifestService.updateItem(filename, isDeleted: true);
+  }
+
+  // --- Cache Mechanism for Fast Launch ---
+
+  Future<void> saveCache(List<DiaryEntry> entries) async {
+    if (_dataDir == null) return;
+    try {
+      final cacheFile = File(path.join(_dataDir!.path, 'diary_cache.json'));
+      // 为了性能，不使用 compute，直接在 IO 线程序列化（数据量不大）
+      // 如果数据量巨大，可以考虑 compute
+      final jsonList = entries.map((e) => e.toJson()).toList();
+      final jsonStr = jsonEncode(jsonList);
+      await cacheFile.writeAsString(jsonStr);
+      
+      // Update Manifest? Not strictly necessary for cache file as it is local-only optimization usually,
+      // but if we want to sync cache context (not recommended due to conflict), skip it.
+      // Cache is derived data.
+    } catch (e) {
+      debugPrint("Error saving cache: $e");
+    }
+  }
+
+  Future<List<DiaryEntry>?> loadCache() async {
+    await init(); // Ensure dir
+    if (_dataDir == null) return null;
+
+    try {
+      final cacheFile = File(path.join(_dataDir!.path, 'diary_cache.json'));
+      if (await cacheFile.exists()) {
+        final jsonStr = await cacheFile.readAsString();
+        final List<dynamic> jsonList = jsonDecode(jsonStr);
+        final entries = jsonList.map((e) => DiaryEntry.fromJson(e)).toList();
+        
+        // Sort by date desc (Cache should be sorted, but ensure it)
+        entries.sort((a, b) => b.dateString.compareTo(a.dateString));
+        return entries;
+      }
+    } catch (e) {
+      debugPrint("Error loading cache: $e");
+    }
+    return null;
   }
 }
