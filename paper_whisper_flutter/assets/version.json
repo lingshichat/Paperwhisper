@@ -1,12 +1,14 @@
 {
-    "latestVersion": "1.4.2",
-    "latestBuildNumber": 13,
-    "releaseDate": "2026-01-22",
-    "title": "纸语 1.4.2 —— 你的人生书籍已上线",
+    "latestVersion": "1.4.3",
+    "latestBuildNumber": 14,
+    "releaseDate": "2026-01-23",
+    "title": "纸语 1.4.3 —— 你的人生书籍已上线",
     "isForceUpdate": false,
     "changelog": [
-        "🆕 支持指纹解锁",
-        "🛠️ 一些体验优化"
+        "🆕 支持自动深色模式",
+        "🛠️ 优化冷启动速度",
+        "🛠️ 修复密码锁部分文字显示异常",
+        "🛠️ 修复书籍封面无法持久化保存"
     ],
     "downloadUrl": {
         "android": "https://paperwhisper.s3.bitiful.net/Android/latest.apk",
