@@ -21,6 +21,8 @@ import '../pages/trash_page.dart';
 import '../services/storage_service.dart';
 import 'sync_settings_page.dart';
 import 'security_settings_page.dart';
+import 'premium_membership_page.dart';  // Import Premium Page
+import '../services/payment_service.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -36,6 +38,9 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
   String _currentDataPath = '';
   String _internalStats = '';
   bool _hasInternalClutter = false;
+  
+  // Pro Status
+  bool _isPro = false;
   
   // Permission State
   Map<String, PermissionStatus> _permStatuses = {};
@@ -60,6 +65,9 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
        _checkAllPermissions();
+       setState(() {
+          _isPro = Provider.of<PaymentService>(context, listen: false).isPro;
+       });
     }
   }
 
@@ -195,10 +203,31 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
       padding: const EdgeInsets.all(20),
       children: [
         // 1. 核心服务 (Core)
-        _buildSectionHeader('账号与云同步', textColor),
+        _buildSectionHeader('账号与会员', textColor),
         _buildGroupContainer(
           isSeaFlower, isMidnight,
           children: [
+             // [NEW] Premium Membership Entry
+             Consumer<PaymentService>(
+               builder: (ctx, pay, _) {
+                 return _buildSettingsItem(
+                    context: context,
+                    icon: pay.isPro ? Icons.verified : Icons.card_membership,
+                    title: pay.isPro ? '尊享会员' : '解锁高级版',
+                    subtitle: pay.isPro ? '已激活 - 感谢您的支持' : '一次性买断 · 永久更新',
+                    isSeaFlower: isSeaFlower,
+                    isMidnight: isMidnight,
+                    textColor: textColor,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        SlidePageRoute(page: const PremiumMembershipPage()),
+                      );
+                    },
+                 );
+               }
+             ),
+            _buildDivider(isSeaFlower, isMidnight),
             _buildSettingsItem(
               context: context,
               icon: Icons.cloud_sync_outlined,
