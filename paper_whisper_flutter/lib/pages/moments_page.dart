@@ -21,6 +21,9 @@ import 'package:flutter_svg/flutter_svg.dart'; // Added
 import '../providers/diary_provider.dart'; // Added
 import '../widgets/skeuomorphic_search_bar.dart'; // Added
 import '../widgets/visual_effects.dart'; // Added for petal effects
+import '../services/payment_service.dart';
+import '../pages/premium_membership_page.dart';
+import '../widgets/slide_page_route.dart';
 
 class MomentsPage extends StatefulWidget {
   const MomentsPage({super.key});
@@ -138,6 +141,31 @@ class _MomentsPageState extends State<MomentsPage> {
   }
 
   Future<void> _handleSend(String content, List<XFile> images, {String? audioPath, String? audioTitle, int? audioDuration}) async {
+    // 会员 / 试用：免费用户当日限 3 条
+    final pay = Provider.of<PaymentService>(context, listen: false);
+    if (!pay.canUseProFeatures) {
+      final todayCount = _getMomentsForDate(DateTime.now()).length;
+      if (todayCount >= 3) {
+        if (!mounted) return;
+        final go = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => SkeuomorphicDialog(
+            title: '今日额度已用完',
+            headerIcon: Icons.lock_outline,
+            content: const Text('免费版每日 3 条随心记。赞助后解锁无限创作、WebDAV 同步与更多能力。'),
+            actions: [
+              SkeuomorphicDialogButton(label: '取消', isPrimary: false, onPressed: () => Navigator.pop(ctx, false)),
+              SkeuomorphicDialogButton(label: '去赞助', onPressed: () => Navigator.pop(ctx, true)),
+            ],
+          ),
+        );
+        if (go == true && mounted) {
+          Navigator.push(context, SlidePageRoute(page: const PremiumMembershipPage()));
+        }
+        return;
+      }
+    }
+
     // 1. Save images
     List<String> savedPaths = [];
     for (var img in images) {
@@ -201,6 +229,25 @@ class _MomentsPageState extends State<MomentsPage> {
   }
 
   Future<void> _handleAggregation() async {
+    if (!Provider.of<PaymentService>(context, listen: false).canUseProFeatures) {
+      final go = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => SkeuomorphicDialog(
+title: '需要赞助',
+            headerIcon: Icons.lock_outline,
+            content: const Text('「随心记转长文」赞助后可用。'),
+            actions: [
+              SkeuomorphicDialogButton(label: '取消', isPrimary: false, onPressed: () => Navigator.pop(ctx, false)),
+              SkeuomorphicDialogButton(label: '去赞助', onPressed: () => Navigator.pop(ctx, true)),
+          ],
+        ),
+      );
+      if (go == true && mounted) {
+        Navigator.push(context, SlidePageRoute(page: const PremiumMembershipPage()));
+      }
+      return;
+    }
+
     // Show Dialog
     String title = "今日份的日记";
     String inputVal = "";
@@ -378,6 +425,8 @@ class _MomentsPageState extends State<MomentsPage> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final bool isDesktop = constraints.maxWidth > 800;
+        final canUse = Provider.of<PaymentService>(context, listen: true).canUseProFeatures;
+        final showLimitBanner = !canUse && _getMomentsForDate(DateTime.now()).length >= 3;
         debugPrint("LayoutBuilder Constraints: ${constraints.maxWidth} (isDesktop: $isDesktop)");
         
         // 简化 content 结构：直接使用 SafeArea + Column，避免嵌套 Stack 导致的渲染问题
@@ -441,27 +490,33 @@ class _MomentsPageState extends State<MomentsPage> {
                            alignment: Alignment.bottomCenter,
                            child: Padding(
                              padding: const EdgeInsets.only(bottom: 30),
-                             child: Container(
-                               width: 600,
-                               decoration: BoxDecoration(
-                                 borderRadius: BorderRadius.circular(24),
-                                 boxShadow: [
-                                   BoxShadow(
-                                     color: Colors.black.withOpacity(0.2), // Deep shadow
-                                     blurRadius: 15,
-                                     offset: const Offset(0, 8),
+                             child: Column(
+                               mainAxisSize: MainAxisSize.min,
+                               children: [
+                                 if (showLimitBanner) _buildLimitBanner(context),
+                                 Container(
+                                   width: 600,
+                                   decoration: BoxDecoration(
+                                     borderRadius: BorderRadius.circular(24),
+                                     boxShadow: [
+                                       BoxShadow(
+                                         color: Colors.black.withOpacity(0.2), // Deep shadow
+                                         blurRadius: 15,
+                                         offset: const Offset(0, 8),
+                                       ),
+                                       BoxShadow(
+                                         color: Colors.black.withOpacity(0.1), // Ambient shadow
+                                         blurRadius: 5,
+                                         offset: const Offset(0, 0),
+                                       ),
+                                     ],
                                    ),
-                                   BoxShadow(
-                                     color: Colors.black.withOpacity(0.1), // Ambient shadow
-                                     blurRadius: 5,
-                                     offset: const Offset(0, 0),
+                                   child: ClipRRect(
+                                     borderRadius: BorderRadius.circular(24), // Rounded corners for the widget
+                                     child: MomentInputWidget(onSend: _handleSend),
                                    ),
-                                 ],
-                               ),
-                               child: ClipRRect(
-                                 borderRadius: BorderRadius.circular(24), // Rounded corners for the widget
-                                 child: MomentInputWidget(onSend: _handleSend),
-                               ),
+                                 ),
+                               ],
                              ),
                            ),
                          )
@@ -721,16 +776,22 @@ class _MomentsPageState extends State<MomentsPage> {
                       left: 0,
                       right: 0,
                       bottom: bottomInset, // Will animate to this target
-                      child: MomentInputWidget(
-                          onSend: _handleSend, 
-                          focusNode: _inputFocusNode,
-                          onHeightChanged: (h) {
-                             if ((_inputHeight - h).abs() > 1) { // Debounce/Throttling check
-                                WidgetsBinding.instance.addPostFrameCallback((_) {
-                                   if (mounted) setState(() => _inputHeight = h);
-                                });
-                             }
-                          },
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (showLimitBanner) _buildLimitBanner(bodyContext),
+                          MomentInputWidget(
+                              onSend: _handleSend, 
+                              focusNode: _inputFocusNode,
+                              onHeightChanged: (h) {
+                                 if ((_inputHeight - h).abs() > 1) { // Debounce/Throttling check
+                                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                                       if (mounted) setState(() => _inputHeight = h);
+                                    });
+                                 }
+                              },
+                          ),
+                        ],
                       ),
                     ),
                 ],
@@ -739,6 +800,34 @@ class _MomentsPageState extends State<MomentsPage> {
           ),
         );
       }
+    );
+  }
+
+  Widget _buildLimitBanner(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFF8D6E63).withOpacity(0.9),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFF5D4037)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.lock_outline, color: Colors.white70, size: 20),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '今日随心记已用完 (3/3)，赞助后解锁无限创作',
+              style: GoogleFonts.notoSerifSc(color: Colors.white, fontSize: 13),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.push(context, SlidePageRoute(page: const PremiumMembershipPage())),
+            child: Text('去赞助', style: GoogleFonts.notoSerifSc(color: const Color(0xFFFFE0B2), fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
     );
   }
 

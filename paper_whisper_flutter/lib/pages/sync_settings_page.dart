@@ -7,8 +7,11 @@ import '../config/app_theme.dart';
 import '../models/sync_config.dart';
 import '../providers/settings_provider.dart';
 import '../providers/sync_provider.dart';
+import '../services/payment_service.dart';
 import '../widgets/skeuomorphic_toast.dart';
 import '../widgets/visual_effects.dart';
+import 'premium_membership_page.dart';
+import '../widgets/slide_page_route.dart';
 
 class SyncSettingsPage extends StatefulWidget {
   const SyncSettingsPage({super.key});
@@ -103,10 +106,39 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
      }
   }
 
+  Widget _buildLockCard(BuildContext context, Color textColor, bool isSeaFlower, bool isMidnight) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.lock_outline, size: 64, color: textColor.withOpacity(0.6)),
+            const SizedBox(height: 16),
+            Text('需要赞助才能使用 WebDAV 同步', style: GoogleFonts.notoSerifSc(color: textColor, fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Text('赞助后即可多端同步日记与随心记', style: GoogleFonts.notoSerifSc(color: textColor.withOpacity(0.7), fontSize: 14)),
+            const SizedBox(height: 24),
+            Material(
+              color: isSeaFlower ? const Color(0xFFAD1457) : (isMidnight ? const Color(0xFF7986cb) : const Color(0xFF5D4037)),
+              borderRadius: BorderRadius.circular(10),
+              child: InkWell(
+                onTap: () => Navigator.push(context, SlidePageRoute(page: const PremiumMembershipPage())),
+                borderRadius: BorderRadius.circular(10),
+                child: Padding(padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14), child: Text('去赞助', style: GoogleFonts.notoSerifSc(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15))),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context);
-    final provider = Provider.of<SyncProvider>(context); // Import SyncProvider
+    final provider = Provider.of<SyncProvider>(context);
+    final canUse = Provider.of<PaymentService>(context, listen: true).canUseProFeatures;
     final theme = settings.currentTheme;
     final bool isSeaFlower = theme == AppTheme.themeSeaFlower;
     final bool isMidnight = theme == AppTheme.themeMidnight;
@@ -151,7 +183,8 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
               onPressed: () => Navigator.of(context).pop(),
             ),
           ),
-          body: SingleChildScrollView(
+          body: canUse
+            ? SingleChildScrollView(
             padding: const EdgeInsets.all(24),
             child: Form(
               key: _formKey,
@@ -302,7 +335,8 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                 ],
               ),
             ),
-          ),
+          )
+            : _buildLockCard(context, textColor, isSeaFlower, isMidnight),
         ),
       ],
     );

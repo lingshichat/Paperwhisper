@@ -15,6 +15,7 @@ import '../models/sync_config.dart';
 import '../services/webdav_sync_service.dart';
 import '../services/diary_service.dart';
 import '../services/moment_service.dart';
+import '../services/payment_service.dart';
 import '../widgets/skeuomorphic_dialog.dart';
 import '../widgets/skeuomorphic_toast.dart';
 import 'diary_provider.dart';
@@ -200,6 +201,12 @@ class SyncProvider with ChangeNotifier {
   }
 
   Future<bool> connect({bool test = true}) async {
+    if (!PaymentService().canUseProFeatures) {
+      _lastError = '需要赞助才能使用 WebDAV 同步';
+      _status = SyncStatus.failed;
+      notifyListeners();
+      return false;
+    }
     _updateProgress('正在连接服务器...');
     final success = await _webDavService.connect(
       _config.serverUrl,
@@ -311,6 +318,10 @@ class SyncProvider with ChangeNotifier {
 
   /// 执行完整同步
   Future<void> sync({bool isAuto = false, BuildContext? context}) async {
+    if (!PaymentService().canUseProFeatures) {
+      _setStatus(SyncStatus.failed, error: '需要赞助才能使用 WebDAV 同步');
+      return;
+    }
     // Manually triggered sync: Check Permission First
     if (!isAuto && context != null) {
        final hasPermission = await checkNotificationPermission(context);

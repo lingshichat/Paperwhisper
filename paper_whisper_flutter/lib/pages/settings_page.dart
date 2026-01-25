@@ -213,8 +213,8 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
                  return _buildSettingsItem(
                     context: context,
                     icon: pay.isPro ? Icons.verified : Icons.card_membership,
-                    title: pay.isPro ? '尊享会员' : '解锁高级版',
-                    subtitle: pay.isPro ? '已激活 - 感谢您的支持' : '一次性买断 · 永久更新',
+                    title: pay.isPro ? '尊享会员' : '赞助支持',
+                    subtitle: pay.isPro ? '已激活 - 感谢您的支持' : '一次赞助 · 永久更新',
                     isSeaFlower: isSeaFlower,
                     isMidnight: isMidnight,
                     textColor: textColor,

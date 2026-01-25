@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../services/auth_service.dart';
+import '../services/payment_service.dart';
 import '../providers/settings_provider.dart';
 import '../widgets/skeuomorphic_toast.dart';
 import '../config/app_theme.dart';
@@ -147,6 +148,7 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<SettingsProvider>(context);
+    final canUsePro = Provider.of<PaymentService>(context, listen: true).canUseProFeatures;
     final theme = themeProvider.currentTheme;
     final bool isSeaFlower = theme == AppTheme.themeSeaFlower;
     final bool isMidnight = theme == AppTheme.themeMidnight;
@@ -178,9 +180,9 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
              const SizedBox(height: 16),
              _buildSkeuomorphicTile(
                title: '使用生物识别',
-               subtitle: '解锁更快、更安全',
+               subtitle: canUsePro ? '解锁更快、更安全' : '赞助后可用',
                value: _isBiometricEnabled,
-               onChanged: (v) => _toggleBiometric(v),
+               onChanged: canUsePro ? (v) => _toggleBiometric(v) : null,
                theme: theme,
              ),
           ],
@@ -232,7 +234,7 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
     required String title,
     required String subtitle,
     required bool value,
-    required Function(bool) onChanged,
+    required Function(bool)? onChanged,
     required String theme,
   }) {
     final textColor = AppTheme.getTextColor(theme);

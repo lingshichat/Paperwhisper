@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/payment_service.dart';
+import '../services/trial_service.dart';
 import '../widgets/skeuomorphic_toast.dart';
 import '../widgets/skeuomorphic_dialog.dart';
 import '../widgets/stamp_animation.dart';
@@ -134,7 +135,7 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage> {
     return Scaffold(
       backgroundColor: const Color(0xFF2D2D2D), // Dark table background
       appBar: AppBar(
-        title: Text('会员证书', style: GoogleFonts.notoSerifSc(color: const Color(0xFFE0E0E0))),
+        title: Text('赞助凭证', style: GoogleFonts.notoSerifSc(color: const Color(0xFFE0E0E0))),
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: const IconThemeData(color: Color(0xFFE0E0E0)),
@@ -149,6 +150,33 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage> {
               padding: const EdgeInsets.all(20),
               child: Column(
                 children: [
+                  if (!isPro) ...[
+                    if (!TrialService().hasTrialBeenStarted) ...[
+                      _buildTrialInviteCard(context),
+                      const SizedBox(height: 16),
+                    ] else if (TrialService().isInTrial) ...[
+                      _buildTrialActiveBanner(),
+                      const SizedBox(height: 12),
+                    ],
+                    _buildPlanCard(
+                      title: '支持 · 功能会员',
+                      subtitle: '一次赞助，终身拥有',
+                      desc: '适合专注记录的实用主义者',
+                      points: ['无限随心记', 'WebDAV 云端同步', '指纹/面容解锁', '长图分享', '随心记转长文'],
+                      isComingSoon: false,
+                      onTap: _launchSponsor,
+                    ),
+                    const SizedBox(height: 12),
+                    _buildPlanCard(
+                      title: '加入 · 纸语俱乐部',
+                      subtitle: '每月一杯咖啡，支持持续创新',
+                      desc: '获得 AI 赋能与源源不断的新鲜感',
+                      points: ['包含功能会员全部权益', '每月新主题/信纸', 'AI 智能分类、润色、情绪分析', '官方省心云同步'],
+                      isComingSoon: true,
+                      onTap: null,
+                    ),
+                    const SizedBox(height: 24),
+                  ],
                    _buildCertificate(context, showStamp, isPro),
                    const SizedBox(height: 30),
                    if (!isPro) _buildSponsorTicket(),
@@ -233,7 +261,7 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage> {
 
               // Status Text
               Text(
-                isPro ? '此证书证明您是\n纸语尊享会员' : '请输入爱发电订单号\n激活会员资格',
+                isPro ? '此凭证证明您是\n纸语尊享会员' : '请输入爱发电订单号\n激活赞助资格',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.notoSerifSc(
                   fontSize: 16,
@@ -337,6 +365,131 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage> {
               ),
             ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildTrialInviteCard(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      constraints: const BoxConstraints(maxWidth: 400),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1B5E20).withOpacity(0.9),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF4CAF50), width: 2),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.card_giftcard, color: Color(0xFFFFE0B2), size: 24),
+              const SizedBox(width: 8),
+              Text('开启 7 天尊享试用', style: GoogleFonts.notoSerifSc(color: const Color(0xFFFFE0B2), fontWeight: FontWeight.bold, fontSize: 16)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text('立即体验功能会员全部权益，无需支付', style: GoogleFonts.notoSerifSc(color: Colors.white70, fontSize: 13)),
+          const SizedBox(height: 14),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: () {},
+                child: Text('暂不', style: GoogleFonts.notoSerifSc(color: Colors.white54)),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: () async {
+                  await TrialService().startTrial();
+                  if (!context.mounted) return;
+                  Provider.of<PaymentService>(context, listen: false).notifyListeners();
+                  setState(() {});
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF4CAF50), foregroundColor: Colors.white),
+                child: Text('开启', style: GoogleFonts.notoSerifSc(color: Colors.white, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTrialActiveBanner() {
+    final days = TrialService().trialDaysLeft;
+    return Container(
+      width: double.infinity,
+      constraints: const BoxConstraints(maxWidth: 400),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF4CAF50).withOpacity(0.25),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFF4CAF50).withOpacity(0.5)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.auto_awesome, color: Color(0xFF81C784), size: 20),
+          const SizedBox(width: 8),
+          Text('您正在 7 天试用期内，剩余 $days 天', style: GoogleFonts.notoSerifSc(color: const Color(0xFFE8F5E9), fontSize: 14)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPlanCard({
+    required String title,
+    required String subtitle,
+    required String desc,
+    required List<String> points,
+    required bool isComingSoon,
+    required VoidCallback? onTap,
+  }) {
+    final effective = !isComingSoon && onTap != null;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: effective ? onTap : null,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          width: double.infinity,
+          constraints: const BoxConstraints(maxWidth: 400),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isComingSoon ? const Color(0xFF3D3D3D) : const Color(0xFF2D2D2D),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isComingSoon ? Colors.white12 : const Color(0xFF5D4037),
+              width: isComingSoon ? 1 : 2,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(title, style: GoogleFonts.notoSerifSc(color: const Color(0xFFD4AF37), fontWeight: FontWeight.bold, fontSize: 15)),
+                  if (isComingSoon) Padding(padding: const EdgeInsets.only(left: 8), child: Text('即将推出', style: GoogleFonts.notoSerifSc(color: Colors.white38, fontSize: 11))),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(subtitle, style: GoogleFonts.notoSerifSc(color: Colors.white70, fontSize: 13)),
+              Text(desc, style: GoogleFonts.notoSerifSc(color: Colors.white54, fontSize: 12)),
+              const SizedBox(height: 10),
+              ...points.map((p) => Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('• ', style: GoogleFonts.notoSerifSc(color: const Color(0xFF8D6E63), fontSize: 12)),
+                    Expanded(child: Text(p, style: GoogleFonts.notoSerifSc(color: Colors.white60, fontSize: 12))),
+                  ],
+                ),
+              )),
+            ],
+          ),
+        ),
       ),
     );
   }

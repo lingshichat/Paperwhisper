@@ -1,4 +1,3 @@
-
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
@@ -6,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:crypto/crypto.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'trial_service.dart';
 
 class PaymentService extends ChangeNotifier {
   static final PaymentService _instance = PaymentService._internal();
@@ -15,6 +15,9 @@ class PaymentService extends ChangeNotifier {
   late SharedPreferences _prefs;
   bool _isPro = false;
   bool get isPro => _isPro;
+
+  /// 是否有权限使用会员功能：已购买或 7 天试用期内
+  bool get canUseProFeatures => _isPro || TrialService().isInTrial;
 
   // TODO: Replace with your actual Cloudflare Worker URL
   static const String _kWorkerUrl = "https://pay.lingshichat.top";

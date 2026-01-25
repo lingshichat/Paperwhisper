@@ -19,6 +19,7 @@ import 'widgets/privacy_agreement_dialog.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'services/auth_service.dart';
+import 'services/trial_service.dart';
 import 'services/payment_service.dart';
 import 'widgets/lock_screen.dart';
 import 'models/diary_entry.dart';
@@ -43,6 +44,7 @@ void main() async {
   
   final bool showIntro = !(prefs.getBool('intro_shown') ?? false);
   AuthService().init(prefs);
+  await TrialService().init(prefs);
   await PaymentService().init(prefs); // Init Payment Service
   
   // 确定启动页
