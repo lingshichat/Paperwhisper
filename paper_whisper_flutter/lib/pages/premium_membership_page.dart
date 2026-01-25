@@ -10,6 +10,7 @@ import '../widgets/skeuomorphic_toast.dart';
 import '../widgets/skeuomorphic_dialog.dart';
 import '../widgets/stamp_animation.dart';
 import '../widgets/visual_effects.dart';
+import '../widgets/feature_comparison_sheet.dart';
 
 class PremiumMembershipPage extends StatefulWidget {
   const PremiumMembershipPage({super.key});
@@ -159,22 +160,52 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage> {
                       const SizedBox(height: 12),
                     ],
                     _buildPlanCard(
-                      title: '支持 · 功能会员',
+                      title: '支持 · 功能特性赞助',
                       subtitle: '一次赞助，终身拥有',
                       desc: '适合专注记录的实用主义者',
-                      points: ['无限随心记', 'WebDAV 云端同步', '指纹/面容解锁', '长图分享', '随心记转长文'],
+                      points: ['无限随心记', 'WebDAV 云端同步', '指纹解锁', '长图分享', '随心记转长文'],
                       isComingSoon: false,
                       onTap: _launchSponsor,
+                      price: '¥38',
+                      originalPrice: '¥68',
+                      priceLabel: 'Early Bird',
                     ),
                     const SizedBox(height: 12),
                     _buildPlanCard(
-                      title: '加入 · 纸语俱乐部',
+                      title: '加入 · 订阅赞助',
                       subtitle: '每月一杯咖啡，支持持续创新',
                       desc: '获得 AI 赋能与源源不断的新鲜感',
-                      points: ['包含功能会员全部权益', '每月新主题/信纸', 'AI 智能分类、润色、情绪分析', '官方省心云同步'],
+                      points: ['包含功能特性赞助全部权益', '主题/信纸持续更新', 'AI 智能分类、润色、情绪分析', '官方省心云同步'],
                       isComingSoon: true,
                       onTap: null,
+                      price: '¥6 / 月',
+                      originalPrice: '¥12',
+                      priceLabel: 'Coming Soon',
                     ),
+                    const SizedBox(height: 10),
+                     // Early Bird Note
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(Icons.volunteer_activism, size: 14, color: Color(0xFFD84315)),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              "当前为早鸟特惠价！随着功能不断迭代（如 S3 同步、更多高级主题），赞助价格将会上调。现在支持可锁定终身权益，感谢您的认可与支持！",
+                              style: GoogleFonts.notoSerifSc(
+                                fontSize: 11, 
+                                color: const Color(0xFFD84315).withOpacity(0.8),
+                                height: 1.3
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const FeatureComparisonSheet(), // Integrated new component
                     const SizedBox(height: 24),
                   ],
                    _buildCertificate(context, showStamp, isPro),
@@ -445,6 +476,9 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage> {
     required List<String> points,
     required bool isComingSoon,
     required VoidCallback? onTap,
+    String? price,
+    String? originalPrice,
+    String? priceLabel,
   }) {
     final effective = !isComingSoon && onTap != null;
     return Material(
@@ -470,12 +504,38 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage> {
               Row(
                 children: [
                   Text(title, style: GoogleFonts.notoSerifSc(color: const Color(0xFFD4AF37), fontWeight: FontWeight.bold, fontSize: 15)),
-                  if (isComingSoon) Padding(padding: const EdgeInsets.only(left: 8), child: Text('即将推出', style: GoogleFonts.notoSerifSc(color: Colors.white38, fontSize: 11))),
+                  if (isComingSoon) Padding(padding: const EdgeInsets.only(left: 8), child: Text('Coming Soon', style: GoogleFonts.notoSerifSc(color: Colors.white38, fontSize: 11))),
                 ],
               ),
               const SizedBox(height: 4),
               Text(subtitle, style: GoogleFonts.notoSerifSc(color: Colors.white70, fontSize: 13)),
+              const SizedBox(height: 2),
               Text(desc, style: GoogleFonts.notoSerifSc(color: Colors.white54, fontSize: 12)),
+              
+              if (price != null) ...[
+                const SizedBox(height: 12),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(price, style: GoogleFonts.oswald(color: const Color(0xFFFFB74D), fontSize: 22, fontWeight: FontWeight.bold)),
+                    const SizedBox(width: 8),
+                    if (originalPrice != null)
+                      Text(originalPrice, style: GoogleFonts.oswald(color: Colors.white38, fontSize: 14, decoration: TextDecoration.lineThrough)),
+                    const SizedBox(width: 8),
+                    if (priceLabel != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFD84315),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(priceLabel, style: GoogleFonts.oswald(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                      ),
+                  ],
+                ),
+              ],
+
               const SizedBox(height: 10),
               ...points.map((p) => Padding(
                 padding: const EdgeInsets.only(top: 4),
