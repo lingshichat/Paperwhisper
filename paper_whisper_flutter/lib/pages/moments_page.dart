@@ -229,24 +229,7 @@ class _MomentsPageState extends State<MomentsPage> {
   }
 
   Future<void> _handleAggregation() async {
-    if (!Provider.of<PaymentService>(context, listen: false).canUseProFeatures) {
-      final go = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => SkeuomorphicDialog(
-title: '需要赞助',
-            headerIcon: Icons.lock_outline,
-            content: const Text('「随心记转长文」赞助后可用。'),
-            actions: [
-              SkeuomorphicDialogButton(label: '取消', isPrimary: false, onPressed: () => Navigator.pop(ctx, false)),
-              SkeuomorphicDialogButton(label: '去赞助', onPressed: () => Navigator.pop(ctx, true)),
-          ],
-        ),
-      );
-      if (go == true && mounted) {
-        Navigator.push(context, SlidePageRoute(page: const PremiumMembershipPage()));
-      }
-      return;
-    }
+
 
     // Show Dialog
     String title = "今日份的日记";

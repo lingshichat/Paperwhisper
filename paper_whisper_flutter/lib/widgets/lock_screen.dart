@@ -312,7 +312,7 @@ class _LockScreenState extends State<LockScreen> with TickerProviderStateMixin {
   Widget _buildDisplayWindow(String theme) {
     String title = "请输入密码";
     if (_currentMode == LockScreenMode.setup) title = "请设置新密码";
-    if (_currentMode == LockScreenMode.confirm) title = "请再次确密码";
+    if (_currentMode == LockScreenMode.confirm) title = "请再次确认密码";
     if (_currentMode == LockScreenMode.verify) title = "验证旧密码";
     if (_useBiometric) title = "验证指纹";
 

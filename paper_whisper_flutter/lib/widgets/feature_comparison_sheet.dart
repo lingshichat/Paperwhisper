@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class FeatureComparisonSheet extends StatefulWidget {
-  const FeatureComparisonSheet({super.key});
+  final bool isEmbedded;
+
+  const FeatureComparisonSheet({super.key, this.isEmbedded = false});
 
   @override
   State<FeatureComparisonSheet> createState() => _FeatureComparisonSheetState();
@@ -17,22 +19,37 @@ class _FeatureComparisonSheetState extends State<FeatureComparisonSheet> {
 
   @override
   Widget build(BuildContext context) {
+    // Embedded mode: Transparent, no border, blend into paper
+    // Standalone mode: Card style
+    final decoration = widget.isEmbedded
+        ? const BoxDecoration(color: Colors.transparent)
+        : BoxDecoration(
+            color: const Color(0xFFFDFBF7), // Off-white specs paper
+            borderRadius: BorderRadius.circular(2),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 3,
+                offset: const Offset(0, 1),
+              ),
+            ],
+            border: Border.all(color: const Color(0xFFD7CCC8), width: 0.5),
+          );
+
+    final headerDecoration = widget.isEmbedded
+        ? BoxDecoration(
+             border: Border(bottom: BorderSide(color: _isExpanded ? const Color(0xFF8D6E63).withOpacity(0.3) : Colors.transparent, width: 0.5)),
+          )
+        : BoxDecoration(
+            border: Border(bottom: BorderSide(color: _isExpanded ? const Color(0xFFD7CCC8) : Colors.transparent, width: 0.5)),
+            color: const Color(0xFFFFFDE7).withOpacity(0.3),
+          );
+
     return Container(
       width: double.infinity,
       constraints: const BoxConstraints(maxWidth: 400),
-      margin: const EdgeInsets.only(top: 10, bottom: 20),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFDFBF7), // Off-white specs paper
-        borderRadius: BorderRadius.circular(2),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 3,
-            offset: const Offset(0, 1),
-          ),
-        ],
-        border: Border.all(color: const Color(0xFFD7CCC8), width: 0.5),
-      ),
+      margin: widget.isEmbedded ? EdgeInsets.zero : const EdgeInsets.only(top: 10, bottom: 20),
+      decoration: decoration,
       child: Column(
         children: [
           // Header (Clickable)
@@ -42,15 +59,12 @@ class _FeatureComparisonSheetState extends State<FeatureComparisonSheet> {
               onTap: () => setState(() => _isExpanded = !_isExpanded),
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  border: Border(bottom: BorderSide(color: _isExpanded ? const Color(0xFFD7CCC8) : Colors.transparent, width: 0.5)),
-                  color: const Color(0xFFFFFDE7).withOpacity(0.3), 
-                ),
+                decoration: headerDecoration,
                 child: Row(
                   children: [
                     Icon(
-                      _isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down, 
-                      color: const Color(0xFF8D6E63), 
+                      _isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                      color: const Color(0xFF8D6E63),
                       size: 20
                     ),
                     const SizedBox(width: 8),
@@ -63,7 +77,9 @@ class _FeatureComparisonSheetState extends State<FeatureComparisonSheet> {
                       ),
                     ),
                     const Spacer(),
-                    const Icon(Icons.attachment, color: Colors.black12, size: 16),
+                    // In embedded mode, maybe show a small icon or nothing
+                    if (!widget.isEmbedded)
+                      const Icon(Icons.attachment, color: Colors.black12, size: 16),
                   ],
                 ),
               ),
@@ -71,54 +87,56 @@ class _FeatureComparisonSheetState extends State<FeatureComparisonSheet> {
           ),
 
           // Content
-          AnimatedCrossFade(
-            firstChild: const SizedBox(width: double.infinity, height: 0),
-            secondChild: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                   _buildHeaderRow(),
-                   Container(
-                     width: col1Width + colWidth * 3, 
-                     height: 1.5, 
-                     color: const Color(0xFF8D6E63),
-                     margin: const EdgeInsets.symmetric(vertical: 12),
-                   ),
-                   
-                   // Strictly following the table in commercial_strategy.md
-                   _buildRow("专注写作", "✅ 无限篇数", "✅ 无限", "✅ 无限"),
-                   _buildRow("目录标题自定义", "✅ 支持", "✅ 支持", "✅ 支持"),
-                   _buildRow("书籍封面/标题自定义", "✅ 支持", "✅ 支持", "✅ 支持"),
-                   _buildRow("安全锁", "✅ 数字密码", "✅ 指纹 + 密码", "✅ 指纹 + 密码"),
-                   _buildRow("拟物主题", "✅ 4款精选", "✅ 4款+2款专属", "✅ 所有+月更"),
-                   
-                   _buildDivider(),
-                   
-                   _buildRow("随心记 (Moments)", "每日 3 条", "✅ 无限创作", "✅ 无限创作"),
-                   _buildRow("随心记转长文", "- (预览)", "✅ 一键转换", "✅ 一键转换"),
-                   _buildRow("标签管理", "✅ 手动", "✅ 手动", "✅ 手动+AI自动"),
-                   _buildRow("语音转文字", "- (仅录音)", "- (仅录音)", "✅ AI自动转写"),
-                   
-                   _buildDivider(),
-
-                   _buildRow("WebDAV/S3 同步", "- (本地存储)", "✅ 多端同步", "✅ 多端同步"),
-                   _buildRow("高级个性化", "- (默认)", "✅ (Coming Soon)", "✅ (Coming Soon)"),
-                   
-                   _buildDivider(),
-
-                   _buildRow("AI 智能服务", "", "", ""),
-                   _buildRow("  ├─ 智能分类", "-", "-", "✅ 自动标签"),
-                   _buildRow("  ├─ 情绪分析", "-", "-", "✅ 月度报告"),
-                   _buildRow("  ├─ 智能润色", "-", "-", "✅ 文案优化"),
-                   
-                   _buildRow("官方省心云同步", "-", "-", "✅ 支持(Coming Soon)"),
-                ],
-              ),
-            ),
-            crossFadeState: _isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+          AnimatedSize(
             duration: const Duration(milliseconds: 300),
+            alignment: Alignment.topCenter,
+            curve: Curves.easeInOut,
+            child: _isExpanded
+                ? SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                         _buildHeaderRow(),
+                         Container(
+                           width: col1Width + colWidth * 3, 
+                           height: 1.5, 
+                           color: const Color(0xFF8D6E63),
+                           margin: const EdgeInsets.symmetric(vertical: 12),
+                         ),
+                         
+                         // Strictly following the table in commercial_strategy.md
+                         _buildRow("专注写作", "✅ 无限篇数", "✅ 无限", "✅ 无限"),
+                         _buildRow("目录标题自定义", "✅ 支持", "✅ 支持", "✅ 支持"),
+                         _buildRow("书籍封面/标题自定义", "✅ 支持", "✅ 支持", "✅ 支持"),
+                         _buildRow("安全锁", "✅ 数字密码", "✅ 指纹 + 密码", "✅ 指纹 + 密码"),
+                         _buildRow("拟物主题", "✅ 4款精选", "✅ 4款+2款专属", "✅ 所有+月更"),
+                         
+                         _buildDivider(),
+                         
+                         _buildRow("随心记 (Moments)", "每日 3 条", "✅ 无限创作", "✅ 无限创作"),
+                         _buildRow("随心记转长文", "✅ 一键转换", "✅ 一键转换", "✅ 一键转换"),
+                         _buildRow("标签管理", "✅ 手动", "✅ 手动", "✅ 手动+AI自动"),
+                         _buildRow("语音转文字", "- (仅录音)", "- (仅录音)", "✅ AI自动转写"),
+                         
+                         _buildDivider(),
+
+                         _buildRow("WebDAV/S3 同步", "- (本地存储)", "✅ 多端同步", "✅ 多端同步"),
+                         _buildRow("高级个性化", "- (默认)", "✅ (Coming Soon)", "✅ (Coming Soon)"),
+                         
+                         _buildDivider(),
+
+                         _buildRow("AI 智能服务", "", "", ""),
+                         _buildRow("  ├─ 智能分类", "-", "-", "✅ 自动标签"),
+                         _buildRow("  ├─ 情绪分析", "-", "-", "✅ 月度报告"),
+                         _buildRow("  ├─ 智能润色", "-", "-", "✅ 文案优化"),
+                         
+                         _buildRow("官方省心云同步", "-", "-", "✅ 支持(Coming Soon)"),
+                      ],
+                    ),
+                  )
+                : const SizedBox(width: double.infinity, height: 0),
           ),
         ],
       ),
