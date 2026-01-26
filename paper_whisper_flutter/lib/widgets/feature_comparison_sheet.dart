@@ -122,7 +122,7 @@ class _FeatureComparisonSheetState extends State<FeatureComparisonSheet> {
                          
                          _buildDivider(),
 
-                         _buildRow("WebDAV/S3 同步", "- (本地存储)", "✅ 多端同步", "✅ 多端同步"),
+                         _buildRow("WebDAV/S3 同步", "✅ 本地+WebDAV", "✅ WebDAV+S3", "✅ WebDAV+S3"),
                          _buildRow("高级个性化", "- (默认)", "✅ (Coming Soon)", "✅ (Coming Soon)"),
                          
                          _buildDivider(),

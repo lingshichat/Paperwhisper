@@ -358,7 +358,7 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    "无限随心记 / WebDAV同步 / 指纹解锁 / 专属信纸",
+                    "无限随心记 / S3云同步 / 指纹解锁 / 专属信纸",
                     style: GoogleFonts.notoSerifSc(fontSize: 12, color: const Color(0xFF5D4037)),
                   ),
                 ],
