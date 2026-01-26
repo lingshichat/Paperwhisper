@@ -858,7 +858,7 @@ class _DiaryListPageState extends State<DiaryListPage> with WidgetsBindingObserv
                     ),
                   )
                 : Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: const EdgeInsets.only(left: 16, right: 16, top: 16),
                     child: ScrollablePositionedList.builder(
                       itemCount: _uiItems.length,
                       itemScrollController: _itemScrollController,

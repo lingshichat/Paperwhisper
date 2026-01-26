@@ -86,7 +86,9 @@ class _SkeuomorphicSearchBarState extends State<SkeuomorphicSearchBar> {
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [Colors.black.withOpacity(0.2), Colors.transparent],
+                    colors: theme == AppTheme.themeAfterRain 
+                        ? [const Color(0xFF0288D1).withValues(alpha: 0.15), Colors.transparent] // Blue shadow for After Rain
+                        : [Colors.black.withValues(alpha: 0.2), Colors.transparent],
                   ),
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                 ),
