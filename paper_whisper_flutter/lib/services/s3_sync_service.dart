@@ -1,0 +1,288 @@
+
+import 'dart:convert';
+import 'dart:io';
+import 'dart:async';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
+import 'package:minio/minio.dart';
+import 'package:minio/models.dart';
+import 'package:path/path.dart' as path;
+import 'cloud_storage_service.dart';
+
+class S3SyncService implements CloudStorageService {
+  Minio? _client;
+  String? _endPoint;
+  String? _accessKey;
+  String? _secretKey;
+  String? _bucketName;
+  String? _region;
+
+  bool get isConnected => _client != null;
+
+  void initConfig({
+     required String endPoint,
+     required String accessKey,
+     required String secretKey,
+     required String bucketName,
+     String? region,
+  }) {
+    _endPoint = endPoint;
+    _accessKey = accessKey;
+    _secretKey = secretKey;
+    _bucketName = bucketName;
+    _region = region;
+  }
+
+  @override
+  Future<bool> connect() async {
+    if (_endPoint == null || _accessKey == null || _secretKey == null || _bucketName == null) {
+      return false;
+    }
+    
+    try {
+      // Clean endpoint (remove https:// or trailing /)
+      String ep = _endPoint!;
+      bool useSsl = true;
+      
+      if (ep.startsWith('http://')) {
+        useSsl = false;
+        ep = ep.substring(7);
+      } else if (ep.startsWith('https://')) {
+        ep = ep.substring(8);
+      }
+      
+      if (ep.endsWith('/')) ep = ep.substring(0, ep.length - 1);
+      
+      int? port;
+      if (ep.contains(':')) {
+        final parts = ep.split(':');
+        ep = parts[0];
+        port = int.tryParse(parts[1]);
+      }
+
+      _client = Minio(
+        endPoint: ep,
+        port: port,
+        useSSL: useSsl,
+        accessKey: _accessKey!,
+        secretKey: _secretKey!,
+        region: _region,
+      );
+      
+      return true;
+    } catch (e) {
+      debugPrint('S3 init failed: $e');
+      _client = null;
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> testConnection() async {
+    if (_client == null || _bucketName == null) return false;
+    try {
+      final exists = await _client!.bucketExists(_bucketName!);
+      if (!exists) {
+        debugPrint('S3 Bucket $_bucketName does not exist');
+        return false;
+      }
+      // Try list to ensure permissions
+      // maxKeys argument might vary by version, usually supported in listObjectsV2 or similar
+      // Minio dart listObjects returns Stream<ListObjectsResult>
+      await _client!.listObjects(_bucketName!).take(1).toList();
+      debugPrint('S3 Connected to $_bucketName');
+      return true;
+    } catch (e) {
+      debugPrint('S3 test connection failed: $e');
+      return false;
+    }
+  }
+
+  // S3 doesn't really have "directories", but we simulate structure with keys
+  String _normalizeKey(String remotePath) {
+    if (remotePath.startsWith('/')) return remotePath.substring(1);
+    return remotePath;
+  }
+
+  @override
+  Future<void> ensureDirectoryExists(String remotePath) async {
+    // S3 is flat, no need to create directories.
+  }
+
+  @override
+  Future<List<RemoteFile>> listFiles(String remotePath) async {
+    if (_client == null || _bucketName == null) return [];
+    
+    String prefix = _normalizeKey(remotePath);
+    if (!prefix.endsWith('/') && prefix.isNotEmpty) prefix += '/';
+    
+    try {
+      final stream = _client!.listObjects(_bucketName!, prefix: prefix, recursive: false);
+      final list = await stream.toList();
+      
+      List<RemoteFile> files = [];
+      
+      for (var result in list) {
+        // Objects in this result
+        for (var obj in result.objects) {
+             // Skip the directory itself placeholder if exists
+             if (obj.key == prefix) continue;
+             
+             files.add(RemoteFile(
+               path: obj.key ?? '',
+               name: path.basename(obj.key ?? ''),
+               size: obj.size ?? 0,
+               lastModified: obj.lastModified,
+               isDirectory: false
+             ));
+        }
+        
+        // Prefixes (Subdirectories) - they are strings in minio 3.5.8
+        for (var p in result.prefixes) {
+           // p is already a String
+           String name = p.endsWith('/') ? p.substring(0, p.length - 1) : p;
+           name = path.basename(name);
+           
+           files.add(RemoteFile(
+             path: p,
+             name: name,
+             size: 0,
+             isDirectory: true
+           ));
+        }
+      }
+      return files;
+    } catch (e) {
+      debugPrint('S3 list files failed: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> uploadFile(String localPath, String remotePath, {Function(int, int)? onProgress}) async {
+    if (_client == null || _bucketName == null) return;
+    
+    final file = File(localPath);
+    final key = _normalizeKey(remotePath);
+    final stat = await file.stat();
+    
+    try {
+      var bytesSent = 0;
+      final total = stat.size;
+      
+      // Minio putObject expects Stream<Uint8List>
+      Stream<Uint8List> stream = file.openRead().map((chunk) {
+         if (chunk is Uint8List) return chunk;
+         return Uint8List.fromList(chunk);
+      });
+      
+      if (onProgress != null) {
+          stream = stream.transform(
+            StreamTransformer.fromHandlers(
+              handleData: (data, sink) {
+                bytesSent += data.length;
+                onProgress(bytesSent, total);
+                sink.add(data);
+              }
+            )
+          );
+      }
+      
+      await _client!.putObject(_bucketName!, key, stream, size: total);
+      debugPrint('S3 Uploaded: $key');
+    } catch (e) {
+      debugPrint('S3 Upload failed: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> downloadFile(String remotePath, String localPath, {Function(int, int)? onProgress}) async {
+     if (_client == null || _bucketName == null) return;
+     final key = _normalizeKey(remotePath);
+     
+     try {
+       final stat = await _client!.statObject(_bucketName!, key);
+       final total = stat.size ?? 0;
+       
+       final stream = await _client!.getObject(_bucketName!, key);
+       
+       final file = File(localPath);
+       final sink = file.openWrite();
+       
+       int bytesReceived = 0;
+       
+       await stream.listen((chunk) {
+          bytesReceived += chunk.length;
+          sink.add(chunk);
+          if (onProgress != null) onProgress(bytesReceived, total);
+       }).asFuture();
+       
+       await sink.flush();
+       await sink.close();
+       debugPrint('S3 Downloaded: $key');
+     } catch (e) {
+       debugPrint('S3 Download failed: $e');
+       rethrow;
+     }
+  }
+
+  @override
+  Future<void> deleteFile(String remotePath) async {
+    if (_client == null || _bucketName == null) return;
+    try {
+      await _client!.removeObject(_bucketName!, _normalizeKey(remotePath));
+    } catch (e) {
+      debugPrint('S3 delete failed: $e');
+    }
+  }
+
+  @override
+  Future<void> moveFile(String oldPath, String newPath) async {
+     if (_client == null || _bucketName == null) return;
+     final srcKey = _normalizeKey(oldPath);
+     final destKey = _normalizeKey(newPath);
+     
+     try {
+       // Copy
+       await _client!.copyObject(_bucketName!, destKey, path.join(_bucketName!, srcKey));
+       // Delete old
+       await _client!.removeObject(_bucketName!, srcKey);
+       debugPrint('S3 Moved: $srcKey -> $destKey');
+     } catch (e) {
+       debugPrint('S3 move failed: $e');
+       rethrow;
+     }
+  }
+
+  @override
+  Future<String?> readRemoteFile(String remotePath) async {
+     if (_client == null || _bucketName == null) return null;
+     final key = _normalizeKey(remotePath);
+     
+     try {
+       final stream = await _client!.getObject(_bucketName!, key);
+       final bytes = await stream.expand((chunk) => chunk).toList();
+       return utf8.decode(bytes);
+     } catch (e) {
+       // MinioError... 
+       debugPrint('S3 read failed: $e');
+       return null;
+     }
+  }
+
+  @override
+  Future<void> writeRemoteFile(String remotePath, String content) async {
+     if (_client == null || _bucketName == null) return;
+     final key = _normalizeKey(remotePath);
+     final bytes = utf8.encode(content);
+     final stream = Stream<Uint8List>.fromIterable([Uint8List.fromList(bytes)]);
+     
+     try {
+       await _client!.putObject(_bucketName!, key, stream, size: bytes.length);
+     } catch (e) {
+       debugPrint('S3 write string failed: $e');
+       rethrow;
+     }
+  }
+}

@@ -60,6 +60,7 @@ dependencies:
   local_auth: ^3.0.0
   crypto: ^3.0.7
   lottie: ^3.3.2
+  minio: ^3.5.8
 
 dependency_overrides:
   record_linux: ^1.2.0

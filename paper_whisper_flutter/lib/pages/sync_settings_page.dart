@@ -25,6 +25,14 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
   late TextEditingController _serverController;
   late TextEditingController _usernameController;
   late TextEditingController _passwordController;
+  
+  // S3 Controllers
+  late TextEditingController _s3EndPointController;
+  late TextEditingController _s3AccessKeyController;
+  late TextEditingController _s3SecretKeyController;
+  late TextEditingController _s3BucketController;
+  late TextEditingController _s3RegionController;
+  
   bool _autoSync = false;
   bool _compressImages = true;
   bool _isLoading = false;
@@ -36,6 +44,13 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
     _serverController = TextEditingController(text: config.serverUrl);
     _usernameController = TextEditingController(text: config.username);
     _passwordController = TextEditingController(text: config.password);
+    
+    _s3EndPointController = TextEditingController(text: config.s3EndPoint);
+    _s3AccessKeyController = TextEditingController(text: config.s3AccessKey);
+    _s3SecretKeyController = TextEditingController(text: config.s3SecretKey);
+    _s3BucketController = TextEditingController(text: config.s3BucketName);
+    _s3RegionController = TextEditingController(text: config.s3Region ?? '');
+    
     _autoSync = config.autoSync;
     _compressImages = config.compressImages;
   }
@@ -44,7 +59,13 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
   void dispose() {
     _serverController.dispose();
     _usernameController.dispose();
+    _usernameController.dispose();
     _passwordController.dispose();
+    _s3EndPointController.dispose();
+    _s3AccessKeyController.dispose();
+    _s3SecretKeyController.dispose();
+    _s3BucketController.dispose();
+    _s3RegionController.dispose();
     super.dispose();
   }
 
@@ -61,6 +82,12 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
       autoSync: _autoSync,
       compressImages: _compressImages,
       enabled: true, // 保存即尝试启用
+      // S3 Fields
+      s3EndPoint: _s3EndPointController.text.trim(),
+      s3AccessKey: _s3AccessKeyController.text.trim(),
+      s3SecretKey: _s3SecretKeyController.text.trim(),
+      s3BucketName: _s3BucketController.text.trim(),
+      s3Region: _s3RegionController.text.trim().isEmpty ? null : _s3RegionController.text.trim(),
     );
 
     // 先保存设置
@@ -200,42 +227,119 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _buildSectionTitle('服务器配置', textColor),
-                  const SizedBox(height: 16),
-                  _buildTextField(
-                    controller: _serverController,
-                    label: '服务器地址',
-                    hint: '例如: https://dav.jianguoyun.com/dav/',
-                    textColor: textColor,
-                    hintColor: hintColor,
-                    isSeaFlower: isSeaFlower,
-                    isMidnight: isMidnight,
-                    icon: Icons.link,
+                  // 协议选择器
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 24),
+                    decoration: BoxDecoration(
+                      color: isMidnight ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.all(4),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center, // Added 
+                      mainAxisSize: MainAxisSize.max, // Added
+                      children: [
+                        Expanded(child: _buildProtocolTab('WebDAV', SyncType.webdav, isSeaFlower, isMidnight, isAfterRain, provider)),
+                        Expanded(child: _buildProtocolTab('S3 存储', SyncType.s3, isSeaFlower, isMidnight, isAfterRain, provider)),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 16),
-                  _buildTextField(
-                    controller: _usernameController,
-                    label: '账号 (Email)',
-                    hint: '您的 WebDAV 账号邮箱',
-                    textColor: textColor,
-                    hintColor: hintColor,
-                    isSeaFlower: isSeaFlower,
-                    isMidnight: isMidnight,
-                    icon: Icons.person_outline,
-                  ),
-                  const SizedBox(height: 16),
-                  const SizedBox(height: 16),
-                  _buildTextField(
-                    controller: _passwordController,
-                    label: '密码 / 应用授权码',
-                    hint: '坚果云请使用"第三方应用密码"',
-                    textColor: textColor,
-                    hintColor: hintColor,
-                    isSeaFlower: isSeaFlower,
-                    isMidnight: isMidnight,
-                    icon: Icons.lock_outline,
-                    obscureText: true,
-                  ),
+
+                  if (provider.config.syncType == SyncType.webdav) ...[
+                    _buildSectionTitle('WebDAV 服务器配置', textColor),
+                    const SizedBox(height: 16),
+                    _buildTextField(
+                      controller: _serverController,
+                      label: '服务器地址',
+                      hint: '例如: https://dav.jianguoyun.com/dav/',
+                      textColor: textColor,
+                      hintColor: hintColor,
+                      isSeaFlower: isSeaFlower,
+                      isMidnight: isMidnight,
+                      icon: Icons.link,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildTextField(
+                      controller: _usernameController,
+                      label: '账号 (Email)',
+                      hint: '您的 WebDAV 账号邮箱',
+                      textColor: textColor,
+                      hintColor: hintColor,
+                      isSeaFlower: isSeaFlower,
+                      isMidnight: isMidnight,
+                      icon: Icons.person_outline,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildTextField(
+                      controller: _passwordController,
+                      label: '密码 / 应用授权码',
+                      hint: '坚果云请使用"第三方应用密码"',
+                      textColor: textColor,
+                      hintColor: hintColor,
+                      isSeaFlower: isSeaFlower,
+                      isMidnight: isMidnight,
+                      icon: Icons.lock_outline,
+                      obscureText: true,
+                    ),
+                  ] else ...[
+                     _buildSectionTitle('S3 对象存储配置', textColor),
+                    const SizedBox(height: 16),
+                    _buildTextField(
+                      controller: _s3EndPointController,
+                      label: 'Endpoint (API 地址)',
+                      hint: '例如: play.min.io 或 oss-cn-hangzhou.aliyuncs.com',
+                      textColor: textColor,
+                      hintColor: hintColor,
+                      isSeaFlower: isSeaFlower,
+                      isMidnight: isMidnight,
+                      icon: Icons.dns_outlined,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildTextField(
+                      controller: _s3BucketController,
+                      label: 'Bucket (存储桶名称)',
+                      hint: '例如: paper-whisper-backup',
+                      textColor: textColor,
+                      hintColor: hintColor,
+                      isSeaFlower: isSeaFlower,
+                      isMidnight: isMidnight,
+                      icon: Icons.folder_open_outlined,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildTextField(
+                      controller: _s3AccessKeyController,
+                      label: 'Access Key (访问密钥)',
+                      hint: 'AK...',
+                      textColor: textColor,
+                      hintColor: hintColor,
+                      isSeaFlower: isSeaFlower,
+                      isMidnight: isMidnight,
+                      icon: Icons.vpn_key_outlined,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildTextField(
+                      controller: _s3SecretKeyController,
+                      label: 'Secret Key (私有密钥)',
+                      hint: 'SK...',
+                      textColor: textColor,
+                      hintColor: hintColor,
+                      isSeaFlower: isSeaFlower,
+                      isMidnight: isMidnight,
+                      icon: Icons.password_outlined,
+                      obscureText: true,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildTextField(
+                       controller: _s3RegionController,
+                       label: 'Region (区域 - 可选)',
+                       hint: '默认自动，如 us-east-1',
+                       textColor: textColor,
+                       hintColor: hintColor,
+                       isSeaFlower: isSeaFlower,
+                       isMidnight: isMidnight,
+                       icon: Icons.map_outlined,
+                    ),
+                  ],
                   
                   const SizedBox(height: 24),
                   
@@ -539,6 +643,59 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
         ),
       ),
     );
+  }
+
+  Widget _buildProtocolTab(String label, SyncType type, bool isSeaFlower, bool isMidnight, bool isAfterRain, SyncProvider provider) {
+      final isSelected = provider.config.syncType == type;
+      Color activeColor;
+      Color activeText = Colors.white;
+      
+      if (isSeaFlower) {
+         activeColor = const Color(0xFFAD1457);
+      } else if (isMidnight) {
+         activeColor = const Color(0xFF7986cb);
+      } else if (isAfterRain) {
+         activeColor = const Color(0xFF0288D1);
+      } else {
+         activeColor = const Color(0xFF5D4037);
+      }
+
+      return GestureDetector(
+        onTap: () {
+           // Switch Type
+           final newConfig = provider.config.copyWith(syncType: type);
+           // Not saving to disk yet, just updating provider state? 
+           // Better to save immediately or just update local state if we want "Save" button to commit everything.
+           // However SyncProvider.config is source of truth.
+           // Let's update provider config immediately but maybe not persist?
+           // No, saveConfig persists. Let's persist. It is a setting switch.
+           provider.saveConfig(newConfig);
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected ? activeColor : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+            boxShadow: isSelected ? [
+              BoxShadow(
+                color: activeColor.withOpacity(0.3),
+                blurRadius: 4,
+                offset: const Offset(0, 2)
+              )
+            ] : null,
+          ),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.notoSerifSc(
+              color: isSelected ? activeText : (isMidnight ? Colors.white70 : Colors.black54),
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              fontSize: 13,
+            ),
+          ),
+        ),
+      );
   }
 
   Widget _buildTips(Color textColor, bool isMidnight) {

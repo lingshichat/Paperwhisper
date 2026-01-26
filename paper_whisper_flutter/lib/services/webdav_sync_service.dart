@@ -1,11 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:webdav_client/webdav_client.dart' as webdav;
 import 'package:path/path.dart' as path;
+import 'cloud_storage_service.dart';
 
-class WebDavSyncService {
+class WebDavSyncService implements CloudStorageService {
   webdav.Client? _client;
   String? _serverUrl;
   String? _username;
@@ -21,33 +23,38 @@ class WebDavSyncService {
 
   bool get isConnected => _client != null;
 
-  /// 初始化连接
-  Future<bool> connect(String serverUrl, String username, String password) async {
-    try {
-      // 确保 URL 以 / 结尾
-      if (!serverUrl.endsWith('/')) {
-        serverUrl += '/';
-      }
-
-      _client = webdav.newClient(
-        serverUrl,
-        user: username,
-        password: password,
-        debug: kDebugMode,
-      );
-      
-      // Increase timeouts for slow networks / large files
-      // Connect: 60s, Receive: 300s (5 mins)
-      _client!.setConnectTimeout(60000);
-      _client!.setReceiveTimeout(300000); 
-
+  void initConfig(String serverUrl, String username, String password) {
       _serverUrl = serverUrl;
       _username = username;
       _password = password;
+  }
+
+  @override
+  Future<bool> connect() async {
+    if (_serverUrl == null || _username == null || _password == null) {
+      return false;
+    }
+    try {
+      // 确保 URL 以 / 结尾
+      String url = _serverUrl!;
+      if (!url.endsWith('/')) {
+        url += '/';
+      }
+
+      _client = webdav.newClient(
+        url,
+        user: _username!,
+        password: _password!,
+        debug: kDebugMode,
+      );
+      
+      // Increase timeouts
+      _client!.setConnectTimeout(60000);
+      _client!.setReceiveTimeout(300000); 
 
       // 简单的 Ping 测试
       await _client!.ping();
-      debugPrint('WebDAV connected to $serverUrl');
+      debugPrint('WebDAV connected to $url');
       return true;
     } catch (e) {
       debugPrint('WebDAV connection failed: $e');
@@ -64,7 +71,7 @@ class WebDavSyncService {
     return path;
   }
 
-  /// 递归确保目录存在
+  @override
   Future<void> ensureDirectoryExists(String remotePath) async {
     if (_client == null) return;
     
@@ -102,18 +109,17 @@ class WebDavSyncService {
       await _client!.mkdir(remotePath);
       debugPrint('Created remote directory: $remotePath');
     } catch (e) {
-      // 忽略创建错误（可能是并发导致已存在）
+      // 忽略创建错误
     }
   }
 
-  /// 测试连接有效性 (包含基础目录检查)
+  @override
   Future<bool> testConnection() async {
     if (_client == null) return false;
     try {
       await _client!.ping();
       // 预先创建常用目录
       await ensureDirectoryExists(diaryBasePath);
-      // 不要在这里强制创建 moments，按需创建
       return true;
     } catch (e) {
       debugPrint('WebDAV test connection failed: $e');
@@ -121,29 +127,33 @@ class WebDavSyncService {
     }
   }
 
-  /// 获取云端文件列表
-  /// [remotePath] 必须以 / 结尾，例如 '/PaperWhisper/diary_data/'
-  Future<List<webdav.File>> listRemoteFiles({String remotePath = diaryBasePath}) async {
+  @override
+  Future<List<RemoteFile>> listFiles(String remotePath) async {
     if (_client == null) return [];
     try {
       // 确保目录存在
       await ensureDirectoryExists(remotePath); 
       
       // format path for readDir
-      String path = _formatPath(remotePath);
-      if (!path.endsWith('/')) path += '/';
+      String p = _formatPath(remotePath);
+      if (!p.endsWith('/')) p += '/';
       
-      return await _client!.readDir(path);
+      final list = await _client!.readDir(p);
+      return list.map((f) => RemoteFile(
+        path: f.path ?? '',
+        name: f.name ?? '',
+        size: f.size ?? 0,
+        lastModified: f.mTime,
+        isDirectory: f.isDir ?? false,
+      )).toList();
     } catch (e) {
       debugPrint('WebDAV list files failed for $remotePath: $e');
-      // 严重错误：如果列举失败，必须抛出异常，绝对不能返回空列表！
-      // 返回空列表会导致同步逻辑误以为云端被清空，从而触发全量重新上传，消耗大量流量。
       rethrow;
     }
   }
 
-  /// 手动上传（带进度）
-  Future<void> uploadFile(String localFilePath, String remoteFilePath, {Function(int count, int total)? onProgress}) async {
+  @override
+  Future<void> uploadFile(String localFilePath, String remoteFilePath, {Function(int sent, int total)? onProgress}) async {
     if (_serverUrl == null) return;
     
     // WebDAV PUT
@@ -160,7 +170,7 @@ class WebDavSyncService {
       // Headers
       request.headers.set(HttpHeaders.authorizationHeader, _getAuthHeader());
       request.headers.contentType = ContentType.binary;
-      request.contentLength = totalBytes; // Important for server to know size
+      request.contentLength = totalBytes; 
 
       // Stream upload with progress
       final stream = file.openRead();
@@ -187,13 +197,13 @@ class WebDavSyncService {
     }
   }
 
-  /// 手动下载（带进度）
-  Future<void> downloadFile(String remoteFilePath, String localSavePath, {Function(int count, int total)? onProgress}) async {
+  @override
+  Future<void> downloadFile(String remoteFilePath, String localSavePath, {Function(int received, int total)? onProgress}) async {
     if (_serverUrl == null) return;
 
     final url = Uri.parse(_serverUrl! + _formatPath(remoteFilePath));
     final client = HttpClient();
-    client.connectionTimeout = const Duration(seconds: 60); // Connect timeout
+    client.connectionTimeout = const Duration(seconds: 60);
     
     try {
       final request = await client.getUrl(url);
@@ -202,13 +212,12 @@ class WebDavSyncService {
       final response = await request.close();
       
       if (response.statusCode >= 200 && response.statusCode < 300) {
-        final totalBytes = response.contentLength; // might be -1
+        final totalBytes = response.contentLength;
         final file = File(localSavePath);
         final sink = file.openWrite();
         
         int bytesReceived = 0;
         
-        // Listen to stream
         await response.listen((chunk) {
            bytesReceived += chunk.length;
            sink.add(chunk);
@@ -239,7 +248,7 @@ class WebDavSyncService {
     return 'Basic ' + base64Encode(bytes);
   }
 
-  /// 删除云端文件 (慎用，现建议移动到 Trash)
+  @override
   Future<void> deleteFile(String remoteFilePath) async {
     if (_client == null) return;
     try {
@@ -250,7 +259,7 @@ class WebDavSyncService {
     }
   }
 
-  /// 移动/重命名云端文件
+  @override
   Future<void> moveFile(String oldPath, String newPath) async {
     if (_client == null) return;
     try {
@@ -265,21 +274,19 @@ class WebDavSyncService {
     }
   }
 
-  /// 读取云端文件内容为字符串
+  @override
   Future<String?> readRemoteFile(String remotePath) async {
     if (_client == null) return null;
     try {
-      // 临时下载到缓冲区
       List<int> bytes = await _client!.read(_formatPath(remotePath));
       return utf8.decode(bytes);
     } catch (e) {
-      // 404 is common for new manifest
       debugPrint('WebDAV read failed (might be 404): $e');
       return null;
     }
   }
 
-  /// 直接写入字符串到云端文件
+  @override
   Future<void> writeRemoteFile(String remotePath, String content) async {
     if (_client == null) return;
     try {

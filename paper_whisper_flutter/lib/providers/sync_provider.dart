@@ -20,10 +20,14 @@ import '../widgets/skeuomorphic_dialog.dart';
 import '../widgets/skeuomorphic_toast.dart';
 import 'diary_provider.dart';
 
+import '../services/s3_sync_service.dart';
+import '../services/cloud_storage_service.dart';
+
 enum SyncStatus { none, syncing, success, failed }
 
 class SyncProvider with ChangeNotifier {
   final WebDavSyncService _webDavService = WebDavSyncService();
+  final S3SyncService _s3Service = S3SyncService();
   final MomentService _momentService = MomentService();
   final FlutterLocalNotificationsPlugin _notificationsPlugin = FlutterLocalNotificationsPlugin();
   
@@ -51,12 +55,26 @@ class SyncProvider with ChangeNotifier {
   String get lastError => _lastError;
   String get progressMessage => _progressMessage; 
   DateTime? get lastSyncTime => _lastSyncTime;
-  bool get isConfigured => _config.enabled && _config.serverUrl.isNotEmpty;
+  
+  // Is Configured Logic
+  bool get isConfigured {
+    if (!_config.enabled) return false;
+    if (_config.syncType == SyncType.webdav) {
+      return _config.serverUrl.isNotEmpty && _config.username.isNotEmpty;
+    } else {
+      return _config.s3EndPoint.isNotEmpty && _config.s3AccessKey.isNotEmpty && _config.s3SecretKey.isNotEmpty && _config.s3BucketName.isNotEmpty;
+    }
+  }
   
   double get currentFileProgress => _currentFileProgress;
   String get currentFileSpeed => _currentFileSpeed;
 
   late Future<void> _initFuture;
+  
+  // Service Switcher
+  CloudStorageService get _storageService {
+    return _config.syncType == SyncType.s3 ? _s3Service : _webDavService;
+  }
 
   SyncProvider() {
     _initFuture = _loadConfig();
@@ -179,11 +197,20 @@ class SyncProvider with ChangeNotifier {
   Future<void> saveConfig(SyncConfig newConfig) async {
     final prefs = await SharedPreferences.getInstance();
     
-    // Check for critical changes (Server URL or Username)
-    // If changed, we MUST reset the sync history (LastKnownManifests)
-    // to prevent the "New Empty Server = All Deleted" logic from wiping local data.
-    if (_config.serverUrl != newConfig.serverUrl || _config.username != newConfig.username) {
-       debugPrint("Sync Config changed (Server/User). Resetting sync history to prevent data loss.");
+    // Check for critical changes (Server URL or Username or Endpoint or Bucket)
+    bool isChanged = false;
+    if (_config.syncType != newConfig.syncType) {
+        isChanged = true;
+    } else {
+        if (_config.syncType == SyncType.webdav) {
+            if (_config.serverUrl != newConfig.serverUrl || _config.username != newConfig.username) isChanged = true;
+        } else {
+            if (_config.s3EndPoint != newConfig.s3EndPoint || _config.s3AccessKey != newConfig.s3AccessKey || _config.s3BucketName != newConfig.s3BucketName) isChanged = true;
+        }
+    }
+    
+    if (isChanged) {
+       debugPrint("Sync Config changed. Resetting sync history to prevent data loss.");
        await prefs.remove('last_known_remote_manifest');
        await prefs.remove('last_known_moments_manifest');
        await prefs.remove('last_sync_time');
@@ -202,21 +229,35 @@ class SyncProvider with ChangeNotifier {
 
   Future<bool> connect({bool test = true}) async {
     if (!PaymentService().canUseProFeatures) {
-      _lastError = '需要赞助才能使用 WebDAV 同步';
+      _lastError = '需要赞助才能使用云同步'; // Changed from "WebDAV" to generic
       _status = SyncStatus.failed;
       notifyListeners();
       return false;
     }
     _updateProgress('正在连接服务器...');
-    final success = await _webDavService.connect(
-      _config.serverUrl,
-      _config.username,
-      _config.password,
-    );
+    
+    // Init Config based on type
+    if (_config.syncType == SyncType.webdav) {
+        _webDavService.initConfig(
+          _config.serverUrl,
+          _config.username,
+          _config.password,
+        );
+    } else {
+        _s3Service.initConfig(
+          endPoint: _config.s3EndPoint,
+          accessKey: _config.s3AccessKey,
+          secretKey: _config.s3SecretKey,
+          bucketName: _config.s3BucketName,
+          region: _config.s3Region,
+        );
+    }
+    
+    final success = await _storageService.connect();
     
     if (success && test) {
       _updateProgress('正在验证连接...');
-      return await _webDavService.testConnection();
+      return await _storageService.testConnection();
     }
     return success;
   }
@@ -340,16 +381,16 @@ class SyncProvider with ChangeNotifier {
     if (!_config.enabled) return;
 
     // 确保连接
-    if (!_webDavService.isConnected) {
+    if (!_storageService.isConnected) {
       _updateProgress('正在连接服务器...');
       bool connected = await connect(test: false);
       if (!connected) {
         _setStatus(SyncStatus.failed, error: '无法连接到服务器');
         if (context != null) {
-             SkeuomorphicToast.error(context, "无法连接到 WebDAV 服务器");
+             SkeuomorphicToast.error(context, "无法连接到云存储服务器");
         }
         // THROW so callers like BookFlipRefreshWidget know it failed
-        throw Exception("无法连接到 WebDAV 服务器");
+        throw Exception("无法连接到云存储服务器");
       }
     }
 
@@ -450,7 +491,7 @@ class SyncProvider with ChangeNotifier {
       
       // 2. 获取云端 Manifest
       if (!isAuto) _showNotification(null, null, body: "正在获取云端索引...");
-      final remoteManifestJsonStr = await _webDavService.readRemoteFile(
+      final remoteManifestJsonStr = await _storageService.readRemoteFile(
         WebDavSyncService.rootPath + 'manifest.json'
       );
       
@@ -573,7 +614,7 @@ class SyncProvider with ChangeNotifier {
       }
       
       final newManifest = service.manifestService.manifest; 
-      await _webDavService.writeRemoteFile(
+      await _storageService.writeRemoteFile(
          WebDavSyncService.rootPath + 'manifest.json',
          jsonEncode(newManifest.toJson())
       );
@@ -618,17 +659,17 @@ class SyncProvider with ChangeNotifier {
     
     try {
       // 检查云端 Trash 目录是否存在
-      await _webDavService.ensureDirectoryExists(WebDavSyncService.trashBasePath);
+      await _storageService.ensureDirectoryExists(WebDavSyncService.trashBasePath);
 
-      final remoteTrashList = await _webDavService.listRemoteFiles(
-        remotePath: WebDavSyncService.trashBasePath
+      final remoteTrashList = await _storageService.listFiles(
+        WebDavSyncService.trashBasePath
       );
       final remoteNames = remoteTrashList.map((f) => f.name).toSet();
       
       await _processBatch(trashFiles, (file) async {
          final name = path.basename(file.path);
          if (!remoteNames.contains(name)) {
-            await _webDavService.uploadFile(
+            await _storageService.uploadFile(
                file.path,
                WebDavSyncService.trashBasePath + name
             );
@@ -652,15 +693,15 @@ class SyncProvider with ChangeNotifier {
 
       if (!isAuto) _showNotification(null, null, body: "正在检查日记列表...");
       
-      List<webdav.File> currentRemoteFilesRaw = await _webDavService.listRemoteFiles(
-        remotePath: WebDavSyncService.diaryBasePath
+      List<RemoteFile> currentRemoteFilesRaw = await _storageService.listFiles(
+        WebDavSyncService.diaryBasePath
       );
       
-      List<webdav.File> currentRemoteFilesList = currentRemoteFilesRaw
-          .where((f) => f.name != null && f.name!.endsWith('.txt'))
+      List<RemoteFile> currentRemoteFilesList = currentRemoteFilesRaw
+          .where((f) => f.name.endsWith('.txt'))
           .toList();
-      Map<String, webdav.File> currentRemoteMap = {
-        for (var f in currentRemoteFilesList) f.name!: f
+      Map<String, RemoteFile> currentRemoteMap = {
+        for (var f in currentRemoteFilesList) f.name: f
       };
       
       List<FileSystemEntity> localFiles = localDir.listSync();
@@ -690,7 +731,7 @@ class SyncProvider with ChangeNotifier {
       if (filesToDeleteRemote.isNotEmpty) {
         if (!isAuto) _showNotification(null, null, body: "正在同步删除...");
         await _processBatch(filesToDeleteRemote, (filename) async {
-           await _webDavService.deleteFile(WebDavSyncService.diaryBasePath + filename);
+           await _storageService.deleteFile(WebDavSyncService.diaryBasePath + filename);
         });
         for (var f in filesToDeleteRemote) currentRemoteMap.remove(f);
       }
@@ -705,8 +746,8 @@ class SyncProvider with ChangeNotifier {
 
         if (localFile == null) {
           toDownload.add(filename);
-        } else if (remote.mTime != null) {
-            final remoteTime = remote.mTime!;
+        } else if (remote.lastModified != null) {
+            final remoteTime = remote.lastModified!;
             final localTime = await localFile.lastModified();
             if (remoteTime.difference(localTime).inSeconds > 2) {
                toDownload.add(filename);
@@ -734,7 +775,7 @@ class SyncProvider with ChangeNotifier {
 
       // Execute Downloads
       await _processBatch(toDownload, (filename) async {
-          await _webDavService.downloadFile(
+          await _storageService.downloadFile(
             WebDavSyncService.diaryBasePath + filename, 
             path.join(localDir.path, filename)
           );
@@ -746,7 +787,7 @@ class SyncProvider with ChangeNotifier {
          // Re-find file object
          File f = File(path.join(localDir.path, filename));
          if (await f.exists()) {
-            await _webDavService.uploadFile(
+            await _storageService.uploadFile(
               f.path, 
               WebDavSyncService.diaryBasePath + filename
             );
@@ -800,7 +841,7 @@ class SyncProvider with ChangeNotifier {
        
        // 2. 获取云端 Manifest
        if (!isAuto) _showNotification(null, null, body: "正在获取随心记索引...");
-       final remoteManifestJsonStr = await _webDavService.readRemoteFile(
+       final remoteManifestJsonStr = await _storageService.readRemoteFile(
          WebDavSyncService.rootPath + 'moments_manifest.json'
        );
        
@@ -872,7 +913,7 @@ class SyncProvider with ChangeNotifier {
        await _processBatch(toDownload, (filename) async {
           _resetTransferStats(); // Reset for new file
           try {
-            await _webDavService.downloadFile(
+            await _storageService.downloadFile(
                WebDavSyncService.momentsBasePath + filename,
                path.join(service.dataDir!.path, filename),
                onProgress: _onTransferProgress
@@ -897,7 +938,7 @@ class SyncProvider with ChangeNotifier {
           if (await file.exists()) {
             _resetTransferStats(); // Reset for new file
             try {
-              await _webDavService.uploadFile(
+              await _storageService.uploadFile(
                  file.path,
                  WebDavSyncService.momentsBasePath + filename,
                  onProgress: _onTransferProgress
@@ -925,10 +966,10 @@ class SyncProvider with ChangeNotifier {
           final srcPath = WebDavSyncService.momentsBasePath + filename;
           final trashPath = WebDavSyncService.trashBasePath + "moments_" + filename;
           
-          await _webDavService.ensureDirectoryExists(WebDavSyncService.trashBasePath);
+          await _storageService.ensureDirectoryExists(WebDavSyncService.trashBasePath);
           
           try {
-            await _webDavService.moveFile(srcPath, trashPath);
+            await _storageService.moveFile(srcPath, trashPath);
           } catch (e) {
             debugPrint("Remote moment move failed: $e");
           }
@@ -945,7 +986,7 @@ class SyncProvider with ChangeNotifier {
        
        // 6. 更新 Remote Manifest
        final newManifest = service.manifestService.manifest; 
-       await _webDavService.writeRemoteFile(
+       await _storageService.writeRemoteFile(
           WebDavSyncService.rootPath + 'moments_manifest.json',
           jsonEncode(newManifest.toJson())
        );
@@ -955,12 +996,11 @@ class SyncProvider with ChangeNotifier {
       if (!isAuto) _showNotification(null, null, body: "正在同步图片...");
       
       // 1. Get Remote List
-      List<webdav.File> remoteImagesRaw = await _webDavService.listRemoteFiles(
-        remotePath: WebDavSyncService.momentsImagesPath
+      List<RemoteFile> remoteImagesRaw = await _storageService.listFiles(
+        WebDavSyncService.momentsImagesPath
       );
       Set<String> remoteImageNames = remoteImagesRaw
-         .where((f) => f.name != null)
-         .map((f) => f.name!)
+         .map((f) => f.name)
          .toSet();
 
       // 2. Get Local List
@@ -987,8 +1027,7 @@ class SyncProvider with ChangeNotifier {
       // 4. Collect Downloads
       List<String> toDownload = [];
       for (var remoteFile in remoteImagesRaw) {
-         String? name = remoteFile.name;
-         if (name == null) continue;
+         String name = remoteFile.name;
          File localFile = File(path.join(localImagesDir.path, name));
          if (!localFile.existsSync()) {
             toDownload.add(name);
@@ -1001,7 +1040,7 @@ class SyncProvider with ChangeNotifier {
       // Parallel Upload
       await _processBatch(toUpload, (f) async {
           String name = path.basename(f.path);
-          await _webDavService.uploadFile(
+          await _storageService.uploadFile(
              f.path, 
              WebDavSyncService.momentsImagesPath + name
           );
@@ -1012,7 +1051,7 @@ class SyncProvider with ChangeNotifier {
       // Parallel Download
       await _processBatch(toDownload, (name) async {
           File localFile = File(path.join(localImagesDir.path, name));
-           await _webDavService.downloadFile(
+           await _storageService.downloadFile(
               WebDavSyncService.momentsImagesPath + name, 
               localFile.path
            );
@@ -1025,12 +1064,11 @@ class SyncProvider with ChangeNotifier {
       if (!isAuto) _showNotification(null, null, body: "正在同步语音...");
       
       // 1. Get Remote List
-      List<webdav.File> remoteAudioRaw = await _webDavService.listRemoteFiles(
-        remotePath: WebDavSyncService.momentsAudioPath
+      List<RemoteFile> remoteAudioRaw = await _storageService.listFiles(
+        WebDavSyncService.momentsAudioPath
       );
       Set<String> remoteAudioNames = remoteAudioRaw
-         .where((f) => f.name != null)
-         .map((f) => f.name!)
+         .map((f) => f.name)
          .toSet();
 
       // 2. Get Local List
@@ -1056,8 +1094,7 @@ class SyncProvider with ChangeNotifier {
       // 4. Collect Downloads
       List<String> toDownload = [];
       for (var remoteFile in remoteAudioRaw) {
-         String? name = remoteFile.name;
-         if (name == null) continue;
+         String name = remoteFile.name;
          File localFile = File(path.join(localAudioDir.path, name));
          if (!localFile.existsSync()) {
             toDownload.add(name);
@@ -1070,7 +1107,7 @@ class SyncProvider with ChangeNotifier {
       // Parallel Upload
       await _processBatch(toUpload, (f) async {
           String name = path.basename(f.path);
-          await _webDavService.uploadFile(
+          await _storageService.uploadFile(
              f.path, 
              WebDavSyncService.momentsAudioPath + name
           );
@@ -1081,7 +1118,7 @@ class SyncProvider with ChangeNotifier {
       // Parallel Download
       await _processBatch(toDownload, (name) async {
           File localFile = File(path.join(localAudioDir.path, name));
-           await _webDavService.downloadFile(
+           await _storageService.downloadFile(
               WebDavSyncService.momentsAudioPath + name, 
               localFile.path
            );

@@ -1,61 +1,106 @@
+enum SyncType { webdav, s3 }
+
 class SyncConfig {
-  final String serverUrl;
-  final String username;
-  final String password; // 应当加密存储，但在简易版中我们先明文存 SP，生产环境建议用 flutter_secure_storage
+  // Common
   final bool autoSync;
   final bool enabled;
   final bool compressImages;
+  final SyncType syncType;
+
+  // WebDAV Config
+  final String serverUrl;
+  final String username;
+  final String password;
+
+  // S3 Config
+  final String s3EndPoint;
+  final String s3AccessKey;
+  final String s3SecretKey;
+  final String s3BucketName;
+  final String? s3Region;
 
   static const String defaultServerUrl = 'https://dav.jianguoyun.com/dav/';
 
-
-
   SyncConfig({
-    this.serverUrl = defaultServerUrl,
-    this.username = '',
-    this.password = '',
     this.autoSync = false,
     this.enabled = false,
     this.compressImages = true,
+    this.syncType = SyncType.webdav,
+    
+    // WebDAV defaults
+    this.serverUrl = defaultServerUrl,
+    this.username = '',
+    this.password = '',
+    
+    // S3 defaults
+    this.s3EndPoint = '',
+    this.s3AccessKey = '',
+    this.s3SecretKey = '',
+    this.s3BucketName = '',
+    this.s3Region,
   });
 
   SyncConfig copyWith({
-    String? serverUrl,
-    String? username,
-    String? password,
     bool? autoSync,
     bool? enabled,
     bool? compressImages,
+    SyncType? syncType,
+    String? serverUrl,
+    String? username,
+    String? password,
+    String? s3EndPoint,
+    String? s3AccessKey,
+    String? s3SecretKey,
+    String? s3BucketName,
+    String? s3Region,
   }) {
     return SyncConfig(
-      serverUrl: serverUrl ?? this.serverUrl,
-      username: username ?? this.username,
-      password: password ?? this.password,
       autoSync: autoSync ?? this.autoSync,
       enabled: enabled ?? this.enabled,
       compressImages: compressImages ?? this.compressImages,
+      syncType: syncType ?? this.syncType,
+      serverUrl: serverUrl ?? this.serverUrl,
+      username: username ?? this.username,
+      password: password ?? this.password,
+      s3EndPoint: s3EndPoint ?? this.s3EndPoint,
+      s3AccessKey: s3AccessKey ?? this.s3AccessKey,
+      s3SecretKey: s3SecretKey ?? this.s3SecretKey,
+      s3BucketName: s3BucketName ?? this.s3BucketName,
+      s3Region: s3Region ?? this.s3Region,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'serverUrl': serverUrl,
-      'username': username,
-      'password': password,
       'autoSync': autoSync,
       'enabled': enabled,
       'compressImages': compressImages,
+      'syncType': syncType.index,
+      'serverUrl': serverUrl,
+      'username': username,
+      'password': password,
+      's3EndPoint': s3EndPoint,
+      's3AccessKey': s3AccessKey,
+      's3SecretKey': s3SecretKey,
+      's3BucketName': s3BucketName,
+      's3Region': s3Region,
     };
   }
 
   factory SyncConfig.fromJson(Map<String, dynamic> json) {
     return SyncConfig(
-      serverUrl: json['serverUrl'] ?? defaultServerUrl,
-      username: json['username'] ?? '',
-      password: json['password'] ?? '',
       autoSync: json['autoSync'] ?? false,
       enabled: json['enabled'] ?? false,
       compressImages: json['compressImages'] ?? true,
+      syncType: SyncType.values[json['syncType'] ?? 0],
+      serverUrl: json['serverUrl'] ?? defaultServerUrl,
+      username: json['username'] ?? '',
+      password: json['password'] ?? '',
+      s3EndPoint: json['s3EndPoint'] ?? '',
+      s3AccessKey: json['s3AccessKey'] ?? '',
+      s3SecretKey: json['s3SecretKey'] ?? '',
+      s3BucketName: json['s3BucketName'] ?? '',
+      s3Region: json['s3Region'],
     );
   }
 }
