@@ -137,13 +137,20 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
     final bool isMidnight = theme == AppTheme.themeMidnight;
 
     // 颜色定义 (参考 SidebarWidget)
-    final Color titleColor = isSeaFlower
-        ? const Color(0xFF880E4F)
-        : (isMidnight ? const Color(0xFFe6edf3) : const Color(0xFFEEFFEB));
+    final themeConfig = AppTheme.getSettingsTheme(theme);
+    final bool isAfterRain = theme == AppTheme.themeAfterRain;
+    
+    final Color titleColor = themeConfig.isNotEmpty
+        ? themeConfig['titleColor']
+        : (isSeaFlower
+            ? const Color(0xFF880E4F)
+            : (isMidnight ? const Color(0xFFe6edf3) : const Color(0xFFEEFFEB)));
         
-    final Color textColor = isSeaFlower
-        ? const Color(0xFFAD1457)
-        : (isMidnight ? const Color(0xFFc9d1d9) : const Color(0xFFD7CCC8));
+    final Color textColor = themeConfig.isNotEmpty
+        ? themeConfig['textColor']
+        : (isSeaFlower
+            ? const Color(0xFFAD1457)
+            : (isMidnight ? const Color(0xFFc9d1d9) : const Color(0xFFD7CCC8)));
 
     final Shadow titleShadow = isSeaFlower
         ? const Shadow(
@@ -151,11 +158,17 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
             offset: Offset(0, 1),
             blurRadius: 2,
           )
-        : const Shadow(
-            color: Color.fromRGBO(0, 0, 0, 0.3),
-            offset: Offset(0, 2),
-            blurRadius: 4,
-          );
+        : (isAfterRain 
+            ? Shadow( // Engraved effect for After Rain
+                color: Colors.white.withOpacity(0.8),
+                offset: const Offset(0, 1),
+                blurRadius: 0,
+              )
+            : const Shadow(
+                color: Color.fromRGBO(0, 0, 0, 0.3),
+                offset: Offset(0, 2),
+                blurRadius: 4,
+              ));
 
     // Scaffold 内容
     Widget content = Scaffold(
@@ -469,41 +482,69 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
   }
 
   Widget _buildGroupContainer(bool isSeaFlower, bool isMidnight, {required List<Widget> children}) {
-     final BoxDecoration decoration = BoxDecoration(
-      color: isSeaFlower 
-          ? Colors.white.withValues(alpha: 0.3) 
-          : (isMidnight ? const Color(0xFF161b22).withValues(alpha: 0.6) : Colors.black.withValues(alpha: 0.03)),
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(
-        color: isSeaFlower 
-            ? Colors.white.withValues(alpha: 0.4) 
-            : (isMidnight ? const Color(0xFF30363d) : Colors.white.withValues(alpha: 0.1)),
-      ),
-      boxShadow: [
-        BoxShadow(
-          color: isSeaFlower ? const Color(0xFFF48FB1).withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05),
-          blurRadius: 4,
-          offset: const Offset(0, 2),
-        )
-      ],
-    );
+     // Check for config
+     // Since we don't pass theme here, we need to access it or pass it.
+     // But context is not available here easily unless passed.
+     // Let's rely on the parent calling context or check logic.
+     // Actually this helper is stateless.
+     // Better approach: pass decoration or config.
+     // But strictly following current structure:
+     // We will use a hack to detect "After Rain" via text color passed in _buildList? No.
+     // Let's refactor the call site to pass 'theme' or 'config'.
+     // But to minimize diff size, I'll assume I can't easily change signature everywhere without big diff.
+     // Wait, I can pass 'theme' to this method easily. It is called in _buildList.
+     return Builder(
+       builder: (context) {
+         final theme = Provider.of<SettingsProvider>(context).currentTheme;
+         final themeConfig = AppTheme.getSettingsTheme(theme);
+         
+         final BoxDecoration decoration = themeConfig.isNotEmpty
+            ? themeConfig['groupDecoration']
+            : BoxDecoration(
+              color: isSeaFlower
+                  ? Colors.white.withValues(alpha: 0.3)
+                  : (isMidnight ? const Color(0xFF161b22).withValues(alpha: 0.6) : Colors.black.withValues(alpha: 0.03)),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isSeaFlower
+                    ? Colors.white.withValues(alpha: 0.4)
+                    : (isMidnight ? const Color(0xFF30363d) : Colors.white.withValues(alpha: 0.1)),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: isSeaFlower ? const Color(0xFFF48FB1).withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                )
+              ],
+            );
 
-    return Container(
-      decoration: decoration,
-      clipBehavior: Clip.antiAlias, // Ensure children don't overflow rounded corners
-      child: Column(
-        children: children,
-      ),
-    );
+         return Container(
+           decoration: decoration,
+           clipBehavior: Clip.antiAlias,
+           child: Column(children: children),
+         );
+       }
+     );
   }
 
+
   Widget _buildDivider(bool isSeaFlower, bool isMidnight) {
-    return Divider(
-      height: 1, 
-      thickness: 1, 
-      color: isSeaFlower 
-         ? Colors.white.withOpacity(0.3) 
-         : (isMidnight ? const Color(0xFF30363d) : Colors.grey.withOpacity(0.1)),
+    return Builder(
+      builder: (context) {
+        final theme = Provider.of<SettingsProvider>(context).currentTheme;
+        final themeConfig = AppTheme.getSettingsTheme(theme);
+        
+        return Divider(
+          height: 1,
+          thickness: 1,
+          color: themeConfig.isNotEmpty
+             ? themeConfig['dividerColor']
+             : (isSeaFlower
+                 ? Colors.white.withOpacity(0.3)
+                 : (isMidnight ? const Color(0xFF30363d) : Colors.grey.withOpacity(0.1))),
+        );
+      }
     );
   }
 
@@ -612,11 +653,22 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
                 ],
               ),
             ),
-            Switch(
-              value: value,
-              onChanged: onChanged,
-              activeColor: isSeaFlower ? const Color(0xFFEC407A) : (isMidnight ? const Color(0xFF7986cb) : const Color(0xFF8D6E63)),
-              activeTrackColor: isSeaFlower ? const Color(0xFFF48FB1).withOpacity(0.3) : const Color(0xFFD7CCC8).withOpacity(0.3),
+            Builder(
+              builder: (context) {
+                final theme = Provider.of<SettingsProvider>(context).currentTheme;
+                final themeConfig = AppTheme.getSettingsTheme(theme);
+                
+                return Switch(
+                  value: value,
+                  onChanged: onChanged,
+                  activeColor: themeConfig.isNotEmpty
+                      ? themeConfig['activeSwitchColor']
+                      : (isSeaFlower ? const Color(0xFFEC407A) : (isMidnight ? const Color(0xFF7986cb) : const Color(0xFF8D6E63))),
+                  activeTrackColor: themeConfig.isNotEmpty
+                      ? themeConfig['activeTrackColor']
+                      : (isSeaFlower ? const Color(0xFFF48FB1).withOpacity(0.3) : const Color(0xFFD7CCC8).withOpacity(0.3)),
+                );
+              }
             )
           ],
         ),
@@ -861,6 +913,7 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
           _buildRadioItem(ctx, '海底花海', 'sea_flower', settings.currentTheme, (val) => settings.setTheme(val), closeOnSelect: false),
           _buildRadioItem(ctx, '午夜星尘', 'midnight', settings.currentTheme, (val) => settings.setTheme(val), closeOnSelect: false),
           _buildRadioItem(ctx, '琥珀光圈', 'amber_lens', settings.currentTheme, (val) => settings.setTheme(val), closeOnSelect: false),
+          _buildRadioItem(ctx, '雨后天空', 'after_rain', settings.currentTheme, (val) => settings.setTheme(val), closeOnSelect: false),
         ]
       )
     );
@@ -882,7 +935,22 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
   }
 
   void _showStorageManager(BuildContext context, bool isSeaFlower, bool isMidnight, Color ignoredTextColor) {
-    const Color sheetTextColor = Color(0xFF5D4037);
+    final settings = Provider.of<SettingsProvider>(context, listen: false);
+    final theme = settings.currentTheme;
+    
+    // Dynamic text color for sheet content
+    Color sheetTextColor;
+    if (theme == AppTheme.themeAfterRain) {
+      sheetTextColor = const Color(0xFF455A64);
+    } else if (theme == AppTheme.themeSeaFlower) {
+      sheetTextColor = const Color(0xFF880E4F);
+    } else if (theme == AppTheme.themeMidnight) {
+      sheetTextColor = const Color(0xFFc9d1d9);
+    } else if (theme == AppTheme.themeAmberLens) {
+      sheetTextColor = const Color(0xFFE0E0E0);
+    } else {
+      sheetTextColor = const Color(0xFF5D4037);
+    }
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -891,7 +959,7 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
         title: '用户数据管理',
         children: [
            ListTile(
-             leading: const Icon(Icons.delete_sweep, color: sheetTextColor),
+             leading: Icon(Icons.delete_sweep, color: sheetTextColor),
              title: Text('清理无用图片 (深度清理)', style: GoogleFonts.notoSerifSc(color: sheetTextColor)),
              subtitle: Text('扫描并删除未被任何随心记引用的冗余图片', style: GoogleFonts.notoSerifSc(color: sheetTextColor.withOpacity(0.6), fontSize: 12)),
              onTap: () async {
@@ -906,7 +974,7 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
            ),
            Divider(color: sheetTextColor.withOpacity(0.1)),
            ListTile(
-             leading: const Icon(Icons.cleaning_services, color: sheetTextColor),
+             leading: Icon(Icons.cleaning_services, color: sheetTextColor),
              title: Text('立即清理缓存', style: GoogleFonts.notoSerifSc(color: sheetTextColor)),
              subtitle: Text('清理产生的临时文件 (不影响数据)', style: GoogleFonts.notoSerifSc(color: sheetTextColor.withOpacity(0.6), fontSize: 12)),
              onTap: () async {
@@ -1018,6 +1086,13 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
         tapeColor = const Color(0xFFFF9800).withOpacity(0.5);
         shadows = [const BoxShadow(color: Colors.black, blurRadius: 20, offset: Offset(0, -5))];
         border = Border.all(color: const Color(0xFFFF9800).withOpacity(0.3), width: 1);
+    } else if (theme == AppTheme.themeAfterRain) {
+        // After Rain: Frosted Glass / Alice Blue
+        bgColor = const Color(0xFFF0F8FF).withOpacity(0.95);
+        titleColor = const Color(0xFF455A64);
+        tapeColor = const Color(0xFFB3E5FC).withOpacity(0.5);
+        shadows = [BoxShadow(color: const Color(0xFF0288D1).withOpacity(0.15), blurRadius: 20, offset: const Offset(0, -5))];
+        border = Border.all(color: Colors.white, width: 1);
     } else {
       // Vintage: Solid Paper + Tape
       bgColor = const Color(0xFFF4ECD8);
@@ -1145,6 +1220,16 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
             bgColor = const Color(0xFF2C2C2C);
             textColor = const Color(0xFF9E9E9E);
              border = Border.all(color: const Color(0xFFFF9800).withOpacity(0.3));
+        }
+    } else if (theme == AppTheme.themeAfterRain) {
+        if (isSelected) {
+            bgColor = const Color(0xFF0288D1);
+            textColor = Colors.white;
+            shadow = const BoxShadow(color: Color.fromRGBO(2, 136, 209, 0.3), offset: Offset(0, 4), blurRadius: 8);
+        } else {
+            bgColor = Colors.white.withOpacity(0.6);
+            textColor = const Color(0xFF455A64);
+            border = Border.all(color: Colors.white);
         }
     } else {
       // Vintage

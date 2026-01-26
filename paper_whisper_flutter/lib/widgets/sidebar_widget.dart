@@ -53,96 +53,14 @@ class _SidebarWidgetState extends State<SidebarWidget> {
     final theme = Provider.of<SettingsProvider>(context).currentTheme;
     
     // Theme Configs
-    BoxDecoration bgDecor;
-    Color textColor;
-    Color activeTextColor;
-    Color subTextColor;
-    Color pillColor;
-    List<BoxShadow> pillShadows;
-    BoxBorder? pillBorder;
-    
-    // 1. Sea Flower (Light/Pink)
-    if (theme == AppTheme.themeSeaFlower) {
-       bgDecor = BoxDecoration(
-          color: const Color(0xFFFCE4EC).withOpacity(0.6), // Pink 50 with opacity for blur
-          // Removed leather texture for clean look, or use a soft paper texture if available
-          // image: DecorationImage(image: AssetImage('assets/textures/paper_1.png'), opacity: 0.1, fit: BoxFit.cover),
-          boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(5, 0))]
-       );
-       textColor = const Color(0xFF880E4F); // Pink 900
-       activeTextColor = const Color(0xFFD81B60); // Pink 600
-       subTextColor = const Color(0xFFBC477B); // Pink 300
-       pillColor = Colors.white;
-       pillShadows = [
-          BoxShadow(color: const Color(0xFFF48FB1).withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4)),
-       ];
-       pillBorder = null;
-    } 
-    // 2. Midnight (Deep Blue/Dark)
-    else if (theme == AppTheme.themeMidnight) {
-       bgDecor = const BoxDecoration(
-          color: Color(0xFF0D1117), 
-          // image: DecorationImage(image: AssetImage('assets/textures/starry_bg.png'), fit: BoxFit.cover, opacity: 0.3), // If available
-          border: Border(right: BorderSide(color: Colors.white12)),
-          boxShadow: [BoxShadow(color: Colors.black87, blurRadius: 10, offset: Offset(5, 0))]
-       );
-       textColor = const Color(0xFFc9d1d9);
-       activeTextColor = const Color(0xFF7986cb); // Indigo Light
-       subTextColor = const Color(0xFF8b949e);
-       pillColor = const Color(0xFF161b22);
-       pillShadows = [
-          BoxShadow(color: const Color(0xFF7986cb).withOpacity(0.2), blurRadius: 8, offset: const Offset(0, 0), spreadRadius: 1),
-       ];
-       pillBorder = Border.all(color: Colors.white10);
-    }
-    // 3. Amber Lens (Existing/Dark Leather)
-    else if (theme == AppTheme.themeAmberLens) {
-      bgDecor = const BoxDecoration(
-          color: Color(0xFF2C2C2C),
-          image: DecorationImage(
-            image: ResizeImage(
-               AssetImage('assets/textures/leather_dark.png'),
-               width: 1080,
-            ),
-            fit: BoxFit.cover,
-            opacity: 0.5,
-          ),
-          boxShadow: [BoxShadow(color: Colors.black45, blurRadius: 10, offset: Offset(5, 0))]
-      );
-      textColor = const Color(0xFFBDBDBD);
-      activeTextColor = const Color(0xFFFF9800); // Amber
-      subTextColor = const Color(0xFF757575);
-      pillColor = const Color(0xFF222222);
-      pillShadows = [
-          BoxShadow(color: Colors.white10, offset: Offset(0, 1), blurRadius: 0),
-          BoxShadow(color: Colors.black87, offset: Offset(0, -2), blurRadius: 1)
-      ];
-      pillBorder = null;
-    }
-    // 4. Default / Vintage (Dark Metal/Leather)
-    else {
-       bgDecor = const BoxDecoration(
-          color: Color(0xFF3E2723), // Dark Brown
-          image: DecorationImage(
-            image: ResizeImage(
-               AssetImage('assets/textures/leather_dark.png'),
-               width: 1080
-            ), // Reuse leather
-            fit: BoxFit.cover,
-            opacity: 0.6,
-          ),
-          boxShadow: [BoxShadow(color: Colors.black45, blurRadius: 10, offset: Offset(5, 0))]
-       );
-       textColor = const Color(0xFFD7CCC8); // Beige
-       activeTextColor = const Color(0xFFFF5252); // Red Accent
-       subTextColor = const Color(0xFFA1887F);
-       pillColor = const Color(0xFF2D1E1B); 
-       pillShadows = [
-           BoxShadow(color: Colors.white10, offset: Offset(0, 1), blurRadius: 0),
-           BoxShadow(color: Colors.black87, offset: Offset(0, -2), blurRadius: 1)
-       ];
-       pillBorder = null;
-    }
+    final config = AppTheme.getSidebarTheme(theme);
+    BoxDecoration bgDecor = config['bgDecoration'];
+    Color textColor = config['textColor'];
+    Color activeTextColor = config['activeTextColor'];
+    Color subTextColor = config['subTextColor'];
+    Color pillColor = config['pillColor'];
+    List<BoxShadow> pillShadows = config['pillShadows'];
+    BoxBorder? pillBorder = config['pillBorder'];
 
     Widget sidebarContent = Container(
       width: 280, 
@@ -223,17 +141,7 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                           decoration: BoxDecoration(
                             // Solid-like look but with gradient to simulate lighting (Bevel)
                             // This avoids "borderRadius with non-uniform borders" crash
-                            gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: theme == AppTheme.themeSeaFlower
-                                    ? [const Color(0xFFF06292), const Color(0xFFD81B60)] // Pink Light -> Dark
-                                    : theme == AppTheme.themeMidnight
-                                        ? [const Color(0xFF7986cb), const Color(0xFF3F51B5)] // Indigo Light -> Dark
-                                        : theme == AppTheme.themeAmberLens
-                                            ? [const Color(0xFFFFB74D), const Color(0xFFF57C00)] // Amber Light -> Dark
-                                            : [const Color(0xFFE57373), const Color(0xFFD32F2F)], // Red Light -> Dark (Simulates Highlight Top, Shadow Bottom)
-                            ),
+                            gradient: config['buttonGradient'],
                                         
                             // Rounded Corners (Restore)
                             borderRadius: BorderRadius.circular(10),
@@ -369,7 +277,9 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                   padding: const EdgeInsets.all(20),
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   decoration: BoxDecoration(
-                    color: theme == AppTheme.themeSeaFlower ? Colors.white54 : Colors.black26, // Lighter for SeaFlower
+                    color: (theme == AppTheme.themeSeaFlower || theme == AppTheme.themeAfterRain) 
+                        ? Colors.white.withOpacity(0.4) 
+                        : Colors.black26,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: Colors.white10),
                   ),
@@ -429,7 +339,7 @@ class _SidebarWidgetState extends State<SidebarWidget> {
       ),
     );
 
-    if (theme == AppTheme.themeSeaFlower) {
+    if (theme == AppTheme.themeSeaFlower || theme == AppTheme.themeAfterRain) {
       return ClipRect(
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),

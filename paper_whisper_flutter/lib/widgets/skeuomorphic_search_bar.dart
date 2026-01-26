@@ -59,44 +59,13 @@ class _SkeuomorphicSearchBarState extends State<SkeuomorphicSearchBar> {
     final theme = Provider.of<SettingsProvider>(context).currentTheme;
 
     // Theme Configuration
-    Color bgColor;
-    Color textColor;
-    Color hintColor;
-    Color iconColor;
-    List<BoxShadow> innerShadows;
-    Border? border;
-
-    if (theme == AppTheme.themeSeaFlower) {
-      // Light / Pink
-      bgColor = const Color(0xFFF8BBD0).withOpacity(0.3); // Very light pink bg
-      textColor = const Color(0xFF880E4F);
-      hintColor = const Color(0xFFAD1457).withOpacity(0.5);
-      iconColor = const Color(0xFF880E4F);
-      innerShadows = [ // Not used directly but kept for logic structure
-      ];
-      border = Border.all(color: Colors.white.withOpacity(0.4), width: 1);
-    } else if (theme == AppTheme.themeMidnight) {
-      // Dark / Blue
-      bgColor = const Color(0xFF010409); // Very dark
-      textColor = const Color(0xFFc9d1d9);
-      hintColor = const Color(0xFF8b949e);
-      iconColor = const Color(0xFF7986cb);
-      border = Border.all(color: Colors.white10);
-    } else if (theme == AppTheme.themeAmberLens) {
-      // Amber / Dark Leather
-      bgColor = const Color(0xFF1E1E1E); // Darker than panel
-      textColor = const Color(0xFFE0E0E0);
-      hintColor = const Color(0xFF757575);
-      iconColor = const Color(0xFFFFB74D); // Amber accent
-      border = Border.all(color: Colors.black, width: 1); // Dark border for cutout look
-    } else {
-      // Vintage (Default)
-      bgColor = const Color(0xFF2D1E1B); // Darker brown
-      textColor = const Color(0xFFD7CCC8);
-      hintColor = const Color(0xFFA1887F);
-      iconColor = const Color(0xFFD7CCC8);
-      border = Border.all(color: Colors.black26);
-    }
+    final themeConfig = AppTheme.getSearchTheme(theme);
+    
+    Color bgColor = themeConfig.isNotEmpty ? themeConfig['bgColor'] : (theme == AppTheme.themeSeaFlower ? const Color(0xFFF8BBD0).withOpacity(0.3) : (theme == AppTheme.themeMidnight ? const Color(0xFF010409) : (theme == AppTheme.themeAmberLens ? const Color(0xFF1E1E1E) : const Color(0xFF2D1E1B))));
+    Color textColor = themeConfig.isNotEmpty ? themeConfig['textColor'] : (theme == AppTheme.themeSeaFlower ? const Color(0xFF880E4F) : (theme == AppTheme.themeMidnight ? const Color(0xFFc9d1d9) : (theme == AppTheme.themeAmberLens ? const Color(0xFFE0E0E0) : const Color(0xFFD7CCC8))));
+    Color hintColor = themeConfig.isNotEmpty ? themeConfig['hintColor'] : (theme == AppTheme.themeSeaFlower ? const Color(0xFFAD1457).withOpacity(0.5) : (theme == AppTheme.themeMidnight ? const Color(0xFF8b949e) : (theme == AppTheme.themeAmberLens ? const Color(0xFF757575) : const Color(0xFFA1887F))));
+    Color iconColor = themeConfig.isNotEmpty ? themeConfig['iconColor'] : (theme == AppTheme.themeSeaFlower ? const Color(0xFF880E4F) : (theme == AppTheme.themeMidnight ? const Color(0xFF7986cb) : (theme == AppTheme.themeAmberLens ? const Color(0xFFFFB74D) : const Color(0xFFD7CCC8))));
+    Border? border = themeConfig.isNotEmpty ? themeConfig['border'] : (theme == AppTheme.themeSeaFlower ? Border.all(color: Colors.white.withOpacity(0.4), width: 1) : (theme == AppTheme.themeMidnight ? Border.all(color: Colors.white10) : (theme == AppTheme.themeAmberLens ? Border.all(color: Colors.black, width: 1) : Border.all(color: Colors.black26))));
 
     return Container(
       height: 48,

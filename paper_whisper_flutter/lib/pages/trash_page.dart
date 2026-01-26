@@ -139,13 +139,19 @@ class _TrashPageState extends State<TrashPage> {
     final bool isMidnight = theme == AppTheme.themeMidnight;
     final bool isAmber = theme == AppTheme.themeAmberLens;
 
-    final Color titleColor = isSeaFlower
-        ? const Color(0xFF880E4F)
-        : (isMidnight ? const Color(0xFFe6edf3) : (isAmber ? const Color(0xFFE0E0E0) : const Color(0xFFF4ECD8))); // Vintage: Light Paper/Gold
+    final themeConfig = AppTheme.getSettingsTheme(theme);
+    
+    final Color titleColor = themeConfig.isNotEmpty
+        ? themeConfig['titleColor']
+        : (isSeaFlower
+            ? const Color(0xFF880E4F)
+            : (isMidnight ? const Color(0xFFe6edf3) : (isAmber ? const Color(0xFFE0E0E0) : const Color(0xFFF4ECD8))));
         
-    final Color iconColor = isSeaFlower
-        ? const Color(0xFFAD1457)
-        : (isMidnight ? const Color(0xFFc9d1d9) : (isAmber ? const Color(0xFFFF9800) : const Color(0xFFD7CCC8))); // Vintage: Light Gray/Beige
+    final Color iconColor = themeConfig.isNotEmpty
+        ? themeConfig['iconColor']
+        : (isSeaFlower
+            ? const Color(0xFFAD1457)
+            : (isMidnight ? const Color(0xFFc9d1d9) : (isAmber ? const Color(0xFFFF9800) : const Color(0xFFD7CCC8))));
 
     return Stack(
       children: [
@@ -224,16 +230,22 @@ class _TrashPageState extends State<TrashPage> {
        cardDateColor = titleColor.withOpacity(0.6);
     }
 
+    final theme = Provider.of<SettingsProvider>(context, listen: false).currentTheme;
+    final themeConfig = AppTheme.getSettingsTheme(theme);
+
     BoxDecoration decoration;
-    if (isSeaFlower) {
+    
+    if (themeConfig.isNotEmpty) {
+       decoration = themeConfig['groupDecoration'];
+    } else if (isSeaFlower) {
       decoration = BoxDecoration(
          color: Colors.white.withOpacity(0.4),
          borderRadius: BorderRadius.circular(16),
          border: Border.all(color: Colors.white.withOpacity(0.6), width: 1),
          boxShadow: [
            BoxShadow(
-             color: const Color(0xFFF48FB1).withOpacity(0.2), 
-             blurRadius: 8, 
+             color: const Color(0xFFF48FB1).withOpacity(0.2),
+             blurRadius: 8,
              offset: const Offset(0, 2)
            )
          ],
@@ -245,8 +257,8 @@ class _TrashPageState extends State<TrashPage> {
          border: Border.all(color: const Color(0xFF30363d), width: 1),
          boxShadow: const [
            BoxShadow(
-             color: Colors.black, 
-             blurRadius: 8, 
+             color: Colors.black,
+             blurRadius: 8,
              offset: Offset(0, 2)
            )
          ],

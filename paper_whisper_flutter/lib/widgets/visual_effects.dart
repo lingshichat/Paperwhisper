@@ -324,6 +324,23 @@ class PetalPainter extends CustomPainter {
   }
 }
 
+// --- After Rain Effect ---
+
+class AfterRainVisuals extends StatelessWidget {
+  const AfterRainVisuals({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const IgnorePointer(
+      child: Stack(
+        children: [
+          // 可以在这里添加一些下雨后的环境效果，如微小的水滴闪烁
+        ],
+      ),
+    );
+  }
+}
+
 // --- Starry Sky Effect ---
 
 // --- Starry Sky Effect ---

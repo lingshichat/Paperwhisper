@@ -14,6 +14,11 @@ class ThemeSelectionDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context);
     final currentTheme = settings.currentTheme;
+    final dialogTheme = AppTheme.getDialogTheme(currentTheme);
+    
+    // Fallback constants
+    final bg = dialogTheme['paper'] ?? const Color(0xFFF7F1E3);
+    final closeColor = dialogTheme['icon'] ?? const Color(0xFF8D6E63);
 
     return BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
@@ -22,13 +27,15 @@ class ThemeSelectionDialog extends StatelessWidget {
           width: 600,
           padding: const EdgeInsets.all(40),
           borderRadius: BorderRadius.circular(12),
-          color: const Color(0xFFF7F1E3), // Paper color
-          shadows: const [
-            BoxShadow(
-              color: Color.fromRGBO(0, 0, 0, 0.5),
-              offset: Offset(0, 20),
-              blurRadius: 60,
-            ),
+          color: bg,
+          shadows: [
+             dialogTheme['shadow'] is Color 
+                 ? BoxShadow(color: dialogTheme['shadow'], blurRadius: 30, offset: const Offset(0, 10))
+                 : const BoxShadow(
+                      color: Color.fromRGBO(0, 0, 0, 0.5),
+                      offset: Offset(0, 20),
+                      blurRadius: 60,
+                   ),
           ],
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -45,7 +52,7 @@ class ThemeSelectionDialog extends StatelessWidget {
                         onTap: () => Navigator.of(context).pop(),
                         child: const Text(
                           '×',
-                          style: TextStyle(fontSize: 24, color: Color(0xFF8D6E63)),
+                          style: TextStyle(fontSize: 24, color: closeColor),
                         ),
                       ),
                     ),
@@ -55,7 +62,7 @@ class ThemeSelectionDialog extends StatelessWidget {
                     style: GoogleFonts.notoSerifSc(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: const Color(0xFF5D4037),
+                      color: dialogTheme['title'] ?? const Color(0xFF5D4037),
                       letterSpacing: 2,
                     ),
                   ),
@@ -114,6 +121,19 @@ class ThemeSelectionDialog extends StatelessWidget {
                       '静谧深夜，独处时光',
                       const SolidColor(Color(0xFF161B22)),
                       currentTheme == AppTheme.themeMidnight,
+                    ),
+                    _buildThemeCard(
+                      context,
+                      settings,
+                      AppTheme.themeAfterRain,
+                      '雨后天空',
+                      '极简呼吸，宁静希望',
+                      const LinearGradient(
+                        colors: [Color(0xFF4FC3F7), Color(0xFFB3E5FC)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      currentTheme == AppTheme.themeAfterRain,
                     ),
                   ],
                 ),

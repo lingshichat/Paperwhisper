@@ -348,35 +348,29 @@ class _MomentsPageState extends State<MomentsPage> {
     final bool isAmber = theme == AppTheme.themeAmberLens;
 
     // Theme Colors
-    // Theme Colors
-    Color appBarIconColor;
-    Color appBarTextColor;
-
-    if (isSeaFlower) {
-      appBarIconColor = const Color(0xFFD81B60); // Pink 600
-      appBarTextColor = const Color(0xFF880E4F); // Pink 900
-    } else if (isMidnight || isAmber) {
-      appBarIconColor = Colors.white70;
-      appBarTextColor = Colors.white;
-    } else {
-      // Vintage
-      appBarIconColor = const Color(0xFFD7CCC8); // Beige Light
-      appBarTextColor = const Color(0xFFD7CCC8);
-    }
+    final themeConfig = AppTheme.getMomentsTheme(theme);
+    
+    Color appBarIconColor = themeConfig.isNotEmpty
+        ? themeConfig['appBarIconColor']
+        : (isSeaFlower ? const Color(0xFFD81B60) : (isMidnight || isAmber ? Colors.white70 : const Color(0xFFD7CCC8)));
+    
+    Color appBarTextColor = themeConfig.isNotEmpty
+        ? themeConfig['appBarTextColor']
+        : (isSeaFlower ? const Color(0xFF880E4F) : (isMidnight || isAmber ? Colors.white : const Color(0xFFD7CCC8)));
 
     final Color rulerAccent = AppTheme.getAccentColor(theme);
 
     // Ruler Colors Configuration
-    Color? rulerBg;
-    Color? rulerTextColor;
-    Color? rulerInactiveTextColor;
-    Color? rulerSubTextColor;
-    Color? rulerInactiveSubTextColor;
-    Color? rulerIndicatorColor;
-    Color? rulerShadowColor;
-    Color? rulerBorderColor;
+    Color? rulerBg = themeConfig['rulerBg'];
+    Color? rulerTextColor = themeConfig['rulerTextColor'];
+    Color? rulerInactiveTextColor = themeConfig['rulerInactiveTextColor'];
+    Color? rulerSubTextColor = themeConfig['rulerSubTextColor'];
+    Color? rulerInactiveSubTextColor = themeConfig['rulerInactiveSubTextColor'];
+    Color? rulerIndicatorColor = themeConfig['rulerIndicatorColor'];
+    Color? rulerShadowColor = themeConfig['rulerShadowColor'];
+    Color? rulerBorderColor = themeConfig['rulerBorderColor'];
 
-    if (isSeaFlower) {
+    if (isSeaFlower && themeConfig.isEmpty) {
       // 拟物风：浅白色半透明磨砂质感
       rulerBg = Colors.white.withOpacity(0.9);
       rulerTextColor = const Color(0xFF880E4F);
@@ -660,7 +654,7 @@ class _MomentsPageState extends State<MomentsPage> {
           extendBodyBehindAppBar: true, 
           backgroundColor: Colors.transparent,
           resizeToAvoidBottomInset: false,
-          drawerScrimColor: isSeaFlower ? Colors.transparent : Colors.black54, // 统一遮罩逻辑
+          drawerScrimColor: (isSeaFlower || theme == AppTheme.themeAfterRain) ? Colors.transparent : Colors.black54, // 统一遮罩逻辑
           drawer: const Drawer(
              width: 300,
              elevation: 0,
@@ -668,8 +662,8 @@ class _MomentsPageState extends State<MomentsPage> {
              child: SidebarWidget(),
           ),
           appBar: AppBar(
-            backgroundColor: isSeaFlower 
-                ? const Color(0xFFFCE4EC).withOpacity(0.8) 
+            backgroundColor: (isSeaFlower || theme == AppTheme.themeAfterRain) 
+                ? (isSeaFlower ? const Color(0xFFFCE4EC).withOpacity(0.8) : const Color(0xFFF0F8FF).withOpacity(0.6)) 
                 : const Color(0xFF1E1E1E).withOpacity(0.5), 
             elevation: 0,
             leading: Builder(
@@ -891,26 +885,31 @@ class _MomentsPageState extends State<MomentsPage> {
     final theme = Provider.of<SettingsProvider>(context, listen: false).currentTheme;
     
     // 简洁拟物化配置 - 仅颜色适配
+    final themeConfig = AppTheme.getMomentsTheme(theme);
     Color iconColor;
     Color textColor;
     
-    switch (theme) {
-      case AppTheme.themeMidnight:
-        iconColor = const Color(0xFF7986cb);
-        textColor = const Color(0xFFc9d1d9);
-        break;
-      case AppTheme.themeSeaFlower:
-        iconColor = const Color(0xFFF50057);
-        textColor = const Color(0xFF880E4F);
-        break;
-      case AppTheme.themeAmberLens:
-        iconColor = const Color(0xFFFF9800);
-        textColor = const Color(0xFFE0E0E0);
-        break;
-      default: // Vintage
-        // 适配专注写作的风格：暖灰色/半透明白
-        iconColor = const Color(0xFFD7CCC8).withValues(alpha: 0.5);
-        textColor = const Color(0xFFD7CCC8).withValues(alpha: 0.8); 
+    if (themeConfig.isNotEmpty) {
+        iconColor = AppTheme.getAccentColor(theme);
+        textColor = AppTheme.getTextSecondaryColor(theme);
+    } else {
+        switch (theme) {
+          case AppTheme.themeMidnight:
+            iconColor = const Color(0xFF7986cb);
+            textColor = const Color(0xFFc9d1d9);
+            break;
+          case AppTheme.themeSeaFlower:
+            iconColor = const Color(0xFFF50057);
+            textColor = const Color(0xFF880E4F);
+            break;
+          case AppTheme.themeAmberLens:
+            iconColor = const Color(0xFFFF9800);
+            textColor = const Color(0xFFE0E0E0);
+            break;
+          default: // Vintage
+            iconColor = const Color(0xFFD7CCC8).withValues(alpha: 0.5);
+            textColor = const Color(0xFFD7CCC8).withValues(alpha: 0.8);
+        }
     }
 
     return Center(

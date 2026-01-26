@@ -482,6 +482,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
              // 2. Visual Effects
              if (isSeaFlower) const PetalRainWidget(),
              if (theme == AppTheme.themeMidnight) const StarrySkyWidget(),
+             if (theme == AppTheme.themeAfterRain) const AfterRainVisuals(),
 
              if (!_isCaptureMode)
                Column(
@@ -512,10 +513,10 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                                 Center(
                                   child: Container(
                                     width: 60,
-                                    height: 2, 
-                                    color: (theme == AppTheme.themeSeaFlower
-                                        ? const Color(0xFFEC407A) 
-                                        : (theme == AppTheme.themeAmberLens ? const Color(0xFFFF9800) : (theme == AppTheme.themeMidnight ? const Color(0xFF7986cb) : const Color(0xFFC0392B)))).withValues(alpha: 0.5),
+                                    height: 2,
+                                    color: (AppTheme.getEditorTheme(theme).isNotEmpty ? AppTheme.getEditorTheme(theme)['cursorColor'] : (theme == AppTheme.themeSeaFlower
+                                        ? const Color(0xFFEC407A)
+                                        : (theme == AppTheme.themeAfterRain ? const Color(0xFF0288D1) : (theme == AppTheme.themeAmberLens ? const Color(0xFFFF9800) : (theme == AppTheme.themeMidnight ? const Color(0xFF7986cb) : const Color(0xFFC0392B)))))).withValues(alpha: 0.5),
                                   ),
                                 ),
                                 const SizedBox(height: 30),
@@ -642,10 +643,10 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                            child: Center(
                              child: Container(
                                width: 60,
-                               height: 2, 
-                               color: (theme == AppTheme.themeSeaFlower
-                                   ? const Color(0xFFEC407A) 
-                                   : (theme == AppTheme.themeAmberLens ? const Color(0xFFFF9800) : (theme == AppTheme.themeMidnight ? const Color(0xFF7986cb) : const Color(0xFFC0392B)))).withValues(alpha: 0.5),
+                               height: 2,
+                               color: (AppTheme.getEditorTheme(theme).isNotEmpty ? AppTheme.getEditorTheme(theme)['cursorColor'] : (theme == AppTheme.themeSeaFlower
+                                   ? const Color(0xFFEC407A)
+                                   : (theme == AppTheme.themeAfterRain ? const Color(0xFF0288D1) : (theme == AppTheme.themeAmberLens ? const Color(0xFFFF9800) : (theme == AppTheme.themeMidnight ? const Color(0xFF7986cb) : const Color(0xFFC0392B)))))).withValues(alpha: 0.5),
                              ),
                            ),
                          ),
@@ -682,10 +683,10 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                         Center(
                           child: Container(
                             width: 60,
-                            height: 2, 
-                            color: (theme == AppTheme.themeSeaFlower
-                                ? const Color(0xFFEC407A) 
-                                : (theme == AppTheme.themeAmberLens ? const Color(0xFFFF9800) : (theme == AppTheme.themeMidnight ? const Color(0xFF7986cb) : const Color(0xFFC0392B)))).withValues(alpha: 0.5),
+                            height: 2,
+                            color: (AppTheme.getEditorTheme(theme).isNotEmpty ? AppTheme.getEditorTheme(theme)['cursorColor'] : (theme == AppTheme.themeSeaFlower
+                                ? const Color(0xFFEC407A)
+                                : (theme == AppTheme.themeAfterRain ? const Color(0xFFD07982) : (theme == AppTheme.themeAmberLens ? const Color(0xFFFF9800) : (theme == AppTheme.themeMidnight ? const Color(0xFF7986cb) : const Color(0xFFC0392B)))))).withValues(alpha: 0.5),
                           ),
                         ),
                         const SizedBox(height: 30),
@@ -710,20 +711,21 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     final bool isSeaFlower = theme == AppTheme.themeSeaFlower;
     final bool isAmber = theme == AppTheme.themeAmberLens;
     
-    final Color barBg;
-    if (isSeaFlower) {
-      barBg = Colors.white.withOpacity(0.2);
-    } else if (theme == AppTheme.themeMidnight) {
-      barBg = const Color(0xFF0D1117).withValues(alpha: 0.9);
-    } else if (isAmber) {
-      barBg = const Color(0xFF1E1E1E).withValues(alpha: 0.9);
-    } else {
-      barBg = const Color(0xFF281815).withValues(alpha: 0.75);
-    }
+    final themeConfig = AppTheme.getEditorTheme(theme);
+    
+    final Color barBg = themeConfig.isNotEmpty
+        ? themeConfig['appBarBg']
+        : (isSeaFlower
+            ? Colors.white.withOpacity(0.2)
+            : (theme == AppTheme.themeMidnight
+                ? const Color(0xFF0D1117).withValues(alpha: 0.9)
+                : (isAmber ? const Color(0xFF1E1E1E).withValues(alpha: 0.9) : const Color(0xFF281815).withValues(alpha: 0.75))));
         
-    final Color iconColor = isSeaFlower || theme == AppTheme.themeMidnight || isAmber
-        ? (isSeaFlower ? const Color(0xFF880E4F) : (isAmber ? const Color(0xFFFF9800) : const Color(0xFFc9d1d9)))
-        : const Color(0xFFD7CCC8);
+    final Color iconColor = themeConfig.isNotEmpty
+        ? themeConfig['iconColor']
+        : (isSeaFlower || theme == AppTheme.themeMidnight || isAmber
+            ? (isSeaFlower ? const Color(0xFF880E4F) : (isAmber ? const Color(0xFFFF9800) : const Color(0xFFc9d1d9)))
+            : const Color(0xFFD7CCC8));
         
     final Border? border = isSeaFlower
         ? Border(bottom: BorderSide(color: Colors.white.withValues(alpha: 0.3)))
@@ -815,6 +817,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   Widget _buildHeader(Color textColor, Color secondaryColor) {
     // Need theme context here for cursor color check
     final theme = Provider.of<SettingsProvider>(context).currentTheme;
+    final themeConfig = AppTheme.getEditorTheme(theme);
     final bool isSeaFlower = theme == AppTheme.themeSeaFlower; // Re-declare for snippet context or use theme check directly
     return Column(
       children: [
@@ -827,10 +830,10 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                 fontWeight: FontWeight.bold, 
                 color: textColor // Use dynamic theme color
              ),
-             cursorColor: theme == AppTheme.themeMidnight ? const Color(0xFF7986cb) : (theme == AppTheme.themeAmberLens ? const Color(0xFFFF9800) : const Color(0xFFC0392B)),
+             cursorColor: themeConfig.isNotEmpty ? themeConfig['cursorColor'] : (theme == AppTheme.themeMidnight ? const Color(0xFF7986cb) : (theme == AppTheme.themeAfterRain ? const Color(0xFF0288D1) : (theme == AppTheme.themeAmberLens ? const Color(0xFFFF9800) : const Color(0xFFC0392B)))),
              decoration: InputDecoration(
                hintText: '在此输入标题...',
-               hintStyle: TextStyle(color: theme == AppTheme.themeMidnight ? Colors.white24 : (theme == AppTheme.themeAmberLens ? Colors.grey : Colors.black26)),
+               hintStyle: TextStyle(color: themeConfig.isNotEmpty ? themeConfig['iconColor'].withValues(alpha: 0.3) : (theme == AppTheme.themeMidnight ? Colors.white24 : (theme == AppTheme.themeAmberLens ? Colors.grey : Colors.black26))),
                border: InputBorder.none,
              ),
            )
@@ -891,11 +894,12 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     // Strict alignment: height = 32/18 = 1.7777...
     final bool hideLines = Provider.of<SettingsProvider>(context).compatibilityMode;
     
+    final themeConfig = AppTheme.getEditorTheme(theme);
     return CustomPaint(
       foregroundPainter: LinedPaperPainter(
-         lineColor: hideLines ? Colors.transparent : (theme == AppTheme.themeMidnight 
-            ? Colors.white.withValues(alpha: 0.08) 
-            : (theme == AppTheme.themeAmberLens ? const Color(0x1FFFFFFF) : const Color(0xFF5D4037).withValues(alpha: 0.12))),
+         lineColor: hideLines ? Colors.transparent : (themeConfig.isNotEmpty ? themeConfig['lineColor'] : (theme == AppTheme.themeMidnight
+            ? Colors.white.withValues(alpha: 0.08)
+            : (theme == AppTheme.themeAfterRain ? const Color(0xFF9999BF).withOpacity(0.2) : (theme == AppTheme.themeAmberLens ? const Color(0x1FFFFFFF) : const Color(0xFF5D4037).withValues(alpha: 0.12))))),
          lineHeight: lineHeight,
       ),
       child: Container(
@@ -917,7 +921,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                  forceStrutHeight: true,
                  leadingDistribution: TextLeadingDistribution.even,
                ),
-               cursorColor: theme == AppTheme.themeMidnight ? const Color(0xFF7986cb) : (theme == AppTheme.themeAmberLens ? const Color(0xFFFF9800) : const Color(0xFFC0392B)),
+               cursorColor: theme == AppTheme.themeMidnight ? const Color(0xFF7986cb) : (theme == AppTheme.themeAfterRain ? const Color(0xFF0288D1) : (theme == AppTheme.themeAmberLens ? const Color(0xFFFF9800) : const Color(0xFFC0392B))),
                cursorHeight: 22, 
                decoration: const InputDecoration(
                  border: InputBorder.none,
@@ -969,8 +973,8 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     final bool isAmber = theme == AppTheme.themeAmberLens;
 
     // Dropdown Menu Style
-    final Color dropdownBg = isMidnight ? const Color(0xFF2D333B) : (isSeaFlower ? const Color(0xFFFFF0F5) : const Color(0xFFFAF9F6));
-    final Color dropdownText = isMidnight ? const Color(0xFFc9d1d9) : (isSeaFlower ? const Color(0xFF880E4F) : const Color(0xFF5D4037));
+    final Color dropdownBg = isMidnight ? const Color(0xFF2D333B) : (isSeaFlower ? const Color(0xFFFFF0F5) : (theme == AppTheme.themeAfterRain ? const Color(0xFFF0F8FF) : const Color(0xFFFAF9F6)));
+    final Color dropdownText = isMidnight ? const Color(0xFFc9d1d9) : (isSeaFlower ? const Color(0xFF880E4F) : (theme == AppTheme.themeAfterRain ? const Color(0xFF455A64) : const Color(0xFF5D4037)));
 
     return DropdownButton<WeatherType>(
        value: _weather,
@@ -1015,8 +1019,8 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     final bool isMidnight = theme == AppTheme.themeMidnight;
     final bool isSeaFlower = theme == AppTheme.themeSeaFlower;
 
-    final Color menuBg = isMidnight ? const Color(0xFF2D333B) : (isSeaFlower ? const Color(0xFFFFF0F5) : const Color(0xFFFAF9F6));
-    final Color menuText = isMidnight ? const Color(0xFFc9d1d9) : (isSeaFlower ? const Color(0xFF880E4F) : const Color(0xFF5D4037));
+    final Color menuBg = isMidnight ? const Color(0xFF2D333B) : (isSeaFlower ? const Color(0xFFFFF0F5) : (theme == AppTheme.themeAfterRain ? const Color(0xFFF0F8FF) : const Color(0xFFFAF9F6)));
+    final Color menuText = isMidnight ? const Color(0xFFc9d1d9) : (isSeaFlower ? const Color(0xFF880E4F) : (theme == AppTheme.themeAfterRain ? const Color(0xFF455A64) : const Color(0xFF5D4037)));
 
     return PopupMenuButton<MoodType>(
        initialValue: _mood,
@@ -1147,11 +1151,12 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
             final line = lines[index];
             final bool hideLines = Provider.of<SettingsProvider>(context).compatibilityMode;
             
+            final themeConfig = AppTheme.getEditorTheme(theme);
             return CustomPaint(
               foregroundPainter: LinedPaperPainter(
-                 lineColor: hideLines ? Colors.transparent : (theme == AppTheme.themeMidnight 
-                    ? Colors.white.withValues(alpha: 0.08) 
-                    : (theme == AppTheme.themeAmberLens ? const Color(0x1FFFFFFF) : const Color(0xFF5D4037).withValues(alpha: 0.12))),
+                 lineColor: hideLines ? Colors.transparent : (themeConfig.isNotEmpty ? themeConfig['lineColor'] : (theme == AppTheme.themeMidnight
+                    ? Colors.white.withValues(alpha: 0.08)
+                    : (theme == AppTheme.themeAfterRain ? const Color(0xFF9999BF).withOpacity(0.2) : (theme == AppTheme.themeAmberLens ? const Color(0x1FFFFFFF) : const Color(0xFF5D4037).withValues(alpha: 0.12))))),
                  lineHeight: lineHeight,
               ),
               child: Container(
@@ -1192,11 +1197,12 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
      const double lineHeight = 32.0;
      final bool hideLines = Provider.of<SettingsProvider>(context).compatibilityMode;
      
+     final themeConfig = AppTheme.getEditorTheme(theme);
      return CustomPaint(
         foregroundPainter: LinedPaperPainter(
-          lineColor: hideLines ? Colors.transparent : (theme == AppTheme.themeMidnight 
-             ? Colors.white.withValues(alpha: 0.08) 
-             : (theme == AppTheme.themeAmberLens ? const Color(0x1FFFFFFF) : const Color(0xFF5D4037).withValues(alpha: 0.12))),
+          lineColor: hideLines ? Colors.transparent : (themeConfig.isNotEmpty ? themeConfig['lineColor'] : (theme == AppTheme.themeMidnight
+             ? Colors.white.withValues(alpha: 0.08)
+             : (theme == AppTheme.themeAfterRain ? const Color(0xFF9999BF).withOpacity(0.2) : (theme == AppTheme.themeAmberLens ? const Color(0x1FFFFFFF) : const Color(0xFF5D4037).withValues(alpha: 0.12))))),
           lineHeight: lineHeight,
         ),
         child: Padding(

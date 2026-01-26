@@ -156,15 +156,17 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
     final textColor = AppTheme.getTextColor(theme);
     final bgColor = AppTheme.getPaperColor(theme);
 
+    final headerColors = AppTheme.getMobileHeaderColors(theme);
+
     Widget content = Scaffold(
       appBar: AppBar(
-        title: Text('密码锁', style: GoogleFonts.notoSerifSc(color: textColor)),
-        backgroundColor: bgColor,
+        title: Text('密码锁', style: GoogleFonts.notoSerifSc(color: headerColors['titleColor'])),
+        backgroundColor: headerColors['background'],
         elevation: 0,
-        iconTheme: IconThemeData(color: textColor),
+        iconTheme: IconThemeData(color: headerColors['iconColor']),
         centerTitle: true,
       ),
-      backgroundColor: bgColor,
+      backgroundColor: Colors.transparent,
       body: _isLoading ? const Center(child: CircularProgressIndicator()) : ListView(
         padding: const EdgeInsets.all(20),
         children: [
@@ -237,16 +239,19 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
     required Function(bool)? onChanged,
     required String theme,
   }) {
+    final themeConfig = AppTheme.getSettingsTheme(theme);
     final textColor = AppTheme.getTextColor(theme);
     final accentColor = AppTheme.getAccentColor(theme);
     
     return Container(
-      margin: const EdgeInsets.only(bottom: 12), // Add spacing between tiles
-      decoration: BoxDecoration(
-        color: textColor.withOpacity(0.05), // Slightly stronger fill
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: textColor.withOpacity(0.15)), // Much stronger border
-      ),
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: themeConfig.isNotEmpty
+          ? themeConfig['groupDecoration']
+          : BoxDecoration(
+              color: textColor.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: textColor.withOpacity(0.15)),
+            ),
       child: SwitchListTile(
         title: Text(title, style: GoogleFonts.notoSerifSc(fontWeight: FontWeight.bold, color: textColor)),
         subtitle: Text(subtitle, style: GoogleFonts.notoSerifSc(fontSize: 12, color: textColor.withOpacity(0.6))),

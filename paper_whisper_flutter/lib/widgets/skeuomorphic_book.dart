@@ -235,6 +235,9 @@ class SkeuomorphicBook extends StatelessWidget {
     } else if (theme == AppTheme.themeAmberLens) {
       // 琥珀镜头：深灰
       return const Color(0xFF1E1E1E).withOpacity(0.9);
+    } else if (theme == AppTheme.themeAfterRain) {
+      // 雨后天空：浅白半透明
+      return const Color(0xFFFFFDFD).withOpacity(0.85);
     } else {
       // 默认主题：棕色半透明
       return const Color(0xFF3e2723).withOpacity(0.85);
@@ -256,6 +259,9 @@ class SkeuomorphicBook extends StatelessWidget {
         break;
       case AppTheme.themeAmberLens:
         assetPath = 'assets/illustrations/illustration_amber.svg';
+        break;
+      case AppTheme.themeAfterRain:
+        assetPath = 'assets/illustrations/illustration_seaflower.svg'; // Temporarily reuse seaflower as placeholder
         break;
       default:
         assetPath = 'assets/illustrations/illustration_vintage.svg';

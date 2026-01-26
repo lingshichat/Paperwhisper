@@ -227,10 +227,10 @@ class _LockScreenState extends State<LockScreen> with TickerProviderStateMixin {
     BoxDecoration bgDecor = AppTheme.getBackground(theme);
     
     // Overlay for contrast (Glass effect)
-    Color overlayColor = Colors.black.withOpacity(0.3); // Default dark overlay
-    if (theme == AppTheme.themeSeaFlower) {
-       overlayColor = Colors.white.withOpacity(0.1); 
-    }
+    final themeConfig = AppTheme.getLockScreenTheme(theme);
+    Color overlayColor = themeConfig.isNotEmpty
+        ? themeConfig['displayBg'].withValues(alpha: 0.1) // Derive from displayBg or use default
+        : (theme == AppTheme.themeSeaFlower ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.3));
 
     return PopScope(
       canPop: widget.enableBack,
@@ -317,6 +317,7 @@ class _LockScreenState extends State<LockScreen> with TickerProviderStateMixin {
     if (_useBiometric) title = "验证指纹";
 
     final textColor = AppTheme.getTextColor(theme);
+    final themeConfig = AppTheme.getLockScreenTheme(theme);
 
     return AnimatedBuilder(
       animation: _shakeController,
@@ -340,7 +341,9 @@ class _LockScreenState extends State<LockScreen> with TickerProviderStateMixin {
           ),
           const SizedBox(height: 24),
           
-          if (theme == AppTheme.themeDefault)
+          if (themeConfig.isNotEmpty)
+             _buildDigitalDisplay(theme) // Reuse digital display with new colors
+          else if (theme == AppTheme.themeDefault)
              _buildVintageDisplay()
           else if (theme == AppTheme.themeSeaFlower)
              _buildPearlDisplay()
@@ -408,14 +411,18 @@ class _LockScreenState extends State<LockScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildDigitalDisplay(String theme) {
-    final accent = AppTheme.getAccentColor(theme);
+    final themeConfig = AppTheme.getLockScreenTheme(theme);
+    final accent = themeConfig.isNotEmpty ? themeConfig['accentColor'] : AppTheme.getAccentColor(theme);
+    final bg = themeConfig.isNotEmpty ? themeConfig['displayBg'] : Colors.black.withOpacity(0.3);
+    final border = themeConfig.isNotEmpty ? themeConfig['displayBorder'] : accent.withOpacity(0.2);
+
     return Container(
        width: 200,
        height: 60,
        decoration: BoxDecoration(
-         color: Colors.black.withOpacity(0.3),
+         color: bg,
          borderRadius: BorderRadius.circular(30),
-         border: Border.all(color: accent.withOpacity(0.2), width: 1),
+         border: Border.all(color: border, width: 1),
        ),
        alignment: Alignment.center,
        child: Row(
@@ -482,7 +489,8 @@ class _LockScreenState extends State<LockScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildBiometricControls(String theme) {
-    Color iconColor = AppTheme.getAccentColor(theme);
+    final themeConfig = AppTheme.getLockScreenTheme(theme);
+    Color iconColor = themeConfig.isNotEmpty ? themeConfig['accentColor'] : AppTheme.getAccentColor(theme);
     
     return Column(
        mainAxisSize: MainAxisSize.min,
@@ -629,7 +637,9 @@ class _SkeuomorphicKeyState extends State<SkeuomorphicKey> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.theme == AppTheme.themeDefault) {
+    if (AppTheme.getLockScreenTheme(widget.theme).isNotEmpty) {
+       return _buildFrostedStyle(); // Use frosted style for new themes
+    } else if (widget.theme == AppTheme.themeDefault) {
       return _buildVintageStyle();
     } else if (widget.theme == AppTheme.themeSeaFlower) {
       return _buildPearlStyle();
@@ -703,10 +713,25 @@ class _SkeuomorphicKeyState extends State<SkeuomorphicKey> {
     );
   }
 
-  // 2. Frosted Glass Style (Midnight / Amber)
+  // 2. Frosted Glass Style (Midnight / Amber / AfterRain)
   Widget _buildFrostedStyle() {
-    final bool isAmber = widget.theme == 'amber_lens';
-    final accentColor = isAmber ? const Color(0xFFFF9800) : const Color(0xFF7986cb);
+    final themeConfig = AppTheme.getLockScreenTheme(widget.theme);
+    
+    final accentColor = themeConfig.isNotEmpty
+        ? themeConfig['accentColor']
+        : (widget.theme == 'amber_lens' ? const Color(0xFFFF9800) : const Color(0xFF7986cb));
+        
+    final keyBg = themeConfig.isNotEmpty
+        ? themeConfig['keyBg']
+        : Colors.white.withOpacity(0.05);
+        
+    final keyBorder = themeConfig.isNotEmpty
+        ? themeConfig['keyBorder']
+        : Colors.white.withOpacity(0.15);
+        
+    final keyText = themeConfig.isNotEmpty
+        ? themeConfig['keyText']
+        : Colors.white.withOpacity(0.9);
 
     return GestureDetector(
       onTapDown: _handleTapDown,
@@ -718,16 +743,16 @@ class _SkeuomorphicKeyState extends State<SkeuomorphicKey> {
         height: 72,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: _isPressed 
-             ? accentColor.withOpacity(0.2) 
-             : Colors.white.withOpacity(0.05),
+          color: _isPressed
+             ? accentColor.withOpacity(0.2)
+             : keyBg,
           border: Border.all(
-            color: _isPressed 
-               ? accentColor.withOpacity(0.5) 
-               : Colors.white.withOpacity(0.15),
+            color: _isPressed
+               ? accentColor.withOpacity(0.5)
+               : keyBorder,
             width: 1.5,
           ),
-          boxShadow: _isPressed 
+          boxShadow: _isPressed
             ? [BoxShadow(color: accentColor.withOpacity(0.3), blurRadius: 10, spreadRadius: 0)]
             : [],
         ),
@@ -737,7 +762,7 @@ class _SkeuomorphicKeyState extends State<SkeuomorphicKey> {
           style: GoogleFonts.notoSerifSc(
             fontSize: 30,
             fontWeight: FontWeight.w300,
-            color: _isPressed ? accentColor : Colors.white.withOpacity(0.9),
+            color: _isPressed ? accentColor : keyText,
           ),
         ),
       ),

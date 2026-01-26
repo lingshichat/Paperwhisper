@@ -139,8 +139,19 @@ class SkeuomorphicDialog extends StatelessWidget {
 
   /// 根据主题获取颜色配置
   _DialogColors _getThemeColors(String theme) {
-    switch (theme) {
-      case AppTheme.themeMidnight:
+    final themeConfig = AppTheme.getDialogTheme(theme);
+    
+    if (themeConfig.isNotEmpty) {
+      return _DialogColors(
+        paper: themeConfig['paper'],
+        title: themeConfig['title'],
+        text: themeConfig['text'],
+        icon: themeConfig['icon'],
+        tape: themeConfig['tape'],
+        shadow: themeConfig['shadow'],
+        border: themeConfig['border'],
+      );
+    } else if (theme == AppTheme.themeMidnight) {
         return _DialogColors(
           paper: const Color(0xFF161b22),
           title: const Color(0xFFe6edf3),
@@ -150,7 +161,18 @@ class SkeuomorphicDialog extends StatelessWidget {
           shadow: const Color.fromRGBO(0, 0, 0, 0.6),
           border: const Color(0xFF30363d),
         );
-      case AppTheme.themeSeaFlower:
+    } else if (theme == AppTheme.themeAfterRain) {
+        // Fallback or Explicit Override
+        return _DialogColors(
+          paper: const Color(0xFFF0F8FF).withOpacity(0.95), // Alice Blue
+          title: const Color(0xFF455A64),
+          text: const Color(0xFF455A64),
+          icon: const Color(0xFF0288D1),
+          tape: const Color(0xFFB3E5FC).withOpacity(0.5),
+          shadow: const Color(0xFF0288D1).withOpacity(0.15),
+          border: Colors.white,
+        );
+    } else if (theme == AppTheme.themeSeaFlower) {
         return _DialogColors(
           paper: const Color(0xFFFCE4EC),
           title: const Color(0xFF880E4F),
@@ -160,7 +182,7 @@ class SkeuomorphicDialog extends StatelessWidget {
           shadow: const Color.fromRGBO(173, 20, 87, 0.25),
           border: const Color(0xFFF48FB1),
         );
-      default: // 时光旧物
+    } else { // 时光旧物
         return _DialogColors(
           paper: const Color(0xFFF4ECD8),
           title: const Color(0xFF2d241f),
@@ -256,22 +278,37 @@ class SkeuomorphicDialogButton extends StatelessWidget {
 
   /// 根据主题获取按钮颜色
   _ButtonColors _getButtonColors(String theme) {
-    switch (theme) {
-      case AppTheme.themeMidnight:
+    final themeConfig = AppTheme.getDialogTheme(theme);
+    
+    if (themeConfig.isNotEmpty) {
+      return _ButtonColors(
+        primary: themeConfig['primaryBtn'],
+        primaryText: themeConfig['primaryBtnText'],
+        primaryShadow: themeConfig['shadow'],
+        secondary: themeConfig['secondaryBtn'],
+      );
+    } else if (theme == AppTheme.themeMidnight) {
         return _ButtonColors(
           primary: const Color(0xFF5C6BC0),
           primaryText: const Color(0xFFe6edf3),
           primaryShadow: const Color.fromRGBO(92, 107, 192, 0.4),
           secondary: const Color(0xFF8b949e),
         );
-      case AppTheme.themeSeaFlower:
+    } else if (theme == AppTheme.themeAfterRain) {
+        return const _ButtonColors(
+          primary: Color(0xFF0288D1),
+          primaryText: Colors.white,
+          primaryShadow: Color.fromRGBO(2, 136, 209, 0.3),
+          secondary: Color(0xFF455A64),
+        );
+    } else if (theme == AppTheme.themeSeaFlower) {
         return _ButtonColors(
           primary: const Color(0xFFEC407A),
           primaryText: Colors.white,
           primaryShadow: const Color.fromRGBO(236, 64, 122, 0.4),
           secondary: const Color(0xFFAD1457),
         );
-      default: // 时光旧物
+    } else { // 时光旧物
         return _ButtonColors(
           primary: const Color(0xFF5D4037),
           primaryText: const Color(0xFFF4ECD8),

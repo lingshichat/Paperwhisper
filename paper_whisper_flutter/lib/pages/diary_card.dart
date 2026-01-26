@@ -39,37 +39,13 @@ class _DiaryCardState extends State<DiaryCard> {
     final bool isAmber = widget.theme == AppTheme.themeAmberLens;
 
     // 颜色配置
-    final Color titleColor;
-    final Color contentColor;
-    final Color dateColor;
-    final Color iconColor;
-    final Color dashedLineColor;
-
-    if (isSeaFlower) {
-      titleColor = const Color(0xFF880E4F);
-      contentColor = const Color(0xFFC2185B);
-      dateColor = const Color(0xFFAD1457);
-      iconColor = const Color(0xFFEC407A); 
-      dashedLineColor = const Color(0x4DC2185B); 
-    } else if (isMidnight) {
-      titleColor = const Color(0xFFe6edf3);
-      contentColor = const Color(0xFF8b949e);
-      dateColor = const Color(0xFF8b949e);
-      iconColor = const Color(0xFF7986cb);
-      dashedLineColor = const Color(0xFF30363d);
-    } else if (isAmber) {
-      titleColor = const Color(0xFFE0E0E0);
-      contentColor = const Color(0xFFBDBDBD);
-      dateColor = const Color(0xFFFF9800);
-      iconColor = const Color(0xFFFF9800);
-      dashedLineColor = const Color(0x40FF9800); // Amber 25%
-    } else {
-      titleColor = const Color(0xFF5D4037);
-      contentColor = const Color(0xFF5D4037).withValues(alpha: 0.9);
-      dateColor = const Color(0xFF8D6E63);
-      iconColor = const Color(0xFF8D6E63);
-      dashedLineColor = const Color.fromRGBO(93, 64, 55, 0.15);
-    }
+    final themeConfig = AppTheme.getDiaryCardTheme(widget.theme);
+    
+    final Color titleColor = themeConfig.isNotEmpty ? themeConfig['titleColor'] : (isSeaFlower ? const Color(0xFF880E4F) : (isMidnight ? const Color(0xFFe6edf3) : (isAmber ? const Color(0xFFE0E0E0) : const Color(0xFF5D4037))));
+    final Color contentColor = themeConfig.isNotEmpty ? themeConfig['contentColor'] : (isSeaFlower ? const Color(0xFFC2185B) : (isMidnight ? const Color(0xFF8b949e) : (isAmber ? const Color(0xFFBDBDBD) : const Color(0xFF5D4037).withValues(alpha: 0.9))));
+    final Color dateColor = themeConfig.isNotEmpty ? themeConfig['dateColor'] : (isSeaFlower ? const Color(0xFFAD1457) : (isMidnight ? const Color(0xFF8b949e) : (isAmber ? const Color(0xFFFF9800) : const Color(0xFF8D6E63))));
+    final Color iconColor = themeConfig.isNotEmpty ? themeConfig['iconColor'] : (isSeaFlower ? const Color(0xFFEC407A) : (isMidnight ? const Color(0xFF7986cb) : (isAmber ? const Color(0xFFFF9800) : const Color(0xFF8D6E63))));
+    final Color dashedLineColor = themeConfig.isNotEmpty ? themeConfig['dashedLineColor'] : (isSeaFlower ? const Color(0x4DC2185B) : (isMidnight ? const Color(0xFF30363d) : (isAmber ? const Color(0x40FF9800) : const Color.fromRGBO(93, 64, 55, 0.15))));
 
     Widget cardContent = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -143,9 +119,14 @@ class _DiaryCardState extends State<DiaryCard> {
     List<BoxShadow> normalShadows;
     List<BoxShadow> hoverShadows;
     Color bgColor;
-    Border? border; 
+    Border? border;
 
-    if (isSeaFlower) {
+    if (themeConfig.isNotEmpty) {
+      bgColor = themeConfig['bgColor'];
+      normalShadows = themeConfig['shadows'];
+      hoverShadows = themeConfig['hoverShadows'];
+      border = themeConfig['border'];
+    } else if (isSeaFlower) {
       bgColor = Colors.white.withOpacity(0.35);
       normalShadows = [
         const BoxShadow(
@@ -222,7 +203,7 @@ class _DiaryCardState extends State<DiaryCard> {
 
     Widget containerBody;
 
-    if (isSeaFlower) {
+    if (isSeaFlower && themeConfig.isEmpty) {
        // 优化：增加背景不透明度，降低模糊强度，减少滚动时的视觉跳变
        // 使用更高的不透明度让背景填充更"实"，减少对模糊的依赖
        bgColor = Colors.white.withValues(alpha: 0.65);
@@ -246,7 +227,7 @@ class _DiaryCardState extends State<DiaryCard> {
            ),
          ),
        );
-    } else if (isMidnight || isAmber) {
+    } else if (isMidnight || isAmber || themeConfig.isNotEmpty) {
         containerBody = AnimatedContainer(
              duration: const Duration(milliseconds: 300),
              curve: Curves.easeOut,
@@ -427,7 +408,7 @@ class _DiaryCardState extends State<DiaryCard> {
     switch (w) {
       case WeatherType.sunny: return Icons.wb_sunny_outlined;
       case WeatherType.cloudy: return Icons.cloud_outlined;
-      case WeatherType.rainy: return Icons.grain;
+      case WeatherType.rainy: return (widget.theme == AppTheme.themeAfterRain) ? Icons.umbrella_outlined : Icons.grain;
       case WeatherType.snowy: return Icons.ac_unit;
       case WeatherType.windy: return Icons.air;
     }

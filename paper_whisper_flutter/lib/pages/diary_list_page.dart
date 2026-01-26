@@ -604,6 +604,7 @@ class _DiaryListPageState extends State<DiaryListPage> with WidgetsBindingObserv
                  // 2. Visual Effects
                  if (theme == AppTheme.themeSeaFlower) const PetalRainWidget(),
                  if (theme == AppTheme.themeMidnight) const StarrySkyWidget(),
+                 if (theme == AppTheme.themeAfterRain) const AfterRainVisuals(),
 
                  // 3. Main Layout
                  Row(
@@ -626,7 +627,7 @@ class _DiaryListPageState extends State<DiaryListPage> with WidgetsBindingObserv
           
           return Scaffold(
             backgroundColor: Colors.transparent,
-            drawerScrimColor: isSeaFlower ? Colors.transparent : Colors.black54, // 海底花海去遮罩，透出背景
+            drawerScrimColor: (isSeaFlower || theme == AppTheme.themeAfterRain) ? Colors.transparent : Colors.black54, // 海底花海/雨后天空去遮罩，透出背景
             drawer: const Drawer(
               width: 300,
               elevation: 0, 
@@ -642,74 +643,38 @@ class _DiaryListPageState extends State<DiaryListPage> with WidgetsBindingObserv
                 // 2. Visual Effects
                 if (theme == AppTheme.themeSeaFlower) const PetalRainWidget(),
                 if (theme == AppTheme.themeMidnight) const StarrySkyWidget(),
+                if (theme == AppTheme.themeAfterRain) const AfterRainVisuals(),
                 
                 // 3. Content
                 contentArea,
               ],
             ),
-             floatingActionButton: FloatingActionButton(
-               backgroundColor: isSeaFlower || theme == AppTheme.themeMidnight || theme == AppTheme.themeAmberLens ? Colors.transparent : const Color(0xFFC0392B),
-               elevation: (isSeaFlower || theme == AppTheme.themeMidnight) ? 0 : 6, 
-               focusElevation: (isSeaFlower || theme == AppTheme.themeMidnight) ? 0 : 6,
-               hoverElevation: (isSeaFlower || theme == AppTheme.themeMidnight) ? 0 : 8,
-               highlightElevation: (isSeaFlower || theme == AppTheme.themeMidnight) ? 0 : 12,
-               onPressed: () => _openEditor(null),
-               child: Container(
-                 width: 56, 
-                 height: 56,
-                 decoration: isSeaFlower 
-                   ? const BoxDecoration(
-                       shape: BoxShape.circle,
-                       gradient: LinearGradient(
-                         begin: Alignment.topLeft,
-                         end: Alignment.bottomRight,
-                         colors: [Color(0xFFF8BBD0), Color(0xFFF06292)],
-                       ),
-                       boxShadow: [
-                         BoxShadow(
-                           color: Color.fromRGBO(240, 98, 146, 0.5),
-                           blurRadius: 12,
-                           offset: Offset(0, 4),
-                         )
-                       ]
-                     )
-                   : (theme == AppTheme.themeMidnight 
-                       ? const BoxDecoration(
-                           shape: BoxShape.circle,
-                           gradient: LinearGradient(
-                             begin: Alignment.topLeft,
-                             end: Alignment.bottomRight,
-                             colors: [Color(0xFF7986cb), Color(0xFF303f9f)],
-                           ),
-                           boxShadow: [
-                             BoxShadow(
-                               color: Color.fromRGBO(121, 134, 203, 0.5), // Indigo Glow
-                               blurRadius: 15,
-                               offset: Offset(0, 0),
-                               spreadRadius: 2,
-                             )
-                           ]
-                         )
-                       : (theme == AppTheme.themeAmberLens
-                           ? const BoxDecoration(
-                               shape: BoxShape.circle, // 确保按圆形渲染
-                               gradient: LinearGradient(
-                                 begin: Alignment.topLeft,
-                                 end: Alignment.bottomRight,
-                                 colors: [Color(0xFFFFB74D), Color(0xFFF57C00)], // Amber Light to Dark
-                               ),
-                               boxShadow: [
-                                 BoxShadow(
-                                   color: Color.fromRGBO(255, 152, 0, 0.5), // Amber Glow
-                                   blurRadius: 15,
-                                   offset: Offset(0, 0),
-                                   spreadRadius: 2,
-                                 )
-                               ]
-                             )
-                           : null)),
-                 child: Icon(Icons.edit, color: Colors.white, size: (isSeaFlower || theme == AppTheme.themeMidnight) ? 28 : 24),
-               ),
+             floatingActionButton: Builder(
+               builder: (ctx) {
+                 final fabConfig = AppTheme.getFabTheme(theme);
+                 final isCustom = fabConfig['bg'] is Gradient;
+                 
+                 return FloatingActionButton(
+                   backgroundColor: isCustom ? Colors.transparent : fabConfig['bg'],
+                   elevation: isCustom ? 0 : 6,
+                   focusElevation: isCustom ? 0 : 6,
+                   hoverElevation: isCustom ? 0 : 8,
+                   highlightElevation: isCustom ? 0 : 12,
+                   onPressed: () => _openEditor(null),
+                   child: Container(
+                     width: 56,
+                     height: 56,
+                     decoration: isCustom
+                         ? BoxDecoration(
+                             shape: BoxShape.circle,
+                             gradient: fabConfig['bg'],
+                             boxShadow: [fabConfig['shadow']],
+                           )
+                         : null,
+                     child: Icon(Icons.edit, color: fabConfig['iconColor'], size: isCustom ? 28 : 24),
+                   ),
+                 );
+               }
              ),
           );
         }
@@ -932,32 +897,29 @@ class _DiaryListPageState extends State<DiaryListPage> with WidgetsBindingObserv
     }
 
     // 获取主题适配的颜色
-    // 复古纸张（themeDefault）使用白色，海底花海使用深色，午夜星尘和琥珀镜头使用灰色
     Color iconColor;
     Color textColor;
     Color linkColor;
     
-    switch (theme) {
-      case AppTheme.themeSeaFlower:
+    if (theme == AppTheme.themeAfterRain) {
+      iconColor = AppTheme.getTextSecondaryColor(theme).withValues(alpha: 0.6);
+      textColor = AppTheme.getTextSecondaryColor(theme).withValues(alpha: 0.8);
+      linkColor = AppTheme.getAccentColor(theme);
+    } else if (theme == AppTheme.themeSeaFlower) {
         // 浅色背景，使用深色图标和文字
         iconColor = const Color(0xFF6D5D5D).withValues(alpha: 0.6);
         textColor = const Color(0xFF6D5D5D).withValues(alpha: 0.8);
         linkColor = const Color(0xFFC2185B); // 粉红强调色
-        break;
-      case AppTheme.themeMidnight:
-      case AppTheme.themeAmberLens:
+    } else if (theme == AppTheme.themeMidnight || theme == AppTheme.themeAmberLens) {
         // 深色背景，使用灰色图标和文字
         iconColor = Colors.grey.shade500.withValues(alpha: 0.7);
         textColor = Colors.grey.shade400;
         linkColor = AppTheme.getAccentColor(theme);
-        break;
-      case AppTheme.themeDefault:
-      default:
-        // 复古纸张：图标和文字为暖灰/白（如设计图），链接为鲜艳的朱红色
-        iconColor = const Color(0xFFD7CCC8).withValues(alpha: 0.5); // 稍微调高不透明度
-        textColor = const Color(0xFFD7CCC8).withValues(alpha: 0.8); // 暖灰色文字
-        linkColor = const Color(0xFFFF5252); // 设计图中的鲜红色
-        break;
+    } else {
+        // 复古纸张
+        iconColor = const Color(0xFFD7CCC8).withValues(alpha: 0.5);
+        textColor = const Color(0xFFD7CCC8).withValues(alpha: 0.8);
+        linkColor = const Color(0xFFFF5252);
     }
     
     return Center(

@@ -19,75 +19,34 @@ class MonthDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // 1. 根据主题定义颜色
-    Color textColor;
-    Color lineColor;
-    Color paperColor;
-    List<BoxShadow> shadows;
-
-    switch (theme) {
-      case AppTheme.themeMidnight:
-        textColor = const Color(0xFFE8EAF6);
-        lineColor = const Color(0xFF5C6BC0);
-        paperColor = const Color(0xFF283593); // 深蓝纸条
-        shadows = [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.4),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          )
-        ];
-        break;
-      case AppTheme.themeSeaFlower:
-        textColor = const Color(0xFFC2185B); // 洋红色文字
-        lineColor = const Color(0xFFF48FB1); // 粉色线条
-        paperColor = const Color(0xFFFCE4EC).withOpacity(0.9); // 浅粉色背景
-        shadows = []; // 海底花海较为扁平柔和
-        break;
-      case AppTheme.themeAmberLens:
-        textColor = const Color(0xFF3E2723);
-        lineColor = const Color(0xFFFFD54F);
-        paperColor = const Color(0xFFFFF8E1);
-        shadows = [
-          BoxShadow(
-            color: const Color(0xFF3E2723).withOpacity(0.1),
-            blurRadius: 3,
-            offset: const Offset(0, 1),
-          )
-        ];
-        break;
-      default: // Vintage / Default
-        textColor = const Color(0xFF5D4037);
-        lineColor = const Color(0xFFA1887F);
-        paperColor = const Color(0xFFEFEBE9); // 浅灰褐色
-        shadows = [
-          BoxShadow(
-            color: const Color(0xFF5D4037).withOpacity(0.15),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          )
-        ];
-        break;
-    }
+    final themeConfig = AppTheme.getMonthDividerTheme(theme);
+    
+    Color textColor = themeConfig.isNotEmpty ? themeConfig['textColor'] : (theme == AppTheme.themeMidnight ? const Color(0xFFE8EAF6) : (theme == AppTheme.themeSeaFlower ? const Color(0xFFC2185B) : (theme == AppTheme.themeAmberLens ? const Color(0xFF3E2723) : const Color(0xFF5D4037))));
+    Color lineColor = themeConfig.isNotEmpty ? themeConfig['lineColor'] : (theme == AppTheme.themeMidnight ? const Color(0xFF5C6BC0) : (theme == AppTheme.themeSeaFlower ? const Color(0xFFF48FB1) : (theme == AppTheme.themeAmberLens ? const Color(0xFFFFD54F) : const Color(0xFFA1887F))));
+    Color paperColor = themeConfig.isNotEmpty ? themeConfig['paperColor'] : (theme == AppTheme.themeMidnight ? const Color(0xFF283593) : (theme == AppTheme.themeSeaFlower ? const Color(0xFFFCE4EC).withOpacity(0.9) : (theme == AppTheme.themeAmberLens ? const Color(0xFFFFF8E1) : const Color(0xFFEFEBE9))));
+    List<BoxShadow> shadows = themeConfig.isNotEmpty ? themeConfig['shadows'] : (theme == AppTheme.themeMidnight ? [BoxShadow(color: Colors.black.withOpacity(0.4), blurRadius: 4, offset: const Offset(0, 2))] : (theme == AppTheme.themeSeaFlower ? [] : (theme == AppTheme.themeAmberLens ? [BoxShadow(color: const Color(0xFF3E2723).withOpacity(0.1), blurRadius: 3, offset: const Offset(0, 1))] : [BoxShadow(color: const Color(0xFF5D4037).withOpacity(0.15), blurRadius: 4, offset: const Offset(0, 2))])));
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-      child: Stack(
-        alignment: Alignment.center,
+      child: Row( // Use Row instead of Stack to prevent line crossing
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // 2. 背景线 (模拟书页缝隙或装饰线)
-          Divider(
-            color: lineColor.withOpacity(0.5),
-            thickness: 1,
-            indent: 20,
-            endIndent: 20,
+          // Left Line
+          Expanded(
+            child: Divider(
+              color: lineColor.withOpacity(0.5),
+              thickness: 1,
+              indent: 20,
+              endIndent: 12, // Space before bubble
+            ),
           ),
           
-          // 3. 中间标签 (拟物化纸条)
+          // Center Bubble (Paper Tag)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
             decoration: BoxDecoration(
               color: paperColor,
-              borderRadius: BorderRadius.circular(20), // 胶囊形状
+              borderRadius: BorderRadius.circular(20), // Capsule shape
               border: Border.all(
                 color: lineColor.withOpacity(0.6),
                 width: 1,
@@ -97,7 +56,7 @@ class MonthDivider extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // 年份小标
+                // Year Label
                 Text(
                   '$year',
                   style: GoogleFonts.merriweather(
@@ -112,7 +71,7 @@ class MonthDivider extends StatelessWidget {
                   height: 12,
                   color: lineColor,
                 ),
-                // 月份大标
+                // Month Label
                 Text(
                   title.isNotEmpty ? title : '$month月',
                   style: GoogleFonts.notoSerifSc(
@@ -133,6 +92,16 @@ class MonthDivider extends StatelessWidget {
                   ),
                 ]
               ],
+            ),
+          ),
+
+          // Right Line
+          Expanded(
+            child: Divider(
+              color: lineColor.withOpacity(0.5),
+              thickness: 1,
+              indent: 12, // Space after bubble
+              endIndent: 20,
             ),
           ),
         ],

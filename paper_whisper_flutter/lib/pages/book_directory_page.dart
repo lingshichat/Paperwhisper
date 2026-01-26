@@ -21,51 +21,18 @@ class BookDirectoryPage extends StatelessWidget {
     final theme = settings.currentTheme;
 
     // Define Skeuomorphic Paper & Ink Styles
-    Color inkColor;
-    Color paperColor;
-    Color paperBorderColor;
-    List<BoxShadow> paperShadow;
+    final themeConfig = AppTheme.getBookDirectoryTheme(theme);
     
-    switch (theme) {
-      case AppTheme.themeMidnight:
-        inkColor = Colors.white; // Pure White for high contrast
-        paperColor = const Color(0xFF1A237E).withValues(alpha: 0.6); // Deep Blue Cardstock
-        paperBorderColor = const Color(0xFF5C6BC0).withValues(alpha: 0.3);
-        paperShadow = [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.5), blurRadius: 8, offset: const Offset(0, 4))
-        ];
-        break;
-      case AppTheme.themeSeaFlower:
-        inkColor = const Color(0xFFC2185B); // 洋红色，与花海主题协调
-        paperColor = const Color(0xFFFFFFFF).withValues(alpha: 0.7); // White Washi
-        paperBorderColor = const Color(0xFFFCE4EC); // 浅粉色边框
-        paperShadow = [
-          BoxShadow(color: const Color(0xFFF06292).withValues(alpha: 0.1), blurRadius: 4, offset: const Offset(0, 2))
-        ];
-        break;
-      case AppTheme.themeAmberLens:
-        inkColor = const Color(0xFF3E2723); // Sepia
-        paperColor = const Color(0xFFFFF8E1).withValues(alpha: 0.85); // Aged Parchment
-        paperBorderColor = const Color(0xFFFFECB3);
-        paperShadow = [
-          BoxShadow(color: const Color(0xFF3E2723).withValues(alpha: 0.15), blurRadius: 4, offset: const Offset(0, 2))
-        ];
-        break;
-      default: // Default Red
-        inkColor = const Color(0xFF680000); // Pomegranate Red (Darkened)
-        paperColor = const Color(0xFFFFFDE7).withValues(alpha: 0.95); // Creamy Vellum (Higher Opacity)
-        paperBorderColor = const Color(0xFFFFCDD2).withValues(alpha: 0.5);
-        paperShadow = [
-          BoxShadow(color: const Color(0xFFB71C1C).withValues(alpha: 0.1), blurRadius: 4, offset: const Offset(0, 2))
-        ];
-        break;
-    }
+    Color inkColor = themeConfig.isNotEmpty ? themeConfig['inkColor'] : (theme == AppTheme.themeMidnight ? Colors.white : (theme == AppTheme.themeSeaFlower ? const Color(0xFFC2185B) : (theme == AppTheme.themeAmberLens ? const Color(0xFF3E2723) : const Color(0xFF680000))));
+    Color paperColor = themeConfig.isNotEmpty ? themeConfig['paperColor'] : (theme == AppTheme.themeMidnight ? const Color(0xFF1A237E).withValues(alpha: 0.6) : (theme == AppTheme.themeSeaFlower ? const Color(0xFFFFFFFF).withValues(alpha: 0.7) : (theme == AppTheme.themeAmberLens ? const Color(0xFFFFF8E1).withValues(alpha: 0.85) : const Color(0xFFFFFDE7).withValues(alpha: 0.95))));
+    Color paperBorderColor = themeConfig.isNotEmpty ? themeConfig['paperBorderColor'] : (theme == AppTheme.themeMidnight ? const Color(0xFF5C6BC0).withValues(alpha: 0.3) : (theme == AppTheme.themeSeaFlower ? const Color(0xFFFCE4EC) : (theme == AppTheme.themeAmberLens ? const Color(0xFFFFECB3) : const Color(0xFFFFCDD2).withValues(alpha: 0.5))));
+    List<BoxShadow> paperShadow = themeConfig.isNotEmpty ? themeConfig['paperShadow'] : (theme == AppTheme.themeMidnight ? [BoxShadow(color: Colors.black.withValues(alpha: 0.5), blurRadius: 8, offset: const Offset(0, 4))] : (theme == AppTheme.themeSeaFlower ? [BoxShadow(color: const Color(0xFFF06292).withValues(alpha: 0.1), blurRadius: 4, offset: const Offset(0, 2))] : (theme == AppTheme.themeAmberLens ? [BoxShadow(color: const Color(0xFF3E2723).withValues(alpha: 0.15), blurRadius: 4, offset: const Offset(0, 2))] : [BoxShadow(color: const Color(0xFFB71C1C).withValues(alpha: 0.1), blurRadius: 4, offset: const Offset(0, 2))])));
 
     // Define AppBar Color (Separate from Ink Color)
     // - Default/Amber/Midnight backgrounds are dark/vibrant -> Use White Text
     // - SeaFlower background is light -> Use Ink Color (Indigo)
     Color appBarColor = Colors.white;
-    if (theme == AppTheme.themeSeaFlower) {
+    if (theme == AppTheme.themeSeaFlower || theme == AppTheme.themeAfterRain) {
       appBarColor = inkColor;
     }
 

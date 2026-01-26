@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 class AppTheme {
   static const String themeDefault = 'default'; // Vintage (时光旧物)
   static const String themeAmberLens = 'amber_lens';
+  static const String themeAfterRain = 'after_rain';
 
   // --- 1. Colors (CSS Variable Mapping) ---
   
@@ -36,7 +37,387 @@ class AppTheme {
   static const Color _amberTextSecondary = Color(0xFF9E9E9E);
   static const Color _amberAccent = Color(0xFFFF9800);
 
+  // After Rain Theme Colors (Redesigned)
+  // After the Rain Theme Colors (Redesigned - Skeuomorphic)
+  static const Color _afterRainPrimaryMain = Color(0xFF4FC3F7); // Fresh Sky Blue (Clear sky)
+  static const Color _afterRainPrimaryLight = Color(0xFFB3E5FC); // Pale Blue (Water reflection)
+  static const Color _afterRainSurface = Color(0xFFF0F8FF); // Alice Blue (Damp paper)
+  static const Color _afterRainTextSecondary = Color(0xFF455A64); // Blue Grey (Wet stone)
+  static const Color _afterRainAccentBlue = Color(0xFF0288D1); // Deep Lake Blue (Accent)
+
   // --- 2. Getters ---
+
+  // 1. FAB Theme
+  static Map<String, dynamic> getFabTheme(String theme) {
+    if (theme == themeAfterRain) {
+      return {
+        'bg': const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFE0F7FA), _afterRainAccentBlue], // Light cyan to deep blue
+          stops: [0.1, 0.9],
+        ),
+        'shadow': BoxShadow(
+          color: _afterRainAccentBlue.withOpacity(0.4),
+          blurRadius: 16,
+          offset: const Offset(0, 8),
+          spreadRadius: -4,
+        ),
+        'iconColor': Colors.white,
+        'border': Border.all(color: Colors.white.withOpacity(0.6), width: 1.5), // Shiny rim
+      };
+    } else if (theme == themeSeaFlower) {
+      return {
+        'bg': const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFF8BBD0), Color(0xFFF06292)],
+        ),
+        'shadow': const BoxShadow(
+          color: Color.fromRGBO(240, 98, 146, 0.5),
+          blurRadius: 12,
+          offset: Offset(0, 4),
+        ),
+        'iconColor': Colors.white,
+      };
+    } else if (theme == themeMidnight) {
+      return {
+        'bg': const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF7986cb), Color(0xFF303f9f)],
+        ),
+        'shadow': const BoxShadow(
+          color: Color.fromRGBO(121, 134, 203, 0.5),
+          blurRadius: 15,
+          offset: Offset(0, 0),
+          spreadRadius: 2,
+        ),
+        'iconColor': Colors.white,
+      };
+    } else if (theme == themeAmberLens) {
+      return {
+        'bg': const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFFFB74D), Color(0xFFF57C00)],
+        ),
+        'shadow': const BoxShadow(
+          color: Color.fromRGBO(255, 152, 0, 0.5),
+          blurRadius: 15,
+          offset: Offset(0, 0),
+          spreadRadius: 2,
+        ),
+        'iconColor': Colors.white,
+      };
+    } else {
+      return {
+        'bg': const Color(0xFFC0392B),
+        'shadow': const BoxShadow(color: Colors.transparent),
+        'iconColor': Colors.white,
+      };
+    }
+  }
+
+  // 2. Sidebar Theme
+  static Map<String, dynamic> getSidebarTheme(String theme) {
+    if (theme == themeAfterRain) {
+      // Glassmorphism with water droplet edges
+      return {
+        'bgDecoration': BoxDecoration(
+          color: _afterRainSurface.withOpacity(0.65), // More transparent
+          border: Border(
+            right: BorderSide(color: Colors.white.withOpacity(0.4), width: 1), // Highlight edge
+          ), 
+          boxShadow: [
+             BoxShadow(
+               color: _afterRainAccentBlue.withOpacity(0.05), 
+               blurRadius: 20, 
+               offset: const Offset(2, 0)
+             ) // Subtle glow
+          ],
+        ),
+        'textColor': _afterRainTextSecondary,
+        'activeTextColor': _afterRainAccentBlue, // Deep Blue active
+        'subTextColor': Color(0xFF78909C),
+        'pillColor': _afterRainSurface.withOpacity(0.5),
+        'pillShadows': [
+          BoxShadow(
+              color: Colors.white, 
+              offset: Offset(-1, -1), 
+              blurRadius: 2), // Inner light
+          BoxShadow(
+              color: _afterRainAccentBlue.withOpacity(0.2), 
+              offset: Offset(1, 1), 
+              blurRadius: 3), // Drop shadow
+        ],
+        'pillBorder': Border.all(color: Colors.white.withOpacity(0.3)),
+        'buttonGradient': const LinearGradient(colors: [_afterRainPrimaryLight, _afterRainPrimaryMain]),
+      };
+    } else if (theme == themeSeaFlower) {
+      return {
+        'bgDecoration': BoxDecoration(
+          color: const Color(0xFFFCE4EC).withOpacity(0.6),
+          boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(5, 0))],
+        ),
+        'textColor': const Color(0xFF880E4F),
+        'activeTextColor': const Color(0xFFD81B60),
+        'subTextColor': const Color(0xFFBC477B),
+        'pillColor': Colors.white,
+        'pillShadows': [
+          BoxShadow(color: const Color(0xFFF48FB1).withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4)),
+        ],
+        'pillBorder': null,
+        'buttonGradient': const LinearGradient(colors: [Color(0xFFF06292), Color(0xFFD81B60)]),
+      };
+    } else if (theme == themeMidnight) {
+      return {
+        'bgDecoration': const BoxDecoration(
+          color: Color(0xFF0D1117),
+          border: Border(right: BorderSide(color: Colors.white12)),
+          boxShadow: [BoxShadow(color: Colors.black87, blurRadius: 10, offset: Offset(5, 0))],
+        ),
+        'textColor': const Color(0xFFc9d1d9),
+        'activeTextColor': const Color(0xFF7986cb),
+        'subTextColor': const Color(0xFF8b949e),
+        'pillColor': const Color(0xFF161b22),
+        'pillShadows': [
+          BoxShadow(color: Color.fromRGBO(121, 134, 203, 0.2), blurRadius: 8, spreadRadius: 1),
+        ],
+        'pillBorder': Border.all(color: Colors.white10),
+        'buttonGradient': const LinearGradient(colors: [Color(0xFF7986cb), Color(0xFF3F51B5)]),
+      };
+    } else if (theme == themeAmberLens) {
+      return {
+        'bgDecoration': const BoxDecoration(
+          color: Color(0xFF2C2C2C),
+          image: DecorationImage(image: AssetImage('assets/textures/leather_dark.png'), fit: BoxFit.cover, opacity: 0.5),
+          boxShadow: [BoxShadow(color: Colors.black45, blurRadius: 10, offset: Offset(5, 0))],
+        ),
+        'textColor': const Color(0xFFBDBDBD),
+        'activeTextColor': const Color(0xFFFF9800),
+        'subTextColor': const Color(0xFF757575),
+        'pillColor': const Color(0xFF222222),
+        'pillShadows': [
+          BoxShadow(color: Colors.white10, offset: Offset(0, 1), blurRadius: 0),
+          BoxShadow(color: Colors.black87, offset: Offset(0, -2), blurRadius: 1),
+        ],
+        'pillBorder': null,
+        'buttonGradient': const LinearGradient(colors: [Color(0xFFFFB74D), Color(0xFFF57C00)]),
+      };
+    } else {
+      return {
+        'bgDecoration': const BoxDecoration(
+          color: Color(0xFF3E2723),
+          image: DecorationImage(image: AssetImage('assets/textures/leather_dark.png'), fit: BoxFit.cover, opacity: 0.6),
+          boxShadow: [BoxShadow(color: Colors.black45, blurRadius: 10, offset: Offset(5, 0))],
+        ),
+        'textColor': const Color(0xFFD7CCC8),
+        'activeTextColor': const Color(0xFFFF5252),
+        'subTextColor': const Color(0xFFA1887F),
+        'pillColor': const Color(0xFF2D1E1B),
+        'pillShadows': [
+          BoxShadow(color: Colors.white10, offset: Offset(0, 1), blurRadius: 0),
+          BoxShadow(color: Colors.black87, offset: Offset(0, -2), blurRadius: 1),
+        ],
+        'pillBorder': null,
+        'buttonGradient': const LinearGradient(colors: [Color(0xFFE57373), Color(0xFFD32F2F)]),
+      };
+    }
+  }
+
+  // 3. Settings Theme
+  static Map<String, dynamic> getSettingsTheme(String theme) {
+    if (theme == themeAfterRain) {
+      return {
+        'groupDecoration': BoxDecoration(
+          color: Colors.white.withOpacity(0.5), // Frosted glass
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withOpacity(0.6), width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: _afterRainAccentBlue.withOpacity(0.08),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        'dividerColor': _afterRainAccentBlue.withOpacity(0.1),
+        'textColor': _afterRainTextSecondary,
+        'activeSwitchColor': _afterRainPrimaryMain,
+        'activeTrackColor': _afterRainPrimaryLight.withOpacity(0.3),
+        'titleColor': _afterRainTextSecondary,
+        'iconColor': _afterRainAccentBlue,
+      };
+    }
+    // Default fallback logic will be handled in page if this returns null or map
+    return {};
+  }
+
+  // 4. Editor Theme
+  static Map<String, dynamic> getEditorTheme(String theme) {
+    if (theme == themeAfterRain) {
+      return {
+        'appBarBg': _afterRainSurface.withOpacity(0.8),
+        'iconColor': _afterRainTextSecondary,
+        'cursorColor': _afterRainAccentBlue,
+        'lineColor': _afterRainAccentBlue.withOpacity(0.1),
+        'dividerColor': _afterRainAccentBlue.withOpacity(0.2),
+      };
+    }
+    return {};
+  }
+
+  // 5. Diary Card Theme
+  static Map<String, dynamic> getDiaryCardTheme(String theme) {
+    if (theme == themeAfterRain) {
+      return {
+        'bgColor': Colors.white.withOpacity(0.7), // See-through card
+        'titleColor': _afterRainTextSecondary,
+        'contentColor': _afterRainTextSecondary.withOpacity(0.9),
+        'dateColor': _afterRainAccentBlue,
+        'iconColor': _afterRainAccentBlue,
+        'dashedLineColor': _afterRainAccentBlue.withOpacity(0.2),
+        'shadows': [
+          BoxShadow(
+            color: _afterRainAccentBlue.withOpacity(0.08), // Cyan diffused shadow
+            offset: const Offset(0, 6),
+            blurRadius: 15,
+            spreadRadius: -2,
+          )
+        ],
+        'hoverShadows': [
+          BoxShadow(
+            color: _afterRainAccentBlue.withOpacity(0.15),
+            offset: const Offset(0, 10),
+            blurRadius: 25,
+            spreadRadius: -2,
+          )
+        ],
+        'border': Border.all(color: Colors.white, width: 1.5),
+      };
+    }
+    return {};
+  }
+
+  // 6. Directory Theme
+  static Map<String, dynamic> getBookDirectoryTheme(String theme) {
+    if (theme == themeAfterRain) {
+      return {
+        'inkColor': _afterRainTextSecondary,
+        'paperColor': _afterRainSurface.withOpacity(0.95), // Slightly opaque paper
+        'paperBorderColor': Colors.white.withOpacity(0.8),
+        'paperShadow': [
+          BoxShadow(
+            color: _afterRainAccentBlue.withOpacity(0.1), 
+            blurRadius: 12, 
+            offset: const Offset(0, 5)
+          )
+        ],
+      };
+    }
+    return {};
+  }
+
+  // 7. Moments Theme
+  static Map<String, dynamic> getMomentsTheme(String theme) {
+    if (theme == themeAfterRain) {
+      return {
+        'rulerBg': _afterRainSurface.withOpacity(0.8),
+        'rulerTextColor': _afterRainTextSecondary,
+        'rulerInactiveTextColor': _afterRainTextSecondary.withOpacity(0.3),
+        'rulerSubTextColor': _afterRainAccentBlue,
+        'rulerInactiveSubTextColor': _afterRainAccentBlue.withOpacity(0.3),
+        'rulerIndicatorColor': _afterRainAccentBlue,
+        'rulerShadowColor': _afterRainAccentBlue.withOpacity(0.1),
+        'rulerBorderColor': Colors.white.withOpacity(0.5),
+        'appBarIconColor': _afterRainTextSecondary,
+        'appBarTextColor': _afterRainTextSecondary,
+      };
+    }
+    return {};
+  }
+
+  // 8. Search Theme
+  static Map<String, dynamic> getSearchTheme(String theme) {
+    if (theme == themeAfterRain) {
+      return {
+        'bgColor': Colors.white.withOpacity(0.6),
+        'textColor': _afterRainTextSecondary,
+        'hintColor': _afterRainTextSecondary.withOpacity(0.4),
+        'iconColor': _afterRainAccentBlue,
+        'border': Border.all(color: Colors.white.withOpacity(0.7), width: 1.5),
+      };
+    }
+    return {};
+  }
+
+  // 9. Month Divider Theme
+  static Map<String, dynamic> getMonthDividerTheme(String theme) {
+    if (theme == themeAfterRain) {
+      return {
+        'textColor': _afterRainTextSecondary,
+        'lineColor': _afterRainAccentBlue.withOpacity(0.2),
+        'paperColor': Colors.white.withOpacity(0.8),
+        'shadows': [
+          BoxShadow(
+            color: _afterRainAccentBlue.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          )
+        ],
+      };
+    }
+    return {};
+  }
+
+  // 10. Dialog Theme
+  static Map<String, dynamic> getDialogTheme(String theme) {
+    if (theme == themeAfterRain) {
+      return {
+        'paper': _afterRainSurface.withOpacity(0.95), // Frosted
+        'title': _afterRainTextSecondary,
+        'text': _afterRainTextSecondary,
+        'icon': _afterRainAccentBlue,
+        'tape': _afterRainPrimaryLight.withOpacity(0.4),
+        'shadow': _afterRainAccentBlue.withOpacity(0.15),
+        'border': Colors.white,
+        'primaryBtn': _afterRainAccentBlue,
+        'primaryBtnText': Colors.white,
+        'secondaryBtn': _afterRainTextSecondary,
+      };
+    }
+    return {};
+  }
+
+  // 11. Toast Theme
+  static Map<String, dynamic> getToastTheme(String theme) {
+    if (theme == themeAfterRain) {
+      return {
+        'success': {'bg': _afterRainSurface, 'border': _afterRainPrimaryMain, 'icon': _afterRainPrimaryMain, 'text': _afterRainTextSecondary},
+        'error': {'bg': Color(0xFFFFF0F0), 'border': Color(0xFFE57373), 'icon': Color(0xFFE57373), 'text': _afterRainTextSecondary},
+        'warning': {'bg': Color(0xFFFFF8E1), 'border': Color(0xFFFFB74D), 'icon': Color(0xFFFFB74D), 'text': _afterRainTextSecondary},
+        'info': {'bg': _afterRainSurface, 'border': _afterRainAccentBlue, 'icon': _afterRainAccentBlue, 'text': _afterRainTextSecondary},
+      };
+    }
+    return {};
+  }
+
+  // 12. Lock Screen Theme
+  static Map<String, dynamic> getLockScreenTheme(String theme) {
+    if (theme == themeAfterRain) {
+      return {
+        'textColor': _afterRainTextSecondary,
+        'accentColor': _afterRainAccentBlue,
+        'displayBg': Colors.white.withOpacity(0.3),
+        'displayBorder': Colors.white.withOpacity(0.5),
+        'keyBg': Colors.white.withOpacity(0.2), // Water drop keys
+        'keyBorder': Colors.white.withOpacity(0.4),
+        'keyText': _afterRainAccentBlue,
+      };
+    }
+    return {};
+  }
 
   static SystemUiOverlayStyle getSystemUiOverlayStyle(String theme) {
     switch (theme) {
@@ -44,6 +425,12 @@ class AppTheme {
         return SystemUiOverlayStyle.dark.copyWith(
           statusBarColor: Colors.transparent,
           systemNavigationBarColor: const Color(0xFFF6D9E6), // Match gradient near bottom
+          systemNavigationBarIconBrightness: Brightness.dark,
+        );
+      case themeAfterRain:
+        return SystemUiOverlayStyle.dark.copyWith(
+          statusBarColor: Colors.transparent,
+          systemNavigationBarColor: _afterRainSurface,
           systemNavigationBarIconBrightness: Brightness.dark,
         );
       case themeMidnight:
@@ -120,6 +507,15 @@ class AppTheme {
             stops: [0.0, 1.0]
           ),
         );
+      case themeAfterRain:
+        return const BoxDecoration(
+          color: _afterRainSurface,
+          image: DecorationImage(
+            image: AssetImage('assets/textures/rainy_paper.png'), 
+            fit: BoxFit.cover, 
+            opacity: 0.8 // Blend with surface color
+          ),
+        );
       case themeDefault:
       default:
         return const BoxDecoration(
@@ -163,6 +559,12 @@ class AppTheme {
              BoxShadow(color: Colors.black, offset: Offset(2,0), blurRadius: 10)
           ]
         );
+      case themeAfterRain:
+        // Rain theme sidebar glass background
+        return BoxDecoration(
+          color: _afterRainSurface.withOpacity(0.65), // More transparent
+          border: Border(right: BorderSide(color: Colors.white.withOpacity(0.4), width: 1)),
+        );
       case themeDefault:
       default:
         // 修复: 使用web端原设计 - 垂直渐变 (to bottom)
@@ -193,6 +595,7 @@ class AppTheme {
       case themeMidnight: return _midnightPaper;
       case themeSeaFlower: return const Color(0xD9FFFFFF); // rgba(255, 255, 255, 0.85)
       case themeAmberLens: return _amberPaper;
+      case themeAfterRain: return _afterRainSurface;
       default: return _vintagePaper;
     }
   }
@@ -202,6 +605,7 @@ class AppTheme {
       case themeMidnight: return _midnightTextPrimary;
       case themeSeaFlower: return const Color(0xFF880E4F);
       case themeAmberLens: return _amberTextPrimary;
+      case themeAfterRain: return _afterRainTextSecondary; // User: "Main body text"
       default: return _vintageTextPrimary;
     }
   }
@@ -211,6 +615,7 @@ class AppTheme {
       case themeMidnight: return _midnightTextSecondary;
       case themeSeaFlower: return const Color(0xFFC2185B);
       case themeAmberLens: return _amberTextSecondary;
+      case themeAfterRain: return _afterRainAccentBlue; // User: "Hint elements"
       default: return _vintageTextSecondary;
     }
   }
@@ -220,6 +625,7 @@ class AppTheme {
       case themeMidnight: return _midnightAccent;
       case themeSeaFlower: return const Color(0xFFF50057);
       case themeAmberLens: return _amberAccent;
+      case themeAfterRain: return _afterRainPrimaryMain; // User: "High frequency interaction"
       default: return _vintageAccent;
     }
   }
@@ -251,6 +657,14 @@ class AppTheme {
           'iconColor': const Color(0xFFFF9800),
           'titleColor': const Color(0xFFE0E0E0),
           'subtitleColor': const Color(0xFF9E9E9E),
+        };
+      case themeAfterRain:
+        return {
+          'background': _afterRainSurface.withOpacity(0.85),
+          'border': Colors.white.withOpacity(0.4),
+          'iconColor': _afterRainAccentBlue,
+          'titleColor': _afterRainTextSecondary,
+          'subtitleColor': _afterRainTextSecondary.withOpacity(0.7),
         };
       default: // vintage/default
         return {
@@ -284,6 +698,10 @@ class AppTheme {
       seedColor = const Color(0xFFFF9800);
       scaffoldBg = const Color(0xFF1E1E1E); // Matte Black base
       brightness = Brightness.dark;
+    } else if (theme == themeAfterRain) {
+      seedColor = _afterRainPrimaryMain;
+      scaffoldBg = _afterRainSurface;
+      brightness = Brightness.light;
     } else {
       seedColor = Colors.brown;
       scaffoldBg = const Color(0xFF2d241f); // Dark Brown base

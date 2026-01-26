@@ -256,6 +256,7 @@ class _MomentInputWidgetState extends State<MomentInputWidget> with TickerProvid
     final theme = settings.currentTheme;
     final bool isSeaFlower = theme == AppTheme.themeSeaFlower;
     final bool isMidnight = theme == AppTheme.themeMidnight;
+    final bool isAfterRain = theme == AppTheme.themeAfterRain;
 
     
     // Theme Colors
@@ -281,6 +282,23 @@ class _MomentInputWidgetState extends State<MomentInputWidget> with TickerProvid
        imageIconColor = const Color(0xFFD81B60);
        cursorColor = const Color(0xFFD81B60);
        boxShadows = [const BoxShadow(color: Colors.black12, offset: Offset(0, -2), blurRadius: 4)];
+    } else if (isAfterRain) {
+       containerColor = const Color(0xFFF0F8FF).withOpacity(0.9); // Alice Blue almost opaque
+       inputBgColor = Colors.white;
+       inputBorderColor = Colors.white; // Clean look
+       textColor = const Color(0xFF455A64); // Blue Grey
+       hintColor = const Color(0xFF90A4AE);
+       iconColor = const Color(0xFF0288D1); // Accent Blue
+       sendColor = const Color(0xFF0288D1);
+       imageIconColor = const Color(0xFF29B6F6);
+       cursorColor = const Color(0xFF0288D1);
+       boxShadows = [
+         BoxShadow(
+           color: const Color(0xFF0288D1).withOpacity(0.1), 
+           offset: const Offset(0, -4), 
+           blurRadius: 10
+         )
+       ];
     } else if (isMidnight) {
        containerColor = const Color(0xFF0D1117);
        inputBgColor = const Color(0xFF161b22);

@@ -36,6 +36,25 @@ class SkeuomorphicToast {
   static _ToastColors _getThemeColors(BuildContext context, _ToastType type) {
     final settings = Provider.of<SettingsProvider>(context, listen: false);
     final theme = settings.currentTheme;
+    final themeConfig = AppTheme.getToastTheme(theme);
+
+    if (themeConfig.isNotEmpty) {
+      String key;
+      switch (type) {
+        case _ToastType.success: key = 'success'; break;
+        case _ToastType.error: key = 'error'; break;
+        case _ToastType.warning: key = 'warning'; break;
+        case _ToastType.info:
+        default: key = 'info'; break;
+      }
+      final colorMap = themeConfig[key];
+      return _ToastColors(
+        background: colorMap['bg'],
+        border: colorMap['border'],
+        icon: colorMap['icon'],
+        text: colorMap['text'],
+      );
+    }
 
     // 根据主题返回不同的配色方案
     switch (theme) {

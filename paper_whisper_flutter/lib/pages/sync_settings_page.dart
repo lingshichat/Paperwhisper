@@ -142,14 +142,23 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
     final theme = settings.currentTheme;
     final bool isSeaFlower = theme == AppTheme.themeSeaFlower;
     final bool isMidnight = theme == AppTheme.themeMidnight;
+    final bool isAfterRain = theme == AppTheme.themeAfterRain;
 
     // 颜色定义 (与 SettingsPage 保持一致)
-    final Color titleColor = isSeaFlower
-        ? const Color(0xFF880E4F)
-        : (isMidnight ? const Color(0xFFe6edf3) : const Color(0xFFEEFFEB));
-    final Color textColor = isSeaFlower
-        ? const Color(0xFFAD1457)
-        : (isMidnight ? const Color(0xFFc9d1d9) : const Color(0xFFD7CCC8));
+    final themeConfig = AppTheme.getSettingsTheme(theme);
+    
+    final Color titleColor = themeConfig.isNotEmpty
+        ? themeConfig['titleColor']
+        : (isSeaFlower
+            ? const Color(0xFF880E4F)
+            : (isMidnight ? const Color(0xFFe6edf3) : const Color(0xFFEEFFEB)));
+            
+    final Color textColor = themeConfig.isNotEmpty
+        ? themeConfig['textColor']
+        : (isSeaFlower
+            ? const Color(0xFFAD1457)
+            : (isMidnight ? const Color(0xFFc9d1d9) : const Color(0xFFD7CCC8)));
+            
     final Color hintColor = textColor.withOpacity(0.5);
 
     return Stack(
@@ -241,8 +250,8 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                     child: SwitchListTile(
                       value: _compressImages,
                       onChanged: (val) => setState(() => _compressImages = val),
-                      activeColor: isSeaFlower ? const Color(0xFFAD1457) : (isMidnight ? const Color(0xFF7986cb) : const Color(0xFF5D4037)),
-                      activeTrackColor: isSeaFlower ? const Color(0xFFF48FB1) : (isMidnight ? const Color(0xFF9FA8DA) : const Color(0xFFA1887F)),
+                      activeColor: AppTheme.getSettingsTheme(theme).isNotEmpty ? AppTheme.getSettingsTheme(theme)['activeSwitchColor'] : (isSeaFlower ? const Color(0xFFAD1457) : (isMidnight ? const Color(0xFF7986cb) : const Color(0xFF5D4037))),
+                      activeTrackColor: AppTheme.getSettingsTheme(theme).isNotEmpty ? AppTheme.getSettingsTheme(theme)['activeTrackColor'] : (isSeaFlower ? const Color(0xFFF48FB1) : (isMidnight ? const Color(0xFF9FA8DA) : const Color(0xFFA1887F))),
                       title: Text(
                         '开启图片压缩',
                         style: GoogleFonts.notoSerifSc(color: textColor, fontWeight: FontWeight.bold, fontSize: 15),
@@ -271,6 +280,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                           isPrimary: false,
                           isSeaFlower: isSeaFlower,
                           isMidnight: isMidnight,
+                          isAfterRain: isAfterRain,
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -281,6 +291,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                           isPrimary: true,
                           isSeaFlower: isSeaFlower,
                           isMidnight: isMidnight,
+                          isAfterRain: isAfterRain,
                         ),
                       ),
                     ],
@@ -364,56 +375,87 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
     required IconData icon,
     bool obscureText = false,
   }) {
-    final borderSide = BorderSide(
-      color: isSeaFlower 
-          ? const Color(0xFFEC407A).withOpacity(0.3) 
-          : (isMidnight ? const Color(0xFF30363d) : Colors.white.withOpacity(0.3)),
-    );
+    // Need access to theme config here or pass it.
+    // Simplified: Use passed isSeaFlower/isMidnight logic OR context if available.
+    // We don't have context easily in this helper unless we pass it.
+    // But wait, the caller passes isSeaFlower/isMidnight.
+    // To properly support AfterRain, we should probably pass the config or colors.
+    // I'll stick to the pattern: check if it matches AfterRain (via passed flags? no).
+    // I should update the caller to pass colors instead of booleans? No, too much change.
+    // I'll assume standard colors or try to infer.
+    // Better: Update _buildTextField signature to accept border/fill colors directly.
+    // But to minimize diff, I will just use a hack? No.
+    // Let's check where it's called.
+    // It's called in build(). I can calculate colors there and pass them.
+    // But _buildTextField signature has many params.
+    // I will change signature of _buildTextField to take decoration/colors.
+    // Actually, I can just use a Builder inside _buildTextField if I want to access provider, but that's messy.
+    // Let's modify the build method to calculate colors and pass them.
     
-    final fillColor = isSeaFlower 
-        ? Colors.white.withOpacity(0.4) 
-        : (isMidnight ? const Color(0xFF0D1117).withOpacity(0.5) : Colors.black.withOpacity(0.1));
+    // Actually, I will just update the logic inside _buildTextField to check AppTheme.getSettingsTheme
+    // BUT I don't have 'theme' string here.
+    // I will use a Builder to get theme from context inside the widget.
+    return Builder(
+      builder: (context) {
+        final theme = Provider.of<SettingsProvider>(context).currentTheme;
+        final themeConfig = AppTheme.getSettingsTheme(theme);
+        
+        final borderSide = BorderSide(
+          color: themeConfig.isNotEmpty
+              ? themeConfig['groupDecoration'].border.top.color // Approximate from group border
+              : (isSeaFlower
+                  ? const Color(0xFFEC407A).withOpacity(0.3)
+                  : (isMidnight ? const Color(0xFF30363d) : Colors.white.withOpacity(0.3))),
+        );
+        
+        final fillColor = themeConfig.isNotEmpty
+            ? themeConfig['groupDecoration'].color // Approximate
+            : (isSeaFlower
+                ? Colors.white.withOpacity(0.4)
+                : (isMidnight ? const Color(0xFF0D1117).withOpacity(0.5) : Colors.black.withOpacity(0.1)));
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: GoogleFonts.notoSerifSc(
-            color: textColor.withOpacity(0.8),
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color: fillColor,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.fromBorderSide(borderSide),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 2,
-                offset: const Offset(0, 1),
-              )
-            ],
-          ),
-          child: TextFormField(
-            controller: controller,
-            obscureText: obscureText,
-            style: TextStyle(color: textColor),
-            validator: (v) => v == null || v.isEmpty ? '不能为空' : null,
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: TextStyle(color: hintColor, fontSize: 13),
-              prefixIcon: Icon(icon, color: textColor.withOpacity(0.6), size: 20),
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: GoogleFonts.notoSerifSc(
+                color: textColor.withOpacity(0.8),
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
             ),
-          ),
-        ),
-      ],
+            const SizedBox(height: 8),
+            Container(
+              decoration: BoxDecoration(
+                color: fillColor,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.fromBorderSide(borderSide),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 2,
+                    offset: const Offset(0, 1),
+                  )
+                ],
+              ),
+              child: TextFormField(
+                controller: controller,
+                obscureText: obscureText,
+                style: TextStyle(color: textColor),
+                validator: (v) => v == null || v.isEmpty ? '不能为空' : null,
+                decoration: InputDecoration(
+                  hintText: hint,
+                  hintStyle: TextStyle(color: hintColor, fontSize: 13),
+                  prefixIcon: Icon(icon, color: textColor.withOpacity(0.6), size: 20),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                ),
+              ),
+            ),
+          ],
+        );
+      }
     );
   }
 
@@ -423,6 +465,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
     required bool isPrimary,
     required bool isSeaFlower,
     required bool isMidnight,
+    required bool isAfterRain,
   }) {
     // 按钮样式
     Gradient? gradient;
@@ -434,6 +477,8 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
         gradient = const LinearGradient(colors: [Color(0xFFF06292), Color(0xFFAD1457)]);
       } else if (isMidnight) {
         gradient = const LinearGradient(colors: [Color(0xFF7986cb), Color(0xFF283593)]);
+      } else if (isAfterRain) {
+        gradient = const LinearGradient(colors: [Color(0xFF4FC3F7), Color(0xFF0288D1)]); // Light Blue to Deep Blue
       } else {
         color = const Color(0xFF5D4037); // 复古棕
       }
@@ -445,6 +490,9 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
       } else if (isMidnight) {
          color = const Color(0xFF21262d);
          textColor = const Color(0xFFc9d1d9);
+      } else if (isAfterRain) {
+         color = Colors.white.withOpacity(0.6);
+         textColor = const Color(0xFF0277BD);
       } else {
          color = Colors.white.withOpacity(0.2);
          textColor = const Color(0xFF3E2723);
@@ -466,13 +514,17 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
               BoxShadow(
                 color: isSeaFlower 
                     ? const Color(0xFFAD1457).withOpacity(0.3) 
-                    : (isMidnight ? const Color(0xFF283593).withOpacity(0.4) : Colors.black26),
+                    : (isMidnight 
+                        ? const Color(0xFF283593).withOpacity(0.4) 
+                        : (isAfterRain ? const Color(0xFF0288D1).withOpacity(0.3) : Colors.black26)),
                 blurRadius: 6,
                 offset: const Offset(0, 3)
               )
             ] : null,
             border: !isPrimary ? Border.all(
-              color: isSeaFlower ? const Color(0xFFAD1457).withOpacity(0.2) : Colors.white.withOpacity(0.1)
+              color: isSeaFlower 
+                  ? const Color(0xFFAD1457).withOpacity(0.2) 
+                  : (isAfterRain ? const Color(0xFF0288D1).withOpacity(0.2) : Colors.white.withOpacity(0.1))
             ) : null,
           ),
           child: Text(
