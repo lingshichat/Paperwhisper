@@ -10,6 +10,11 @@ import '../widgets/skeuomorphic_dialog.dart';
 import '../widgets/stamp_animation.dart';
 import '../widgets/visual_effects.dart'; // Assuming PetalRainWidget is here
 import '../widgets/feature_comparison_sheet.dart';
+import 'package:gal/gal.dart';
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
+import 'dart:typed_data';
+
 
 class PremiumMembershipPage extends StatefulWidget {
   const PremiumMembershipPage({super.key});
@@ -18,17 +23,30 @@ class PremiumMembershipPage extends StatefulWidget {
   State<PremiumMembershipPage> createState() => _PremiumMembershipPageState();
 }
 
-class _PremiumMembershipPageState extends State<PremiumMembershipPage> {
+class _PremiumMembershipPageState extends State<PremiumMembershipPage> with TickerProviderStateMixin {
   final TextEditingController _orderController = TextEditingController();
-  bool _isLoading = false;
-  bool _justStamped = false;
   final ScrollController _scrollController = ScrollController();
   final GlobalKey _inputKey = GlobalKey();
+  
+  bool _isLoading = false;
+  bool _justStamped = false;
+  bool _showCelebration = false;
+  
+  late AnimationController _stampController;
+  late Animation<double> _stampAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _stampController = AnimationController(vsync: this, duration: const Duration(milliseconds: 800));
+    _stampAnimation = CurvedAnimation(parent: _stampController, curve: Curves.bounceOut);
+  }
 
   @override
   void dispose() {
     _orderController.dispose();
     _scrollController.dispose();
+    _stampController.dispose();
     super.dispose();
   }
 
@@ -39,38 +57,111 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage> {
          duration: const Duration(milliseconds: 600), 
          curve: Curves.easeInOutCubic
        );
-       // Optional: Focus the text field
      }
   }
 
-  Future<void> _verifyOrder() async {
-    final orderId = _orderController.text.trim();
-    if (orderId.isEmpty) {
-      SkeuomorphicToast.warning(context, '请填写爱发电订单号');
-      return;
-    }
-
+  Future<void> _activateHonestyMode() async {
     setState(() => _isLoading = true);
+    
+    // 1. Play Stamp Animation
+    await _stampController.forward();
+    
+    // 2. Trigger Activation
+    await Provider.of<PaymentService>(context, listen: false).activateHonestyMode();
 
-    try {
-      final result = await Provider.of<PaymentService>(context, listen: false).verifyOrder(orderId);
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+        _justStamped = true;
+        _showCelebration = true; // Trigger Petal Rain
+      });
       
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _justStamped = true;
-        });
-        
-        Future.delayed(const Duration(milliseconds: 800), () {
-          if (mounted) SkeuomorphicToast.success(context, result.message);
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        SkeuomorphicToast.error(context, e.toString().replaceAll("Exception: ", ""));
-      }
+      SkeuomorphicToast.success(context, "诚信激活成功！\n感谢您的支持与信任");
+      
+      // Auto-hide celebration after 5 seconds
+      Future.delayed(const Duration(seconds: 5), () {
+        if (mounted) setState(() => _showCelebration = false);
+      });
     }
+  }
+
+  Future<void> _payWithAlipay() async {
+     // User provided code
+     const String alipayQrCode = 'https://qr.alipay.com/fkx187002hv2e7taukh965a'; 
+     final Uri alipayScheme = Uri.parse(
+        'alipays://platformapi/startapp?saId=10000007&clientVersion=3.7.0.0718&qrcode=${Uri.encodeComponent(alipayQrCode)}'
+     );
+
+     try {
+       if (await canLaunchUrl(alipayScheme)) {
+          await launchUrl(alipayScheme, mode: LaunchMode.externalApplication);
+       } else {
+          SkeuomorphicToast.warning(context, "未找到支付宝，请手动扫码");
+          _showQrCodeDialog("支付宝支付", "assets/images/alipay_qr_payment.jpg");
+       }
+     } catch (e) {
+        SkeuomorphicToast.error(context, "无法跳转支付宝: $e");
+     }
+  }
+
+  Future<void> _payWithWeChat() async {
+    try {
+      // 1. Load asset data
+      final ByteData data = await rootBundle.load('assets/images/wechat_qr_payment.png');
+      final Uint8List bytes = data.buffer.asUint8List();
+      
+      // 2. Save to temp file first (Gal needs a file path)
+      final tempDir = await getTemporaryDirectory();
+      final tempFile = File('${tempDir.path}/wechat_qr_${DateTime.now().millisecondsSinceEpoch}.png');
+      await tempFile.writeAsBytes(bytes);
+      
+      // 3. Save to gallery using Gal
+      await Gal.putImage(tempFile.path, album: 'PaperWhisper');
+      
+      // 4. Clean up temp file
+      if (await tempFile.exists()) {
+        await tempFile.delete();
+      }
+      
+      SkeuomorphicToast.success(context, "二维码已保存到相册");
+      
+      // 5. Launch WeChat
+      final Uri wechatScheme = Uri.parse('weixin://');
+      if (await canLaunchUrl(wechatScheme)) {
+          await Future.delayed(const Duration(milliseconds: 1000));
+          await launchUrl(wechatScheme, mode: LaunchMode.externalApplication);
+      } else {
+          SkeuomorphicToast.warning(context, "未找到微信客户端");
+      }
+      
+    } catch (e) {
+      SkeuomorphicToast.error(context, "操作失败: $e");
+      debugPrint("WeChat Pay Error: $e");
+    }
+  }
+
+  void _showQrCodeDialog(String title, String assetPath) {
+    showDialog(
+      context: context,
+      builder: (context) => SkeuomorphicDialog(
+        title: title,
+        headerIcon: Icons.qr_code,
+        content: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              color: Colors.white,
+              child: Image.asset(assetPath, width: 200, height: 200),
+            ),
+            const SizedBox(height: 10),
+            Text("请使用相应App扫码支付", style: GoogleFonts.notoSerifSc(fontSize: 12)),
+          ],
+        ),
+        actions: [
+          SkeuomorphicDialogButton(label: "关闭", onPressed: () => Navigator.pop(context))
+        ],
+      )
+    );
   }
 
 
@@ -159,26 +250,25 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isPro = context.select<PaymentService, bool>((s) => s.isPro);
+    final paymentService = Provider.of<PaymentService>(context);
+    final isPro = paymentService.isPro;
     final showStamp = isPro || _justStamped;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF2D2D2D), // The Desk
+      backgroundColor: const Color(0xFFF9F6F0), // Paper white
       appBar: AppBar(
         title: Text(
-          'Royal Invitation', 
-          style: GoogleFonts.cinzel(color: const Color(0xFFE0E0E0), fontWeight: FontWeight.bold)
+          "Premium Membership", 
+          style: GoogleFonts.cinzel(fontWeight: FontWeight.bold, color: const Color(0xFF3E2723))
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Color(0xFFE0E0E0)),
         centerTitle: true,
+        iconTheme: const IconThemeData(color: Color(0xFF3E2723)),
       ),
       body: Stack(
         children: [
-          // 1. The Desk Texture (Optional subtle noise could go here, for now solid color)
-          
-          // 2. The Letter Paper
+          // 1. Content Layer
           Center(
             child: SingleChildScrollView(
               controller: _scrollController,
@@ -219,70 +309,45 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage> {
                             ),
                           ),
                           const SizedBox(height: 24),
-                            Text(
-                              "你好呀，这里是纸语PaperWhisper的开发者！\n\n首先，感谢你能体验我们的软件，愿意触及这个拟物风日记本子~\n我们致力于软件整体交互的精致与美观，在此基础上不断完善现有功能，目前已经到达了一个可用的阶段！\n\n但是随着开发成本的上涨还有应用分发模式的限制，我们需要一份能够自给自足的方式，来支持软件的开发与维护\n\n所以我们处于蛮纠结的情绪下为你呈递上这份只属于纸语PaperWhisper的赞助邀请函\n为了感谢你的支持，我们准备了七日全功能解锁的试用期，希望你能喜欢💓",
-                              style: GoogleFonts.notoSerifSc(
-                                fontSize: 13,
-                                color: const Color(0xFF5D4037),
-                                height: 1.6,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 32),
-                      child: Divider(color: Color(0xFFD7CCC8), thickness: 1),
-                    ),
-
-                    // --- OPTIONS ---
-                    Padding(
-                      padding: const EdgeInsets.all(32),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text("您的专属权益方案", style: GoogleFonts.notoSerifSc(fontSize: 14, color: Colors.black38)),
-                          const SizedBox(height: 16),
-                          
-                          // Method 0: Trial (The Hook)
-                          _buildTrialOption(isPro),
-
-                          const SizedBox(height: 24),
-
-                          // Option 1: Lifetime (The Ticket)
-                          _buildLifetimeTicket(isPro),
-
-                          const SizedBox(height: 24),
-
-                          // Option 2: Subscription
-                          _buildSubscriptionOption(),
-
-                          const SizedBox(height: 24),
-
-                          // Note
                           Text(
-                            "* 当前为早鸟特惠阶段，支持一次性买断终身权益。随着 AI 等高级功能的加入，未来可能会调整价格策略，但您目前拥有的权益将永久保留。",
+                            "你好呀，这里是纸语PaperWhisper的开发者！\n\n首先，感谢你能体验我们的软件，愿意触及这个拟物风日记本子~\n\n我们相信每一位用户都是真诚的。纸语采用【诚信解锁】机制 —— 滑动到页面底部，点击「我已支付」即可永久解锁所有功能，无需任何验证。\n\n使用我们的软件，就是对我们最大的鼓励。若能支持几块钱请开发者喝杯咖啡，我们将不胜感激 ☕",
                             style: GoogleFonts.notoSerifSc(
-                              fontSize: 11,
-                              color: const Color(0xFFA1887F),
-                              fontStyle: FontStyle.italic,
-                              height: 1.4,
+                              fontSize: 13,
+                              color: const Color(0xFF5D4037),
+                              height: 1.8,
                             ),
+                            textAlign: TextAlign.justify,
                           ),
                         ],
                       ),
                     ),
 
-                    // --- SPECS ---
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: FeatureComparisonSheet(isEmbedded: true),
-                    ),
-                    
-                    const SizedBox(height: 20),
+                    constDivider(color: Color(0xFFD7CCC8), height: 1),
 
-                    // --- FOOTER / CERTIFICATE ---
+                    // --- FEATURES (FeatureComparisonSheet) ---
+                    // Using a simplified inline version or the widget if it fits
+                    const Padding(
+                       padding: EdgeInsets.symmetric(vertical: 20),
+                       child: FeatureComparisonSheet(isEmbedded: true),
+                    ),
+
+                    constDivider(color: Color(0xFFD7CCC8), height: 1),
+
+                    // --- PAYMENT OPTIONS ---
+                    Padding(
+                      padding: const EdgeInsets.all(32),
+                      child: _buildPaymentOptions(),
+                    ),
+
+                    constDivider(color: Color(0xFFD7CCC8), height: 1),
+
+                    // --- TIP JAR ---
+                    Padding(
+                      padding: const EdgeInsets.all(32),
+                      child: _buildTipJarSection(),
+                    ),
+
+                     // --- FOOTER (Certificate) ---
                     _buildCertificateFooter(context, showStamp, isPro),
                   ],
                 ),
@@ -290,137 +355,119 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage> {
             ),
           ),
 
-          // 3. Loading Overlay
-          if (_isLoading)
-            Container(
-              color: Colors.black54,
-              child: const Center(
-                child: CircularProgressIndicator(color: Color(0xFFD4AF37)),
-              ),
+          // 2. Celebration Overlay
+          if (_showCelebration)
+            const IgnorePointer(
+              child: PetalRainWidget(burst: true),
             ),
-
-          // 4. Petal Rain
-          if (_justStamped)
-            const Positioned.fill(child: PetalRainWidget(burst: true)),
         ],
       ),
     );
   }
 
-  Widget _buildLifetimeTicket(bool isPro) {
-    // Real Lifetime Product URL provided by user
-    const String lifetimeUrl = "https://afdian.com/item/f723bc80fa8811f0bea05254001e7c00"; 
+  // Helper for Divider
+  Widget constDivider({required Color color, required double height}) {
+    return Container(height: height, color: color);
+  }
 
+
+  Widget _buildPaymentOptions() {
+    return Column(
+      children: [
+        _buildLifetimeTicket(),
+        const SizedBox(height: 20),
+        _buildSubscriptionTicket(),
+      ],
+    );
+  }
+
+  Widget _buildLifetimeTicket() {
     return GestureDetector(
-      onTap: isPro ? null : () => _launchSponsor(url: lifetimeUrl),
+      onTap: () {
+        // Show Payment QR Code Dialog (Mixed Payment)
+        _showPaymentDialog();
+      },
       child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: const Color(0xFFFFECB3).withOpacity(0.3), // Pale gold bg
-          border: Border.all(color: isPro ? const Color(0xFF2E7D32) : const Color(0xFFD4AF37), width: 1.5),
-          borderRadius: BorderRadius.circular(4),
+          color: const Color(0xFFF9F6F0), // Paper white
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFF8D6E63), width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            )
+          ],
         ),
-        padding: const EdgeInsets.all(16),
         child: Row(
           children: [
+            // Left: Icon Ticket Stub
+            Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                color: const Color(0xFF3E2723),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.stars, color: Color(0xFFFFD700), size: 32),
+            ),
+            const SizedBox(width: 16),
+            // Middle: Info
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Wrap(
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: 8,
-                    runSpacing: 4,
-                    children: [
-                      Text(
-                        "功能特性赞助 · 终身版",
-                        style: GoogleFonts.notoSerifSc(
-                          fontSize: 16, 
-                          fontWeight: FontWeight.bold, 
-                          color: const Color(0xFF3E2723)
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: isPro ? const Color(0xFF2E7D32) : const Color(0xFFB71C1C)),
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                        child: Text(
-                          isPro ? "ACTIVATED" : "EARLY BIRD",
-                          style: GoogleFonts.oswald(
-                            fontSize: 10, 
-                            color: isPro ? const Color(0xFF2E7D32) : const Color(0xFFB71C1C), 
-                            fontWeight: FontWeight.bold
-                          ),
-                        ),
-                      ),
-                    ],
+                  Text(
+                    "终身会员 (Lifetime)",
+                    style: GoogleFonts.notoSerifSc(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF3E2723),
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    "无限随心记 / S3云同步 / 指纹解锁 / 专属信纸",
-                    style: GoogleFonts.notoSerifSc(fontSize: 12, color: const Color(0xFF5D4037)),
+                    "一次性买断 · 永久更新",
+                    style: GoogleFonts.notoSerifSc(
+                      fontSize: 12,
+                      color: const Color(0xFF5D4037),
+                    ),
                   ),
                 ],
               ),
             ),
-            Flexible(
-              flex: 0,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    "¥38",
+            // Right: Price & Arrow
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  "¥ 38.00",
+                  style: GoogleFonts.cinzel(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFFB71C1C),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF3E2723),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    "P A Y",
                     style: GoogleFonts.cinzel(
-                      fontSize: 22, 
-                      fontWeight: FontWeight.bold, 
-                      color: const Color(0xFF3E2723)
+                      fontSize: 10,
+                      color: const Color(0xFFFFD700),
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                  Text(
-                    "原价 ¥68",
-                    style: GoogleFonts.cinzel(
-                      fontSize: 11, 
-                      decoration: TextDecoration.lineThrough,
-                      color: Colors.black26
-                    ),
-                  ),
-                  if (!isPro) ...[
-                    const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFD4AF37),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text("购买", style: GoogleFonts.notoSerifSc(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
-                          const SizedBox(width: 2),
-                          const Icon(Icons.open_in_new, size: 9, color: Colors.white),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    GestureDetector(
-                      onTap: _scrollToInput,
-                      child: Text(
-                        "已有订单?激活", 
-                        style: GoogleFonts.notoSerifSc(
-                          fontSize: 9, 
-                          color: const Color(0xFFD4AF37), 
-                          decoration: TextDecoration.underline
-                        )
-                      ),
-                    ),
-                  ] else ...[
-                    const SizedBox(height: 6),
-                    const Icon(Icons.check_circle, color: Color(0xFF2E7D32), size: 20),
-                  ]
-                ],
-              ),
+                ),
+              ],
             ),
           ],
         ),
@@ -428,175 +475,158 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage> {
     );
   }
 
-  Widget _buildSubscriptionOption() {
-    return Consumer<PaymentService>(
-      builder: (context, payment, child) {
-        final subExpiry = payment.subscriptionExpiry;
-        final isActive = payment.isSubscriptionActive;
-        
-        // Real Monthly Plan URL (Public Link constructed from ID)
-        // User provided: 0e639c44f8cc11f0bfaa52540025c377
-        const String subscriptionUrl = "https://afdian.com/a/lingshichat?plan_id=0e639c44f8cc11f0bfaa52540025c377";
+  Widget _buildSubscriptionTicket() {
+    return Opacity(
+      opacity: 0.6,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: const Color(0xFFEEEEEE),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey, width: 1, style: BorderStyle.solid),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                color: Colors.grey[400],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.calendar_today, color: Colors.white, size: 28),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "年度订阅 (Yearly)",
+                    style: GoogleFonts.notoSerifSc(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    "灵活订阅 · 随时取消",
+                    style: GoogleFonts.notoSerifSc(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+             Transform.rotate(
+               angle: -0.2,
+               child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey[700]!, width: 2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  "COMING SOON",
+                  style: GoogleFonts.blackOpsOne(
+                    fontSize: 12,
+                    color: Colors.grey[700],
+                  ),
+                ),
+              ),
+             ),
+          ],
+        ),
+      ),
+    );
+  }
 
-        return GestureDetector(
-          onTap: isActive ? null : () => _launchSponsor(url: subscriptionUrl), // Main action: Go Pay
-          child: Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFFEFEBE9), // Light grayish brown paper for "Library Card"
-              border: Border.all(color: isActive ? const Color(0xFF2E7D32) : const Color(0xFF8D6E63), width: 1.5),
-              borderRadius: BorderRadius.circular(6),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                )
-              ],
+  // Mixed Payment Dialog (Alipay + WeChat)
+  void _showPaymentDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => SkeuomorphicDialog(
+        title: "选择支付方式",
+        headerIcon: Icons.payment,
+        content: Column(
+          children: [
+            Text(
+              "感谢您的支持",
+              style: GoogleFonts.notoSerifSc(
+                fontSize: 14,
+                color: const Color(0xFF5D4037),
+              ),
             ),
-            padding: const EdgeInsets.all(0),
-            child: Column(
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                // Top Header Strip
-                 Container(
-                   width: double.infinity,
-                   padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
-                   decoration: BoxDecoration(
-                     color: isActive ?  const Color(0xFFA5D6A7) : const Color(0xFFA1887F), // Greenish if active, else brown
-                     borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
-                   ),
-                   child: Row(
-                     children: [
-                       Icon(Icons.local_library, size: 16, color: isActive ? const Color(0xFF1B5E20) : Colors.white),
-                       const SizedBox(width: 8),
-                       Text(
-                         "PAPERWHISPER CLUB PASS",
-                         style: GoogleFonts.oswald(
-                           fontSize: 12,
-                           color: isActive ? const Color(0xFF1B5E20) : Colors.white,
-                           fontWeight: FontWeight.bold,
-                           letterSpacing: 1.5,
-                         ),
-                       ),
-                       const Spacer(),
-                       if (isActive)
-                         Container(
-                           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                           decoration: BoxDecoration(
-                             border: Border.all(color: const Color(0xFF1B5E20)),
-                             borderRadius: BorderRadius.circular(2),
-                           ),
-                           child: const Text("VALID", style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFF1B5E20))),
-                         ),
-                     ],
-                   ),
-                 ),
-                 
-                 // Content
-                 Padding(
-                   padding: const EdgeInsets.all(16),
-                   child: Row(
-                     children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "加入·纸语俱乐部",
-                                style: GoogleFonts.notoSerifSc(
-                                  fontSize: 16, 
-                                  fontWeight: FontWeight.bold, 
-                                  color: const Color(0xFF3E2723)
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                "每月一杯咖啡，支持持续创新",
-                                style: GoogleFonts.notoSerifSc(fontSize: 12, color: const Color(0xFF5D4037), fontStyle: FontStyle.italic),
-                              ),
-                              const SizedBox(height: 12),
-                              // Features List
-                              _buildSubFeatureItem("包含【功能会员】所有权益"),
-                              _buildSubFeatureItem("设计师主题与信纸 (持续更新)"),
-                              _buildSubFeatureItem("AI 智能分类 & 润色 (即将更新)"),
-                              _buildSubFeatureItem("官方省心云同步 (即将更新)"),
-                            ],
-                          ),
-                        ),
-                        
-                        // Right Side: Price or Status
-                        Flexible(
-                          flex: 0, // Don't expand, just take needed space
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                               if (isActive) ...[
-                                 Text(
-                                   "有效期至",
-                                   style: GoogleFonts.notoSerifSc(fontSize: 10, color: Colors.black38),
-                                 ),
-                                 const SizedBox(height: 4),
-                                 Text(
-                                   "${subExpiry!.year}.${subExpiry.month}.${subExpiry.day}",
-                                   style: GoogleFonts.courierPrime(
-                                     fontSize: 14,
-                                     fontWeight: FontWeight.bold, 
-                                     color: const Color(0xFF2E7D32)
-                                   ),
-                                 ),
-                                 const SizedBox(height: 8),
-                                 const Icon(Icons.check_circle_outline, color: Color(0xFF2E7D32), size: 24),
-                               ] else ...[
-                                 Column(
-                                   crossAxisAlignment: CrossAxisAlignment.end,
-                                   mainAxisSize: MainAxisSize.min,
-                                   children: [
-                                     Text("月度", style: GoogleFonts.notoSerifSc(fontSize: 10, color: Colors.black38)),
-                                     Text("¥6", style: GoogleFonts.cinzel(fontSize: 20, fontWeight: FontWeight.bold, color: const Color(0xFF3E2723))),
-                                     const SizedBox(height: 2),
-                                     Text("季度¥15/年度¥50", style: GoogleFonts.notoSerifSc(fontSize: 8, color: Colors.black45)),
-                                   ],
-                                 ),
-                                 const SizedBox(height: 6),
-                                 Container(
-                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                                   decoration: BoxDecoration(
-                                     color: const Color(0xFF8D6E63),
-                                     borderRadius: BorderRadius.circular(16),
-                                   ),
-                                   child: Row(
-                                     mainAxisSize: MainAxisSize.min,
-                                     children: [
-                                       Text("订阅", style: GoogleFonts.notoSerifSc(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
-                                       const SizedBox(width: 2),
-                                       const Icon(Icons.open_in_new, size: 9, color: Colors.white),
-                                     ],
-                                   ),
-                                 ),
-                                 const SizedBox(height: 6),
-                                 GestureDetector(
-                                   onTap: _scrollToInput,
-                                   child: Text(
-                                     "已有订单?激活", 
-                                     style: GoogleFonts.notoSerifSc(
-                                       fontSize: 9, 
-                                       color: const Color(0xFF8D6E63), 
-                                       decoration: TextDecoration.underline
-                                     )
-                                   ),
-                                 ),
-                               ]
-                            ],
-                          ),
-                        ),
-                     ],
-                   ),
-                 ),
+                _buildPaymentButton(
+                  label: "支付宝",
+                  color: const Color(0xFF1677FF),
+                  icon: Icons.account_balance_wallet,
+                  onTap: () {
+                     Navigator.pop(context);
+                     _payWithAlipay();
+                  }
+                ),
+                _buildPaymentButton(
+                  label: "微信支付",
+                  color: const Color(0xFF09BB07),
+                  icon: Icons.chat_bubble,
+                  onTap: () {
+                     Navigator.pop(context);
+                     _payWithWeChat();
+                  }
+                ),
               ],
             ),
+             const SizedBox(height: 16),
+             Text(
+               "微信支付需保存二维码后扫码",
+               style: GoogleFonts.notoSerifSc(fontSize: 10, color: Colors.black38),
+             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPaymentButton({
+    required String label, 
+    required Color color, 
+    required IconData icon, 
+    required VoidCallback onTap
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(color: color.withOpacity(0.4), blurRadius: 8, offset: const Offset(0, 4))
+              ]
+            ),
+            child: Icon(icon, color: Colors.white, size: 28),
           ),
-        );
-      }
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: GoogleFonts.notoSerifSc(
+              fontSize: 12, 
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF3E2723)
+            ),
+          )
+        ],
+      ),
     );
   }
 
@@ -609,6 +639,115 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage> {
           const SizedBox(width: 4),
           Text(text, style: GoogleFonts.notoSerifSc(fontSize: 11, color: Colors.black54)),
         ],
+      ),
+    );
+  }
+
+  /// 投喂区 - Tip Jar Section
+  Widget _buildTipJarSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 标题
+        Row(
+          children: [
+            const Icon(Icons.volunteer_activism, size: 20, color: Color(0xFFD4AF37)),
+            const SizedBox(width: 8),
+            Text(
+              "请开发者喝杯咖啡 ☕",
+              style: GoogleFonts.notoSerifSc(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF5D4037),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          "您的支持是我们前进的动力，任何金额都是莫大的鼓励",
+          style: GoogleFonts.notoSerifSc(
+            fontSize: 11,
+            color: const Color(0xFFA1887F),
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        // 投喂选项
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _buildTipButton(
+              emoji: "🍗",
+              label: "鸡腿",
+              amount: "¥5",
+              color: const Color(0xFFFF8A65),
+            ),
+            _buildTipButton(
+              emoji: "☕",
+              label: "咖啡",
+              amount: "¥10",
+              color: const Color(0xFF8D6E63),
+            ),
+            _buildTipButton(
+              emoji: "🍰",
+              label: "蛋糕",
+              amount: "¥20",
+              color: const Color(0xFFE91E63),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTipButton({
+    required String emoji,
+    required String label,
+    required String amount,
+    required Color color,
+  }) {
+    return GestureDetector(
+      onTap: () => _showPaymentDialog(),
+      child: Container(
+        width: 85,
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFFDE7),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.5), width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: color.withOpacity(0.2),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 28)),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              style: GoogleFonts.notoSerifSc(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF5D4037),
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              amount,
+              style: GoogleFonts.cinzel(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -663,7 +802,7 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage> {
                    const SizedBox(height: 16),
                    if (!isPro && !Provider.of<PaymentService>(context).isSubscriptionActive) ...[
                      Text(
-                       '请填写爱发电订单号',
+                       '如果您已完成支付',
                        textAlign: TextAlign.center,
                        style: GoogleFonts.notoSerifSc(
                          fontSize: 12,
@@ -673,7 +812,7 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage> {
                      ),
                      const SizedBox(height: 2),
                      Text(
-                       'Enter your Afdian Order ID',
+                       'Please confirm your payment',
                        textAlign: TextAlign.center,
                        style: GoogleFonts.cinzel(
                          fontSize: 9,
@@ -681,84 +820,46 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage> {
                          letterSpacing: 0.6,
                        ),
                      ),
-                     const SizedBox(height: 8),
-                     Container(
-                       key: _inputKey,
-                       width: 200,
-                       /*decoration: BoxDecoration(
-                         border: Border(bottom: BorderSide(color: Color(0xFF5D4037), width: 1.5))
-                       ),*/
-                       child: TextField(
-                          controller: _orderController,
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.courierPrime(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: const Color(0xFF3E2723),
-                          ),
-                          decoration: InputDecoration(
-                            hintText: '202501260000000000',
-                            hintStyle: GoogleFonts.cinzel(color: Colors.black12, fontSize: 14),
-                            enabledBorder: const UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF8D6E63))),
-                            focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF3E2723), width: 2)),
-                            isDense: true,
-                          ),
-                       ),
-                     ),
-                     const SizedBox(height: 8),
+                     const SizedBox(height: 16),
+                     
+                     // Activation Button (Stamp Style)
                      GestureDetector(
-                        onTap: () {
-                           // Try verify
-                           _verifyOrder();
-                        },
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              '点此签署并核验',
-                              style: GoogleFonts.notoSerifSc(
-                                fontSize: 11,
-                                color: const Color(0xFFB71C1C),
-                                fontWeight: FontWeight.w600,
+                        key: _inputKey, // Keep key for scrolling if needed
+                        onTap: _activateHonestyMode,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFB71C1C),
+                            borderRadius: BorderRadius.circular(30),
+                            boxShadow: [
+                              BoxShadow(color: const Color(0xFFB71C1C).withOpacity(0.4), blurRadius: 8, offset: const Offset(0, 4))
+                            ]
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.verified_user, color: Colors.white, size: 20),
+                              const SizedBox(width: 8),
+                              Text(
+                                "我已支付，开启权益",
+                                style: GoogleFonts.notoSerifSc(
+                                  fontSize: 14,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1,
+                                ),
                               ),
-                            ),
-                            Text(
-                              'Tap to sign & verify',
-                              style: GoogleFonts.cinzel(
-                                fontSize: 9,
-                                color: const Color(0xFFB71C1C).withOpacity(0.7),
-                                letterSpacing: 0.8,
-                              ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                      ),
-                     const SizedBox(height: 4),
-                     GestureDetector(
-                       onTap: _showHelpDialog,
-                       child: Column(
-                         mainAxisSize: MainAxisSize.min,
-                         children: [
-                           Text(
-                             '如何获取订单号？',
-                             style: GoogleFonts.notoSerifSc(
-                               fontSize: 10,
-                               color: Colors.black26,
-                               decoration: TextDecoration.underline,
-                             ),
-                           ),
-                           Text(
-                             'Where to find it?',
-                             style: GoogleFonts.cinzel(
-                               fontSize: 9,
-                               color: Colors.black26,
-                               decoration: TextDecoration.underline,
-                               letterSpacing: 0.6,
-                             ),
-                           ),
-                         ],
-                       ),
+                     
+                     const SizedBox(height: 12),
+                     Text(
+                       "诚信为本 · 感谢支持",
+                       style: GoogleFonts.notoSerifSc(fontSize: 10, color: Colors.black26),
                      ),
+
                    ] else ...[
                      Text(
                        "Officially welcomed to the club.",

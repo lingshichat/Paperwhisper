@@ -42,7 +42,7 @@ dependencies:
   intl: ^0.20.0
   path: ^1.9.0
   path_provider: ^2.1.2
-  permission_handler: ^11.2.0
+  permission_handler: ^12.0.1
   shared_preferences: ^2.2.2
   flutter_markdown: ^0.6.19
   uuid: ^4.3.3
@@ -61,6 +61,7 @@ dependencies:
   crypto: ^3.0.7
   lottie: ^3.3.2
   minio: ^3.5.8
+  gal: ^2.3.2
 
 dependency_overrides:
   record_linux: ^1.2.0
@@ -110,6 +111,7 @@ flutter:
     - assets/icon.png
     - assets/textures/
     - assets/illustrations/
+    - assets/images/
     - assets/version.json
 
   # An image asset can refer to one or more resolution-specific "variants", see

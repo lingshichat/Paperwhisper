@@ -215,6 +215,22 @@ class PaymentService extends ChangeNotifier {
     return null; // Not a valid internal code, proceed to API
   }
 
+  /// 诚信模式激活 (Honesty Mode Activation)
+  /// 用户点击 "我已支付" 后直接调用，基于信任原则
+  Future<void> activateHonestyMode() async {
+    // 1. Generate Local License
+    final licenseHash = await _generateLocalLicenseHash();
+    await _prefs.setString(_kLicenseKey, licenseHash);
+    
+    // 2. Clear subscription expiry to avoid confusion (Lifetime overrides sub)
+    await _prefs.remove(_kSubExpiryKey);
+    _subscriptionExpiry = null;
+
+    // 3. Update State
+    _isPro = true;
+    notifyListeners();
+  }
+
   // 生成本地校验 Hash
   Future<String> _generateLocalLicenseHash() async {
     // 使用简单的固定盐值 + 包名，确保不同 App 之间不通用

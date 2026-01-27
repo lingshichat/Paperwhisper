@@ -77,22 +77,44 @@ class _StampAnimationState extends State<StampAnimation> with SingleTickerProvid
 
   @override
   Widget build(BuildContext context) {
+    // 安全检查：如果未盖章且动画未进行中，则隐藏
     if (!widget.isStamped && !_controller.isAnimating) {
-      return const SizedBox.shrink(); // Hide if not stamped
+      return const SizedBox.shrink();
     }
 
+    // 如果已盖章且动画已完成（或页面重入时），直接显示最终状态
+    if (widget.isStamped && _controller.value >= 1.0) {
+      return Transform.rotate(
+        angle: -0.1,
+        child: widget.child,
+      );
+    }
+    
+    // 如果是页面重入（动画控制器未启动但需要显示印章）
+    if (widget.isStamped && _controller.value == 0.0 && !_controller.isAnimating) {
+      // 直接将动画跳到终点，然后显示最终状态
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _controller.value = 1.0;
+        }
+      });
+      return Transform.rotate(
+        angle: -0.1,
+        child: widget.child,
+      );
+    }
+
+    // 正常动画播放时
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
-        // Use OverflowBox to prevent layout errors when scale is > 1.0 (starts at 3.0)
-        return OverflowBox(
-          maxWidth: double.infinity,
-          maxHeight: double.infinity,
-          alignment: Alignment.center,
+        // 使用 UnconstrainedBox 包裹 Transform 以避免布局问题
+        return UnconstrainedBox(
+          clipBehavior: Clip.none,
           child: Transform.scale(
             scale: _scaleAnimation.value,
             child: Transform.rotate(
-              angle: -0.1 + (_controller.value > 0.6 ? _shakeAnimation.value : 0), // Base rotation -0.1 rad
+              angle: -0.1 + (_controller.value > 0.6 ? _shakeAnimation.value : 0),
               child: Opacity(
                 opacity: _opacityAnimation.value,
                 child: widget.child,
@@ -104,3 +126,4 @@ class _StampAnimationState extends State<StampAnimation> with SingleTickerProvid
     );
   }
 }
+
