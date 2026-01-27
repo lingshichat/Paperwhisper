@@ -49,6 +49,7 @@
 
 - **按钮样式**：检查 `_buildButton()` 方法中的 `isAfterRain` 等判断。
 - **输入框样式**：检查 `_buildTextField()` 方法。
+- **加载进度条**：检查 `LinearProgressIndicator` 的 `color` 属性。
 
 ### 2.5 书架目录页面 (`lib/pages/book_directory_page.dart`)
 

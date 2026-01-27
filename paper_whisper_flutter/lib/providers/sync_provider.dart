@@ -45,6 +45,12 @@ class SyncProvider with ChangeNotifier {
   int _lastBytesCount = 0;
   DateTime? _lastSpeedUpdate;
   
+  // Total Progress & ETA State
+  int _totalOps = 0;
+  int _processedOps = 0;
+  DateTime? _batchStartTime;
+  String _etaMessage = '';
+  
   Timer? _autoSyncTimer;
   static const int _notificationId = 888;
   static const String _channelId = 'paper_whisper_sync';
@@ -68,6 +74,17 @@ class SyncProvider with ChangeNotifier {
   
   double get currentFileProgress => _currentFileProgress;
   String get currentFileSpeed => _currentFileSpeed;
+  
+  /// Total Progress (0.0 - 1.0)
+  /// Formula: (processed + currentFilePart) / total
+  double get totalProgress {
+    if (_totalOps == 0) return 0.0;
+    // Cap currentFileProgress to 1.0 just in case
+    double filePart = _currentFileProgress.clamp(0.0, 1.0);
+    return (_processedOps + filePart) / _totalOps;
+  }
+  
+  String get etaMessage => _etaMessage;
 
   late Future<void> _initFuture;
   
@@ -86,16 +103,21 @@ class SyncProvider with ChangeNotifier {
   }
   
   // Helper to reset transfer stats
-  void _resetTransferStats() {
+  void _resetTransferStats(int totalOperations) {
     _currentFileProgress = 0.0;
     _currentFileSpeed = '';
     _lastBytesCount = 0;
     _lastSpeedUpdate = null;
+    
+    _totalOps = totalOperations;
+    _processedOps = 0;
+    _batchStartTime = DateTime.now();
+    _etaMessage = '计算中...';
     notifyListeners();
   }
 
   void _onTransferProgress(int count, int total) {
-    debugPrint('SyncProgress: $count / $total'); // DEBUG log
+    // debugPrint('SyncProgress: $count / $total'); // Reduce log noise
     
     final now = DateTime.now();
     
@@ -106,34 +128,58 @@ class SyncProvider with ChangeNotifier {
       _currentFileProgress = 0.0;
     }
     
-    // Initial speed display (avoid empty gap)
+    // Initial speed display
     if (_currentFileSpeed.isEmpty) {
-       _currentFileSpeed = "Calculating..."; 
+       _currentFileSpeed = "计算中..."; 
     }
     
-    if (_lastSpeedUpdate == null) {
-      _lastSpeedUpdate = now;
-      _lastBytesCount = count;
-      return;
-    }
-    
-    final diff = now.difference(_lastSpeedUpdate!).inMilliseconds;
-    // Update every 500ms
-    if (diff >= 500) {
-       if (count < _lastBytesCount) {
-          _lastBytesCount = count; 
-          return;
-       }
-       
-       final bytesDiff = count - _lastBytesCount;
-       if (diff > 0) {
-         final speedBytesPerSec = (bytesDiff / diff) * 1000;
-         _currentFileSpeed = _formatSpeed(speedBytesPerSec);
-       }
-       
+    // Update Speed & ETA every 500ms
+    if (_lastSpeedUpdate == null || now.difference(_lastSpeedUpdate!).inMilliseconds >= 500) {
+       _updateSpeedAndETA(now, count);
        _lastSpeedUpdate = now;
        _lastBytesCount = count;
-       notifyListeners(); 
+       notifyListeners();
+    }
+  }
+  
+  void _updateSpeedAndETA(DateTime now, int count) {
+    // 1. Calculate Instant Speed
+    if (_lastSpeedUpdate != null && count > _lastBytesCount) {
+       final diffMs = now.difference(_lastSpeedUpdate!).inMilliseconds;
+       if (diffMs > 0) {
+         final bytesDiff = count - _lastBytesCount;
+         final speedBytesPerSec = (bytesDiff / diffMs) * 1000;
+         _currentFileSpeed = _formatSpeed(speedBytesPerSec);
+       }
+    }
+    
+    // 2. Calculate ETA based on Item Count
+    // (Since we don't know total bytes size for downloads)
+    if (_batchStartTime != null && _processedOps > 0 && _totalOps > _processedOps) {
+       final elapsedMs = now.difference(_batchStartTime!).inMilliseconds;
+       // Time per item = elapsed / processed
+       final msPerItem = elapsedMs / _processedOps; // Simple average
+       final remainingItems = _totalOps - _processedOps;
+       
+       // Deduct current item progress from remaining time?
+       // Let's keep it simple: ETA based on full completed items is more stable.
+       // Refined: time = avg * (remaining - currentPart)
+       final estimatedRemainingMs = msPerItem * (remainingItems - _currentFileProgress);
+       
+       if (estimatedRemainingMs > 0) {
+         final duration = Duration(milliseconds: estimatedRemainingMs.toInt());
+         if (duration.inHours > 0) {
+            _etaMessage = '剩余 ${duration.inHours} 小时 ${duration.inMinutes % 60} 分';
+         } else if (duration.inMinutes > 0) {
+            _etaMessage = '剩余 ${duration.inMinutes} 分 ${duration.inSeconds % 60} 秒';
+         } else {
+            _etaMessage = '剩余 ${duration.inSeconds} 秒';
+         }
+       }
+    } else if (_processedOps == 0) {
+       _etaMessage = '计算中...';
+    } else {
+       _etaMessage = '即将完成';
     }
   }
   
@@ -146,6 +192,15 @@ class SyncProvider with ChangeNotifier {
   // Helper to update progress message and notify UI
   void _updateProgress(String message) {
     _progressMessage = message;
+    notifyListeners();
+  }
+  
+  // Helper to reset just the current file stats (for loop iteration)
+  void _resetCurrentFileStats() {
+    _currentFileProgress = 0.0;
+    _currentFileSpeed = '';
+    _lastBytesCount = 0;
+    _lastSpeedUpdate = null;
     notifyListeners();
   }
 
@@ -555,12 +610,15 @@ class SyncProvider with ChangeNotifier {
       
       totalOps = toDownload.length + toUpload.length + toDeleteLocal.length + toTrashRemote.length;
       
+      // Init Global Progress State
+      _resetTransferStats(totalOps);
+
       if (!isAuto && totalOps > 0) {
         _showNotification(processed, totalOps, body: "开始同步 $totalOps 个变更...");
       }
 
       await _processBatch(toDownload, (filename) async {
-         await _webDavService.downloadFile(
+         await _storageService.downloadFile(
             WebDavSyncService.diaryBasePath + filename,
             path.join(service.dataDir!.path, filename)
          );
@@ -569,18 +627,20 @@ class SyncProvider with ChangeNotifier {
            isDeleted: false
          );
          processed++;
+         _processedOps++; // Global Counter
          if (!isAuto) _showNotification(processed, totalOps, body: "下载: $filename");
       });
       
       await _processBatch(toUpload, (filename) async {
          final file = File(path.join(service.dataDir!.path, filename));
          if (await file.exists()) {
-           await _webDavService.uploadFile(
+           await _storageService.uploadFile(
               file.path,
               WebDavSyncService.diaryBasePath + filename
            );
          }
          processed++;
+         _processedOps++; // Global Counter
          if (!isAuto) _showNotification(processed, totalOps, body: "上传: $filename");
       });
       
@@ -590,6 +650,7 @@ class SyncProvider with ChangeNotifier {
             await service.trashService.moveToTrash(file);
          }
          processed++;
+         _processedOps++; // Global Counter
       });
       
       await _processBatch(toTrashRemote, (filename) async {
@@ -604,6 +665,7 @@ class SyncProvider with ChangeNotifier {
            debugPrint("Remote move failed (maybe file already gone): $e");
          }
          processed++;
+         _processedOps++; // Global Counter
       });
       
       for (var item in mergedItems.values) {
@@ -905,13 +967,16 @@ class SyncProvider with ChangeNotifier {
        
        totalOps = toDownload.length + toUpload.length + toDeleteLocal.length + toTrashRemote.length;
        
+       // Init Global Progress State for Moments
+       _resetTransferStats(totalOps);
+       
        if (!isAuto && totalOps > 0) {
          _showNotification(processed, totalOps, body: "同步随心记 ($totalOps)...");
        }
  
        // Downloads
        await _processBatch(toDownload, (filename) async {
-          _resetTransferStats(); // Reset for new file
+          _resetCurrentFileStats(); // Reset for new file
           try {
             await _storageService.downloadFile(
                WebDavSyncService.momentsBasePath + filename,
@@ -936,7 +1001,7 @@ class SyncProvider with ChangeNotifier {
        await _processBatch(toUpload, (filename) async {
           final file = File(path.join(service.dataDir!.path, filename));
           if (await file.exists()) {
-            _resetTransferStats(); // Reset for new file
+            _resetCurrentFileStats(); // Reset for new file
             try {
               await _storageService.uploadFile(
                  file.path,

@@ -157,6 +157,10 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
     final bgColor = AppTheme.getPaperColor(theme);
 
     final headerColors = AppTheme.getMobileHeaderColors(theme);
+    
+    // Get Settings Theme Config for overrides (specifically textColor for Vintage theme)
+    final settingsTheme = AppTheme.getSettingsTheme(theme);
+    final tileTextColor = settingsTheme['textColor'] as Color? ?? textColor;
 
     Widget content = Scaffold(
       appBar: AppBar(
@@ -197,15 +201,15 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
                 decoration: BoxDecoration(
-                  color: textColor.withOpacity(0.05),
+                  color: tileTextColor.withOpacity(0.05),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: textColor.withOpacity(0.1)),
+                  border: Border.all(color: tileTextColor.withOpacity(0.1)),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text("修改密码", style: GoogleFonts.notoSerifSc(fontSize: 16, color: textColor)),
-                    Icon(Icons.arrow_forward_ios, size: 16, color: textColor.withOpacity(0.5))
+                    Text("修改密码", style: GoogleFonts.notoSerifSc(fontSize: 16, color: tileTextColor)),
+                    Icon(Icons.arrow_forward_ios, size: 16, color: tileTextColor.withOpacity(0.5))
                   ],
                 ),
               ),
@@ -240,7 +244,8 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
     required String theme,
   }) {
     final themeConfig = AppTheme.getSettingsTheme(theme);
-    final textColor = AppTheme.getTextColor(theme);
+    // Use override text color if available
+    final tileTextColor = themeConfig['textColor'] as Color? ?? AppTheme.getTextColor(theme);
     final accentColor = AppTheme.getAccentColor(theme);
     
     return Container(
@@ -248,13 +253,13 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
       decoration: themeConfig.isNotEmpty
           ? themeConfig['groupDecoration']
           : BoxDecoration(
-              color: textColor.withOpacity(0.05),
+              color: tileTextColor.withOpacity(0.05),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: textColor.withOpacity(0.15)),
+              border: Border.all(color: tileTextColor.withOpacity(0.15)),
             ),
       child: SwitchListTile(
-        title: Text(title, style: GoogleFonts.notoSerifSc(fontWeight: FontWeight.bold, color: textColor)),
-        subtitle: Text(subtitle, style: GoogleFonts.notoSerifSc(fontSize: 12, color: textColor.withOpacity(0.6))),
+        title: Text(title, style: GoogleFonts.notoSerifSc(fontWeight: FontWeight.bold, color: tileTextColor)),
+        subtitle: Text(subtitle, style: GoogleFonts.notoSerifSc(fontSize: 12, color: tileTextColor.withOpacity(0.6))),
         value: value,
         onChanged: onChanged,
         activeColor: accentColor,

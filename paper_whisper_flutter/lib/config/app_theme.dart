@@ -251,6 +251,22 @@ class AppTheme {
       };
     }
     // Default fallback logic will be handled in page if this returns null or map
+    if (theme == themeDefault) {
+      // Default (Vintage) Theme
+      return {
+        'groupDecoration': BoxDecoration(
+          color: const Color(0xFF3E2723).withOpacity(0.3), // Darker brown background for group
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: _vintagePaper.withOpacity(0.1)), // Light border
+        ),
+        'dividerColor': _vintagePaper.withOpacity(0.1),
+        'textColor': _vintagePaper, // Use Light Paper color for text
+        'activeSwitchColor': _vintageAccent,
+        'activeTrackColor': _vintageAccent.withOpacity(0.3),
+        'titleColor': _vintagePaper,
+        'iconColor': _vintagePaper.withOpacity(0.8),
+      };
+    }
     return {};
   }
 

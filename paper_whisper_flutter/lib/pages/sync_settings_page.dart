@@ -204,7 +204,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
           backgroundColor: Colors.transparent,
           appBar: AppBar(
             title: Text(
-              'WebDAV 设置',
+              '数据同步',
               style: GoogleFonts.notoSerifSc(
                 color: titleColor,
                 fontWeight: FontWeight.bold,
@@ -228,22 +228,8 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // 协议选择器
-                  Container(
-                    margin: const EdgeInsets.only(bottom: 24),
-                    decoration: BoxDecoration(
-                      color: isMidnight ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    padding: const EdgeInsets.all(4),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center, // Added 
-                      mainAxisSize: MainAxisSize.max, // Added
-                      children: [
-                        Expanded(child: _buildProtocolTab('WebDAV', SyncType.webdav, isSeaFlower, isMidnight, isAfterRain, provider)),
-                        Expanded(child: _buildProtocolTab('S3 存储', SyncType.s3, isSeaFlower, isMidnight, isAfterRain, provider)),
-                      ],
-                    ),
-                  ),
+                  // 协议选择器 (拟物化滑块)
+                  _buildSlidingSwitch(provider, isSeaFlower, isMidnight, isAfterRain),
 
                   if (provider.config.syncType == SyncType.webdav) ...[
                     _buildSectionTitle('WebDAV 服务器配置', textColor),
@@ -423,22 +409,40 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                            ClipRRect(
                              borderRadius: BorderRadius.circular(4),
                              child: LinearProgressIndicator(
-                               value: provider.currentFileProgress > 0 ? provider.currentFileProgress : null, // Null = Indeterminate
+                               value: provider.totalProgress > 0 ? provider.totalProgress : null, // Total Progress
                                backgroundColor: textColor.withOpacity(0.1),
-                               color: isSeaFlower ? const Color(0xFFD81B60) : (isMidnight ? const Color(0xFF7986cb) : const Color(0xFF795548)),
+                               color: isSeaFlower ? const Color(0xFFD81B60) : (isMidnight ? const Color(0xFF7986cb) : (isAfterRain ? const Color(0xFF0288D1) : const Color(0xFF795548))),
                                minHeight: 6,
                              ),
                            ),
                            
-                           // Speed Text
+                           // Speed & ETA Text
                              Padding(
                                padding: const EdgeInsets.only(top: 8),
-                               child: Text(
-                                 provider.currentFileSpeed,
-                                 style: GoogleFonts.robotoMono( // Monospace for numbers
-                                   color: textColor.withOpacity(0.6),
-                                   fontSize: 12,
-                                 ),
+                               child: Row(
+                                 mainAxisAlignment: MainAxisAlignment.center,
+                                 children: [
+                                   Text(
+                                     provider.currentFileSpeed,
+                                     style: GoogleFonts.robotoMono(
+                                       color: textColor.withOpacity(0.6),
+                                       fontSize: 12,
+                                     ),
+                                   ),
+                                   if (provider.etaMessage.isNotEmpty) ...[
+                                      Text(
+                                        '  |  ',
+                                        style: TextStyle(color: textColor.withOpacity(0.3), fontSize: 12),
+                                      ),
+                                      Text(
+                                        provider.etaMessage,
+                                        style: GoogleFonts.notoSerifSc(
+                                          color: textColor.withOpacity(0.7),
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                   ],
+                                 ],
                                ),
                              ),
                          ],
@@ -446,7 +450,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                      ),
                      
                   const SizedBox(height: 40),
-                  _buildTips(textColor, isMidnight),
+                  _buildTips(textColor, isMidnight, provider.config.syncType),
                 ],
               ),
             ),
@@ -479,26 +483,6 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
     required IconData icon,
     bool obscureText = false,
   }) {
-    // Need access to theme config here or pass it.
-    // Simplified: Use passed isSeaFlower/isMidnight logic OR context if available.
-    // We don't have context easily in this helper unless we pass it.
-    // But wait, the caller passes isSeaFlower/isMidnight.
-    // To properly support AfterRain, we should probably pass the config or colors.
-    // I'll stick to the pattern: check if it matches AfterRain (via passed flags? no).
-    // I should update the caller to pass colors instead of booleans? No, too much change.
-    // I'll assume standard colors or try to infer.
-    // Better: Update _buildTextField signature to accept border/fill colors directly.
-    // But to minimize diff, I will just use a hack? No.
-    // Let's check where it's called.
-    // It's called in build(). I can calculate colors there and pass them.
-    // But _buildTextField signature has many params.
-    // I will change signature of _buildTextField to take decoration/colors.
-    // Actually, I can just use a Builder inside _buildTextField if I want to access provider, but that's messy.
-    // Let's modify the build method to calculate colors and pass them.
-    
-    // Actually, I will just update the logic inside _buildTextField to check AppTheme.getSettingsTheme
-    // BUT I don't have 'theme' string here.
-    // I will use a Builder to get theme from context inside the widget.
     return Builder(
       builder: (context) {
         final theme = Provider.of<SettingsProvider>(context).currentTheme;
@@ -506,14 +490,14 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
         
         final borderSide = BorderSide(
           color: themeConfig.isNotEmpty
-              ? themeConfig['groupDecoration'].border.top.color // Approximate from group border
+              ? themeConfig['groupDecoration'].border.top.color 
               : (isSeaFlower
                   ? const Color(0xFFEC407A).withOpacity(0.3)
                   : (isMidnight ? const Color(0xFF30363d) : Colors.white.withOpacity(0.3))),
         );
         
         final fillColor = themeConfig.isNotEmpty
-            ? themeConfig['groupDecoration'].color // Approximate
+            ? themeConfig['groupDecoration'].color 
             : (isSeaFlower
                 ? Colors.white.withOpacity(0.4)
                 : (isMidnight ? const Color(0xFF0D1117).withOpacity(0.5) : Colors.black.withOpacity(0.1)));
@@ -582,9 +566,9 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
       } else if (isMidnight) {
         gradient = const LinearGradient(colors: [Color(0xFF7986cb), Color(0xFF283593)]);
       } else if (isAfterRain) {
-        gradient = const LinearGradient(colors: [Color(0xFF4FC3F7), Color(0xFF0288D1)]); // Light Blue to Deep Blue
+        gradient = const LinearGradient(colors: [Color(0xFF4FC3F7), Color(0xFF0288D1)]);
       } else {
-        color = const Color(0xFF5D4037); // 复古棕
+        color = const Color(0xFF5D4037); 
       }
     } else {
       // Secondary
@@ -645,60 +629,138 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
     );
   }
 
-  Widget _buildProtocolTab(String label, SyncType type, bool isSeaFlower, bool isMidnight, bool isAfterRain, SyncProvider provider) {
-      final isSelected = provider.config.syncType == type;
-      Color activeColor;
-      Color activeText = Colors.white;
-      
-      if (isSeaFlower) {
-         activeColor = const Color(0xFFAD1457);
-      } else if (isMidnight) {
-         activeColor = const Color(0xFF7986cb);
-      } else if (isAfterRain) {
-         activeColor = const Color(0xFF0288D1);
-      } else {
-         activeColor = const Color(0xFF5D4037);
-      }
+  Widget _buildSlidingSwitch(
+    SyncProvider provider, bool isSeaFlower, bool isMidnight, bool isAfterRain) {
+    // 1. Determine Colors
+    Color trackColor;
+    Color thumbColor;
+    Color activeTextColor;
+    Color inactiveTextColor;
 
-      return GestureDetector(
-        onTap: () {
-           // Switch Type
-           final newConfig = provider.config.copyWith(syncType: type);
-           // Not saving to disk yet, just updating provider state? 
-           // Better to save immediately or just update local state if we want "Save" button to commit everything.
-           // However SyncProvider.config is source of truth.
-           // Let's update provider config immediately but maybe not persist?
-           // No, saveConfig persists. Let's persist. It is a setting switch.
-           provider.saveConfig(newConfig);
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          decoration: BoxDecoration(
-            color: isSelected ? activeColor : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
-            boxShadow: isSelected ? [
-              BoxShadow(
-                color: activeColor.withOpacity(0.3),
-                blurRadius: 4,
-                offset: const Offset(0, 2)
-              )
-            ] : null,
-          ),
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.notoSerifSc(
-              color: isSelected ? activeText : (isMidnight ? Colors.white70 : Colors.black54),
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              fontSize: 13,
-            ),
-          ),
+    if (isSeaFlower) {
+      trackColor = Colors.pink[50]!; 
+      thumbColor = Colors.white;
+      activeTextColor = const Color(0xFFAD1457);
+      inactiveTextColor = const Color(0xFFAD1457).withOpacity(0.5);
+    } else if (isMidnight) {
+      trackColor = const Color(0xFF0D1117); 
+      thumbColor = const Color(0xFF37474F); 
+      activeTextColor = const Color(0xFF7986cb); 
+      inactiveTextColor = Colors.white54;
+    } else if (isAfterRain) {
+      trackColor = Colors.lightBlue[50]!;
+      thumbColor = Colors.white;
+      activeTextColor = const Color(0xFF0288D1);
+      inactiveTextColor = const Color(0xFF0288D1).withOpacity(0.5);
+    } else {
+      // Vintage / Default
+      trackColor = const Color(0xFFD7CCC8); 
+      thumbColor = const Color(0xFFEFEBE9); 
+      activeTextColor = const Color(0xFF5D4037);
+      inactiveTextColor = const Color(0xFF5D4037).withOpacity(0.5);
+    }
+
+    final isWebDav = provider.config.syncType == SyncType.webdav;
+
+    return Center(
+      child: Container(
+        height: 44, 
+        margin: const EdgeInsets.only(bottom: 24),
+        width: double.infinity, 
+        decoration: BoxDecoration(
+          color: trackColor,
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: [
+             BoxShadow(
+               color: Colors.black.withOpacity(isMidnight ? 0.3 : 0.05),
+               offset: const Offset(0, 1),
+               blurRadius: 1,
+             ),
+          ],
         ),
-      );
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final width = constraints.maxWidth;
+            final segmentWidth = width / 2;
+
+            return Stack(
+              children: [
+                // 1. Thumb (Animated)
+                AnimatedAlign(
+                  alignment: isWebDav ? Alignment.centerLeft : Alignment.centerRight,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutBack, 
+                  child: Container(
+                    width: segmentWidth,
+                    height: double.infinity,
+                    margin: const EdgeInsets.all(4), 
+                    decoration: BoxDecoration(
+                      color: thumbColor,
+                      borderRadius: BorderRadius.circular(18),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(isMidnight ? 0.3 : 0.1),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // 2. Labels (Interactive)
+                Row(
+                  children: [
+                    _buildSwitchLabel('WebDAV', isWebDav, activeTextColor, inactiveTextColor, () {
+                      if (!isWebDav) provider.saveConfig(provider.config.copyWith(syncType: SyncType.webdav));
+                    }),
+                    _buildSwitchLabel('S3 存储', !isWebDav, activeTextColor, inactiveTextColor, () {
+                      if (isWebDav) provider.saveConfig(provider.config.copyWith(syncType: SyncType.s3));
+                    }),
+                  ],
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
   }
 
-  Widget _buildTips(Color textColor, bool isMidnight) {
+  Widget _buildSwitchLabel(String text, bool isActive, Color activeColor, Color inactiveColor, VoidCallback onTap) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque, 
+        child: Center(
+          child: AnimatedDefaultTextStyle(
+            duration: const Duration(milliseconds: 200),
+            style: GoogleFonts.notoSerifSc(
+              color: isActive ? activeColor : inactiveColor,
+              fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+              fontSize: 14,
+            ),
+            child: Text(text),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTips(Color textColor, bool isMidnight, SyncType syncType) {
+    String tips;
+    if (syncType == SyncType.webdav) {
+      tips = '1. 推荐使用坚果云 WebDAV 服务。\n'
+           '2. 坚果云服务器地址通常为：https://dav.jianguoyun.com/dav/ \n'
+           '3. 密码必须使用坚果云生成的"第三方应用密码"，不可使用登录密码。\n'
+           '4. 同步策略：本地和云端双向合并，默认保留最新的修改。';
+    } else {
+      tips = '1. 支持 MinIO, AWS S3, 阿里云 OSS 等兼容 S3 的对象存储。\n'
+           '2. Endpoint 为 API 域名 (例如 play.min.io)，Bucket 需提前创建。\n'
+           '3. 请确保 Access Key 和 Secret Key 拥有该 Bucket 的读写权限。\n'
+           '4. 开启"图片压缩"可显著节省存储空间和流量。';
+    }
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -718,10 +780,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
           ),
           const SizedBox(height: 8),
           Text(
-            '1. 推荐使用坚果云 WebDAV 服务。\n'
-            '2. 坚果云服务器地址通常为：https://dav.jianguoyun.com/dav/ \n'
-            '3. 密码必须使用坚果云生成的"第三方应用密码"，不可使用登录密码。\n'
-            '4. 同步策略：本地和云端双向合并，默认保留最新的修改。',
+            tips,
             style: GoogleFonts.notoSerifSc(
               color: textColor.withOpacity(0.7),
               fontSize: 12,
