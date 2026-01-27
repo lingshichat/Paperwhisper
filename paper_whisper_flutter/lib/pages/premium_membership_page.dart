@@ -78,10 +78,8 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage> with Tick
       
       SkeuomorphicToast.success(context, "诚信激活成功！\n感谢您的支持与信任");
       
-      // Auto-hide celebration after 5 seconds
-      Future.delayed(const Duration(seconds: 5), () {
-        if (mounted) setState(() => _showCelebration = false);
-      });
+      // 花瓣雨持续飘落，直到用户退出页面
+      // (不再自动隐藏，退出页面时 dispose 会自动清理)
     }
   }
 
@@ -310,7 +308,7 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage> with Tick
                           ),
                           const SizedBox(height: 24),
                           Text(
-                            "你好呀，这里是纸语PaperWhisper的开发者！\n\n首先，感谢你能体验我们的软件，愿意触及这个拟物风日记本子~\n\n我们相信每一位用户都是真诚的。纸语采用【诚信解锁】机制 —— 滑动到页面底部，点击「我已支付」即可永久解锁所有功能，无需任何验证。\n\n使用我们的软件，就是对我们最大的鼓励。若能支持几块钱请开发者喝杯咖啡，我们将不胜感激 ☕",
+                            "你好呀，这里是纸语PaperWhisper的开发者！\n\n首先，感谢你能体验我们的软件，愿意触及这个拟物风日记本子~\n我们致力于软件整体交互的精致与美观，在此基础上不断完善现有功能，目前已经到达了一个可用的阶段！\n\n但是随着开发成本的上涨还有应用分发模式的限制，我们需要一份能够自给自足的方式，来支持软件的开发与维护。\n所以我们处于蛮纠结的情绪下为你呈递上这份只属于纸语PaperWhisper的赞助邀请函。\n\n我们相信每一位用户都是真诚的。纸语采用【诚信解锁】机制 —— 滑动到页面底部，点击「我已支付」即可永久解锁所有功能，无需任何验证。\n\n使用我们的软件，就是对我们最大的鼓励。若能支持几块钱请开发者喝杯咖啡，我们将不胜感激 ☕",
                             style: GoogleFonts.notoSerifSc(
                               fontSize: 13,
                               color: const Color(0xFF5D4037),
