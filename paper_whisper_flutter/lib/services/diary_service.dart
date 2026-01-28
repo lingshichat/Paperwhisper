@@ -142,15 +142,28 @@ class DiaryService {
         if (file is File && file.path.endsWith('.txt')) {
           try {
             String content = await file.readAsString();
+            FileStat stat = await file.stat(); // 获取文件状态
             String filename = path.basename(file.path);
-            entries.add(DiaryEntry.fromFileContent(filename, content));
+            entries.add(DiaryEntry.fromFileContent(
+              filename, 
+              content, 
+              lastModified: stat.modified // 传入修改时间
+            ));
           } catch (e) {
             debugPrint("Error reading file ${file.path}: $e");
           }
         }
       }
-      // Sort by date desc
-      entries.sort((a, b) => b.dateString.compareTo(a.dateString));
+      // Sort by date desc, then by lastModified desc
+      entries.sort((a, b) {
+        int res = b.dateString.compareTo(a.dateString);
+        if (res != 0) return res;
+        // 日期相同，按修改时间降序 (最新的在前)
+        if (a.lastModified != null && b.lastModified != null) {
+          return b.lastModified!.compareTo(a.lastModified!);
+        }
+        return 0;
+      });
     } catch (e) {
       debugPrint("Error listing files: $e");
     }
@@ -226,7 +239,14 @@ class DiaryService {
         final entries = jsonList.map((e) => DiaryEntry.fromJson(e)).toList();
         
         // Sort by date desc (Cache should be sorted, but ensure it)
-        entries.sort((a, b) => b.dateString.compareTo(a.dateString));
+        entries.sort((a, b) {
+          int res = b.dateString.compareTo(a.dateString);
+          if (res != 0) return res;
+          if (a.lastModified != null && b.lastModified != null) {
+            return b.lastModified!.compareTo(a.lastModified!);
+          }
+          return 0;
+        });
         return entries;
       }
     } catch (e) {

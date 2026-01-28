@@ -79,7 +79,14 @@ class DiaryProvider with ChangeNotifier {
       final fileEntries = await _service.getEntries();
       
       // Sort Descending
-      fileEntries.sort((a, b) => b.dateString.compareTo(a.dateString));
+      fileEntries.sort((a, b) {
+        int res = b.dateString.compareTo(a.dateString);
+        if (res != 0) return res;
+        if (a.lastModified != null && b.lastModified != null) {
+          return b.lastModified!.compareTo(a.lastModified!);
+        }
+        return 0;
+      });
       
       // 3. 更新内存 (Diff check could be optimized, but for now just replace)
       _entries = fileEntries;

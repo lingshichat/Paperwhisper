@@ -11,6 +11,7 @@ class DiaryEntry {
   MoodType mood;
   String content;
   bool isMarkdown;
+  DateTime? lastModified; // 新增：记录最后修改时间用于排序
 
   DiaryEntry({
     required this.filename,
@@ -20,10 +21,11 @@ class DiaryEntry {
     this.mood = MoodType.calm,
     this.content = '',
     this.isMarkdown = false,
+    this.lastModified,
   });
 
   // 从文件内容解析
-  factory DiaryEntry.fromFileContent(String filename, String rawContent) {
+  factory DiaryEntry.fromFileContent(String filename, String rawContent, {DateTime? lastModified}) {
     List<String> lines = rawContent.split('\n');
     String title = '无题';
     WeatherType weather = WeatherType.sunny;
@@ -97,6 +99,7 @@ class DiaryEntry {
       mood: mood,
       content: content,
       isMarkdown: isMarkdown,
+      lastModified: lastModified,
     );
   }
 
@@ -144,6 +147,7 @@ class DiaryEntry {
       'mood': _moodToString(mood),
       'content': content,
       'isMarkdown': isMarkdown,
+      'lastModified': lastModified?.toIso8601String(),
     };
   }
 
@@ -156,6 +160,7 @@ class DiaryEntry {
       mood: _parseMood(json['mood'] ?? ''),
       content: json['content'] ?? '',
       isMarkdown: json['isMarkdown'] ?? false,
+      lastModified: json['lastModified'] != null ? DateTime.tryParse(json['lastModified']) : null,
     );
   }
 }
