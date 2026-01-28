@@ -202,11 +202,9 @@ class _PetalRainWidgetState extends State<PetalRainWidget> with SingleTickerProv
       child: AnimatedBuilder(
         animation: _controller,
         builder: (context, child) {
-          return RepaintBoundary(
-            child: CustomPaint(
-              painter: PetalPainter(_petals, _frameId),
-              size: Size.infinite,
-            ),
+          return CustomPaint(
+            painter: PetalPainter(_petals, _frameId),
+            size: Size.infinite,
           );
         },
       ),
@@ -357,8 +355,9 @@ class _StarrySkyWidgetState extends State<StarrySkyWidget> with SingleTickerProv
   final List<HangingStar> _hangingStars = [];
   final Random _random = Random(42); 
   
-  late Ticker _ticker;
-  double _time = 0.0;
+  // 使用 AnimationController 替代 Ticker + setState
+  late AnimationController _controller;
+  int _frameId = 0; // 帧计数器，用于 shouldRepaint 优化
 
   @override
   void initState() {
@@ -396,28 +395,34 @@ class _StarrySkyWidgetState extends State<StarrySkyWidget> with SingleTickerProv
       ));
     }
 
-    // 3. 使用 Ticker 实现无缝无限循环
-    _ticker = createTicker((elapsed) {
-      setState(() {
-        // Simple linear time, no reset loop to cause jumps
-        _time = elapsed.inMilliseconds / 1000.0; 
-      });
-    });
-    _ticker.start();
+    // 3. 使用 AnimationController 实现无缝循环
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
+    )..addListener(() {
+      _frameId++; // 仅递增帧号，不调用 setState
+    })..repeat();
   }
 
   @override
   void dispose() {
-    _ticker.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return RepaintBoundary(
-      child: CustomPaint(
-        painter: StarPainter(_stars, _hangingStars, _time),
-        size: Size.infinite,
+    return IgnorePointer(
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          // 计算当前时间（秒）
+          final time = DateTime.now().millisecondsSinceEpoch / 1000.0;
+          return CustomPaint(
+            painter: StarPainter(_stars, _hangingStars, time, _frameId),
+            size: Size.infinite,
+          );
+        },
       ),
     );
   }
@@ -462,9 +467,10 @@ class HangingStar {
 class StarPainter extends CustomPainter {
   final List<Star> stars;
   final List<HangingStar> hangingStars;
-  final double time; 
+  final double time;
+  final int frameId; // 帧计数器，用于 shouldRepaint 优化
 
-  StarPainter(this.stars, this.hangingStars, this.time);
+  StarPainter(this.stars, this.hangingStars, this.time, this.frameId);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -560,5 +566,8 @@ class StarPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant StarPainter oldDelegate) => true;
+  bool shouldRepaint(covariant StarPainter oldDelegate) {
+    // 仅当帧号变化时重绘，避免无效重绘
+    return oldDelegate.frameId != frameId;
+  }
 }

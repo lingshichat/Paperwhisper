@@ -59,7 +59,6 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
   void dispose() {
     _serverController.dispose();
     _usernameController.dispose();
-    _usernameController.dispose();
     _passwordController.dispose();
     _s3EndPointController.dispose();
     _s3AccessKeyController.dispose();

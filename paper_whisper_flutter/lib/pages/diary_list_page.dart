@@ -64,6 +64,7 @@ class _DiaryListPageState extends State<DiaryListPage> with WidgetsBindingObserv
   List<Widget> _uiItems = [];
   Map<String, int> _monthTargetMap = {};
   List<int> _itemYearMap = []; // Map UI item index to Year
+  String _lastLayoutCacheKey = ''; // 布局缓存 key，避免重复计算
   
   @override
   void initState() {
@@ -700,8 +701,12 @@ class _DiaryListPageState extends State<DiaryListPage> with WidgetsBindingObserv
       rawFlatEntries = diaryProvider.flatEntries;
     }
 
-    // Generate UI Layout
-    _generateResponsiveLayout(rawFlatEntries, availableWidth, theme, diaryProvider);
+    // 布局缓存检测：仅当数据变化时才重新计算
+    final cacheKey = '${rawFlatEntries.length}_${availableWidth.toInt()}_$theme';
+    if (_lastLayoutCacheKey != cacheKey) {
+      _generateResponsiveLayout(rawFlatEntries, availableWidth, theme, diaryProvider);
+      _lastLayoutCacheKey = cacheKey;
+    }
 
     return Column(
       children: [

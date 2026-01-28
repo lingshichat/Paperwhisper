@@ -108,7 +108,8 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                    if (!isDesktop) return const SizedBox.shrink();
                    
                    try {
-                     final diaryProvider = context.watch<DiaryProvider>();
+                     // 使用 read 而非 watch：搜索栏只在用户输入时更新 Provider，不需要监听
+                     final diaryProvider = context.read<DiaryProvider>();
                      return Padding(
                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
                        child: SkeuomorphicSearchBar(
@@ -217,14 +218,16 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                            context, 
                            icon: Icons.edit_note, 
                            label: "专注书写", 
-                           onTap: () {
+                           onTap: () async {
+                              final navigator = Navigator.of(context);
                               if (context.findAncestorWidgetOfExactType<Drawer>() != null) {
-                                 Navigator.pop(context);
+                                 navigator.pop();
+                                 // 等待侧边栏关闭动画，避免路由冲突导致卡死
+                                 await Future.delayed(const Duration(milliseconds: 300));
                               }
                               
                               if (!isWriter) {
-                                Navigator.pushReplacement(
-                                    context, 
+                                navigator.pushReplacement(
                                     PageRouteBuilder(
                                       pageBuilder: (_, __, ___) => const DiaryListPage(),
                                       transitionDuration: const Duration(milliseconds: 500), 
@@ -245,14 +248,15 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                            context, 
                            icon: Icons.photo_library_outlined,
                            label: "随心记", 
-                           onTap: () {
+                           onTap: () async {
+                              final navigator = Navigator.of(context);
                               if (context.findAncestorWidgetOfExactType<Drawer>() != null) {
-                                 Navigator.pop(context);
+                                 navigator.pop();
+                                 await Future.delayed(const Duration(milliseconds: 300));
                               }
                               
                               if (!isMoments) {
-                                Navigator.pushReplacement(
-                                    context, 
+                                navigator.pushReplacement(
                                     PageRouteBuilder(
                                       pageBuilder: (_, __, ___) => const MomentsPage(),
                                       transitionDuration: const Duration(milliseconds: 500),
