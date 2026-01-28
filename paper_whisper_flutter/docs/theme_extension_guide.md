@@ -44,18 +44,26 @@
 - **标题阴影**：检查 `titleShadow` 的定义。
 - **底部弹窗样式**：检查 `_buildSkeuomorphicBottomSheet()` 和相关方法。
 - **开关颜色**：通常由 `AppTheme.getSettingsTheme()` 统一管理。
+- **主题名称显示**：检查 `_getThemeName()` 方法，确保添加了新主题的中文名称，否则会显示默认值（如"复古纸张"）。
+- **状态栏适配**：检查 `AppBar` 是否设置了 `systemOverlayStyle: AppTheme.getSystemUiOverlayStyle(theme)`。
 
 ### 2.4 数据同步页面 (`lib/pages/sync_settings_page.dart`)
 
 - **按钮样式**：检查 `_buildButton()` 方法中的 `isAfterRain` 等判断。
 - **输入框样式**：检查 `_buildTextField()` 方法。
 - **加载进度条**：检查 `LinearProgressIndicator` 的 `color` 属性。
+- **状态栏适配**：检查 `AppBar` 是否设置了 `systemOverlayStyle: AppTheme.getSystemUiOverlayStyle(theme)`。
 
 ### 2.5 书架目录页面 (`lib/pages/book_directory_page.dart`)
 
 - **标题颜色**：检查 `appBarColor` 的判断逻辑，确保浅色主题使用深色标题。
 
-### 2.6 专注写作页面 (`lib/pages/focus_writing_page.dart`)
+### 2.6 回收站页面 (`lib/pages/trash_page.dart`)
+
+- **列表项颜色**：检查 `_buildTrashItem()` 中对不同主题的卡片颜色和文字颜色适配。
+- **状态栏适配**：检查 `AppBar` 是否设置了 `systemOverlayStyle: AppTheme.getSystemUiOverlayStyle(theme)`。
+
+### 2.7 专注写作页面 (`lib/pages/focus_writing_page.dart`)
 
 - **遮罩透明度**：检查 Scrim 的颜色和透明度设置。
 

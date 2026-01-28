@@ -183,6 +183,7 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
           ),
         ),
         backgroundColor: Colors.transparent,
+        systemOverlayStyle: AppTheme.getSystemUiOverlayStyle(theme),
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
@@ -888,6 +889,7 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
       case AppTheme.themeSeaFlower: return '海底花海';
       case AppTheme.themeMidnight: return '午夜星尘';
       case AppTheme.themeAmberLens: return '琥珀光圈';
+      case AppTheme.themeAfterRain: return '雨后天空';
       default: return '复古纸张';
     }
   }

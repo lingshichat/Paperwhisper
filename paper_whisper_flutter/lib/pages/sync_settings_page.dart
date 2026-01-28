@@ -211,6 +211,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
             ),
             backgroundColor: Colors.transparent,
             elevation: 0,
+            systemOverlayStyle: AppTheme.getSystemUiOverlayStyle(theme),
             iconTheme: IconThemeData(color: titleColor),
             centerTitle: true,
             leading: IconButton(

@@ -177,6 +177,7 @@ class _TrashPageState extends State<TrashPage> {
             ),
             backgroundColor: Colors.transparent,
             elevation: 0,
+            systemOverlayStyle: AppTheme.getSystemUiOverlayStyle(theme),
             leading: IconButton(
               icon: Icon(Icons.arrow_back_ios_new, color: iconColor),
               onPressed: () => Navigator.pop(context),
