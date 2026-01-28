@@ -61,6 +61,7 @@ dependencies:
   crypto: ^3.0.7
   lottie: ^3.3.2
   minio: ^3.5.8
+  gal: ^2.3.2
 
 dependency_overrides:
   record_linux: ^1.2.0
@@ -110,6 +111,7 @@ flutter:
     - assets/icon.png
     - assets/textures/
     - assets/illustrations/
+    - assets/images/
     - assets/version.json
 
   # An image asset can refer to one or more resolution-specific "variants", see

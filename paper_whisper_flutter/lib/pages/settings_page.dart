@@ -40,7 +40,7 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
   bool _hasInternalClutter = false;
   
   // Pro Status
-  bool _isPro = false;
+  bool _isSponsor = false;
   
   // Permission State
   Map<String, PermissionStatus> _permStatuses = {};
@@ -66,7 +66,7 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
     if (state == AppLifecycleState.resumed) {
        _checkAllPermissions();
        setState(() {
-          _isPro = Provider.of<PaymentService>(context, listen: false).isPro;
+          _isSponsor = Provider.of<PaymentService>(context, listen: false).isSponsor;
        });
     }
   }
@@ -225,9 +225,9 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
                builder: (ctx, pay, _) {
                  return _buildSettingsItem(
                     context: context,
-                    icon: pay.isPro ? Icons.verified : Icons.card_membership,
-                    title: pay.isPro ? '尊享会员' : '赞助支持',
-                    subtitle: pay.isPro ? '已激活 - 感谢您的支持' : '支持我们的开发和运营QAQ',
+                    icon: pay.isSponsor ? Icons.favorite : Icons.coffee,
+                    title: pay.isSponsor ? '特别支持者' : '支持开发者',
+                    subtitle: pay.isSponsor ? '已点亮勋章 - 感谢有你' : '用爱发电，请我喝杯咖啡',
                     isSeaFlower: isSeaFlower,
                     isMidnight: isMidnight,
                     textColor: textColor,
