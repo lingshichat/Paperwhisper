@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:ui' as ui;
+import 'package:image/image.dart' as img; // Added for splitting
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -493,41 +494,21 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                  ],
                ),
 
-             // Export View (Hidden overlay for screenshot generation)
+             // Export View (Multi-Chunk)
              if (_isCaptureMode)
                Positioned.fill(
                  child: Container(
                    decoration: AppTheme.getBackground(theme),
                    child: SingleChildScrollView(
                      child: Center(
-                       child: RepaintBoundary(
-                         key: _sheetKey,
-                         child: PaperSheetWidget(
-                           padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 40),
-                           child: Column(
-                             mainAxisSize: MainAxisSize.min,
-                             crossAxisAlignment: CrossAxisAlignment.stretch,
-                             children: [
-                                _buildHeader(textColor, secondaryColor),
-                                const SizedBox(height: 30),
-                                Center(
-                                  child: Container(
-                                    width: 60,
-                                    height: 2,
-                                    color: (AppTheme.getEditorTheme(theme).isNotEmpty ? AppTheme.getEditorTheme(theme)['cursorColor'] : (theme == AppTheme.themeSeaFlower
-                                        ? const Color(0xFFEC407A)
-                                        : (theme == AppTheme.themeAfterRain ? const Color(0xFF0288D1) : (theme == AppTheme.themeAmberLens ? const Color(0xFFFF9800) : (theme == AppTheme.themeMidnight ? const Color(0xFF7986cb) : const Color(0xFFC0392B)))))).withValues(alpha: 0.5),
-                                  ),
-                                ),
-                                const SizedBox(height: 30),
-                                // Force standard text rendering for export
-                                _buildContentArea(textColor, theme),
-                                const SizedBox(height: 60),
-                                _buildBrandingFooter(secondaryColor),
-                             ],
-                           ),
-                         ),
-                       ),
+                        child: Container(
+                          width: 700, 
+                          padding: const EdgeInsets.symmetric(vertical: 20),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: _buildExportChunks(textColor, secondaryColor, theme),
+                          ),
+                        ),
                      ),
                    ),
                  ),
@@ -814,6 +795,39 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     return barContent;
   }
 
+  /// Export-specific header - uses pure Text widgets to avoid
+  /// TextField, DropdownButton, PopupMenuButton artifacts in exported images.
+  Widget _buildExportHeader(Color textColor, Color secondaryColor) {
+    return Column(
+      children: [
+         // Title (always Text, never TextField)
+         Text(
+           _titleController.text.isEmpty ? '无题' : _titleController.text,
+           style: GoogleFonts.notoSerifSc(
+              fontSize: 36, 
+              fontWeight: FontWeight.bold, 
+              color: textColor
+           ),
+           textAlign: TextAlign.center,
+         ),
+         
+         const SizedBox(height: 15),
+         // Meta (all Text, no interactive elements)
+         Row(
+           mainAxisAlignment: MainAxisAlignment.center,
+           crossAxisAlignment: CrossAxisAlignment.center,
+           children: [
+              Text(_currentDateStr, style: _metaStyle(secondaryColor)),
+              _metaSeparator(secondaryColor),
+              Text(_weather.name.toUpperCase(), style: _metaStyle(secondaryColor)),
+              _metaSeparator(secondaryColor),
+              Text(_mood.name.toUpperCase(), style: _metaStyle(secondaryColor)),
+           ],
+         )
+      ],
+    );
+  }
+
   Widget _buildHeader(Color textColor, Color secondaryColor) {
     // Need theme context here for cursor color check
     final theme = Provider.of<SettingsProvider>(context).currentTheme;
@@ -952,6 +966,46 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
       ),
     );
   }
+  
+  /// Dedicated export content builder - uses pure Text widget to avoid
+  /// TextField selection handles, IME overlays, and other interactive artifacts.
+  Widget _buildExportContentArea(Color textColor, String theme) {
+    const double fontSize = 18.0;
+    const double lineHeight = 32.0;
+    
+    final bool hideLines = Provider.of<SettingsProvider>(context).compatibilityMode;
+    final themeConfig = AppTheme.getEditorTheme(theme);
+    
+    return CustomPaint(
+      foregroundPainter: LinedPaperPainter(
+         lineColor: hideLines ? Colors.transparent : (themeConfig.isNotEmpty ? themeConfig['lineColor'] : (theme == AppTheme.themeMidnight
+            ? Colors.white.withValues(alpha: 0.08)
+            : (theme == AppTheme.themeAfterRain ? const Color(0xFF9999BF).withOpacity(0.2) : (theme == AppTheme.themeAmberLens ? const Color(0x1FFFFFFF) : const Color(0xFF5D4037).withValues(alpha: 0.12))))),
+         lineHeight: lineHeight,
+      ),
+      child: Container(
+        padding: const EdgeInsets.only(top: 0),
+        constraints: const BoxConstraints(minHeight: 300),
+        // ALWAYS use Text for export (never TextField)
+        child: Text(
+          _isPreviewMode ? _previewController.text : _contentController.text,
+          style: GoogleFonts.notoSerifSc(
+             fontSize: fontSize,
+             color: textColor,
+             height: lineHeight / fontSize,
+          ),
+          strutStyle: StrutStyle(
+            fontFamily: GoogleFonts.notoSerifSc().fontFamily,
+            fontSize: fontSize,
+            height: (lineHeight / fontSize),
+            leading: 0,
+            forceStrutHeight: true,
+            leadingDistribution: TextLeadingDistribution.even,
+          ),
+        ),
+      ),
+    );
+  }
 
   // Helpers
   TextStyle _metaStyle(Color color) => GoogleFonts.courierPrime(fontSize: 14, color: color);
@@ -1048,77 +1102,134 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   }
 
   // Export Logic
-  final GlobalKey _sheetKey = GlobalKey();
+  List<GlobalKey> _exportKeys = [];
 
   Future<void> _captureAndSave() async {
      try {
+       // 1. Prepare Data & Keys
+       final String fullText = _isEditing 
+           ? _contentController.text 
+           : (_isPreviewMode ? _previewController.text : _contentController.text); // Should use full content for export!
+       
+       // Note: If in preview mode, _contentController might be full text (if we didn't clear it). 
+       // But _previewController is truncated. 
+       // We should ALWAYS use _contentController.text for export unless it's empty/sync issue.
+       // Actually `_contentController` holds the full text. `_previewController` is just for display.
+       final String textToExport = _contentController.text;
+       
+       final List<String> lines = textToExport.split('\n');
+       if (lines.isEmpty) lines.add('');
+       
+       const int linesPerChunk = 40; // 40 lines * 32px = 1280px height (plus padding) -> Safe
+       int textChunkCount = (lines.length / linesPerChunk).ceil();
+       if (textChunkCount == 0) textChunkCount = 1;
+
+       // Chunks: 1 Header + N Body + 1 Footer
+       int totalChunks = 1 + textChunkCount + 1;
+       
+       _exportKeys = List.generate(totalChunks, (_) => GlobalKey());
+
        setState(() => _isCaptureMode = true);
        
-       // Wait for build and layout
-       await Future.delayed(const Duration(milliseconds: 500)); // Give it enough time to perform full layout
+       // 2. Preload fonts
+       await GoogleFonts.pendingFonts([
+         GoogleFonts.notoSerifSc(),
+         GoogleFonts.courierPrime(),
+       ]);
+       
+       // 3. Wait for Layout
+       await Future.delayed(const Duration(milliseconds: 800)); 
 
-       RenderRepaintBoundary? boundary = _sheetKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
-       if (boundary == null) {
-          setState(() => _isCaptureMode = false);
-          SkeuomorphicToast.error(context, '生成失败: 无法获取视图');
-          return;
+       // 4. Capture All Chunks
+       List<img.Image> capturedImages = [];
+       double totalHeight = 0;
+       double maxWidth = 0;
+
+       for (int i = 0; i < totalChunks; i++) {
+          GlobalKey key = _exportKeys[i];
+          RenderRepaintBoundary? boundary = key.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+          if (boundary == null) continue;
+
+          // Use pixelRatio 2.0 or 3.0 depending on need. 2.0 is usually enough for reading, 3.0 is crisp.
+          // Since we split, we can afford 3.0 easily.
+          double pixelRatio = 3.0; 
+          ui.Image image = await boundary.toImage(pixelRatio: pixelRatio);
+          
+          var byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+          if (byteData == null) continue;
+          
+          var pngBytes = byteData.buffer.asUint8List();
+          img.Image? decoded = img.decodePng(pngBytes);
+          
+          if (decoded != null) {
+            capturedImages.add(decoded);
+            totalHeight += decoded.height;
+            if (decoded.width > maxWidth) maxWidth = decoded.width.toDouble();
+          }
        }
 
-       // ... Capture logic
+       if (capturedImages.isEmpty) {
+          throw Exception("No content captured");
+       }
+
+       // 5. Stitch
+       // Create canvas
+       img.Image stitchCanvas = img.Image(width: maxWidth.toInt(), height: totalHeight.toInt());
        
-       ui.Image image = await boundary.toImage(pixelRatio: 3.0);
-       var byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-       var pngBytes = byteData!.buffer.asUint8List();
+       // Fill background (Optional, but images should normally cover it. 
+       // If there are gaps/transparency, we might want a base color.)
+       // But our chunks should include the paper color.
+       
+       int currentY = 0;
+       for (var imgPart in capturedImages) {
+          img.compositeImage(stitchCanvas, imgPart, dstX: 0, dstY: currentY);
+          currentY += imgPart.height;
+       }
 
-       // Exit capture mode immediately after capture
-       setState(() => _isCaptureMode = false);
-
+       // 6. Save
        final directory = await getApplicationDocumentsDirectory(); 
        String exportPath;
-      
        if (Platform.isAndroid) {
-        if (await Permission.manageExternalStorage.isGranted) {
-           // Change to standard Pictures directory for Gallery visibility
-           exportPath = '/storage/emulated/0/Pictures/PaperWhisper';
-        } else {
-           // Fallback to app specific external dir or standard docs
-           final extDir = await getExternalStorageDirectory();
-           // extDir is Android/data/.../files
-           // Let's use a nice subfolder
-           if (extDir != null) {
-              exportPath = path.join(extDir.path, 'Exports');
-           } else {
-              exportPath = path.join(directory.path, 'Exports');
-           }
-        }
-      } else {
-        exportPath = path.join(directory.path, 'PaperWhisper_Exports');
-      }
-      
-      final exportDir = Directory(exportPath);
-      if (!await exportDir.exists()) {
-        try {
-          await exportDir.create(recursive: true);
-        } catch (e) {
-           // Final fallback
-           final recoverDir = await getApplicationDocumentsDirectory();
-           exportPath = path.join(recoverDir.path, 'Exports');
-           await Directory(exportPath).create(recursive: true);
-        }
-      }
+          if (await Permission.manageExternalStorage.isGranted) {
+             exportPath = '/storage/emulated/0/Pictures/PaperWhisper';
+          } else {
+             final extDir = await getExternalStorageDirectory();
+             exportPath = path.join(extDir?.path ?? directory.path, 'Exports');
+          }
+       } else {
+          exportPath = path.join(directory.path, 'PaperWhisper_Exports');
+       }
        
-       String fileName = 'diary_${widget.entry?.filename ?? "new"}_${DateTime.now().millisecondsSinceEpoch}.png';
+       final exportDir = Directory(exportPath);
+       if (!await exportDir.exists()) {
+           try { await exportDir.create(recursive: true); } catch (_) {}
+       }
+
+       // Save as single large image (stitched)
+       // Or if user wants to split for sharing? The specific requirements was to fix "garbled first image".
+       // Stitched image might still be huge (height > 10000). 
+       // JPG handles large dimensions better than PNG implementation in some viewers?
+       // Let's stick to the request: "Fix garbled image". Stitching solves the rendering artifact.
+       // We can offer split *after* stitching if it's super huge? 
+       // But for now, let's output the stitched file.
+       
+       String fileName = 'diary_${widget.entry?.filename ?? "new"}_${DateTime.now().millisecondsSinceEpoch}.jpg';
        final file = File(path.join(exportDir.path, fileName));
-       await file.writeAsBytes(pngBytes);
+       
+       // Encode to JPG (Quality 90)
+       await file.writeAsBytes(img.encodeJpg(stitchCanvas, quality: 90));
        
        if (mounted) {
           await showExportSuccessDialog(context, file.path);
        }
+
      } catch (e) {
-       setState(() => _isCaptureMode = false); // Ensure reset
+       debugPrint("Export error: $e");
        if (mounted) {
          SkeuomorphicToast.error(context, '导出失败: $e');
        }
+     } finally {
+       if (mounted) setState(() => _isCaptureMode = false);
      }
   }
 
@@ -1238,6 +1349,238 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   Widget _buildFooter(Color textColor, Color secondaryColor) {
      return const SizedBox(height: 100); // Bottom padding for comfortable scrolling
   }
+
+  List<Widget> _buildExportChunks(Color textColor, Color secondaryColor, String theme) {
+      if (_exportKeys.isEmpty) return [];
+
+      List<Widget> chunks = [];
+      int keyIndex = 0;
+      
+      // Theme colors for manual styling
+      final bool isSeaFlower = theme == AppTheme.themeSeaFlower;
+      final Color paperColor = isSeaFlower 
+          ? Colors.white.withValues(alpha: 0.95) // Opaque for export
+          : AppTheme.getPaperColor(theme);
+
+      // Border Logic (Flat, no shadow for seamless stitching)
+      // We will draw a continuous border: Top has top-border, Body has side-borders, Footer has bottom-border.
+      // Actually, standard Recourse usually just has the paper color. 
+      // Let's keep it simple: Flat color, no border stroke if possible to avoid alignment issues, or ensure border is handled.
+      // Setting a border on each chunk might double the border width at the seam? 
+      // No, Body top/bottom has no border.
+      
+      final Color borderColor;
+      if (isSeaFlower) {
+         borderColor = Colors.pink.withValues(alpha: 0.1);
+      } else if (theme == AppTheme.themeMidnight) {
+         borderColor = const Color(0xFF30363d);
+      } else if (theme == AppTheme.themeAmberLens) {
+         borderColor = const Color(0xFFFF9800);
+      } else if (theme == AppTheme.themeAfterRain) {
+         borderColor = const Color(0x339999BF);
+      } else {
+         borderColor = const Color(0xFFC0392B); // Red top for default, but sidebar? Default has no sidebar usually?
+         // PaperSheetWidget default theme has top border only.
+      }
+      
+      // Default theme special case: Top border only.
+      final bool isDefaultTheme = theme != AppTheme.themeSeaFlower && 
+                                  theme != AppTheme.themeMidnight && 
+                                  theme != AppTheme.themeAmberLens && 
+                                  theme != AppTheme.themeAfterRain;
+
+      // --- Chunk 1: Header ---
+      if (keyIndex < _exportKeys.length) {
+         chunks.add(
+           RepaintBoundary(
+             key: _exportKeys[keyIndex++],
+             child: Container(
+               width: 700,
+               decoration: BoxDecoration(
+                 color: paperColor,
+                 borderRadius: const BorderRadius.vertical(top: Radius.circular(0)), // Flat top for long image look? Or rounded? User said "Top space too much", maybe they want a full-bleed look? Let's keep slight rounding or square. Square is safer for 'Long Image'. Let's go SQUARE for max seamlessness, as standard screenshot.
+                 // Actually, let's stick to standard paper look -> Rounded Top.
+                 // But wait, user complains about "Upper part empty space".
+                 // Let's reduce padding significantly.
+               ),
+               // Padding handled inside
+               child: Stack(
+                 children: [
+                    Padding(
+                       // REDUCED PADDING: Top 20 -> 10 or 20? 
+                       // Was 40. Let's try 30.
+                       // User feedback: "Too squeezed". Reverting/Increasing to 60 to match preview feel.
+                       padding: const EdgeInsets.only(left: 60, right: 60, top: 60, bottom: 0),
+                       child: Column(
+                         mainAxisSize: MainAxisSize.min,
+                         children: [
+                           // Default Theme Red Line
+                           if (isDefaultTheme)
+                             Container(
+                               height: 8,
+                               width: 80, // Center little mark? Or full top? PaperSheet implies full top border.
+                               // PaperSheetWith default: border: Border(top: BorderSide(color: Color(0xFFC0392B), width: 8));
+                               // We can just add a colored Line at the very top.
+                               margin: const EdgeInsets.only(bottom: 20),
+                               color: const Color(0xFFC0392B),
+                             ),
+
+                           _buildExportHeader(textColor, secondaryColor),
+                           const SizedBox(height: 20), // Reduced from 30
+                           Center(
+                              child: Container(
+                                width: 60,
+                                height: 2,
+                                color: (AppTheme.getEditorTheme(theme).isNotEmpty ? AppTheme.getEditorTheme(theme)['cursorColor'] : (theme == AppTheme.themeSeaFlower
+                                    ? const Color(0xFFEC407A)
+                                    : (theme == AppTheme.themeAfterRain ? const Color(0xFF0288D1) : (theme == AppTheme.themeAmberLens ? const Color(0xFFFF9800) : (theme == AppTheme.themeMidnight ? const Color(0xFF7986cb) : const Color(0xFFC0392B)))))).withValues(alpha: 0.5),
+                              ),
+                           ),
+                           const SizedBox(height: 30), // Spacing between line and text
+                         ],
+                       ),
+                    ),
+                    // Ribbon (Only on Header)
+                    Positioned(
+                        right: 40,
+                        top: -8,
+                        child: _buildRibbonForExport(theme),
+                    ),
+                 ],
+               ),
+             ),
+           )
+         );
+      }
+
+      // --- Body Chunks ---
+      final String fullText = _isEditing 
+          ? _contentController.text 
+          : (_isPreviewMode ? _previewController.text : _contentController.text);
+      final String textToExport = _contentController.text;
+      
+      final List<String> lines = textToExport.split('\n');
+      if (lines.isEmpty) lines.add('');
+      
+      const int linesPerChunk = 40;
+      
+      for (int i = 0; i < lines.length; i += linesPerChunk) {
+          int end = (i + linesPerChunk < lines.length) ? i + linesPerChunk : lines.length;
+          List<String> chunkLines = lines.sublist(i, end);
+          String chunkText = chunkLines.join('\n');
+          
+          if (keyIndex < _exportKeys.length) {
+             chunks.add(
+               RepaintBoundary(
+                 key: _exportKeys[keyIndex++],
+                 child: Container(
+                       width: 700,
+                       decoration: BoxDecoration(
+                         color: paperColor,
+                         borderRadius: BorderRadius.zero, // Square for seamless stitch
+                       ),
+                       padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 0), 
+                       child: _buildExportChunkText(chunkText, textColor, theme),
+                 ),
+               )
+             );
+          }
+      }
+
+      // --- Chunk Last: Footer ---
+      if (keyIndex < _exportKeys.length) {
+         chunks.add(
+           RepaintBoundary(
+             key: _exportKeys[keyIndex++],
+             child: Container(
+                width: 700,
+                decoration: BoxDecoration(
+                   color: paperColor,
+                   // Rounded Bottom?
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 0),
+                child: Column(
+                 mainAxisSize: MainAxisSize.min,
+                 children: [
+                   // Add a bit of lined paper to fill the gap if last chunk was short?
+                   // No, simply finish.
+                   const SizedBox(height: 20),
+                   _buildBrandingFooter(secondaryColor),
+                   const SizedBox(height: 40), // Bottom Padding
+                 ],
+               ),
+             ),
+           )
+         );
+      }
+
+      return chunks;
+  }
+
+  Widget _buildRibbonForExport(String theme) {
+      final bool isSeaFlower = theme == AppTheme.themeSeaFlower;
+      final Color accentColor;
+      if (isSeaFlower) {
+        accentColor = const Color(0xFFEC407A); 
+      } else if (theme == AppTheme.themeMidnight) {
+        accentColor = const Color(0xFF7986cb); 
+      } else if (theme == AppTheme.themeAmberLens) {
+        accentColor = const Color(0xFFFF9800); 
+      } else if (theme == AppTheme.themeAfterRain) {
+        accentColor = const Color(0xFF29B6F6); 
+      } else {
+        accentColor = const Color(0xFFC0392B); 
+      }
+      
+      // Use the RibbonPainter logic locally or extract?
+      // Since _RibbonPainter is private in paper_sheet_widget.dart, we can't use it directly unless we make it public.
+      // For now, I'll essentially replicate the visual simply using a path or Icon? 
+      // But user wants "SKEUOMORPHIC". 
+      // The easiest way is to use `PaperSheetWidget`'s ribbon? No, it's coupled.
+      // Let's just create a simple ribbon shape here.
+      
+      return CustomPaint(
+         size: const Size(50, 90),
+         painter: _ExportRibbonPainter(color: accentColor),
+      );
+  }
+
+  Widget _buildExportChunkText(String text, Color textColor, String theme) {
+      const double fontSize = 18.0;
+      const double lineHeight = 32.0;
+      final bool hideLines = Provider.of<SettingsProvider>(context).compatibilityMode;
+      final themeConfig = AppTheme.getEditorTheme(theme);
+
+      return CustomPaint(
+        foregroundPainter: LinedPaperPainter(
+           lineColor: hideLines ? Colors.transparent : (themeConfig.isNotEmpty ? themeConfig['lineColor'] : (theme == AppTheme.themeMidnight
+              ? Colors.white.withValues(alpha: 0.08)
+              : (theme == AppTheme.themeAfterRain ? const Color(0xFF9999BF).withOpacity(0.2) : (theme == AppTheme.themeAmberLens ? const Color(0x1FFFFFFF) : const Color(0xFF5D4037).withValues(alpha: 0.12))))),
+           lineHeight: lineHeight,
+        ),
+        child: Container(
+          // Ensure width constraint match
+          width: double.infinity, 
+          padding: EdgeInsets.zero,
+          child: Text(
+            text,
+            style: GoogleFonts.notoSerifSc(
+               fontSize: fontSize,
+               color: textColor,
+               height: lineHeight / fontSize,
+            ),
+            strutStyle: StrutStyle(
+              fontFamily: GoogleFonts.notoSerifSc().fontFamily,
+              fontSize: fontSize,
+              height: (lineHeight / fontSize),
+              leading: 0,
+              forceStrutHeight: true,
+              leadingDistribution: TextLeadingDistribution.even,
+            ),
+          ),
+        ),
+      );
+  }
 }
 
 
@@ -1262,6 +1605,49 @@ class LinedPaperPainter extends CustomPainter {
     }
   }
   
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _ExportRibbonPainter extends CustomPainter {
+  final Color color;
+  _ExportRibbonPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const double ribbonWidth = 40;
+    const double ribbonHeight = 80;
+    const double offsetX = 5; 
+    const double offsetY = 0;
+    
+    // Shadow
+    final ribbonPath = Path();
+    ribbonPath.moveTo(offsetX, offsetY);
+    ribbonPath.lineTo(offsetX + ribbonWidth, offsetY);
+    ribbonPath.lineTo(offsetX + ribbonWidth, offsetY + ribbonHeight);
+    ribbonPath.lineTo(offsetX + ribbonWidth / 2, offsetY + ribbonHeight - 20);
+    ribbonPath.lineTo(offsetX, offsetY + ribbonHeight);
+    ribbonPath.close();
+    
+    canvas.save();
+    canvas.translate(2, 5); 
+    final shadowPaint = Paint()
+      ..color = Colors.black.withValues(alpha: 0.2)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4); // Lighter shadow for export
+    canvas.drawPath(ribbonPath, shadowPaint);
+    canvas.restore();
+    
+    // Body
+    final ribbonPaint = Paint()..color = color..style = PaintingStyle.fill;
+    final mainPath = Path();
+    mainPath.moveTo(offsetX, offsetY);
+    mainPath.lineTo(offsetX + ribbonWidth, offsetY);
+    mainPath.lineTo(offsetX + ribbonWidth, offsetY + ribbonHeight);
+    mainPath.lineTo(offsetX + ribbonWidth / 2, offsetY + ribbonHeight - 20);
+    mainPath.lineTo(offsetX, offsetY + ribbonHeight);
+    mainPath.close();
+    canvas.drawPath(mainPath, ribbonPaint);
+  }
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
+import 'package:image/image.dart' as img; // Added for splitting
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -81,60 +82,123 @@ class _MomentDetailPageState extends State<MomentDetailPage> with SingleTickerPr
   Future<void> _captureAndSave() async {
     try {
       setState(() => _isSaving = true);
-      await Future.delayed(const Duration(milliseconds: 50));
+      await Future.delayed(const Duration(milliseconds: 500)); 
 
-      // Save whichever side is currently "target" state (User might hit save mid-animation? Let's assume settiled)
-      // If controller.value > 0.5, we are showing back.
+      // Save whichever side is currently "target" state
       bool showBack = _controller.value >= 0.5;
       GlobalKey targetKey = showBack ? _backKey : _frontKey;
 
       RenderRepaintBoundary? boundary = targetKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
       if (boundary == null) return;
 
-      ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+      // 1. Check Dimensions
+      double pixelRatio = 3.0;
+      final double logicalHeight = boundary.size.height;
+      
+      bool offerSplit = logicalHeight > 2500;
+
+      bool doSplit = false;
+      if (offerSplit) {
+          final result = await showDialog<bool>(
+              context: context,
+              barrierDismissible: false,
+              builder: (ctx) => SkeuomorphicDialog(
+                  title: '导出选项',
+                  headerIcon: Icons.photo_library_outlined,
+                  content: const Text(
+                    '当前回忆较长，生成的图片可能会非常大。\n建议选择"切分导出"以获得最佳清晰度，\n同时也方便分享到社交平台。',
+                    textAlign: TextAlign.center,
+                  ),
+                  actions: [
+                     SkeuomorphicDialogButton(
+                        label: '坚持长图',
+                        isPrimary: false,
+                        onPressed: () => Navigator.pop(ctx, false),
+                     ),
+                     SkeuomorphicDialogButton(
+                        label: '切分导出 (推荐)',
+                        isPrimary: true,
+                        onPressed: () => Navigator.pop(ctx, true),
+                     ),
+                  ],
+              )
+          );
+          doSplit = result ?? true;
+      }
+      
+      // 2. Capture (Safe Max Dimension)
+      double maxDimension = 8000.0;
+      if (logicalHeight * pixelRatio > maxDimension) {
+         pixelRatio = maxDimension / logicalHeight;
+         if (pixelRatio < 1.0) pixelRatio = 1.0;
+      }
+
+      ui.Image image = await boundary.toImage(pixelRatio: pixelRatio);
       var byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       var pngBytes = byteData!.buffer.asUint8List();
 
       final directory = await getApplicationDocumentsDirectory();
       String exportPath;
-      
-      if (Platform.isAndroid) {
-        if (await Permission.manageExternalStorage.isGranted) {
-           // Change to standard Pictures directory for Gallery visibility
-           exportPath = '/storage/emulated/0/Pictures/PaperWhisper';
-        } else {
-           // Fallback to app specific external dir or standard docs
-           final extDir = await getExternalStorageDirectory();
-           if (extDir != null) {
-              exportPath = path.join(extDir.path, 'Exports');
-           } else {
-              exportPath = path.join(directory.path, 'Exports');
-           }
-        }
-      } else {
-        exportPath = path.join(directory.path, 'PaperWhisper_Exports');
-      }
+       if (Platform.isAndroid) {
+          if (await Permission.manageExternalStorage.isGranted) {
+             exportPath = '/storage/emulated/0/Pictures/PaperWhisper';
+          } else {
+             final extDir = await getExternalStorageDirectory();
+             exportPath = path.join(extDir?.path ?? directory.path, 'Exports');
+          }
+       } else {
+          exportPath = path.join(directory.path, 'PaperWhisper_Exports');
+       }
       
       final exportDir = Directory(exportPath);
       if (!await exportDir.exists()) {
-         try {
-           await exportDir.create(recursive: true);
-         } catch (e) {
-            // Final fallback
-            final recoverDir = await getApplicationDocumentsDirectory();
-            exportPath = path.join(recoverDir.path, 'Exports');
-            await Directory(exportPath).create(recursive: true);
-         }
+         try { await exportDir.create(recursive: true); } catch (_) {}
       }
       
       String prefix = showBack ? 'postcard' : 'polaroid';
-      String fileName = '${prefix}_${DateTime.now().millisecondsSinceEpoch}.png';
-      final file = File(path.join(exportPath, fileName));
-      await file.writeAsBytes(pngBytes);
       
-      if (mounted) {
-         await showExportSuccessDialog(context, file.path);
+      if (doSplit) {
+          // Decode
+          img.Image? src = img.decodePng(pngBytes);
+          if (src == null) throw Exception("Image decode failed");
+          
+          // 4:5 Ratio -> Height = Width * 1.25
+          int partHeight = (src.width * 1.25).toInt();
+          int y = 0;
+          int partIndex = 1;
+          List<String> files = [];
+          
+          while (y < src.height) {
+              int h = partHeight;
+              if (y + h > src.height) h = src.height - y;
+              
+              img.Image part = img.copyCrop(src, x: 0, y: y, width: src.width, height: h);
+              var jpg = img.encodeJpg(part, quality: 95);
+              
+              String fileName = '${prefix}_${DateTime.now().millisecondsSinceEpoch}_part${partIndex}.jpg';
+              final file = File(path.join(exportDir.path, fileName));
+              await file.writeAsBytes(jpg);
+              files.add(file.path);
+              
+              y += h;
+              partIndex++;
+          }
+          
+           if (mounted && files.isNotEmpty) {
+               await showExportSuccessDialog(context, files.first); 
+               SkeuomorphicToast.success(context, '已导出 ${files.length} 张图片');
+           }
+
+      } else {
+          String fileName = '${prefix}_${DateTime.now().millisecondsSinceEpoch}.png';
+          final file = File(path.join(exportDir.path, fileName));
+          await file.writeAsBytes(pngBytes);
+          
+          if (mounted) {
+             await showExportSuccessDialog(context, file.path);
+          }
       }
+
     } catch (e) {
       if (mounted) {
         SkeuomorphicToast.error(context, '保存失败: $e');
@@ -205,39 +269,44 @@ class _MomentDetailPageState extends State<MomentDetailPage> with SingleTickerPr
             ),
           ),
 
-          // 3. Floating Save Button
+          // 3. Floating Save Button (Material elevation to ensure visibility over 3D transforms)
           Positioned(
             bottom: 40,
             left: 0,
             right: 0,
             child: Center(
-              child: GestureDetector(
-                onTap: _captureAndSave,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2), 
-                    borderRadius: BorderRadius.circular(30),
-                    border: Border.all(color: Colors.white.withOpacity(0.3)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (_isSaving)
-                        const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      else
-                        const Icon(Icons.download_rounded, color: Colors.white, size: 20),
-                      const SizedBox(width: 8),
-                      Text(
-                        // Dynamic Label based on state? Or generic?
-                        "保存回忆",
-                        style: GoogleFonts.notoSerifSc(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500
+              child: Material(
+                elevation: 24, // High elevation to ensure it's above 3D perspective content
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(30),
+                child: InkWell(
+                  onTap: _captureAndSave,
+                  borderRadius: BorderRadius.circular(30),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(30),
+                      border: Border.all(color: Colors.white.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (_isSaving)
+                          const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        else
+                          const Icon(Icons.download_rounded, color: Colors.white, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          "保存回忆",
+                          style: GoogleFonts.notoSerifSc(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),

@@ -191,6 +191,10 @@ class S3SyncService implements CloudStorageService {
       await _client!.putObject(_bucketName!, key, stream, size: total);
       debugPrint('S3 Uploaded: $key');
     } catch (e) {
+      if (_isSuccess204(e)) {
+         debugPrint('S3 Upload 204 (Success): $key');
+         return;
+      }
       debugPrint('S3 Upload failed: $e');
       rethrow;
     }
@@ -222,6 +226,7 @@ class S3SyncService implements CloudStorageService {
        await sink.close();
        debugPrint('S3 Downloaded: $key');
      } catch (e) {
+       if (_isSuccess204(e)) return;
        debugPrint('S3 Download failed: $e');
        rethrow;
      }
@@ -233,6 +238,7 @@ class S3SyncService implements CloudStorageService {
     try {
       await _client!.removeObject(_bucketName!, _normalizeKey(remotePath));
     } catch (e) {
+      if (_isSuccess204(e)) return;
       debugPrint('S3 delete failed: $e');
     }
   }
@@ -250,6 +256,7 @@ class S3SyncService implements CloudStorageService {
        await _client!.removeObject(_bucketName!, srcKey);
        debugPrint('S3 Moved: $srcKey -> $destKey');
      } catch (e) {
+       if (_isSuccess204(e)) return;
        debugPrint('S3 move failed: $e');
        rethrow;
      }
@@ -281,8 +288,15 @@ class S3SyncService implements CloudStorageService {
      try {
        await _client!.putObject(_bucketName!, key, stream, size: bytes.length);
      } catch (e) {
+       if (_isSuccess204(e)) return;
        debugPrint('S3 write string failed: $e');
        rethrow;
      }
+  }
+  
+  // Helper to suppress 204 errors (Common with some S3 providers like Cloudflare R2 / MinIO)
+  bool _isSuccess204(dynamic e) {
+    final str = e.toString();
+    return str.contains("200 expected, got 204");
   }
 }

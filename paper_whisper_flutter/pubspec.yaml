@@ -63,6 +63,7 @@ dependencies:
   minio: ^3.5.8
   gal: ^2.3.2
   device_info_plus: ^12.3.0
+  image: ^4.7.2
 
 dependency_overrides:
   record_linux: ^1.2.0
