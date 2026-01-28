@@ -23,11 +23,38 @@ import 'services/trial_service.dart';
 import 'services/payment_service.dart';
 import 'widgets/lock_screen.dart';
 import 'models/diary_entry.dart';
+import 'services/analytics_service.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // 1. 初始化统计服务 (最优先)
+  final analytics = AnalyticsService();
+  // 不 await，让它后台初始化，反正 trackEvent 会自己处理未初始化的情况
+  analytics.init().then((_) {
+    analytics.trackEvent('app_launch');
+  });
+
+  // 2. 配置全局错误捕获 (Crash Reporting)
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details); // 依旧打印到控制台
+    AnalyticsService().trackEvent('app_crash', metadata: {
+      'error': details.exceptionAsString(),
+      'stack': details.stack.toString(),
+      'fatal': true,
+    });
+  };
+  
+  PlatformDispatcher.instance.onError = (error, stack) {
+    AnalyticsService().trackEvent('app_crash', metadata: {
+      'error': error.toString(),
+      'stack': stack.toString(),
+      'fatal': false,
+    });
+    return true; // 标记为已处理，防止 App 崩溃退出 (视情况而定)
+  };
   
   // 并行初始化：极限压缩启动时间
   final diaryService = DiaryService();

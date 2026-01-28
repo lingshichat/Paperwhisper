@@ -7,6 +7,7 @@ import '../services/payment_service.dart';
 import '../widgets/skeuomorphic_toast.dart';
 import '../widgets/stamp_animation.dart';
 import '../widgets/visual_effects.dart'; // PetalRainWidget
+import '../services/analytics_service.dart';
 
 class PremiumMembershipPage extends StatefulWidget {
   const PremiumMembershipPage({super.key});
@@ -30,6 +31,11 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage> {
 
     // Trigger local state update
     Provider.of<PaymentService>(context, listen: false).markAsSponsor();
+    
+    // Track Event
+    AnalyticsService().trackEvent('action_donate', metadata: {
+      'source': 'stamp_click',
+    });
 
     setState(() {
       _justStamped = true;
