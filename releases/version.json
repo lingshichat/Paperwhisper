@@ -1,10 +1,13 @@
 {
-    "latestVersion": "1.5.0",
-    "latestBuildNumber": 15,
-    "releaseDate": "2026-01-28",
-    "title": "纸语 1.5.0 —— 雨后天空",
+    "latestVersion": "1.5.1",
+    "latestBuildNumber": 16,
+    "releaseDate": "2026-01-29",
+    "title": "纸语 1.5.1 —— 雨后天空",
     "isForceUpdate": true,
     "changelog": [
+        "🛠️ 优化应用占用，放弃32位支持，应用体验更加丝滑",
+        "🛠️ 优化三方云同步逻辑",
+        "---以下为1.5.0的更新内容---",
         "🆕 新增主题：雨后天空",
         "🆕 设置新增：赞助支持",
         "🆕 数据同步上新：支持S3存储同步",

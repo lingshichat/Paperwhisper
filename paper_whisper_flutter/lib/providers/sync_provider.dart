@@ -1108,13 +1108,7 @@ class SyncProvider with ChangeNotifier {
        
        // 6. 更新 Remote Manifest
  
-       // Restore transient
-       for (var name in transientItems) {
-          final original = mergedItems[name];
-          if (original != null) {
-             newManifest.items[name] = original;
-          }
-       }
+
 
        final newManifest = service.manifestService.manifest;
        

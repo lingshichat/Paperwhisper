@@ -55,6 +55,10 @@ class UpdateInfo {
 
   /// 检查是否有备用下载链接
   bool hasBackupUrl(String platform) {
-    return backupUrl != null && backupUrl!.containsKey(platform);
+    if (backupUrl == null || !backupUrl!.containsKey(platform)) {
+      return false;
+    }
+    final url = backupUrl![platform];
+    return url != null && url.isNotEmpty;
   }
 }
