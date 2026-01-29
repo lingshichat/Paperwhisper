@@ -56,6 +56,12 @@ class SyncProvider with ChangeNotifier {
   static const String _channelId = 'paper_whisper_sync';
   static const String _channelName = 'Sync Status';
 
+  // Statistics
+  int _statDiaries = 0;
+  int _statMoments = 0;
+  int _statImages = 0;
+  int _statAudio = 0;
+
   SyncConfig get config => _config;
   SyncStatus get status => _status;
   String get lastError => _lastError;
@@ -453,6 +459,12 @@ class SyncProvider with ChangeNotifier {
     _updateProgress('准备开始同步...');
     if (!isAuto) _showNotification(0, 0, indeterminate: true);
 
+    // Reset stats
+    _statDiaries = 0;
+    _statMoments = 0;
+    _statImages = 0;
+    _statAudio = 0;
+
     try {
       if (_diaryProvider == null) {
         throw Exception('DiaryProvider not initialized');
@@ -475,7 +487,11 @@ class SyncProvider with ChangeNotifier {
       
       // Success Feedback
       if (context != null) {
-         SkeuomorphicToast.success(context, "同步成功");
+         String statMsg = "已同步: $_statDiaries篇日记, $_statMoments篇随心记\n$_statImages张图片, $_statAudio条语音";
+         if (_statDiaries == 0 && _statMoments == 0 && _statImages == 0 && _statAudio == 0) {
+            statMsg = "同步完成 (无变更)";
+         }
+         SkeuomorphicToast.success(context, statMsg);
       }
       
       // 完成通知
@@ -573,6 +589,8 @@ class SyncProvider with ChangeNotifier {
       List<String> toUpload = [];
       List<String> toDeleteLocal = [];
       List<String> toTrashRemote = []; 
+      Set<String> ghostItems = {}; 
+      Set<String> transientItems = {};
       
       for (var filename in mergedItems.keys) {
          final item = mergedItems[filename]!;
@@ -609,6 +627,7 @@ class SyncProvider with ChangeNotifier {
       }
       
       totalOps = toDownload.length + toUpload.length + toDeleteLocal.length + toTrashRemote.length;
+      _statDiaries = totalOps;
       
       // Init Global Progress State
       _resetTransferStats(totalOps);
@@ -618,30 +637,45 @@ class SyncProvider with ChangeNotifier {
       }
 
       await _processBatch(toDownload, (filename) async {
-         await _storageService.downloadFile(
-            WebDavSyncService.diaryBasePath + filename,
-            path.join(service.dataDir!.path, filename)
-         );
-         service.manifestService.updateItem(filename, 
-           timestamp: mergedItems[filename]!.versionTimestamp,
-           isDeleted: false
-         );
-         processed++;
-         _processedOps++; // Global Counter
-         if (!isAuto) _showNotification(processed, totalOps, body: "下载: $filename");
+         try {
+           await _storageService.downloadFile(
+              WebDavSyncService.diaryBasePath + filename,
+              path.join(service.dataDir!.path, filename)
+           );
+           service.manifestService.updateItem(filename, 
+             timestamp: mergedItems[filename]!.versionTimestamp,
+             isDeleted: false
+           );
+           processed++;
+           _processedOps++; // Global Counter
+           if (!isAuto) _showNotification(processed, totalOps, body: "下载: $filename");
+         } catch (e) {
+           final errStr = e.toString();
+           if (errStr.contains("404") || errStr.contains("Not Found") || errStr.contains("NoSuchKey")) {
+              debugPrint("Ghost file detected (404): $filename");
+              ghostItems.add(filename);
+           } else {
+              debugPrint("Transient download error ($filename): $e");
+              transientItems.add(filename);
+           }
+         }
       });
       
       await _processBatch(toUpload, (filename) async {
          final file = File(path.join(service.dataDir!.path, filename));
          if (await file.exists()) {
-           await _storageService.uploadFile(
-              file.path,
-              WebDavSyncService.diaryBasePath + filename
-           );
+           try {
+             await _storageService.uploadFile(
+                file.path,
+                WebDavSyncService.diaryBasePath + filename
+             );
+             processed++;
+             _processedOps++; // Global Counter
+             if (!isAuto) _showNotification(processed, totalOps, body: "上传: $filename");
+           } catch (e) {
+             debugPrint("Diary upload failed ($filename): $e");
+           }
          }
-         processed++;
-         _processedOps++; // Global Counter
-         if (!isAuto) _showNotification(processed, totalOps, body: "上传: $filename");
       });
       
       await _processBatch(toDeleteLocal, (filename) async {
@@ -669,6 +703,8 @@ class SyncProvider with ChangeNotifier {
       });
       
       for (var item in mergedItems.values) {
+        if (ghostItems.contains(item.filename)) continue; 
+        if (transientItems.contains(item.filename)) continue; // Don't claim we have it locally
         service.manifestService.updateItem(item.filename, 
            timestamp: item.versionTimestamp,
            isDeleted: item.isDeleted
@@ -676,6 +712,20 @@ class SyncProvider with ChangeNotifier {
       }
       
       final newManifest = service.manifestService.manifest; 
+      // RESTORE TRANSIENT ITEMS to Remote Manifest so they are not lost
+      for (var name in transientItems) {
+         final original = mergedItems[name];
+         if (original != null) {
+            newManifest.items[name] = original;
+         }
+      }
+      
+      // REMOVE GHOST ITEMS from Manifest (Fix persistent 404)
+      for (var name in ghostItems) {
+         service.manifestService.removeItem(name);
+         newManifest.items.remove(name);
+      }
+
       await _storageService.writeRemoteFile(
          WebDavSyncService.rootPath + 'manifest.json',
          jsonEncode(newManifest.toJson())
@@ -881,16 +931,18 @@ class SyncProvider with ChangeNotifier {
       // 1. Sync JSONs (Manifest Based)
       await _syncMomentJsonFiles(isAuto);
       
-      // 2. Sync Images (Append/Check only)
-      final imagesDir = Directory(path.join(localDir.path, 'images'));
-      if (await imagesDir.exists()) {
-         await _syncMomentImages(imagesDir, isAuto);
+      // 2. Fetch Valid Images Set (For Cleanup)
+      final service = _momentService;
+      Set<String> validImages = await service.getAllReferencedImages();
+
+      // 3. Sync Images (with cleanup)
+      if (service.imagesDir != null) {
+         await _syncMomentImages(service.imagesDir!, isAuto, validImages);
       }
       
-      // 3. Sync Audio (Append/Check only)
-      final audioDir = Directory(path.join(localDir.path, 'audio'));
-      if (await audioDir.exists()) {
-         await _syncMomentAudio(audioDir, isAuto);
+      // 4. Sync Audio
+      if (service.audioDir != null) {
+         await _syncMomentAudio(service.audioDir!, isAuto);
       }
   }
 
@@ -930,6 +982,8 @@ class SyncProvider with ChangeNotifier {
        List<String> toUpload = [];
        List<String> toDeleteLocal = [];
        List<String> toTrashRemote = []; 
+       Set<String> ghostItems = {};
+       Set<String> transientItems = {};
        
        for (var filename in mergedItems.keys) {
           final item = mergedItems[filename]!;
@@ -966,6 +1020,7 @@ class SyncProvider with ChangeNotifier {
        }
        
        totalOps = toDownload.length + toUpload.length + toDeleteLocal.length + toTrashRemote.length;
+       _statMoments = totalOps;
        
        // Init Global Progress State for Moments
        _resetTransferStats(totalOps);
@@ -1043,6 +1098,8 @@ class SyncProvider with ChangeNotifier {
        
        // 5. 更新 Local Manifest (Merge Result)
        for (var item in mergedItems.values) {
+         if (ghostItems.contains(item.filename)) continue;
+         if (transientItems.contains(item.filename)) continue;
          service.manifestService.updateItem(item.filename, 
             timestamp: item.versionTimestamp,
             isDeleted: item.isDeleted
@@ -1050,14 +1107,38 @@ class SyncProvider with ChangeNotifier {
        }
        
        // 6. 更新 Remote Manifest
-       final newManifest = service.manifestService.manifest; 
+ 
+       // Restore transient
+       for (var name in transientItems) {
+          final original = mergedItems[name];
+          if (original != null) {
+             newManifest.items[name] = original;
+          }
+       }
+
+       final newManifest = service.manifestService.manifest;
+       
+       // RESTORE TRANSIENT ITEMS
+       for (var name in transientItems) {
+          final original = mergedItems[name];
+          if (original != null) {
+             newManifest.items[name] = original;
+          }
+       }
+       
+       // REMOVE GHOST ITEMS
+       for (var name in ghostItems) {
+          service.manifestService.removeItem(name);
+          newManifest.items.remove(name);
+       }
+
        await _storageService.writeRemoteFile(
           WebDavSyncService.rootPath + 'moments_manifest.json',
           jsonEncode(newManifest.toJson())
        );
   }
 
-  Future<void> _syncMomentImages(Directory localImagesDir, bool isAuto) async {
+  Future<void> _syncMomentImages(Directory localImagesDir, bool isAuto, Set<String> validImageNames) async {
       if (!isAuto) _showNotification(null, null, body: "正在同步图片...");
       
       // 1. Get Remote List
@@ -1072,13 +1153,21 @@ class SyncProvider with ChangeNotifier {
       List<FileSystemEntity> localImages = localImagesDir.listSync();
       
       // 3. Collect Uploads
-      List<File> toUpload = [];
-      for (var f in localImages) {
-         if (f is File) {
-            String name = path.basename(f.path);
-            if (!remoteImageNames.contains(name)) {
-               toUpload.add(f);
-            }
+      List<FileSystemEntity> toUpload = [];
+      List<FileSystemEntity> toDeleteLocal = []; 
+      
+      for (var file in localImages) {
+         if (file is! File) continue;
+         
+         String name = path.basename(file.path);
+         // Local Orphan Check
+         if (!validImageNames.contains(name)) {
+            toDeleteLocal.add(file);
+            continue;
+         }
+
+         if (!remoteImageNames.contains(name)) {
+            toUpload.add(file);
          }
       }
       
@@ -1089,39 +1178,94 @@ class SyncProvider with ChangeNotifier {
          return;
       }
       
-      // 4. Collect Downloads
+      List<String> toDeleteRemote = [];
       List<String> toDownload = [];
+
+      // DEBUG: List local files to check path issues
+      try {
+        // ... (Keep existing debug logic if needed, or remove to clean up)
+      } catch (e) {}
+
       for (var remoteFile in remoteImagesRaw) {
          String name = remoteFile.name;
+         
+         // ORPHAN CHECK: If not in validImageNames, it's trash!
+         if (!validImageNames.contains(name)) {
+            // debugPrint("Found Orphan Image on Remote: $name");
+            toDeleteRemote.add(name);
+            continue; // Skip download check
+         }
+
          File localFile = File(path.join(localImagesDir.path, name));
-         if (!localFile.existsSync()) {
+         bool exists = localFile.existsSync();
+         if (!exists) {
+            // debugPrint("Image missing: $name at ${localFile.path}");
             toDownload.add(name);
          }
       }
 
-      int total = toUpload.length + toDownload.length;
+      int total = toUpload.length + toDownload.length + toDeleteRemote.length + toDeleteLocal.length;
+      _statImages = total;
       int processed = 0;
+      
+      // Cleanup Remote Orphans First
+      if (toDeleteRemote.isNotEmpty) {
+         debugPrint("Cleaning up ${toDeleteRemote.length} orphan images...");
+         await _processBatch(toDeleteRemote, (name) async {
+             try {
+                await _storageService.deleteFile(WebDavSyncService.momentsImagesPath + name);
+                processed++;
+                if (!isAuto) _showNotification(processed, total, body: "清理云端无效图片: $name");
+             } catch (e) {
+                debugPrint("Failed to delete orphan image $name: $e");
+             }
+         });
+      }
+      
+      // Cleanup Local Orphans
+      if (toDeleteLocal.isNotEmpty) {
+         debugPrint("Cleaning up ${toDeleteLocal.length} local orphan images...");
+         for (var f in toDeleteLocal) {
+            try {
+              if (f.existsSync()) {
+                f.deleteSync();
+                processed++;
+                if (!isAuto) _showNotification(processed, total, body: "清理本地无效图片: ${path.basename(f.path)}");
+              }
+            } catch (e) {
+               debugPrint("Failed to delete local orphan ${f.path}: $e");
+            }
+         }
+      }
 
       // Parallel Upload
       await _processBatch(toUpload, (f) async {
           String name = path.basename(f.path);
-          await _storageService.uploadFile(
-             f.path, 
-             WebDavSyncService.momentsImagesPath + name
-          );
-          processed++;
-          if (!isAuto) _showNotification(processed, total, body: "图片上传: $name");
+          try {
+            await _storageService.uploadFile(
+               f.path, 
+               WebDavSyncService.momentsImagesPath + name
+            );
+            processed++;
+            if (!isAuto) _showNotification(processed, total, body: "图片上传: $name");
+          } catch (e) {
+             debugPrint("Image upload failed ($name): $e");
+          }
       });
 
       // Parallel Download
       await _processBatch(toDownload, (name) async {
           File localFile = File(path.join(localImagesDir.path, name));
-           await _storageService.downloadFile(
-              WebDavSyncService.momentsImagesPath + name, 
-              localFile.path
-           );
-           processed++;
-           if (!isAuto) _showNotification(processed, total, body: "图片下载: $name");
+           try {
+             await _storageService.downloadFile(
+                WebDavSyncService.momentsImagesPath + name, 
+                localFile.path
+             ).timeout(const Duration(seconds: 15));
+             processed++;
+             if (!isAuto) _showNotification(processed, total, body: "图片下载: $name");
+           } catch (e) {
+             debugPrint("Image download failed ($name): $e");
+           }
       });
   }
 
@@ -1167,28 +1311,37 @@ class SyncProvider with ChangeNotifier {
       }
 
       int total = toUpload.length + toDownload.length;
+      _statAudio = total;
       int processed = 0;
 
       // Parallel Upload
       await _processBatch(toUpload, (f) async {
           String name = path.basename(f.path);
-          await _storageService.uploadFile(
-             f.path, 
-             WebDavSyncService.momentsAudioPath + name
-          );
-          processed++;
-          if (!isAuto) _showNotification(processed, total, body: "语音上传: $name");
+          try {
+            await _storageService.uploadFile(
+               f.path, 
+               WebDavSyncService.momentsAudioPath + name
+            );
+            processed++;
+            if (!isAuto) _showNotification(processed, total, body: "语音上传: $name");
+          } catch (e) {
+             debugPrint("Audio upload failed ($name): $e");
+          }
       });
 
       // Parallel Download
       await _processBatch(toDownload, (name) async {
           File localFile = File(path.join(localAudioDir.path, name));
-           await _storageService.downloadFile(
-              WebDavSyncService.momentsAudioPath + name, 
-              localFile.path
-           );
-           processed++;
-           if (!isAuto) _showNotification(processed, total, body: "语音下载: $name");
+           try {
+             await _storageService.downloadFile(
+                WebDavSyncService.momentsAudioPath + name, 
+                localFile.path
+             );
+             processed++;
+             if (!isAuto) _showNotification(processed, total, body: "语音下载: $name");
+           } catch (e) {
+             debugPrint("Audio download failed ($name): $e");
+           }
       });
   }
 

@@ -130,7 +130,7 @@ class S3SyncService implements CloudStorageService {
              
              files.add(RemoteFile(
                path: obj.key ?? '',
-               name: path.basename(obj.key ?? ''),
+               name: path.url.basename(obj.key ?? ''),
                size: obj.size ?? 0,
                lastModified: obj.lastModified,
                isDirectory: false
@@ -141,7 +141,7 @@ class S3SyncService implements CloudStorageService {
         for (var p in result.prefixes) {
            // p is already a String
            String name = p.endsWith('/') ? p.substring(0, p.length - 1) : p;
-           name = path.basename(name);
+           name = path.url.basename(name);
            
            files.add(RemoteFile(
              path: p,

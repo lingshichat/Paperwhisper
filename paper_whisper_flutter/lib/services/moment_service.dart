@@ -17,6 +17,8 @@ class MomentService {
   // 获取数据目录路径，供 UI 显示调试用
   String get currentDataPath => _dataDir?.path ?? 'Unknown';
   Directory? get dataDir => _dataDir;
+  Directory? get imagesDir => _imagesDir;
+  Directory? get audioDir => _audioDir;
 
   void reset() {
     _dataDir = null;
@@ -132,6 +134,19 @@ class MomentService {
     }
     
     return moments;
+  }
+
+  Future<Set<String>> getAllReferencedImages() async {
+    List<Moment> moments = await getMoments();
+    Set<String> validImages = {};
+    for (var m in moments) {
+       for (var imgPath in m.images) {
+          // imgPath is relative 'images/xxx.jpg' or just 'xxx.jpg' depending on version
+          // We normalize to basename to be safe
+          validImages.add(path.basename(imgPath));
+       }
+    }
+    return validImages;
   }
 
   final ManifestService _manifestService = ManifestService();

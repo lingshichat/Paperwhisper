@@ -67,6 +67,12 @@ class ManifestService {
     save(); // Auto save
   }
 
+  void removeItem(String filename) {
+    if (_cachedManifest == null) return;
+    _cachedManifest!.items.remove(filename);
+    save();
+  }
+
   /// Ensure manifest matches disk content (Migration/Recovery)
   Future<void> ensureConsistency(Directory dataDir, {String fileExtension = '.txt'}) async {
      if (_cachedManifest == null) return;
