@@ -27,7 +27,7 @@ Write-Host "📌 当前版本: v$VERSION" -ForegroundColor Green
 # ==========================================
 Write-Host "--------------------------------------"
 Write-Host "🚀 [Android] 开始构建 APK..." -ForegroundColor Cyan
-flutter build apk --release
+flutter build apk --release --target-platform android-arm64
 
 $APK_PATH = "build\app\outputs\flutter-apk\app-release.apk"
 $APK_NAME = "paper_whisper_flutter_android_$VERSION.apk"

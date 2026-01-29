@@ -1,22 +1,24 @@
 {
-    "latestVersion": "1.4.3",
-    "latestBuildNumber": 14,
-    "releaseDate": "2026-01-23",
-    "title": "纸语 1.4.3 —— 你的人生书籍已上线",
-    "isForceUpdate": false,
+    "latestVersion": "1.5.0",
+    "latestBuildNumber": 15,
+    "releaseDate": "2026-01-28",
+    "title": "纸语 1.5.0 —— 雨后天空",
+    "isForceUpdate": true,
     "changelog": [
-        "🆕 支持自动深色模式",
-        "🛠️ 优化冷启动速度",
-        "🛠️ 修复密码锁部分文字显示异常",
-        "🛠️ 修复书籍封面无法持久化保存"
+        "🆕 新增主题：雨后天空",
+        "🆕 设置新增：赞助支持",
+        "🆕 数据同步上新：支持S3存储同步",
+        "🛠️ 优化性能问题",
+        "🛠️ 优化长图导出",
+        "🛠️ 其他优化"
     ],
     "downloadUrl": {
         "android": "https://paperwhisper.s3.bitiful.net/Android/latest.apk",
         "windows": "https://paperwhisper.s3.bitiful.net/Windows/latest.exe"
     },
     "backupUrl": {
-        "android": "https://www.123865.com/s/US1Jjv-OY9Dv",
-        "windows": "https://www.123865.com/s/US1Jjv-OY9Dv"
+        "android": "",
+        "windows": ""
     },
     "minSupportedVersion": "1.0.0"
 }
