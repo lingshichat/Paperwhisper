@@ -691,10 +691,10 @@ class SyncProvider with ChangeNotifier {
          final srcPath = WebDavSyncService.diaryBasePath + filename;
          final trashPath = WebDavSyncService.trashBasePath + filename;
          
-         await _webDavService.ensureDirectoryExists(WebDavSyncService.trashBasePath);
+         await _storageService.ensureDirectoryExists(WebDavSyncService.trashBasePath);
          
          try {
-           await _webDavService.moveFile(srcPath, trashPath);
+           await _storageService.moveFile(srcPath, trashPath);
          } catch (e) {
            debugPrint("Remote move failed (maybe file already gone): $e");
          }
@@ -1044,11 +1044,17 @@ class SyncProvider with ChangeNotifier {
               isDeleted: false
             );
             processed++;
+            _processedOps++; // Global Counter
             if (!isAuto) _showNotification(processed, totalOps, body: "随心记下载: $filename");
           } catch (e) {
-             debugPrint("Failed to download $filename: $e");
-             // Generate error toast or status but don't stop entire sync?
-             // specific 404 check could go here
+             final errStr = e.toString();
+             if (errStr.contains("404") || errStr.contains("Not Found") || errStr.contains("NoSuchKey")) {
+                debugPrint("Ghost moment file detected (404): $filename");
+                ghostItems.add(filename);
+             } else {
+                debugPrint("Transient moment download error ($filename): $e");
+                transientItems.add(filename);
+             }
           }
        });
        
@@ -1064,6 +1070,7 @@ class SyncProvider with ChangeNotifier {
                  onProgress: _onTransferProgress
               );
               processed++;
+              _processedOps++; // Global Counter
               if (!isAuto) _showNotification(processed, totalOps, body: "随心记上传: $filename");
             } catch (e) {
                debugPrint("Failed to upload $filename: $e");
@@ -1079,6 +1086,7 @@ class SyncProvider with ChangeNotifier {
              await file.delete(); 
           }
           processed++;
+          _processedOps++; // Global Counter
        });
        
        // Remote Deletes (Move to Trash)
@@ -1094,6 +1102,7 @@ class SyncProvider with ChangeNotifier {
             debugPrint("Remote moment move failed: $e");
           }
           processed++;
+          _processedOps++; // Global Counter
        });
        
        // 5. 更新 Local Manifest (Merge Result)

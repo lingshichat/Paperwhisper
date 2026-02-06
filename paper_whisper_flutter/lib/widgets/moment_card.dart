@@ -521,7 +521,12 @@ class _MomentCardState extends State<MomentCard> {
     String localPath = path.joinAll(parts);
     
     File file = File(path.join(widget.baseDir!.path, localPath));
-    return Image.file(file, fit: BoxFit.cover, errorBuilder: (_,__,___) => const SizedBox());
+    return Image.file(
+      file, 
+      fit: BoxFit.cover, 
+      cacheHeight: 750, // Optimize for list view (250dp * 3.0 pixel ratio)
+      errorBuilder: (_,__,___) => const SizedBox()
+    );
   }
 
   String _formatTime(DateTime dt) {

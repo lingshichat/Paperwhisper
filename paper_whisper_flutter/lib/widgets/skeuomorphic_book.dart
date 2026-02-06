@@ -139,6 +139,7 @@ class SkeuomorphicBook extends StatelessWidget {
             Image.file(
               File(coverImagePath!),
               fit: BoxFit.cover,
+              cacheWidth: 450, // Optimize for grid view
               errorBuilder: (ctx, err, stack) => _buildDefaultCover(context),
             )
           else
