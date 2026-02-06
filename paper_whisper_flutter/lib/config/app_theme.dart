@@ -6,6 +6,7 @@ class AppTheme {
   static const String themeDefault = 'default'; // Vintage (时光旧物)
   static const String themeAmberLens = 'amber_lens';
   static const String themeAfterRain = 'after_rain';
+  static const String themeTwilight = 'twilight'; // Twilight (黄昏之时)
 
   // --- 1. Colors (CSS Variable Mapping) ---
   
@@ -45,11 +46,38 @@ class AppTheme {
   static const Color _afterRainTextSecondary = Color(0xFF455A64); // Blue Grey (Wet stone)
   static const Color _afterRainAccentBlue = Color(0xFF0288D1); // Deep Lake Blue (Accent)
 
-  // --- 2. Getters ---
+
+
+  // Twilight Theme Colors
+  static const Color _twilightBgTop = Color(0xFF2E1C55); // Indigo
+  static const Color _twilightBgMid = Color(0xFF913862); // Magenta
+  static const Color _twilightBgBottom = Color(0xFFFF9A6C); // Sunset Orange
+  static const Color _twilightAccentCyan = Color(0xFF4DD0E1); // Comet Blue
+  static const Color _twilightAccentRed = Color(0xFFFF5252); // Musubi RedRed
+  static const Color _twilightTextPrimary = Color(0xFFE4E0EC); // Stardust White
+  static const Color _twilightTextSecondary = Color(0xFFBCAAA4); // Twilight Grey
+  static const Color _twilightSurface = Color(0xFF352044); // Deep Purple GlassBase
+
 
   // 1. FAB Theme
   static Map<String, dynamic> getFabTheme(String theme) {
-    if (theme == themeAfterRain) {
+    if (theme == themeTwilight) {
+      return {
+        'bg': const RadialGradient(
+          center: Alignment.topLeft,
+          radius: 1.0,
+          colors: [_twilightAccentCyan, Color(0xFF26C6DA)], // Comet tail effect
+        ),
+        'shadow': BoxShadow(
+          color: _twilightAccentCyan.withOpacity(0.5),
+          blurRadius: 20,
+          spreadRadius: -2,
+          offset: const Offset(0, 0), // Glowing effect
+        ),
+        'iconColor': Colors.white,
+        'border': Border.all(color: Colors.white.withOpacity(0.8), width: 1.5),
+      };
+    } else if (theme == themeAfterRain) {
       return {
         'bg': const LinearGradient(
           begin: Alignment.topLeft,
@@ -121,7 +149,36 @@ class AppTheme {
 
   // 2. Sidebar Theme
   static Map<String, dynamic> getSidebarTheme(String theme) {
-    if (theme == themeAfterRain) {
+    if (theme == themeTwilight) {
+      return {
+        'bgDecoration': BoxDecoration(
+          color: _twilightSurface.withOpacity(0.4), // Glassmorphism
+          border: Border(
+            right: BorderSide(color: _twilightBgBottom.withOpacity(0.3), width: 1), // Sunset edge reflection
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 15,
+              offset: const Offset(5, 0),
+            )
+          ],
+        ),
+        'textColor': _twilightTextSecondary,
+        'activeTextColor': _twilightAccentCyan,
+        'subTextColor': Color(0xFF8D6E63),
+        'pillColor': _twilightSurface.withOpacity(0.6),
+        'pillShadows': [
+          BoxShadow(
+            color: _twilightAccentCyan.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 0), // Glow
+          ),
+        ],
+        'pillBorder': Border.all(color: Colors.white.withOpacity(0.1)),
+        'buttonGradient': const LinearGradient(colors: [_twilightAccentCyan, Color(0xFF00ACC1)]),
+      };
+    } else if (theme == themeAfterRain) {
       // Glassmorphism with water droplet edges
       return {
         'bgDecoration': BoxDecoration(
@@ -228,7 +285,28 @@ class AppTheme {
 
   // 3. Settings Theme
   static Map<String, dynamic> getSettingsTheme(String theme) {
-    if (theme == themeAfterRain) {
+    if (theme == themeTwilight) {
+      return {
+        'groupDecoration': BoxDecoration(
+          color: _twilightSurface.withOpacity(0.5),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: _twilightBgBottom.withOpacity(0.1), width: 1), // Subtle orange rim
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        'dividerColor': Colors.white.withOpacity(0.05),
+        'textColor': _twilightTextPrimary,
+        'activeSwitchColor': _twilightAccentRed, // Red knot
+        'activeTrackColor': _twilightAccentRed.withOpacity(0.3),
+        'titleColor': _twilightTextPrimary,
+        'iconColor': _twilightAccentCyan,
+      };
+    } else if (theme == themeAfterRain) {
       return {
         'groupDecoration': BoxDecoration(
           color: Colors.white.withOpacity(0.5), // Frosted glass
@@ -272,7 +350,15 @@ class AppTheme {
 
   // 4. Editor Theme
   static Map<String, dynamic> getEditorTheme(String theme) {
-    if (theme == themeAfterRain) {
+    if (theme == themeTwilight) {
+      return {
+        'appBarBg': _twilightSurface.withOpacity(0.8),
+        'iconColor': _twilightTextPrimary,
+        'cursorColor': _twilightAccentCyan,
+        'lineColor': Colors.white.withOpacity(0.05), // Very subtle lines
+        'dividerColor': Colors.white.withOpacity(0.1),
+      };
+    } else if (theme == themeAfterRain) {
       return {
         'appBarBg': _afterRainSurface.withOpacity(0.8),
         'iconColor': _afterRainTextSecondary,
@@ -286,7 +372,31 @@ class AppTheme {
 
   // 5. Diary Card Theme
   static Map<String, dynamic> getDiaryCardTheme(String theme) {
-    if (theme == themeAfterRain) {
+    if (theme == themeTwilight) {
+      return {
+        'bgColor': _twilightSurface.withOpacity(0.6), // Dark glass
+        'titleColor': _twilightTextPrimary,
+        'contentColor': _twilightTextSecondary,
+        'dateColor': _twilightAccentCyan,
+        'iconColor': _twilightAccentCyan,
+        'dashedLineColor': Colors.white.withOpacity(0.1),
+        'shadows': [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            offset: const Offset(0, 4),
+            blurRadius: 10,
+          )
+        ],
+        'hoverShadows': [
+          BoxShadow(
+            color: _twilightAccentCyan.withOpacity(0.2), // Blue glow
+            offset: const Offset(0, 8),
+            blurRadius: 20,
+          )
+        ],
+        'border': Border.all(color: _twilightBgBottom.withOpacity(0.2), width: 1), // Subtle sunset border
+      };
+    } else if (theme == themeAfterRain) {
       return {
         'bgColor': Colors.white.withOpacity(0.7), // See-through card
         'titleColor': _afterRainTextSecondary,
@@ -318,7 +428,14 @@ class AppTheme {
 
   // 6. Directory Theme
   static Map<String, dynamic> getBookDirectoryTheme(String theme) {
-    if (theme == themeAfterRain) {
+    if (theme == themeTwilight) {
+      return {
+        'inkColor': _twilightTextPrimary,
+        'paperColor': _twilightSurface.withOpacity(0.8),
+        'paperBorderColor': Colors.white.withOpacity(0.1),
+        'paperShadow': [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 15)],
+      };
+    } else if (theme == themeAfterRain) {
       return {
         'inkColor': _afterRainTextSecondary,
         'paperColor': _afterRainSurface.withOpacity(0.95), // Slightly opaque paper
@@ -337,7 +454,20 @@ class AppTheme {
 
   // 7. Moments Theme
   static Map<String, dynamic> getMomentsTheme(String theme) {
-    if (theme == themeAfterRain) {
+    if (theme == themeTwilight) {
+      return {
+        'rulerBg': _twilightSurface.withOpacity(0.9),
+        'rulerTextColor': _twilightTextSecondary,
+        'rulerInactiveTextColor': _twilightTextSecondary.withOpacity(0.3),
+        'rulerSubTextColor': _twilightAccentCyan,
+        'rulerInactiveSubTextColor': _twilightAccentCyan.withOpacity(0.3),
+        'rulerIndicatorColor': _twilightAccentRed,
+        'rulerShadowColor': Colors.black.withOpacity(0.2),
+        'rulerBorderColor': Colors.white.withOpacity(0.1),
+        'appBarIconColor': _twilightTextPrimary,
+        'appBarTextColor': _twilightTextPrimary,
+      };
+    } else if (theme == themeAfterRain) {
       return {
         'rulerBg': _afterRainSurface.withOpacity(0.8),
         'rulerTextColor': _afterRainTextSecondary,
@@ -356,7 +486,15 @@ class AppTheme {
 
   // 8. Search Theme
   static Map<String, dynamic> getSearchTheme(String theme) {
-    if (theme == themeAfterRain) {
+    if (theme == themeTwilight) {
+      return {
+        'bgColor': Colors.black.withOpacity(0.2), // Darker inner shadow effect
+        'textColor': _twilightTextPrimary,
+        'hintColor': _twilightTextSecondary.withOpacity(0.5),
+        'iconColor': _twilightAccentCyan,
+        'border': Border.all(color: Colors.white.withOpacity(0.1), width: 1),
+      };
+    } else if (theme == themeAfterRain) {
       return {
         'bgColor': Colors.white.withOpacity(0.6),
         'textColor': _afterRainTextSecondary,
@@ -370,7 +508,14 @@ class AppTheme {
 
   // 9. Month Divider Theme
   static Map<String, dynamic> getMonthDividerTheme(String theme) {
-    if (theme == themeAfterRain) {
+    if (theme == themeTwilight) {
+      return {
+        'textColor': _twilightTextSecondary,
+        'lineColor': Colors.white.withOpacity(0.1),
+        'paperColor': _twilightSurface.withOpacity(0.8),
+        'shadows': [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 5)],
+      };
+    } else if (theme == themeAfterRain) {
       return {
         'textColor': _afterRainTextSecondary,
         'lineColor': _afterRainAccentBlue.withOpacity(0.2),
@@ -389,7 +534,20 @@ class AppTheme {
 
   // 10. Dialog Theme
   static Map<String, dynamic> getDialogTheme(String theme) {
-    if (theme == themeAfterRain) {
+    if (theme == themeTwilight) {
+      return {
+        'paper': _twilightSurface.withOpacity(0.95),
+        'title': _twilightTextPrimary,
+        'text': _twilightTextSecondary,
+        'icon': _twilightAccentCyan,
+        'tape': _twilightAccentRed.withOpacity(0.3), // Red tape
+        'shadow': _twilightAccentCyan.withOpacity(0.2),
+        'border': Colors.white.withOpacity(0.1),
+        'primaryBtn': _twilightAccentCyan,
+        'primaryBtnText': _twilightSurface,
+        'secondaryBtn': _twilightTextSecondary,
+      };
+    } else if (theme == themeAfterRain) {
       return {
         'paper': _afterRainSurface.withOpacity(0.95), // Frosted
         'title': _afterRainTextSecondary,
@@ -408,7 +566,14 @@ class AppTheme {
 
   // 11. Toast Theme
   static Map<String, dynamic> getToastTheme(String theme) {
-    if (theme == themeAfterRain) {
+    if (theme == themeTwilight) {
+      return {
+        'success': {'bg': _twilightSurface, 'border': _twilightAccentCyan, 'icon': _twilightAccentCyan, 'text': _twilightTextPrimary},
+        'error': {'bg': _twilightSurface, 'border': _twilightAccentRed, 'icon': _twilightAccentRed, 'text': _twilightTextPrimary},
+        'warning': {'bg': _twilightSurface, 'border': Color(0xFFFFB74D), 'icon': Color(0xFFFFB74D), 'text': _twilightTextPrimary},
+        'info': {'bg': _twilightSurface, 'border': _twilightAccentCyan, 'icon': _twilightAccentCyan, 'text': _twilightTextPrimary},
+      };
+    } else if (theme == themeAfterRain) {
       return {
         'success': {'bg': _afterRainSurface, 'border': _afterRainPrimaryMain, 'icon': _afterRainPrimaryMain, 'text': _afterRainTextSecondary},
         'error': {'bg': Color(0xFFFFF0F0), 'border': Color(0xFFE57373), 'icon': Color(0xFFE57373), 'text': _afterRainTextSecondary},
@@ -421,7 +586,17 @@ class AppTheme {
 
   // 12. Lock Screen Theme
   static Map<String, dynamic> getLockScreenTheme(String theme) {
-    if (theme == themeAfterRain) {
+    if (theme == themeTwilight) {
+      return {
+        'textColor': _twilightTextPrimary,
+        'accentColor': _twilightAccentCyan,
+        'displayBg': Colors.black.withOpacity(0.2),
+        'displayBorder': Colors.white.withOpacity(0.1),
+        'keyBg': _twilightSurface.withOpacity(0.5),
+        'keyBorder': Colors.white.withOpacity(0.1),
+        'keyText': _twilightAccentCyan,
+      };
+    } else if (theme == themeAfterRain) {
       return {
         'textColor': _afterRainTextSecondary,
         'accentColor': _afterRainAccentBlue,
@@ -437,6 +612,12 @@ class AppTheme {
 
   static SystemUiOverlayStyle getSystemUiOverlayStyle(String theme) {
     switch (theme) {
+      case themeTwilight:
+        return SystemUiOverlayStyle.light.copyWith( // White icons for dark bg
+          statusBarColor: Colors.transparent,
+          systemNavigationBarColor: _twilightBgTop,
+          systemNavigationBarIconBrightness: Brightness.light,
+        );
       case themeSeaFlower:
         return SystemUiOverlayStyle.dark.copyWith(
           statusBarColor: Colors.transparent,
@@ -494,6 +675,15 @@ class AppTheme {
 
   static BoxDecoration getBackground(String theme) {
     switch (theme) {
+      case themeTwilight:
+        return const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [_twilightBgTop, _twilightBgMid, _twilightBgBottom],
+            stops: [0.0, 0.6, 1.0], // Expanded twilight zone
+          ),
+        );
       case themeMidnight:
         return BoxDecoration(
           color: _midnightBgEdge,
@@ -547,6 +737,18 @@ class AppTheme {
 
   static BoxDecoration getSidebarBackground(String theme) {
     switch (theme) {
+      case themeTwilight:
+         return BoxDecoration(
+           color: _twilightSurface.withOpacity(0.5), // Semi-transparent sidebar
+           border: Border(right: BorderSide(color: _twilightBgBottom.withOpacity(0.2), width: 1)),
+           boxShadow: [
+             BoxShadow(
+               color: Colors.black.withOpacity(0.2),
+               offset: const Offset(2, 0),
+               blurRadius: 10,
+             ),
+           ],
+         );
       case themeMidnight:
          return BoxDecoration(
            color: const Color(0xFF0D1117).withValues(alpha: 0.7),
@@ -608,6 +810,7 @@ class AppTheme {
 
   static Color getPaperColor(String theme) {
     switch (theme) {
+      case themeTwilight: return _twilightSurface;
       case themeMidnight: return _midnightPaper;
       case themeSeaFlower: return const Color(0xD9FFFFFF); // rgba(255, 255, 255, 0.85)
       case themeAmberLens: return _amberPaper;
@@ -618,6 +821,7 @@ class AppTheme {
 
   static Color getTextColor(String theme) {
     switch (theme) {
+      case themeTwilight: return _twilightTextPrimary;
       case themeMidnight: return _midnightTextPrimary;
       case themeSeaFlower: return const Color(0xFF880E4F);
       case themeAmberLens: return _amberTextPrimary;
@@ -628,6 +832,7 @@ class AppTheme {
   
   static Color getTextSecondaryColor(String theme) {
     switch (theme) {
+      case themeTwilight: return _twilightTextSecondary;
       case themeMidnight: return _midnightTextSecondary;
       case themeSeaFlower: return const Color(0xFFC2185B);
       case themeAmberLens: return _amberTextSecondary;
@@ -638,6 +843,7 @@ class AppTheme {
 
   static Color getAccentColor(String theme) {
     switch (theme) {
+      case themeTwilight: return _twilightAccentCyan;
       case themeMidnight: return _midnightAccent;
       case themeSeaFlower: return const Color(0xFFF50057);
       case themeAmberLens: return _amberAccent;
@@ -649,6 +855,14 @@ class AppTheme {
   // 移动端顶栏颜色配置
   static Map<String, Color> getMobileHeaderColors(String theme) {
     switch (theme) {
+      case themeTwilight:
+        return {
+          'background': _twilightBgTop.withOpacity(0.85),
+          'border': Colors.white.withOpacity(0.1),
+          'iconColor': _twilightAccentCyan,
+          'titleColor': _twilightTextPrimary,
+          'subtitleColor': _twilightTextSecondary,
+        };
       case themeMidnight:
         return {
           'background': const Color(0xFF0D1117).withOpacity(0.9),
@@ -702,7 +916,11 @@ class AppTheme {
     Brightness brightness;
     Color accentColor = getAccentColor(theme);
 
-    if (theme == themeSeaFlower) {
+    if (theme == themeTwilight) {
+      seedColor = _twilightBgMid;
+      scaffoldBg = _twilightBgTop; // Base for scaffold, usually covered by container gradient
+      brightness = Brightness.dark;
+    } else if (theme == themeSeaFlower) {
       seedColor = const Color(0xFFF06292);
       scaffoldBg = const Color(0xFFF6D9E6); // Light Pink base
       brightness = Brightness.light;

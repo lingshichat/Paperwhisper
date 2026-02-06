@@ -61,11 +61,11 @@ class _SkeuomorphicSearchBarState extends State<SkeuomorphicSearchBar> {
     // Theme Configuration
     final themeConfig = AppTheme.getSearchTheme(theme);
     
-    Color bgColor = themeConfig.isNotEmpty ? themeConfig['bgColor'] : (theme == AppTheme.themeSeaFlower ? const Color(0xFFF8BBD0).withOpacity(0.3) : (theme == AppTheme.themeMidnight ? const Color(0xFF010409) : (theme == AppTheme.themeAmberLens ? const Color(0xFF1E1E1E) : const Color(0xFF2D1E1B))));
-    Color textColor = themeConfig.isNotEmpty ? themeConfig['textColor'] : (theme == AppTheme.themeSeaFlower ? const Color(0xFF880E4F) : (theme == AppTheme.themeMidnight ? const Color(0xFFc9d1d9) : (theme == AppTheme.themeAmberLens ? const Color(0xFFE0E0E0) : const Color(0xFFD7CCC8))));
-    Color hintColor = themeConfig.isNotEmpty ? themeConfig['hintColor'] : (theme == AppTheme.themeSeaFlower ? const Color(0xFFAD1457).withOpacity(0.5) : (theme == AppTheme.themeMidnight ? const Color(0xFF8b949e) : (theme == AppTheme.themeAmberLens ? const Color(0xFF757575) : const Color(0xFFA1887F))));
-    Color iconColor = themeConfig.isNotEmpty ? themeConfig['iconColor'] : (theme == AppTheme.themeSeaFlower ? const Color(0xFF880E4F) : (theme == AppTheme.themeMidnight ? const Color(0xFF7986cb) : (theme == AppTheme.themeAmberLens ? const Color(0xFFFFB74D) : const Color(0xFFD7CCC8))));
-    Border? border = themeConfig.isNotEmpty ? themeConfig['border'] : (theme == AppTheme.themeSeaFlower ? Border.all(color: Colors.white.withOpacity(0.4), width: 1) : (theme == AppTheme.themeMidnight ? Border.all(color: Colors.white10) : (theme == AppTheme.themeAmberLens ? Border.all(color: Colors.black, width: 1) : Border.all(color: Colors.black26))));
+    Color bgColor = themeConfig.isNotEmpty ? themeConfig['bgColor'] : (theme == AppTheme.themeSeaFlower ? const Color(0xFFF8BBD0).withOpacity(0.3) : (theme == AppTheme.themeMidnight ? const Color(0xFF010409) : (theme == AppTheme.themeAmberLens ? const Color(0xFF1E1E1E) : (theme == AppTheme.themeTwilight ? const Color(0xFF352044).withValues(alpha: 0.4) : const Color(0xFF2D1E1B)))));
+    Color textColor = themeConfig.isNotEmpty ? themeConfig['textColor'] : (theme == AppTheme.themeSeaFlower ? const Color(0xFF880E4F) : (theme == AppTheme.themeMidnight ? const Color(0xFFc9d1d9) : (theme == AppTheme.themeAmberLens ? const Color(0xFFE0E0E0) : (theme == AppTheme.themeTwilight ? const Color(0xFF4DD0E1) : const Color(0xFFD7CCC8)))));
+    Color hintColor = themeConfig.isNotEmpty ? themeConfig['hintColor'] : (theme == AppTheme.themeSeaFlower ? const Color(0xFFAD1457).withOpacity(0.5) : (theme == AppTheme.themeMidnight ? const Color(0xFF8b949e) : (theme == AppTheme.themeAmberLens ? const Color(0xFF757575) : (theme == AppTheme.themeTwilight ? const Color(0xFF4DD0E1).withValues(alpha: 0.5) : const Color(0xFFA1887F)))));
+    Color iconColor = themeConfig.isNotEmpty ? themeConfig['iconColor'] : (theme == AppTheme.themeSeaFlower ? const Color(0xFF880E4F) : (theme == AppTheme.themeMidnight ? const Color(0xFF7986cb) : (theme == AppTheme.themeAmberLens ? const Color(0xFFFFB74D) : (theme == AppTheme.themeTwilight ? const Color(0xFF4DD0E1) : const Color(0xFFD7CCC8)))));
+    Border? border = themeConfig.isNotEmpty ? themeConfig['border'] : (theme == AppTheme.themeSeaFlower ? Border.all(color: Colors.white.withOpacity(0.4), width: 1) : (theme == AppTheme.themeMidnight ? Border.all(color: Colors.white10) : (theme == AppTheme.themeAmberLens ? Border.all(color: Colors.black, width: 1) : (theme == AppTheme.themeTwilight ? Border.all(color: const Color(0xFF4DD0E1).withValues(alpha: 0.3)) : Border.all(color: Colors.black26)))));
 
     return Container(
       height: 48,
@@ -88,7 +88,9 @@ class _SkeuomorphicSearchBarState extends State<SkeuomorphicSearchBar> {
                     end: Alignment.bottomCenter,
                     colors: theme == AppTheme.themeAfterRain 
                         ? [const Color(0xFF0288D1).withValues(alpha: 0.15), Colors.transparent] // Blue shadow for After Rain
-                        : [Colors.black.withValues(alpha: 0.2), Colors.transparent],
+                        : (theme == AppTheme.themeTwilight 
+                            ? [const Color(0xFF4DD0E1).withValues(alpha: 0.15), Colors.transparent] // Cyan shadow for Twilight
+                            : [Colors.black.withValues(alpha: 0.2), Colors.transparent]),
                   ),
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                 ),

@@ -915,6 +915,11 @@ class _DiaryListPageState extends State<DiaryListPage> with WidgetsBindingObserv
         iconColor = const Color(0xFF6D5D5D).withValues(alpha: 0.6);
         textColor = const Color(0xFF6D5D5D).withValues(alpha: 0.8);
         linkColor = const Color(0xFFC2185B); // 粉红强调色
+    } else if (theme == AppTheme.themeTwilight) {
+        // Twilight Style
+        iconColor = AppTheme.getAccentColor(theme).withValues(alpha: 0.5);
+        textColor = AppTheme.getTextSecondaryColor(theme).withValues(alpha: 0.8);
+        linkColor = AppTheme.getAccentColor(theme);
     } else if (theme == AppTheme.themeMidnight || theme == AppTheme.themeAmberLens) {
         // 深色背景，使用灰色图标和文字
         iconColor = Colors.grey.shade500.withValues(alpha: 0.7);

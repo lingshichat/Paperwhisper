@@ -150,6 +150,17 @@ class _SkeuomorphicDatePickerState extends State<SkeuomorphicDatePicker> {
       shadows = [
          BoxShadow(color: const Color(0xFF81D4FA).withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 4))
       ];
+    } else if (theme == AppTheme.themeTwilight) {
+      dialogBg = const Color(0xFF352044);
+      headerBg = const Color(0xFF2E1A3C);
+      headerText = const Color(0xFF4DD0E1);
+      bodyText = const Color(0xFFB39DDB);
+      accentColor = const Color(0xFF4DD0E1);
+      weekDayColor = const Color(0xFF90CAF9);
+      border = Border.all(color: const Color(0xFF4DD0E1).withOpacity(0.3), width: 1);
+      shadows = [
+         BoxShadow(color: const Color(0xFF4DD0E1).withValues(alpha: 0.15), blurRadius: 15, offset: const Offset(0, 5))
+      ];
     } else {
       // Vintage / Default
       dialogBg = const Color(0xFFF4ECD8);

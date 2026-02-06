@@ -138,6 +138,7 @@ class _TrashPageState extends State<TrashPage> {
     final bool isSeaFlower = theme == AppTheme.themeSeaFlower;
     final bool isMidnight = theme == AppTheme.themeMidnight;
     final bool isAmber = theme == AppTheme.themeAmberLens;
+    final bool isTwilight = theme == AppTheme.themeTwilight;
 
     final themeConfig = AppTheme.getSettingsTheme(theme);
     
@@ -200,7 +201,7 @@ class _TrashPageState extends State<TrashPage> {
                       padding: const EdgeInsets.all(16),
                       itemCount: _trashEntries.length,
                       itemBuilder: (context, index) {
-                        return _buildTrashItem(context, _trashEntries[index], isSeaFlower, isMidnight, isAmber, titleColor, iconColor);
+                        return _buildTrashItem(context, _trashEntries[index], isSeaFlower, isMidnight, isAmber, isTwilight, titleColor, iconColor);
                       },
                   ),
         ),
@@ -214,6 +215,7 @@ class _TrashPageState extends State<TrashPage> {
     bool isSeaFlower, 
     bool isMidnight, 
     bool isAmber,
+    bool isTwilight,
     Color titleColor, 
     Color iconColor
   ) {
@@ -222,7 +224,7 @@ class _TrashPageState extends State<TrashPage> {
     Color cardTitleColor;
     Color cardDateColor;
 
-    if (!isSeaFlower && !isMidnight && !isAmber) {
+    if (!isSeaFlower && !isMidnight && !isAmber && !isTwilight) {
        // Vintage Mode
        cardTitleColor = const Color(0xFF2d241f); // Dark Brown
        cardDateColor = const Color(0xFF5D4037).withOpacity(0.6);
@@ -271,6 +273,15 @@ class _TrashPageState extends State<TrashPage> {
          border: Border.all(color: const Color(0xFFFF9800).withOpacity(0.3), width: 1),
          boxShadow: const [
            BoxShadow(color: Colors.black, blurRadius: 6, offset: Offset(0, 2))
+         ]
+       );
+    } else if (isTwilight) {
+       decoration = BoxDecoration(
+         color: const Color(0xFF352044).withOpacity(0.6),
+         borderRadius: BorderRadius.circular(16),
+         border: Border.all(color: const Color(0xFF4DD0E1).withOpacity(0.3), width: 1),
+         boxShadow: const [
+           BoxShadow(color: Colors.black26, blurRadius: 6, offset: Offset(0, 2))
          ]
        );
     } else {
@@ -343,12 +354,12 @@ class _TrashPageState extends State<TrashPage> {
               ),
             ),
             IconButton(
-              icon: Icon(Icons.restore, color: isSeaFlower ? const Color(0xFFE91E63) : (isMidnight ? const Color(0xFF69f0ae) : Colors.green)),
+              icon: Icon(Icons.restore, color: isSeaFlower ? const Color(0xFFE91E63) : (isMidnight ? const Color(0xFF69f0ae) : (isTwilight ? const Color(0xFF4DD0E1) : Colors.green))),
               tooltip: '恢复',
               onPressed: () => _restoreFile(entry.filename),
             ),
             IconButton(
-              icon: Icon(Icons.delete_forever_outlined, color: isSeaFlower ? const Color(0xFFC2185B) : (isMidnight ? const Color(0xFFff5252) : Colors.redAccent)),
+              icon: Icon(Icons.delete_forever_outlined, color: isSeaFlower ? const Color(0xFFC2185B) : (isMidnight ? const Color(0xFFff5252) : (isTwilight ? const Color(0xFFE91E63) : Colors.redAccent))),
               tooltip: '彻底删除',
               onPressed: () => _deletePermanently(entry.filename),
             ),

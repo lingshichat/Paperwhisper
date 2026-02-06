@@ -50,7 +50,7 @@ class ThemeSelectionDialog extends StatelessWidget {
                       cursor: SystemMouseCursors.click,
                       child: GestureDetector(
                         onTap: () => Navigator.of(context).pop(),
-                        child: const Text(
+                        child: Text(
                           '×',
                           style: TextStyle(fontSize: 24, color: closeColor),
                         ),
@@ -134,6 +134,19 @@ class ThemeSelectionDialog extends StatelessWidget {
                         end: Alignment.bottomRight,
                       ),
                       currentTheme == AppTheme.themeAfterRain,
+                    ),
+                    _buildThemeCard(
+                      context,
+                      settings,
+                      AppTheme.themeTwilight,
+                      '黄昏之时',
+                      '逢魔时刻，梦幻交织',
+                      const LinearGradient(
+                        colors: [Color(0xFF352044), Color(0xFF7B1FA2), Color(0xFFFF6F00)],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomRight,
+                      ),
+                      currentTheme == AppTheme.themeTwilight,
                     ),
                   ],
                 ),

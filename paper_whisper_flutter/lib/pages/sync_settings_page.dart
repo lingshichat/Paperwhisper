@@ -168,7 +168,10 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
     final theme = settings.currentTheme;
     final bool isSeaFlower = theme == AppTheme.themeSeaFlower;
     final bool isMidnight = theme == AppTheme.themeMidnight;
+
+    final bool isAmber = theme == AppTheme.themeAmberLens;
     final bool isAfterRain = theme == AppTheme.themeAfterRain;
+    final bool isTwilight = theme == AppTheme.themeTwilight;
 
     // 颜色定义 (与 SettingsPage 保持一致)
     final themeConfig = AppTheme.getSettingsTheme(theme);
@@ -229,7 +232,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                 children: [
                   // 协议选择器
                   // 协议选择器 (拟物化滑块)
-                  _buildSlidingSwitch(provider, isSeaFlower, isMidnight, isAfterRain),
+                  _buildSlidingSwitch(provider, isSeaFlower, isMidnight, isAfterRain, isTwilight),
 
                   if (provider.config.syncType == SyncType.webdav) ...[
                     _buildSectionTitle('WebDAV 服务器配置', textColor),
@@ -242,6 +245,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                       hintColor: hintColor,
                       isSeaFlower: isSeaFlower,
                       isMidnight: isMidnight,
+                      isTwilight: isTwilight,
                       icon: Icons.link,
                     ),
                     const SizedBox(height: 16),
@@ -253,6 +257,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                       hintColor: hintColor,
                       isSeaFlower: isSeaFlower,
                       isMidnight: isMidnight,
+                      isTwilight: isTwilight,
                       icon: Icons.person_outline,
                     ),
                     const SizedBox(height: 16),
@@ -264,6 +269,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                       hintColor: hintColor,
                       isSeaFlower: isSeaFlower,
                       isMidnight: isMidnight,
+                      isTwilight: isTwilight,
                       icon: Icons.lock_outline,
                       obscureText: true,
                     ),
@@ -278,6 +284,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                       hintColor: hintColor,
                       isSeaFlower: isSeaFlower,
                       isMidnight: isMidnight,
+                      isTwilight: isTwilight,
                       icon: Icons.dns_outlined,
                     ),
                     const SizedBox(height: 16),
@@ -289,6 +296,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                       hintColor: hintColor,
                       isSeaFlower: isSeaFlower,
                       isMidnight: isMidnight,
+                      isTwilight: isTwilight,
                       icon: Icons.folder_open_outlined,
                     ),
                     const SizedBox(height: 16),
@@ -300,6 +308,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                       hintColor: hintColor,
                       isSeaFlower: isSeaFlower,
                       isMidnight: isMidnight,
+                      isTwilight: isTwilight,
                       icon: Icons.vpn_key_outlined,
                     ),
                     const SizedBox(height: 16),
@@ -311,6 +320,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                       hintColor: hintColor,
                       isSeaFlower: isSeaFlower,
                       isMidnight: isMidnight,
+                      isTwilight: isTwilight,
                       icon: Icons.password_outlined,
                       obscureText: true,
                     ),
@@ -323,6 +333,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                        hintColor: hintColor,
                        isSeaFlower: isSeaFlower,
                        isMidnight: isMidnight,
+                       isTwilight: isTwilight,
                        icon: Icons.map_outlined,
                     ),
                   ],
@@ -332,7 +343,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                   // 图片压缩开关
                   Container(
                     decoration: BoxDecoration(
-                      color: isSeaFlower ? Colors.white.withOpacity(0.4) : (isMidnight ? const Color(0xFF0D1117).withOpacity(0.5) : Colors.black.withOpacity(0.05)),
+                      color: isSeaFlower ? Colors.white.withOpacity(0.4) : (isMidnight ? const Color(0xFF0D1117).withOpacity(0.5) : (isTwilight ? const Color(0xFF352044).withOpacity(0.6) : Colors.black.withOpacity(0.05))),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(color: textColor.withOpacity(0.1)),
                     ),
@@ -340,8 +351,8 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                     child: SwitchListTile(
                       value: _compressImages,
                       onChanged: (val) => setState(() => _compressImages = val),
-                      activeColor: AppTheme.getSettingsTheme(theme).isNotEmpty ? AppTheme.getSettingsTheme(theme)['activeSwitchColor'] : (isSeaFlower ? const Color(0xFFAD1457) : (isMidnight ? const Color(0xFF7986cb) : const Color(0xFF5D4037))),
-                      activeTrackColor: AppTheme.getSettingsTheme(theme).isNotEmpty ? AppTheme.getSettingsTheme(theme)['activeTrackColor'] : (isSeaFlower ? const Color(0xFFF48FB1) : (isMidnight ? const Color(0xFF9FA8DA) : const Color(0xFFA1887F))),
+                      activeColor: AppTheme.getSettingsTheme(theme).isNotEmpty ? AppTheme.getSettingsTheme(theme)['activeSwitchColor'] : (isSeaFlower ? const Color(0xFFAD1457) : (isMidnight ? const Color(0xFF7986cb) : (isTwilight ? const Color(0xFF4DD0E1) : const Color(0xFF5D4037)))),
+                      activeTrackColor: AppTheme.getSettingsTheme(theme).isNotEmpty ? AppTheme.getSettingsTheme(theme)['activeTrackColor'] : (isSeaFlower ? const Color(0xFFF48FB1) : (isMidnight ? const Color(0xFF9FA8DA) : (isTwilight ? const Color(0xFF4DD0E1).withOpacity(0.3) : const Color(0xFFA1887F)))),
                       title: Text(
                         '开启图片压缩',
                         style: GoogleFonts.notoSerifSc(color: textColor, fontWeight: FontWeight.bold, fontSize: 15),
@@ -371,6 +382,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                           isSeaFlower: isSeaFlower,
                           isMidnight: isMidnight,
                           isAfterRain: isAfterRain,
+                          isTwilight: isTwilight,
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -382,6 +394,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                           isSeaFlower: isSeaFlower,
                           isMidnight: isMidnight,
                           isAfterRain: isAfterRain,
+                          isTwilight: isTwilight,
                         ),
                       ),
                     ],
@@ -450,7 +463,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                      ),
                      
                   const SizedBox(height: 40),
-                  _buildTips(textColor, isMidnight, provider.config.syncType),
+                  _buildTips(textColor, isMidnight, isTwilight, provider.config.syncType),
                 ],
               ),
             ),
@@ -480,6 +493,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
     required Color hintColor,
     required bool isSeaFlower,
     required bool isMidnight,
+    required bool isTwilight,
     required IconData icon,
     bool obscureText = false,
   }) {
@@ -500,7 +514,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
             ? themeConfig['groupDecoration'].color 
             : (isSeaFlower
                 ? Colors.white.withOpacity(0.4)
-                : (isMidnight ? const Color(0xFF0D1117).withOpacity(0.5) : Colors.black.withOpacity(0.1)));
+                : (isMidnight ? const Color(0xFF0D1117).withOpacity(0.5) : (isTwilight ? const Color(0xFF352044).withOpacity(0.5) : Colors.black.withOpacity(0.1))));
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -554,6 +568,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
     required bool isSeaFlower,
     required bool isMidnight,
     required bool isAfterRain,
+    required bool isTwilight,
   }) {
     // 按钮样式
     Gradient? gradient;
@@ -567,6 +582,8 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
         gradient = const LinearGradient(colors: [Color(0xFF7986cb), Color(0xFF283593)]);
       } else if (isAfterRain) {
         gradient = const LinearGradient(colors: [Color(0xFF4FC3F7), Color(0xFF0288D1)]);
+      } else if (isTwilight) {
+        gradient = const LinearGradient(colors: [Color(0xFF4DD0E1), Color(0xFF26C6DA)]);
       } else {
         color = const Color(0xFF5D4037); 
       }
@@ -581,6 +598,9 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
       } else if (isAfterRain) {
          color = Colors.white.withOpacity(0.6);
          textColor = const Color(0xFF0277BD);
+      } else if (isTwilight) {
+         color = const Color(0xFF352044).withOpacity(0.6);
+         textColor = const Color(0xFF4DD0E1);
       } else {
          color = Colors.white.withOpacity(0.2);
          textColor = const Color(0xFF3E2723);
@@ -604,7 +624,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                     ? const Color(0xFFAD1457).withOpacity(0.3) 
                     : (isMidnight 
                         ? const Color(0xFF283593).withOpacity(0.4) 
-                        : (isAfterRain ? const Color(0xFF0288D1).withOpacity(0.3) : Colors.black26)),
+                        : (isAfterRain ? const Color(0xFF0288D1).withOpacity(0.3) : (isTwilight ? const Color(0xFF4DD0E1).withOpacity(0.3) : Colors.black26))),
                 blurRadius: 6,
                 offset: const Offset(0, 3)
               )
@@ -612,7 +632,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
             border: !isPrimary ? Border.all(
               color: isSeaFlower 
                   ? const Color(0xFFAD1457).withOpacity(0.2) 
-                  : (isAfterRain ? const Color(0xFF0288D1).withOpacity(0.2) : Colors.white.withOpacity(0.1))
+                  : (isAfterRain ? const Color(0xFF0288D1).withOpacity(0.2) : (isTwilight ? const Color(0xFF4DD0E1).withOpacity(0.2) : Colors.white.withOpacity(0.1)))
             ) : null,
           ),
           child: Text(
@@ -630,7 +650,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
   }
 
   Widget _buildSlidingSwitch(
-    SyncProvider provider, bool isSeaFlower, bool isMidnight, bool isAfterRain) {
+    SyncProvider provider, bool isSeaFlower, bool isMidnight, bool isAfterRain, bool isTwilight) {
     // 1. Determine Colors
     Color trackColor;
     Color thumbColor;
@@ -652,6 +672,11 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
       thumbColor = Colors.white;
       activeTextColor = const Color(0xFF0288D1);
       inactiveTextColor = const Color(0xFF0288D1).withOpacity(0.5);
+    } else if (isTwilight) {
+      trackColor = const Color(0xFF352044);
+      thumbColor = const Color(0xFF4DD0E1);
+      activeTextColor = const Color(0xFF352044); // Text on thumb
+      inactiveTextColor = const Color(0xFF4DD0E1).withOpacity(0.6);
     } else {
       // Vintage / Default
       trackColor = const Color(0xFFD7CCC8); 
@@ -747,7 +772,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
     );
   }
 
-  Widget _buildTips(Color textColor, bool isMidnight, SyncType syncType) {
+  Widget _buildTips(Color textColor, bool isMidnight, bool isTwilight, SyncType syncType) {
     String tips;
     if (syncType == SyncType.webdav) {
       tips = '1. 推荐使用坚果云 WebDAV 服务。\n'
@@ -764,7 +789,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isMidnight ? const Color(0xFF161b22).withOpacity(0.8) : Colors.white.withOpacity(0.2),
+        color: isMidnight ? const Color(0xFF161b22).withOpacity(0.8) : (isTwilight ? const Color(0xFF352044).withOpacity(0.8) : Colors.white.withOpacity(0.2)),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: textColor.withOpacity(0.1)),
       ),

@@ -890,6 +890,7 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
       case AppTheme.themeMidnight: return '午夜星尘';
       case AppTheme.themeAmberLens: return '琥珀光圈';
       case AppTheme.themeAfterRain: return '雨后天空';
+      case AppTheme.themeTwilight: return '黄昏之时';
       default: return '复古纸张';
     }
   }
@@ -916,6 +917,7 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
           _buildRadioItem(ctx, '午夜星尘', 'midnight', settings.currentTheme, (val) => settings.setTheme(val), closeOnSelect: false),
           _buildRadioItem(ctx, '琥珀光圈', 'amber_lens', settings.currentTheme, (val) => settings.setTheme(val), closeOnSelect: false),
           _buildRadioItem(ctx, '雨后天空', 'after_rain', settings.currentTheme, (val) => settings.setTheme(val), closeOnSelect: false),
+          _buildRadioItem(ctx, '黄昏之时', 'twilight', settings.currentTheme, (val) => settings.setTheme(val), closeOnSelect: false),
         ]
       )
     );
@@ -1095,6 +1097,13 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
         tapeColor = const Color(0xFFB3E5FC).withOpacity(0.5);
         shadows = [BoxShadow(color: const Color(0xFF0288D1).withOpacity(0.15), blurRadius: 20, offset: const Offset(0, -5))];
         border = Border.all(color: Colors.white, width: 1);
+    } else if (theme == AppTheme.themeTwilight) {
+        // Twilight: Glassy Dark Purple
+        bgColor = const Color(0xFF352044).withOpacity(0.95);
+        titleColor = const Color(0xFFE4E0EC);
+        tapeColor = const Color(0xFFFF5252).withOpacity(0.3);
+        shadows = [BoxShadow(color: const Color(0xFF4DD0E1).withOpacity(0.15), blurRadius: 20, offset: const Offset(0, -5))];
+        border = Border.all(color: Colors.white.withOpacity(0.1), width: 1);
     } else {
       // Vintage: Solid Paper + Tape
       bgColor = const Color(0xFFF4ECD8);
@@ -1232,6 +1241,16 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
             bgColor = Colors.white.withOpacity(0.6);
             textColor = const Color(0xFF455A64);
             border = Border.all(color: Colors.white);
+        }
+    } else if (theme == AppTheme.themeTwilight) {
+        if (isSelected) {
+            bgColor = const Color(0xFF4DD0E1);
+            textColor = const Color(0xFF352044);
+            shadow = const BoxShadow(color: Color.fromRGBO(77, 208, 225, 0.4), offset: Offset(0, 4), blurRadius: 8);
+        } else {
+            bgColor = const Color(0xFF352044).withOpacity(0.6);
+            textColor = const Color(0xFFBCAAA4);
+            border = Border.all(color: Colors.white.withOpacity(0.1));
         }
     } else {
       // Vintage

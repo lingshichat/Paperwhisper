@@ -172,6 +172,16 @@ class SkeuomorphicDialog extends StatelessWidget {
           shadow: const Color(0xFF0288D1).withOpacity(0.15),
           border: Colors.white,
         );
+    } else if (theme == AppTheme.themeTwilight) {
+        return _DialogColors(
+          paper: const Color(0xFF352044).withOpacity(0.9),
+          title: const Color(0xFFe6edf3),
+          text: const Color(0xFFc9d1d9),
+          icon: const Color(0xFF4DD0E1),
+          tape: const Color(0xFF4DD0E1).withOpacity(0.5),
+          shadow: const Color(0xFF4DD0E1).withOpacity(0.15),
+          border: const Color(0xFF4DD0E1).withOpacity(0.3),
+        );
     } else if (theme == AppTheme.themeSeaFlower) {
         return _DialogColors(
           paper: const Color(0xFFFCE4EC),
@@ -300,6 +310,13 @@ class SkeuomorphicDialogButton extends StatelessWidget {
           primaryText: Colors.white,
           primaryShadow: Color.fromRGBO(2, 136, 209, 0.3),
           secondary: Color(0xFF455A64),
+        );
+    } else if (theme == AppTheme.themeTwilight) {
+        return _ButtonColors(
+          primary: const Color(0xFF4DD0E1),
+          primaryText: const Color(0xFF352044),
+          primaryShadow: const Color(0xFF4DD0E1).withOpacity(0.3),
+          secondary: const Color(0xFF9E9E9E),
         );
     } else if (theme == AppTheme.themeSeaFlower) {
         return _ButtonColors(
