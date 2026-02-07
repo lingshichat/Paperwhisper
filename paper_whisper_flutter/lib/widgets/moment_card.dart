@@ -217,12 +217,30 @@ class _MomentCardState extends State<MomentCard> {
     final bool isAmber = theme == AppTheme.themeAmberLens;
     final bool isSeaFlower = theme == AppTheme.themeSeaFlower;
     final bool isMidnight = theme == AppTheme.themeMidnight;
+    final bool isTwilight = theme == AppTheme.themeTwilight;
 
     // --- Dynamic Styles ---
-    final Color cardBg = isAmber || isMidnight ? const Color(0xFF1E1E1E) : (isSeaFlower ? Colors.white.withOpacity(0.8) : Colors.white);
-    final Color textColor = isAmber || isMidnight ? const Color(0xFFE0E0E0) : const Color(0xFF3E2723);
-    final Color metaColor = isAmber ? const Color(0xFF9E9E9E) : Colors.grey[400]!;
-    final Color iconColor = isAmber ? const Color(0xFFFF9800) : (isSeaFlower ? const Color(0xFFEC407A) : (isMidnight ? const Color(0xFF7986cb) : const Color(0xFF8D6E63)));
+    final Color cardBg = isAmber || isMidnight 
+        ? const Color(0xFF1E1E1E) 
+        : (isSeaFlower 
+            ? Colors.white.withOpacity(0.8) 
+            : (isTwilight ? const Color(0xFF352044).withOpacity(0.4) : Colors.white)); // Twilight Glass
+            
+    final Color textColor = isAmber || isMidnight 
+        ? const Color(0xFFE0E0E0) 
+        : (isTwilight ? const Color(0xFFE4E0EC) : const Color(0xFF3E2723));
+        
+    final Color metaColor = isAmber 
+        ? const Color(0xFF9E9E9E) 
+        : (isTwilight ? const Color(0xFFBCAAA4) : Colors.grey[400]!);
+        
+    final Color iconColor = isAmber 
+        ? const Color(0xFFFF9800) 
+        : (isSeaFlower 
+            ? const Color(0xFFEC407A) 
+            : (isMidnight 
+                ? const Color(0xFF7986cb) 
+                : (isTwilight ? const Color(0xFFFF5252) : const Color(0xFF8D6E63))));
     
     final List<BoxShadow> shadows = isAmber 
       ? [
@@ -274,12 +292,23 @@ class _MomentCardState extends State<MomentCard> {
                 child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 6), // Reduce vertical margin for list
               decoration: BoxDecoration(
-                color: cardBg,
-                borderRadius: BorderRadius.circular(4), // Slightly rounded for paper feel
+                // For Twilight/Glass themes, color handles opacity, but we need BackdropFilter for blur
+                // Since Structure is complex, we stick to color opacity for now unless we wrap content
+                color: isSeaFlower || theme == AppTheme.themeTwilight ? Colors.transparent : cardBg, 
+                borderRadius: BorderRadius.circular(4), 
                 boxShadow: shadows,
-                border: isSeaFlower ? Border.all(color: Colors.white.withOpacity(0.4)): null,
+                border: isSeaFlower || theme == AppTheme.themeTwilight ? Border.all(color: Colors.white.withOpacity(0.15)): null,
               ),
-              child: Column(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: BackdropFilter(
+                  filter: ui.ImageFilter.blur(
+                      sigmaX: (isSeaFlower || theme == AppTheme.themeTwilight) ? 10 : 0.001, 
+                      sigmaY: (isSeaFlower || theme == AppTheme.themeTwilight) ? 10 : 0.001
+                  ),
+                  child: Container(
+                    color: (isSeaFlower || theme == AppTheme.themeTwilight) ? cardBg : Colors.transparent, // Apply bg color here
+                    child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -485,8 +514,11 @@ class _MomentCardState extends State<MomentCard> {
               ),
             ),
           ),
-          ),
         ),
+      ),
+    ),
+  ),
+),
       ),
         
         // Actions Row (Outside RepaintBoundary)

@@ -424,7 +424,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                              child: LinearProgressIndicator(
                                value: provider.totalProgress > 0 ? provider.totalProgress : null, // Total Progress
                                backgroundColor: textColor.withOpacity(0.1),
-                               color: isSeaFlower ? const Color(0xFFD81B60) : (isMidnight ? const Color(0xFF7986cb) : (isAfterRain ? const Color(0xFF0288D1) : const Color(0xFF795548))),
+                               color: isSeaFlower ? const Color(0xFFD81B60) : (isMidnight ? const Color(0xFF7986cb) : (isAfterRain ? const Color(0xFF0288D1) : (isTwilight ? const Color(0xFFFF5252) : const Color(0xFF795548)))),
                                minHeight: 6,
                              ),
                            ),

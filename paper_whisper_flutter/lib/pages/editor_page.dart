@@ -1027,8 +1027,8 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     final bool isAmber = theme == AppTheme.themeAmberLens;
 
     // Dropdown Menu Style
-    final Color dropdownBg = isMidnight ? const Color(0xFF2D333B) : (isSeaFlower ? const Color(0xFFFFF0F5) : (theme == AppTheme.themeAfterRain ? const Color(0xFFF0F8FF) : const Color(0xFFFAF9F6)));
-    final Color dropdownText = isMidnight ? const Color(0xFFc9d1d9) : (isSeaFlower ? const Color(0xFF880E4F) : (theme == AppTheme.themeAfterRain ? const Color(0xFF455A64) : const Color(0xFF5D4037)));
+    final Color dropdownBg = isMidnight ? const Color(0xFF2D333B) : (theme == AppTheme.themeTwilight ? const Color(0xFF352044) : (isSeaFlower ? const Color(0xFFFFF0F5) : (theme == AppTheme.themeAfterRain ? const Color(0xFFF0F8FF) : const Color(0xFFFAF9F6))));
+    final Color dropdownText = isMidnight ? const Color(0xFFc9d1d9) : (theme == AppTheme.themeTwilight ? const Color(0xFFE4E0EC) : (isSeaFlower ? const Color(0xFF880E4F) : (theme == AppTheme.themeAfterRain ? const Color(0xFF455A64) : const Color(0xFF5D4037))));
 
     return DropdownButton<WeatherType>(
        value: _weather,
@@ -1073,8 +1073,8 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     final bool isMidnight = theme == AppTheme.themeMidnight;
     final bool isSeaFlower = theme == AppTheme.themeSeaFlower;
 
-    final Color menuBg = isMidnight ? const Color(0xFF2D333B) : (isSeaFlower ? const Color(0xFFFFF0F5) : (theme == AppTheme.themeAfterRain ? const Color(0xFFF0F8FF) : const Color(0xFFFAF9F6)));
-    final Color menuText = isMidnight ? const Color(0xFFc9d1d9) : (isSeaFlower ? const Color(0xFF880E4F) : (theme == AppTheme.themeAfterRain ? const Color(0xFF455A64) : const Color(0xFF5D4037)));
+    final Color menuBg = isMidnight ? const Color(0xFF2D333B) : (theme == AppTheme.themeTwilight ? const Color(0xFF352044) : (isSeaFlower ? const Color(0xFFFFF0F5) : (theme == AppTheme.themeAfterRain ? const Color(0xFFF0F8FF) : const Color(0xFFFAF9F6))));
+    final Color menuText = isMidnight ? const Color(0xFFc9d1d9) : (theme == AppTheme.themeTwilight ? const Color(0xFFE4E0EC) : (isSeaFlower ? const Color(0xFF880E4F) : (theme == AppTheme.themeAfterRain ? const Color(0xFF455A64) : const Color(0xFF5D4037))));
 
     return PopupMenuButton<MoodType>(
        initialValue: _mood,
@@ -1346,9 +1346,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
       );
   }
   
-  Widget _buildFooter(Color textColor, Color secondaryColor) {
-     return const SizedBox(height: 100); // Bottom padding for comfortable scrolling
-  }
+
 
   List<Widget> _buildExportChunks(Color textColor, Color secondaryColor, String theme) {
       if (_exportKeys.isEmpty) return [];
@@ -1378,6 +1376,8 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
          borderColor = const Color(0xFFFF9800);
       } else if (theme == AppTheme.themeAfterRain) {
          borderColor = const Color(0x339999BF);
+      } else if (theme == AppTheme.themeTwilight) {
+         borderColor = const Color(0xFFFF5252);
       } else {
          borderColor = const Color(0xFFC0392B); // Red top for default, but sidebar? Default has no sidebar usually?
          // PaperSheetWidget default theme has top border only.
@@ -1398,6 +1398,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                width: 700,
                decoration: BoxDecoration(
                  color: paperColor,
+                 border: Border(top: BorderSide(color: borderColor, width: 8)),
                  borderRadius: const BorderRadius.vertical(top: Radius.circular(0)), // Flat top for long image look? Or rounded? User said "Top space too much", maybe they want a full-bleed look? Let's keep slight rounding or square. Square is safer for 'Long Image'. Let's go SQUARE for max seamlessness, as standard screenshot.
                  // Actually, let's stick to standard paper look -> Rounded Top.
                  // But wait, user complains about "Upper part empty space".
@@ -1454,9 +1455,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
       }
 
       // --- Body Chunks ---
-      final String fullText = _isEditing 
-          ? _contentController.text 
-          : (_isPreviewMode ? _previewController.text : _contentController.text);
+
       final String textToExport = _contentController.text;
       
       final List<String> lines = textToExport.split('\n');

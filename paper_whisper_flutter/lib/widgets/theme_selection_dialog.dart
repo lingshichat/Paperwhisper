@@ -167,6 +167,8 @@ class ThemeSelectionDialog extends StatelessWidget {
       dynamic background,
       bool isActive) {
       
+    final cardAccent = AppTheme.getAccentColor(id);
+      
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
@@ -178,12 +180,12 @@ class ThemeSelectionDialog extends StatelessWidget {
             color: const Color.fromRGBO(0, 0, 0, 0.05),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-                color: isActive ? const Color(0xFFC0392B) : Colors.transparent, 
+                color: isActive ? cardAccent : Colors.transparent, 
                 width: 2
             ), 
             boxShadow: isActive ? [
                 BoxShadow(
-                    color: const Color(0xFFC0392B).withValues(alpha: 0.2),
+                    color: cardAccent.withValues(alpha: 0.2),
                     blurRadius: 8,
                     spreadRadius: 1
                 )
@@ -214,7 +216,7 @@ class ThemeSelectionDialog extends StatelessWidget {
                 style: GoogleFonts.notoSerifSc(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: isActive ? const Color(0xFFC0392B) : const Color(0xFF5D4037),
+                  color: isActive ? cardAccent : const Color(0xFF5D4037),
                 ),
               ),
               const SizedBox(height: 5),

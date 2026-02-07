@@ -62,10 +62,10 @@ class _SkeuomorphicSearchBarState extends State<SkeuomorphicSearchBar> {
     final themeConfig = AppTheme.getSearchTheme(theme);
     
     Color bgColor = themeConfig.isNotEmpty ? themeConfig['bgColor'] : (theme == AppTheme.themeSeaFlower ? const Color(0xFFF8BBD0).withOpacity(0.3) : (theme == AppTheme.themeMidnight ? const Color(0xFF010409) : (theme == AppTheme.themeAmberLens ? const Color(0xFF1E1E1E) : (theme == AppTheme.themeTwilight ? const Color(0xFF352044).withValues(alpha: 0.4) : const Color(0xFF2D1E1B)))));
-    Color textColor = themeConfig.isNotEmpty ? themeConfig['textColor'] : (theme == AppTheme.themeSeaFlower ? const Color(0xFF880E4F) : (theme == AppTheme.themeMidnight ? const Color(0xFFc9d1d9) : (theme == AppTheme.themeAmberLens ? const Color(0xFFE0E0E0) : (theme == AppTheme.themeTwilight ? const Color(0xFF4DD0E1) : const Color(0xFFD7CCC8)))));
-    Color hintColor = themeConfig.isNotEmpty ? themeConfig['hintColor'] : (theme == AppTheme.themeSeaFlower ? const Color(0xFFAD1457).withOpacity(0.5) : (theme == AppTheme.themeMidnight ? const Color(0xFF8b949e) : (theme == AppTheme.themeAmberLens ? const Color(0xFF757575) : (theme == AppTheme.themeTwilight ? const Color(0xFF4DD0E1).withValues(alpha: 0.5) : const Color(0xFFA1887F)))));
-    Color iconColor = themeConfig.isNotEmpty ? themeConfig['iconColor'] : (theme == AppTheme.themeSeaFlower ? const Color(0xFF880E4F) : (theme == AppTheme.themeMidnight ? const Color(0xFF7986cb) : (theme == AppTheme.themeAmberLens ? const Color(0xFFFFB74D) : (theme == AppTheme.themeTwilight ? const Color(0xFF4DD0E1) : const Color(0xFFD7CCC8)))));
-    Border? border = themeConfig.isNotEmpty ? themeConfig['border'] : (theme == AppTheme.themeSeaFlower ? Border.all(color: Colors.white.withOpacity(0.4), width: 1) : (theme == AppTheme.themeMidnight ? Border.all(color: Colors.white10) : (theme == AppTheme.themeAmberLens ? Border.all(color: Colors.black, width: 1) : (theme == AppTheme.themeTwilight ? Border.all(color: const Color(0xFF4DD0E1).withValues(alpha: 0.3)) : Border.all(color: Colors.black26)))));
+    Color textColor = themeConfig.isNotEmpty ? themeConfig['textColor'] : (theme == AppTheme.themeSeaFlower ? const Color(0xFF880E4F) : (theme == AppTheme.themeMidnight ? const Color(0xFFc9d1d9) : (theme == AppTheme.themeAmberLens ? const Color(0xFFE0E0E0) : (theme == AppTheme.themeTwilight ? const Color(0xFFE4E0EC) : const Color(0xFFD7CCC8)))));
+    Color hintColor = themeConfig.isNotEmpty ? themeConfig['hintColor'] : (theme == AppTheme.themeSeaFlower ? const Color(0xFFAD1457).withOpacity(0.5) : (theme == AppTheme.themeMidnight ? const Color(0xFF8b949e) : (theme == AppTheme.themeAmberLens ? const Color(0xFF757575) : (theme == AppTheme.themeTwilight ? const Color(0xFFE4E0EC).withValues(alpha: 0.5) : const Color(0xFFA1887F)))));
+    Color iconColor = themeConfig.isNotEmpty ? themeConfig['iconColor'] : (theme == AppTheme.themeSeaFlower ? const Color(0xFF880E4F) : (theme == AppTheme.themeMidnight ? const Color(0xFF7986cb) : (theme == AppTheme.themeAmberLens ? const Color(0xFFFFB74D) : (theme == AppTheme.themeTwilight ? const Color(0xFFFF5252) : const Color(0xFFD7CCC8)))));
+    Border? border = themeConfig.isNotEmpty ? themeConfig['border'] : (theme == AppTheme.themeSeaFlower ? Border.all(color: Colors.white.withOpacity(0.4), width: 1) : (theme == AppTheme.themeMidnight ? Border.all(color: Colors.white10) : (theme == AppTheme.themeAmberLens ? Border.all(color: Colors.black, width: 1) : (theme == AppTheme.themeTwilight ? Border.all(color: const Color(0xFFFF5252).withValues(alpha: 0.3)) : Border.all(color: Colors.black26)))));
 
     return Container(
       height: 48,
@@ -89,7 +89,7 @@ class _SkeuomorphicSearchBarState extends State<SkeuomorphicSearchBar> {
                     colors: theme == AppTheme.themeAfterRain 
                         ? [const Color(0xFF0288D1).withValues(alpha: 0.15), Colors.transparent] // Blue shadow for After Rain
                         : (theme == AppTheme.themeTwilight 
-                            ? [const Color(0xFF4DD0E1).withValues(alpha: 0.15), Colors.transparent] // Cyan shadow for Twilight
+                            ? [const Color(0xFFFF5252).withValues(alpha: 0.15), Colors.transparent] // Musubi Red shadow for Twilight
                             : [Colors.black.withValues(alpha: 0.2), Colors.transparent]),
                   ),
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
@@ -97,52 +97,46 @@ class _SkeuomorphicSearchBarState extends State<SkeuomorphicSearchBar> {
               ),
             ),
           
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center, // Ensure children are centered vertically
-            children: [
-              const SizedBox(width: 12),
-              Icon(Icons.search, color: iconColor, size: 20),
-              const SizedBox(width: 8),
-              Expanded(
-                child: TextField(
-                  controller: _controller,
-                  focusNode: _focusNode,
-                  textAlignVertical: TextAlignVertical.center, 
-                  style: GoogleFonts.notoSerifSc(
-                    color: textColor,
-                    fontSize: 15,
-                    height: 1.0, // Reset height to normal or 1.0 for better centering with textAlignVertical
-                  ),
-                  cursorColor: iconColor,
-                  decoration: InputDecoration(
-                    hintText: widget.hintText,
-                    hintStyle: GoogleFonts.notoSerifSc(
-                      color: hintColor,
-                      fontSize: 14,
-                      fontStyle: FontStyle.italic,
-                      height: 1.0,
-                    ),
-                    border: InputBorder.none,
-                    isDense: true,
-                    // Use a small vertical padding to help centering if font metrics are odd, 
-                    // but with alignment.centerLeft on Stack and CrossAlign.center on Row, it should be good.
-                    contentPadding: const EdgeInsets.symmetric(vertical: 8), 
-                  ),
-                  onChanged: widget.onChanged,
-                ),
+          Center(
+            child: TextField(
+              controller: _controller,
+              focusNode: _focusNode,
+              textAlignVertical: TextAlignVertical.center,
+              style: GoogleFonts.notoSerifSc(
+                color: textColor,
+                fontSize: 15,
               ),
-              if (_controller.text.isNotEmpty)
-                GestureDetector(
-                  onTap: () {
-                    _controller.clear();
-                    widget.onChanged('');
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Icon(Icons.close, color: hintColor, size: 18),
-                  ),
+              cursorColor: iconColor,
+              decoration: InputDecoration(
+                hintText: widget.hintText,
+                hintStyle: GoogleFonts.notoSerifSc(
+                  color: hintColor,
+                  fontSize: 14,
+                  fontStyle: FontStyle.italic,
                 ),
-            ],
+                border: InputBorder.none,
+                prefixIcon: Padding(
+                  padding: const EdgeInsets.only(left: 12, right: 8),
+                  child: Icon(Icons.search, color: iconColor, size: 20),
+                ),
+                prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+                suffixIcon: _controller.text.isNotEmpty
+                    ? GestureDetector(
+                        onTap: () {
+                          _controller.clear();
+                          widget.onChanged('');
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.only(right: 12),
+                          child: Icon(Icons.close, color: hintColor, size: 18),
+                        ),
+                      )
+                    : null,
+                suffixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+                contentPadding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              onChanged: widget.onChanged,
+            ),
           ),
         ],
       ),

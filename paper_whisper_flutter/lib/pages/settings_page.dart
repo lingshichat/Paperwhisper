@@ -729,6 +729,9 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
   }
 
   Widget _buildPermissionRow(BuildContext context, String title, String subtitle, IconData icon, PermissionStatus? status, Permission perm, {bool isCritical = false}) {
+     final theme = Provider.of<SettingsProvider>(context).currentTheme;
+     final textColor = AppTheme.getSettingsTheme(theme)['textColor'] ?? (theme == AppTheme.themeTwilight ? const Color(0xFFE4E0EC) : const Color(0xFF5D4037));
+     
      bool isGranted = status?.isGranted == true;
      bool isLimited = status?.isLimited == true; 
      
@@ -740,13 +743,13 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
        leading: Container(
          padding: const EdgeInsets.all(8),
          decoration: BoxDecoration(
-           color: const Color(0xFF5D4037).withOpacity(0.05),
+           color: textColor.withOpacity(0.05),
            borderRadius: BorderRadius.circular(8),
          ),
-         child: Icon(icon, color: const Color(0xFF5D4037), size: 20),
+         child: Icon(icon, color: textColor, size: 20),
        ),
-       title: Text(title, style: GoogleFonts.notoSerifSc(color: const Color(0xFF5D4037), fontWeight: FontWeight.bold, fontSize: 15)),
-       subtitle: Text(subtitle, style: GoogleFonts.notoSerifSc(color: const Color(0xFF5D4037).withOpacity(0.6), fontSize: 11)),
+       title: Text(title, style: GoogleFonts.notoSerifSc(color: textColor, fontWeight: FontWeight.bold, fontSize: 15)),
+       subtitle: Text(subtitle, style: GoogleFonts.notoSerifSc(color: textColor.withOpacity(0.6), fontSize: 11)),
        trailing: Row(
          mainAxisSize: MainAxisSize.min,
          children: [
@@ -952,6 +955,8 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
       sheetTextColor = const Color(0xFFc9d1d9);
     } else if (theme == AppTheme.themeAmberLens) {
       sheetTextColor = const Color(0xFFE0E0E0);
+    } else if (theme == AppTheme.themeTwilight) {
+      sheetTextColor = const Color(0xFFE4E0EC);
     } else {
       sheetTextColor = const Color(0xFF5D4037);
     }
@@ -1244,9 +1249,9 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
         }
     } else if (theme == AppTheme.themeTwilight) {
         if (isSelected) {
-            bgColor = const Color(0xFF4DD0E1);
+            bgColor = const Color(0xFFFF5252); // Red Knot
             textColor = const Color(0xFF352044);
-            shadow = const BoxShadow(color: Color.fromRGBO(77, 208, 225, 0.4), offset: Offset(0, 4), blurRadius: 8);
+            shadow = const BoxShadow(color: Color.fromRGBO(255, 82, 82, 0.4), offset: Offset(0, 4), blurRadius: 8);
         } else {
             bgColor = const Color(0xFF352044).withOpacity(0.6);
             textColor = const Color(0xFFBCAAA4);

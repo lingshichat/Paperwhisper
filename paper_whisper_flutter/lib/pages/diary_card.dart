@@ -203,23 +203,28 @@ class _DiaryCardState extends State<DiaryCard> {
 
     Widget containerBody;
 
-    if (isSeaFlower && themeConfig.isEmpty) {
+    // 玻璃拟态逻辑 (SeaFlower 或 Twilight)
+    if ((isSeaFlower && themeConfig.isEmpty) || widget.theme == AppTheme.themeTwilight) {
+       final bool isTwilight = widget.theme == AppTheme.themeTwilight;
        // 优化：增加背景不透明度，降低模糊强度，减少滚动时的视觉跳变
-       // 使用更高的不透明度让背景填充更"实"，减少对模糊的依赖
-       bgColor = Colors.white.withValues(alpha: 0.65);
+       // SeaFlower 使用较高的不透明度，Twilight 使用深色半透明
+       Color glassColor = isTwilight 
+           ? (themeConfig['bgColor'] ?? Colors.black.withOpacity(0.4)) 
+           : Colors.white.withValues(alpha: 0.65);
+           
+       double blurSigma = isTwilight ? 10.0 : 8.0;
 
        containerBody = ClipRRect(
-         borderRadius: BorderRadius.circular(16),
+         borderRadius: BorderRadius.circular(isTwilight ? 12 : 16),
          child: BackdropFilter(
-           // 降低模糊强度：sigma 20 -> 8，性能更好且滚动时变化更小
-           filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+           filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
            child: AnimatedContainer(
              duration: const Duration(milliseconds: 300),
              curve: Curves.easeOut,
              padding: const EdgeInsets.all(25),
              decoration: BoxDecoration(
-               color: bgColor,
-               borderRadius: BorderRadius.circular(16),
+               color: glassColor,
+               borderRadius: BorderRadius.circular(isTwilight ? 12 : 16),
                border: border,
                boxShadow: _isHovering ? hoverShadows : normalShadows,
              ),

@@ -146,13 +146,13 @@ class _TrashPageState extends State<TrashPage> {
         ? themeConfig['titleColor']
         : (isSeaFlower
             ? const Color(0xFF880E4F)
-            : (isMidnight ? const Color(0xFFe6edf3) : (isAmber ? const Color(0xFFE0E0E0) : const Color(0xFFF4ECD8))));
+            : (isMidnight ? const Color(0xFFe6edf3) : (isTwilight ? const Color(0xFFE4E0EC) : (isAmber ? const Color(0xFFE0E0E0) : const Color(0xFFF4ECD8)))));
         
     final Color iconColor = themeConfig.isNotEmpty
         ? themeConfig['iconColor']
         : (isSeaFlower
             ? const Color(0xFFAD1457)
-            : (isMidnight ? const Color(0xFFc9d1d9) : (isAmber ? const Color(0xFFFF9800) : const Color(0xFFD7CCC8))));
+            : (isMidnight ? const Color(0xFFc9d1d9) : (isTwilight ? const Color(0xFFFF5252) : (isAmber ? const Color(0xFFFF9800) : const Color(0xFFD7CCC8)))));
 
     return Stack(
       children: [

@@ -66,10 +66,10 @@ class AppTheme {
         'bg': const RadialGradient(
           center: Alignment.topLeft,
           radius: 1.0,
-          colors: [_twilightAccentCyan, Color(0xFF26C6DA)], // Comet tail effect
+          colors: [_twilightAccentRed, Color(0xFFFF8A80)], // Musubi Red (Main Accent)
         ),
         'shadow': BoxShadow(
-          color: _twilightAccentCyan.withOpacity(0.5),
+          color: _twilightAccentRed.withOpacity(0.5),
           blurRadius: 20,
           spreadRadius: -2,
           offset: const Offset(0, 0), // Glowing effect
@@ -165,7 +165,7 @@ class AppTheme {
           ],
         ),
         'textColor': _twilightTextSecondary,
-        'activeTextColor': _twilightAccentCyan,
+        'activeTextColor': _twilightAccentRed,
         'subTextColor': Color(0xFF8D6E63),
         'pillColor': _twilightSurface.withOpacity(0.6),
         'pillShadows': [
@@ -304,7 +304,7 @@ class AppTheme {
         'activeSwitchColor': _twilightAccentRed, // Red knot
         'activeTrackColor': _twilightAccentRed.withOpacity(0.3),
         'titleColor': _twilightTextPrimary,
-        'iconColor': _twilightAccentCyan,
+        'iconColor': _twilightAccentRed,
       };
     } else if (theme == themeAfterRain) {
       return {
@@ -353,8 +353,8 @@ class AppTheme {
     if (theme == themeTwilight) {
       return {
         'appBarBg': _twilightSurface.withOpacity(0.8),
-        'iconColor': _twilightTextPrimary,
-        'cursorColor': _twilightAccentCyan,
+        'iconColor': _twilightAccentRed,
+        'cursorColor': _twilightAccentRed,
         'lineColor': Colors.white.withOpacity(0.05), // Very subtle lines
         'dividerColor': Colors.white.withOpacity(0.1),
       };
@@ -377,8 +377,8 @@ class AppTheme {
         'bgColor': _twilightSurface.withOpacity(0.6), // Dark glass
         'titleColor': _twilightTextPrimary,
         'contentColor': _twilightTextSecondary,
-        'dateColor': _twilightAccentCyan,
-        'iconColor': _twilightAccentCyan,
+        'dateColor': _twilightAccentRed,
+        'iconColor': _twilightAccentRed,
         'dashedLineColor': Colors.white.withOpacity(0.1),
         'shadows': [
           BoxShadow(
@@ -459,12 +459,12 @@ class AppTheme {
         'rulerBg': _twilightSurface.withOpacity(0.9),
         'rulerTextColor': _twilightTextSecondary,
         'rulerInactiveTextColor': _twilightTextSecondary.withOpacity(0.3),
-        'rulerSubTextColor': _twilightAccentCyan,
-        'rulerInactiveSubTextColor': _twilightAccentCyan.withOpacity(0.3),
+        'rulerSubTextColor': _twilightAccentRed,
+        'rulerInactiveSubTextColor': _twilightAccentRed.withOpacity(0.3),
         'rulerIndicatorColor': _twilightAccentRed,
         'rulerShadowColor': Colors.black.withOpacity(0.2),
         'rulerBorderColor': Colors.white.withOpacity(0.1),
-        'appBarIconColor': _twilightTextPrimary,
+        'appBarIconColor': _twilightAccentRed,
         'appBarTextColor': _twilightTextPrimary,
       };
     } else if (theme == themeAfterRain) {
@@ -491,7 +491,7 @@ class AppTheme {
         'bgColor': Colors.black.withOpacity(0.2), // Darker inner shadow effect
         'textColor': _twilightTextPrimary,
         'hintColor': _twilightTextSecondary.withOpacity(0.5),
-        'iconColor': _twilightAccentCyan,
+        'iconColor': _twilightAccentRed,
         'border': Border.all(color: Colors.white.withOpacity(0.1), width: 1),
       };
     } else if (theme == themeAfterRain) {
@@ -539,11 +539,11 @@ class AppTheme {
         'paper': _twilightSurface.withOpacity(0.95),
         'title': _twilightTextPrimary,
         'text': _twilightTextSecondary,
-        'icon': _twilightAccentCyan,
+        'icon': _twilightAccentRed,
         'tape': _twilightAccentRed.withOpacity(0.3), // Red tape
-        'shadow': _twilightAccentCyan.withOpacity(0.2),
+        'shadow': _twilightAccentRed.withOpacity(0.2),
         'border': Colors.white.withOpacity(0.1),
-        'primaryBtn': _twilightAccentCyan,
+        'primaryBtn': _twilightAccentRed,
         'primaryBtnText': _twilightSurface,
         'secondaryBtn': _twilightTextSecondary,
       };
@@ -568,10 +568,10 @@ class AppTheme {
   static Map<String, dynamic> getToastTheme(String theme) {
     if (theme == themeTwilight) {
       return {
-        'success': {'bg': _twilightSurface, 'border': _twilightAccentCyan, 'icon': _twilightAccentCyan, 'text': _twilightTextPrimary},
+        'success': {'bg': _twilightSurface, 'border': _twilightAccentRed, 'icon': _twilightAccentRed, 'text': _twilightTextPrimary},
         'error': {'bg': _twilightSurface, 'border': _twilightAccentRed, 'icon': _twilightAccentRed, 'text': _twilightTextPrimary},
         'warning': {'bg': _twilightSurface, 'border': Color(0xFFFFB74D), 'icon': Color(0xFFFFB74D), 'text': _twilightTextPrimary},
-        'info': {'bg': _twilightSurface, 'border': _twilightAccentCyan, 'icon': _twilightAccentCyan, 'text': _twilightTextPrimary},
+        'info': {'bg': _twilightSurface, 'border': _twilightAccentRed, 'icon': _twilightAccentRed, 'text': _twilightTextPrimary},
       };
     } else if (theme == themeAfterRain) {
       return {
@@ -589,12 +589,12 @@ class AppTheme {
     if (theme == themeTwilight) {
       return {
         'textColor': _twilightTextPrimary,
-        'accentColor': _twilightAccentCyan,
+        'accentColor': _twilightAccentRed,
         'displayBg': Colors.black.withOpacity(0.2),
         'displayBorder': Colors.white.withOpacity(0.1),
         'keyBg': _twilightSurface.withOpacity(0.5),
         'keyBorder': Colors.white.withOpacity(0.1),
-        'keyText': _twilightAccentCyan,
+        'keyText': _twilightAccentRed,
       };
     } else if (theme == themeAfterRain) {
       return {
@@ -677,11 +677,11 @@ class AppTheme {
     switch (theme) {
       case themeTwilight:
         return const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [_twilightBgTop, _twilightBgMid, _twilightBgBottom],
-            stops: [0.0, 0.6, 1.0], // Expanded twilight zone
+          color: _twilightBgTop,
+          image: DecorationImage(
+            image: AssetImage('assets/textures/twilight_bg.png'),
+            fit: BoxFit.cover,
+            opacity: 1.0, 
           ),
         );
       case themeMidnight:
@@ -843,7 +843,7 @@ class AppTheme {
 
   static Color getAccentColor(String theme) {
     switch (theme) {
-      case themeTwilight: return _twilightAccentCyan;
+      case themeTwilight: return _twilightAccentRed;
       case themeMidnight: return _midnightAccent;
       case themeSeaFlower: return const Color(0xFFF50057);
       case themeAmberLens: return _amberAccent;
@@ -859,7 +859,7 @@ class AppTheme {
         return {
           'background': _twilightBgTop.withOpacity(0.85),
           'border': Colors.white.withOpacity(0.1),
-          'iconColor': _twilightAccentCyan,
+          'iconColor': _twilightAccentRed,
           'titleColor': _twilightTextPrimary,
           'subtitleColor': _twilightTextSecondary,
         };

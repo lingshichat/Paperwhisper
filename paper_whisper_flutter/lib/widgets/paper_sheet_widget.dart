@@ -54,7 +54,7 @@ class PaperSheetWidget extends StatelessWidget {
     } else if (theme == AppTheme.themeAfterRain) {
       border = Border.all(color: const Color(0x339999BF), width: 1); // After Rain Border
     } else if (theme == AppTheme.themeTwilight) {
-      border = Border.all(color: const Color(0xFF4DD0E1).withOpacity(0.3), width: 1);
+      border = Border.all(color: const Color(0xFFFF5252).withOpacity(0.3), width: 1);
     } else {
       border = const Border(top: BorderSide(color: Color(0xFFC0392B), width: 8)); // Default Red Top
     }

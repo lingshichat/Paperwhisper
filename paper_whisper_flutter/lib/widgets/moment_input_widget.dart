@@ -310,6 +310,23 @@ class _MomentInputWidgetState extends State<MomentInputWidget> with TickerProvid
        imageIconColor = const Color(0xFF8b949e);
        cursorColor = const Color(0xFF7986cb);
        boxShadows = [const BoxShadow(color: Colors.black45, offset: Offset(0, -1), blurRadius: 4)];
+    } else if (theme == AppTheme.themeTwilight) {
+       containerColor = const Color(0xFF352044).withValues(alpha: 0.9);
+       inputBgColor = const Color(0xFF2D1E1B).withValues(alpha: 0.5); // Darker inner
+       inputBorderColor = const Color(0xFFFF5252).withValues(alpha: 0.3);
+       textColor = const Color(0xFFE4E0EC);
+       hintColor = const Color(0xFFE4E0EC).withValues(alpha: 0.5);
+       iconColor = const Color(0xFFFF5252);
+       sendColor = const Color(0xFFFF5252);
+       imageIconColor = const Color(0xFFFF5252);
+       cursorColor = const Color(0xFFFF5252);
+       boxShadows = [
+         BoxShadow(
+           color: const Color(0xFFFF5252).withValues(alpha: 0.1), 
+           offset: const Offset(0, -4), 
+           blurRadius: 10
+         )
+       ];
     } else {
        // Default
        containerColor = const Color(0xFF2D1E1B); 

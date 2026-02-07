@@ -37,35 +37,45 @@
 
 - **光标颜色**：检查 `_buildHeader()` 和 `_buildContentArea()` 中的 `cursorColor`。
 - **装饰线颜色**：检查 `_buildAdaptiveContent()` 中的 `color` 定义。
-- **下拉菜单背景**：检查 `_buildWeatherSelector()` 和 `_buildMoodSelector()` 中的 `dropdownBg` / `menuBg`。
+- **下拉菜单样式**：
+  - 背景色：`_buildWeatherSelector()` 和 `_buildMoodSelector()` 中的 `dropdownBg` / `menuBg`。
+  - 文字颜色：同上方法中的 `dropdownText` / `menuText`。
+- **导出长图样式**：检查 `_buildExportChunks()` 中的 `borderColor`（用于长图顶部/底部的装饰边框）。
+- **桌面端顶栏**：检查 `_buildDesktopHeader()` 中的 `iconColor` 和 `textColor`。
 
 ### 2.3 设置页面 (`lib/pages/settings_page.dart`)
 
 - **标题阴影**：检查 `titleShadow` 的定义。
 - **底部弹窗样式**：检查 `_buildSkeuomorphicBottomSheet()` 和相关方法。
 - **开关颜色**：通常由 `AppTheme.getSettingsTheme()` 统一管理。
-- **主题名称显示**：检查 `_getThemeName()` 方法，确保添加了新主题的中文名称，否则会显示默认值（如"复古纸张"）。
-- **状态栏适配**：检查 `AppBar` 是否设置了 `systemOverlayStyle: AppTheme.getSystemUiOverlayStyle(theme)`。
+- **主题名称显示**：检查 `_getThemeName()` 方法，确保添加了新主题的中文名称。
+- **状态栏适配**：检查 `AppBar` 是否设置了 `systemOverlayStyle`。
 
 ### 2.4 数据同步页面 (`lib/pages/sync_settings_page.dart`)
 
-- **按钮样式**：检查 `_buildButton()` 方法中的 `isAfterRain` 等判断。
+- **按钮样式**：检查 `_buildButton()` 方法中的主题判断。
 - **输入框样式**：检查 `_buildTextField()` 方法。
 - **加载进度条**：检查 `LinearProgressIndicator` 的 `color` 属性。
-- **状态栏适配**：检查 `AppBar` 是否设置了 `systemOverlayStyle: AppTheme.getSystemUiOverlayStyle(theme)`。
+- **状态栏适配**：同上。
 
 ### 2.5 书架目录页面 (`lib/pages/book_directory_page.dart`)
 
-- **标题颜色**：检查 `appBarColor` 的判断逻辑，确保浅色主题使用深色标题。
+- **标题颜色**：检查 `appBarColor` 的判断逻辑。
 
 ### 2.6 回收站页面 (`lib/pages/trash_page.dart`)
 
-- **列表项颜色**：检查 `_buildTrashItem()` 中对不同主题的卡片颜色和文字颜色适配。
-- **状态栏适配**：检查 `AppBar` 是否设置了 `systemOverlayStyle: AppTheme.getSystemUiOverlayStyle(theme)`。
+- **列表项颜色**：检查 `_buildTrashItem()` 中对不同主题的适配。
+- **状态栏适配**：同上。
 
 ### 2.7 专注写作页面 (`lib/pages/focus_writing_page.dart`)
 
 - **遮罩透明度**：检查 Scrim 的颜色和透明度设置。
+
+### 2.8 随心记页面 (`lib/pages/moments_page.dart`)
+
+- **顶栏背景**：检查 `AppBar` 的 `backgroundColor`。
+- **标尺颜色**：检查 `RulerDatePicker` 中的颜色配置（通常由 `AppTheme.getMomentsTheme()` 管理）。
+- **输入框组件**：见组件适配部分 `MomentInputWidget`。
 
 ---
 
@@ -73,44 +83,50 @@
 
 ### 3.1 纸张组件 (`lib/widgets/paper_sheet_widget.dart`)
 
-- **书签/丝带颜色 (`accentColor`)**：在 `build()` 方法中添加新主题的颜色分支。
+- **书签/丝带颜色**：在 `build()` 方法中添加新主题的分支。
 
 ### 3.2 日期选择器 (`lib/widgets/skeuomorphic_date_picker.dart`)
 
-- **整体配色**：在 `build()` 方法的颜色定义块中添加新主题分支，包括：
-  - `dialogBg`, `headerBg`, `headerText`, `bodyText`, `accentColor`, `weekDayColor`, `border`, `shadows`
+- **整体配色**：`dialogBg`, `headerBg`, `accentColor` 等。
 
 ### 3.3 搜索栏 (`lib/widgets/skeuomorphic_search_bar.dart`)
 
-- **背景/边框/图标颜色**：检查 `build()` 方法中的颜色判断。
-- **内阴影颜色**：检查 "Simulated Inner Shadow" 部分的颜色定义。
+- **背景/边框**：检查 `build()` 中的颜色定义。
+- **图标与光标**：确保 `iconColor` 和 `cursorColor` 使用了主题强调色（如 Musubi Red）。
+- **内发光 (Glow)**：检查 `Stack` 中对于 `gradient` 的定义，确保发光颜色与主题匹配。
 
 ### 3.4 下拉刷新 (`lib/widgets/book_flip_refresh_widget.dart`)
 
-- **书本动画颜色**：在 `build()` 方法中添加 `bookColor`, `pageColor`, `textColor` 的新主题分支。
+- **书本动画颜色**：`bookColor`, `pageColor`, `textColor`。
 
 ### 3.5 月份分割线 (`lib/widgets/month_divider.dart`)
 
-- **颜色配置**：通常由 `AppTheme.getMonthDividerTheme()` 统一管理。
+- **颜色配置**：`AppTheme.getMonthDividerTheme()`。
 
 ### 3.6 对话框 (`lib/widgets/skeuomorphic_dialog.dart`)
 
-- **背景/边框/按钮颜色**：检查 `build()` 方法中的颜色判断。
+- **背景/按钮颜色**：检查 `build()` 中的颜色判断。
 
 ### 3.7 过渡动画 (`lib/widgets/paper_fold_page_route.dart`)
 
-- **信纸颜色**：在 `_getThemeColors()` 方法中添加新主题的 `_LetterColors` 配置，包括：
-  - `paper`, `foldedBack`, `border`, `shadow`, `foldLine`
+- **信纸颜色**：`_getThemeColors()` 中的 `_LetterColors` 配置（信纸背景、折痕、阴影）。
+
+### 3.8 随心记输入框 (`lib/widgets/moment_input_widget.dart`)
+
+- **容器背景**：检查 `containerColor`。
+- **输入框样式**：检查 `inputBgColor`, `inputBorderColor`。
+- **图标颜色**：特别注意 **图库图标 (`imageIconColor`)** 和 **发送按钮 (`sendColor`)** 是否需要适配主题强调色。
+- **阴影颜色**：检查 `boxShadows` 中的颜色，避免使用与主题冲突的色调（如紫色主题配青色阴影）。
 
 ---
 
 ## 四、新增主题标准流程
 
-1.  **在 `app_theme.dart` 中注册主题常量**。
-2.  **逐一检查并更新上述各 `getXxxTheme()` 方法**。
-3.  **全局搜索 `isSeaFlower` 或 `isMidnight` 等关键字**，在硬编码判断处添加新主题分支。
-4.  **运行应用，逐页面、逐组件验收视觉效果**。
-5.  **记录遗漏点，补充修复**。
+1.  **资源准备**：如果需要，将背景图放入 `assets/textures/`。
+2.  **注册常量**：在 `app_theme.dart` 中添加 `themeNewTheme`。
+3.  **配置 AppTheme**：逐一实现 `app_theme.dart` 中的 `getXxxTheme()` 方法。
+4.  **全局搜索**：搜索 `isSeaFlower` 等旧主题判断，补充新分支。
+5.  **视觉验收**：重点检查**光标**、**图标**、**阴影**和**边框**颜色是否一致。
 
 ---
 
@@ -137,6 +153,7 @@ lib/pages/settings_page.dart
 lib/pages/sync_settings_page.dart
 lib/pages/book_directory_page.dart
 lib/pages/focus_writing_page.dart
+lib/pages/moments_page.dart
 lib/widgets/paper_sheet_widget.dart
 lib/widgets/skeuomorphic_date_picker.dart
 lib/widgets/skeuomorphic_search_bar.dart
@@ -144,4 +161,6 @@ lib/widgets/book_flip_refresh_widget.dart
 lib/widgets/month_divider.dart
 lib/widgets/skeuomorphic_dialog.dart
 lib/widgets/paper_fold_page_route.dart
+lib/widgets/moment_input_widget.dart
+assets/textures/
 ```

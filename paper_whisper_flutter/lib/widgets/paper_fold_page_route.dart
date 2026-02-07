@@ -328,9 +328,9 @@ class _LetterFoldTransition extends StatelessWidget {
         return _LetterColors(
           paper: const Color(0xFF352044),
           foldedBack: const Color(0xFF2E1A3C),
-          border: const Color(0xFF4DD0E1),
-          shadow: const Color(0xFF4DD0E1),
-          foldLine: const Color(0xFF4DD0E1),
+          border: const Color(0xFFFF5252), // Musubi Red
+          shadow: const Color(0xFFFF5252),
+          foldLine: const Color(0xFFFF5252),
         );
       default: // Vintage
         return _LetterColors(

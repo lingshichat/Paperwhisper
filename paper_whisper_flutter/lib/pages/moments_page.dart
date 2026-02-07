@@ -239,12 +239,19 @@ class _MomentsPageState extends State<MomentsPage> {
     final settings = Provider.of<SettingsProvider>(context, listen: false);
     final theme = settings.currentTheme;
     final isMidnight = theme == AppTheme.themeMidnight;
+    final isTwilight = theme == AppTheme.themeTwilight;
     
-    final inputBg = isMidnight ? Colors.black.withOpacity(0.3) : Colors.white.withValues(alpha: 0.5);
-    final inputBorder = isMidnight ? Colors.white.withOpacity(0.1) : Colors.brown.shade300;
-    final hintColor = isMidnight ? Colors.white38 : Colors.brown.shade700;
-    final textColor = isMidnight ? Colors.white70 : Colors.brown.shade900;
-    final descColor = isMidnight ? Colors.white60 : Colors.black87;
+    final inputBg = isTwilight 
+        ? const Color(0xFF352044).withOpacity(0.6) 
+        : (isMidnight ? Colors.black.withOpacity(0.3) : Colors.white.withValues(alpha: 0.5));
+        
+    final inputBorder = isTwilight 
+        ? const Color(0xFFFF5252).withOpacity(0.3) 
+        : (isMidnight ? Colors.white.withOpacity(0.1) : Colors.brown.shade300);
+        
+    final hintColor = isTwilight ? const Color(0xFFE4E0EC).withOpacity(0.5) : (isMidnight ? Colors.white38 : Colors.brown.shade700);
+    final textColor = isTwilight ? const Color(0xFFE4E0EC) : (isMidnight ? Colors.white70 : Colors.brown.shade900);
+    final descColor = isTwilight ? const Color(0xFFE4E0EC).withOpacity(0.7) : (isMidnight ? Colors.white60 : Colors.black87);
 
     String? result = await showDialog<String>(
       context: context,
@@ -664,7 +671,7 @@ class _MomentsPageState extends State<MomentsPage> {
           appBar: AppBar(
             backgroundColor: (isSeaFlower || theme == AppTheme.themeAfterRain) 
                 ? (isSeaFlower ? const Color(0xFFFCE4EC).withOpacity(0.8) : const Color(0xFFF0F8FF).withOpacity(0.6)) 
-                : const Color(0xFF1E1E1E).withOpacity(0.5), 
+                : (theme == AppTheme.themeTwilight ? const Color(0xFF352044).withValues(alpha: 0.8) : const Color(0xFF1E1E1E).withOpacity(0.5)), 
             elevation: 0,
             leading: Builder(
               builder: (context) {
