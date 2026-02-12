@@ -314,7 +314,7 @@ class _LockScreenState extends State<LockScreen> with TickerProviderStateMixin {
     if (_currentMode == LockScreenMode.setup) title = "请设置新密码";
     if (_currentMode == LockScreenMode.confirm) title = "请再次确认密码";
     if (_currentMode == LockScreenMode.verify) title = "验证旧密码";
-    if (_useBiometric) title = "验证指纹";
+    if (_useBiometric) title = "验证身份";
 
     final textColor = AppTheme.getTextColor(theme);
     final themeConfig = AppTheme.getLockScreenTheme(theme);
@@ -341,8 +341,10 @@ class _LockScreenState extends State<LockScreen> with TickerProviderStateMixin {
           ),
           const SizedBox(height: 24),
           
-          if (themeConfig.isNotEmpty)
-             _buildDigitalDisplay(theme) // Reuse digital display with new colors
+          if (theme == AppTheme.themeGardenOfWords)
+             _buildDigitalDisplay(theme)
+          else if (themeConfig.isNotEmpty)
+             _buildDigitalDisplay(theme)
           else if (theme == AppTheme.themeDefault)
              _buildVintageDisplay()
           else if (theme == AppTheme.themeSeaFlower)
@@ -512,7 +514,7 @@ class _LockScreenState extends State<LockScreen> with TickerProviderStateMixin {
           const SizedBox(height: 16),
           TextButton(
             onPressed: () => _triggerBiometric(),
-            child: Text("验证指纹", style: TextStyle(color: iconColor.withOpacity(0.8))),
+            child: Text("验证身份", style: TextStyle(color: iconColor.withOpacity(0.8))),
           ),
           const SizedBox(height: 48), // Increased spacing
           TextButton(
@@ -804,6 +806,72 @@ class _SkeuomorphicKeyState extends State<SkeuomorphicKey> {
             fontWeight: FontWeight.w500,
             color: const Color(0xFF880E4F),
           ),
+        ),
+      ),
+    );
+  }
+  // 4. Dewdrop / Organic Glass Style (Garden of Words)
+  Widget _buildDewdropStyle() {
+    final accent = AppTheme.getAccentColor(AppTheme.themeGardenOfWords);
+    
+    return GestureDetector(
+      onTapDown: _handleTapDown,
+      onTapUp: _handleTapUp,
+      onTapCancel: _handleTapCancel,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        width: 76,
+        height: 76,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          // Glassy reflection + color when pressed
+          color: _isPressed 
+             ? accent.withOpacity(0.4) 
+             : const Color(0xFF1B2B21).withOpacity(0.3),
+          border: Border.all(
+             color: _isPressed ? Colors.white.withOpacity(0.8) : accent.withOpacity(0.3),
+             width: _isPressed ? 2.0 : 1.0,
+          ),
+          boxShadow: [
+             // Drop shadow for depth
+             BoxShadow(color: Colors.black.withOpacity(0.3), offset: const Offset(0, 4), blurRadius: 8),
+             // Inner glow when pressed
+             if (_isPressed) BoxShadow(color: accent, blurRadius: 12, spreadRadius: 0),
+          ]
+        ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Top shine (Dewdrop reflection)
+            Positioned(
+              top: 10,
+              left: 15,
+              child: Container(
+                width: 25,
+                height: 10,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Colors.white.withOpacity(0.3), Colors.transparent],
+                  )
+                ),
+              ),
+            ),
+            
+            Text(
+              widget.label,
+              style: GoogleFonts.notoSerifSc(
+                fontSize: 32,
+                fontWeight: _isPressed ? FontWeight.w700 : FontWeight.w400,
+                color: _isPressed ? Colors.white : accent,
+                shadows: [
+                  Shadow(color: Colors.black.withOpacity(0.3), offset: const Offset(0, 1), blurRadius: 2)
+                ]
+              ),
+            ),
+          ],
         ),
       ),
     );

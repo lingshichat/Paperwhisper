@@ -106,7 +106,7 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
       if (success) {
         await _authService.setBiometricEnabled(true);
         await _loadState();
-        if (mounted) SkeuomorphicToast.success(context, '指纹解锁已开启');
+        if (mounted) SkeuomorphicToast.success(context, '生物识别已开启');
       } else {
         if (mounted) SkeuomorphicToast.error(context, '验证失败，无法开启');
       }

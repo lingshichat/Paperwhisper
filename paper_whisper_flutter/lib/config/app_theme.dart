@@ -205,6 +205,11 @@ class AppTheme {
         ],
         'pillBorder': Border.all(color: Colors.white.withOpacity(0.05)),
         'buttonGradient': LinearGradient(colors: [_gardenAccentDark, _gardenAccent]), // Inverted for depth
+        'buttonShadow': BoxShadow(
+          color: _gardenAccentDark.withOpacity(0.4),
+          blurRadius: 10,
+          offset: const Offset(0, 4),
+        ),
       };
     } else if (theme == themeTwilight) {
       return {
@@ -227,13 +232,18 @@ class AppTheme {
         'pillColor': _twilightSurface.withOpacity(0.6),
         'pillShadows': [
           BoxShadow(
-            color: _twilightAccentCyan.withOpacity(0.1),
-            blurRadius: 8,
+            color: _twilightAccentRed.withOpacity(0.2),
+            blurRadius: 10,
             offset: const Offset(0, 0), // Glow
           ),
         ],
         'pillBorder': Border.all(color: Colors.white.withOpacity(0.1)),
-        'buttonGradient': const LinearGradient(colors: [_twilightAccentCyan, Color(0xFF00ACC1)]),
+        'buttonGradient': const LinearGradient(colors: [_twilightAccentRed, _twilightBgBottom]), // 黄昏红 -> 落日橙
+        'buttonShadow': BoxShadow(
+          color: _twilightAccentRed.withOpacity(0.4),
+          blurRadius: 12,
+          offset: const Offset(0, 4),
+        ),
       };
     } else if (theme == themeAfterRain) {
       // Glassmorphism with water droplet edges
@@ -267,6 +277,11 @@ class AppTheme {
         ],
         'pillBorder': Border.all(color: Colors.white.withOpacity(0.3)),
         'buttonGradient': const LinearGradient(colors: [_afterRainPrimaryLight, _afterRainPrimaryMain]),
+        'buttonShadow': BoxShadow(
+          color: _afterRainPrimaryMain.withOpacity(0.3),
+          blurRadius: 8,
+          offset: const Offset(0, 3),
+        ),
       };
     } else if (theme == themeSeaFlower) {
       return {
@@ -283,6 +298,11 @@ class AppTheme {
         ],
         'pillBorder': null,
         'buttonGradient': const LinearGradient(colors: [Color(0xFFF06292), Color(0xFFD81B60)]),
+        'buttonShadow': BoxShadow(
+          color: const Color(0xFFD81B60).withOpacity(0.3),
+          blurRadius: 8,
+          offset: const Offset(0, 4),
+        ),
       };
     } else if (theme == themeMidnight) {
       return {
@@ -300,6 +320,11 @@ class AppTheme {
         ],
         'pillBorder': Border.all(color: Colors.white10),
         'buttonGradient': const LinearGradient(colors: [Color(0xFF7986cb), Color(0xFF3F51B5)]),
+        'buttonShadow': BoxShadow(
+          color: const Color(0xFF3F51B5).withOpacity(0.4),
+          blurRadius: 10,
+          offset: const Offset(0, 4),
+        ),
       };
     } else if (theme == themeAmberLens) {
       return {
@@ -883,12 +908,13 @@ class AppTheme {
           )
         );
       case themeTwilight:
+        // 纯色渐变：深靛蓝 → 品红 → 落日橙，模拟黄昏天空
         return const BoxDecoration(
-          color: _twilightBgTop,
-          image: DecorationImage(
-            image: AssetImage('assets/textures/twilight_bg.png'),
-            fit: BoxFit.cover,
-            opacity: 1.0, 
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [_twilightBgTop, _twilightBgMid, _twilightBgBottom],
+            stops: [0.0, 0.5, 1.0],
           ),
         );
       case themeMidnight:

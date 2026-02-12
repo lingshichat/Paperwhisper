@@ -587,7 +587,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
       } else if (isAfterRain) {
         gradient = const LinearGradient(colors: [Color(0xFF4FC3F7), Color(0xFF0288D1)]);
       } else if (isTwilight) {
-        gradient = const LinearGradient(colors: [Color(0xFF4DD0E1), Color(0xFF26C6DA)]);
+      gradient = const LinearGradient(colors: [Color(0xFFEF5350), Color(0xFFC62828)]); // 黄昏红
       } else if (isGardenOfWords) {
         gradient = const LinearGradient(colors: [Color(0xFF8BC34A), Color(0xFF558B2F)]); // Fresh Leaf
       } else {
@@ -605,8 +605,8 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
          color = Colors.white.withOpacity(0.6);
          textColor = const Color(0xFF0277BD);
       } else if (isTwilight) {
-         color = const Color(0xFF352044).withOpacity(0.6);
-         textColor = const Color(0xFF4DD0E1);
+       color = const Color(0xFF352044).withOpacity(0.6);
+       textColor = const Color(0xFFEF5350); // 黄昏红
       } else if (isGardenOfWords) {
          color = Colors.white.withOpacity(0.6);
          textColor = const Color(0xFF2E4A35);
@@ -633,7 +633,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                     ? const Color(0xFFAD1457).withOpacity(0.3) 
                     : (isMidnight 
                         ? const Color(0xFF283593).withOpacity(0.4) 
-                        : (isAfterRain ? const Color(0xFF0288D1).withOpacity(0.3) : (isTwilight ? const Color(0xFF4DD0E1).withOpacity(0.3) : (isGardenOfWords ? const Color(0xFF8BC34A).withOpacity(0.3) : Colors.black26)))),
+                        : (isAfterRain ? const Color(0xFF0288D1).withOpacity(0.3) : (isTwilight ? const Color(0xFFEF5350).withOpacity(0.3) : (isGardenOfWords ? const Color(0xFF8BC34A).withOpacity(0.3) : Colors.black26)))),
                 blurRadius: 6,
                 offset: const Offset(0, 3)
               )
@@ -641,7 +641,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
             border: !isPrimary ? Border.all(
                color: isSeaFlower 
                   ? const Color(0xFFAD1457).withOpacity(0.2) 
-                  : (isAfterRain ? const Color(0xFF0288D1).withOpacity(0.2) : (isTwilight ? const Color(0xFF4DD0E1).withOpacity(0.2) : (isGardenOfWords ? const Color(0xFF8BC34A).withOpacity(0.2) : Colors.white.withOpacity(0.1))))
+                  : (isAfterRain ? const Color(0xFF0288D1).withOpacity(0.2) : (isTwilight ? const Color(0xFFEF5350).withOpacity(0.2) : (isGardenOfWords ? const Color(0xFF8BC34A).withOpacity(0.2) : Colors.white.withOpacity(0.1))))
             ) : null,
           ),
           child: Text(

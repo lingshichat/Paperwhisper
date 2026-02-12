@@ -331,7 +331,7 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
               context: context,
               icon: Icons.lock_outline,
               title: '密码锁',
-              subtitle: '指纹与密码保护',
+              subtitle: '生物识别与密码保护',
               isSeaFlower: isSeaFlower,
               isMidnight: isMidnight,
               textColor: textColor,

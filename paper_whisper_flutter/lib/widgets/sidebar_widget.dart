@@ -152,15 +152,13 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                          padding: const EdgeInsets.symmetric(vertical: 14),
                           decoration: BoxDecoration(
                             // Solid-like look but with gradient to simulate lighting (Bevel)
-                            // This avoids "borderRadius with non-uniform borders" crash
                             gradient: config['buttonGradient'],
                                         
                             // Rounded Corners (Restore)
                             borderRadius: BorderRadius.circular(10),
                             
                             boxShadow: [
-                               // Drop Shadow (Soft)
-                               BoxShadow(
+                               config['buttonShadow'] as BoxShadow? ?? BoxShadow(
                                  color: Colors.black.withOpacity(0.3),
                                  offset: const Offset(0, 3), // Bottom shadow
                                  blurRadius: 6,

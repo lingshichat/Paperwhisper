@@ -110,7 +110,7 @@ class _FeatureComparisonSheetState extends State<FeatureComparisonSheet> {
                          _buildRow("专注写作", "✅ 无限篇数", "✅ 无限", "✅ 无限"),
                          _buildRow("目录标题自定义", "✅ 支持", "✅ 支持", "✅ 支持"),
                          _buildRow("书籍封面/标题自定义", "✅ 支持", "✅ 支持", "✅ 支持"),
-                         _buildRow("安全锁", "✅ 数字密码", "✅ 指纹 + 密码", "✅ 指纹 + 密码"),
+                         _buildRow("安全锁", "✅ 数字密码", "✅ 生物识别 + 密码", "✅ 生物识别 + 密码"),
                          _buildRow("拟物主题", "✅ 4款精选", "✅ 4款+2款专属", "✅ 所有+月更"),
                          
                          _buildDivider(),
