@@ -34,7 +34,7 @@ class DraftService {
     final key = '$_draftPrefix$id';
     final jsonStr = prefs.getString(key);
     
-    if (jsonStr == null) return null;
+    if (jsonStr == null || jsonStr.isEmpty) return null;
     
     try {
       final data = jsonDecode(jsonStr);

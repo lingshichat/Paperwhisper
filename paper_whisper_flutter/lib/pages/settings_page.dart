@@ -965,6 +965,8 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
       sheetTextColor = const Color(0xFFE0E0E0);
     } else if (theme == AppTheme.themeTwilight) {
       sheetTextColor = const Color(0xFFE4E0EC);
+    } else if (theme == AppTheme.themeGardenOfWords) {
+      sheetTextColor = const Color(0xFFECEFF1); // Light Blue Grey
     } else {
       sheetTextColor = const Color(0xFF5D4037);
     }
@@ -1117,6 +1119,13 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
         tapeColor = const Color(0xFFFF5252).withOpacity(0.3);
         shadows = [BoxShadow(color: const Color(0xFF4DD0E1).withOpacity(0.15), blurRadius: 20, offset: const Offset(0, -5))];
         border = Border.all(color: Colors.white.withOpacity(0.1), width: 1);
+    } else if (theme == AppTheme.themeGardenOfWords) {
+        // Garden of Words: Dark Glass + Green Accent
+        bgColor = const Color(0xFF263238).withOpacity(0.95);
+        titleColor = const Color(0xFFECEFF1);
+        tapeColor = Colors.white.withOpacity(0.5);
+        shadows = [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 20, offset: const Offset(0, -5))];
+        border = Border.all(color: Colors.white.withOpacity(0.1), width: 1);
     } else {
       // Vintage: Solid Paper + Tape
       bgColor = const Color(0xFFF4ECD8);
@@ -1267,13 +1276,13 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
         }
     } else if (theme == AppTheme.themeGardenOfWords) {
         if (isSelected) {
-            bgColor = const Color(0xFF66BB6A); // Fresh Green Accent
+            bgColor = const Color(0xFF8BC34A).withOpacity(0.8); // Fresh Green Accent
             textColor = Colors.white;          // White text
-            shadow = const BoxShadow(color: Color.fromRGBO(102, 187, 106, 0.4), offset: Offset(0, 4), blurRadius: 8);
+            shadow = const BoxShadow(color: Color.fromRGBO(139, 195, 74, 0.4), offset: Offset(0, 4), blurRadius: 8);
         } else {
-            bgColor = const Color(0xFF37474F).withOpacity(0.6); // Dark Blue Grey glass
+            bgColor = const Color(0xFF37474F).withOpacity(0.4); // Dark Blue Grey glass
             textColor = const Color(0xFFCFD8DC);                // Light Blue Grey text
-            border = Border.all(color: const Color(0xFF66BB6A).withOpacity(0.3));
+            border = Border.all(color: const Color(0xFF8BC34A).withOpacity(0.3));
         }
     } else {
       // Vintage

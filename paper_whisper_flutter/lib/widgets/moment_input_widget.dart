@@ -328,20 +328,20 @@ class _MomentInputWidgetState extends State<MomentInputWidget> with TickerProvid
          )
        ];
     } else if (theme == AppTheme.themeGardenOfWords) {
-       containerColor = const Color(0xFF2E4A35).withValues(alpha: 0.95);
-       inputBgColor = const Color(0xFFF0F4F2);
-       inputBorderColor = const Color(0xFF8BC34A).withValues(alpha: 0.5);
-       textColor = const Color(0xFF5A6B72);
-       hintColor = const Color(0xFF5A6B72).withValues(alpha: 0.7);
+       containerColor = const Color(0xFF263238).withOpacity(0.95); // Dark Blue Grey (Wet Stone)
+       inputBgColor = const Color(0xFF37474F).withOpacity(0.5); // Darker input bg
+       inputBorderColor = const Color(0xFF8BC34A).withOpacity(0.3);
+       textColor = const Color(0xFFECEFF1); // Light Text
+       hintColor = const Color(0xFFB0BEC5).withOpacity(0.7);
        iconColor = const Color(0xFF8BC34A);
        sendColor = const Color(0xFF8BC34A);
        imageIconColor = const Color(0xFF8BC34A);
        cursorColor = const Color(0xFF8BC34A);
        boxShadows = [
          BoxShadow(
-           color: const Color(0xFF2E4A35).withValues(alpha: 0.2), 
+           color: Colors.black.withOpacity(0.3), 
            offset: const Offset(0, -4), 
-           blurRadius: 10
+           blurRadius: 15
          )
        ];
     } else {

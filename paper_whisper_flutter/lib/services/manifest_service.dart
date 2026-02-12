@@ -27,6 +27,10 @@ class ManifestService {
     if (await _manifestFile!.exists()) {
       try {
         final content = await _manifestFile!.readAsString();
+        if (content.isEmpty) {
+          _cachedManifest = SyncManifest(lastSyncTimestamp: 0, items: {});
+          return;
+        }
         final json = jsonDecode(content);
         _cachedManifest = SyncManifest.fromJson(json);
       } catch (e) {

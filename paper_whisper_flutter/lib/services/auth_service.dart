@@ -1,5 +1,6 @@
 
 import 'dart:convert';
+import 'dart:io' show Platform;
 import 'package:crypto/crypto.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -110,10 +111,12 @@ class AuthService {
       
       print('DEBUG: invoking _localAuth.authenticate');
 
+      // Windows 上允许 PIN 认证（Windows Hello），移动端仅生物识别
+      final bool bioOnly = !Platform.isWindows;
+
       return await _localAuth.authenticate(
-        localizedReason: '请验证指纹以解锁日记',
-        // local_auth v3.0 API：使用直接参数代替 AuthenticationOptions
-        biometricOnly: true,
+        localizedReason: '请验证身份以解锁日记',
+        biometricOnly: bioOnly,
         persistAcrossBackgrounding: true,
       );
     } on LocalAuthException catch (e) {
@@ -123,6 +126,10 @@ class AuthService {
     } on PlatformException catch (e) {
       // 兼容旧版本可能的异常
       print('DEBUG: Platform error: $e');
+      return false;
+    } catch (e) {
+      // 兜底：捕获所有其他未知异常，防止崩溃
+      print('DEBUG: Unexpected auth error: $e');
       return false;
     }
   }

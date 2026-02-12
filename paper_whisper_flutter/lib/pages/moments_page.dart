@@ -391,7 +391,7 @@ class _MomentsPageState extends State<MomentsPage> {
     
     // Search Integration
     final diaryProvider = Provider.of<DiaryProvider>(context);
-    final String searchQuery = diaryProvider.searchQuery;
+    final String searchQuery = diaryProvider.momentsSearchQuery;
     final bool isSearchActive = searchQuery.isNotEmpty;
 
     // Filter Logic if searching
@@ -639,7 +639,7 @@ class _MomentsPageState extends State<MomentsPage> {
         if (_isSearching) {
            headerTitle = SkeuomorphicSearchBar(
              value: searchQuery,
-             onChanged: (val) => diaryProvider.setSearchQuery(val),
+             onChanged: (val) => diaryProvider.setMomentsSearchQuery(val),
              autoFocus: true,
            );
         } else {
@@ -669,13 +669,15 @@ class _MomentsPageState extends State<MomentsPage> {
              child: SidebarWidget(),
           ),
           appBar: AppBar(
-            backgroundColor: (isSeaFlower || theme == AppTheme.themeAfterRain || theme == AppTheme.themeGardenOfWords) 
+            backgroundColor: (isSeaFlower || theme == AppTheme.themeAfterRain) 
                 ? (isSeaFlower 
                     ? const Color(0xFFFCE4EC).withOpacity(0.8) 
-                    : (theme == AppTheme.themeGardenOfWords 
-                        ? const Color(0xFFF0F4F2).withOpacity(0.9) // Garden Mist White
-                        : const Color(0xFFF0F8FF).withOpacity(0.6))) // AfterRain
-                : (theme == AppTheme.themeTwilight ? const Color(0xFF352044).withValues(alpha: 0.8) : const Color(0xFF1E1E1E).withOpacity(0.5)), 
+                    : const Color(0xFFF0F8FF).withOpacity(0.6)) // AfterRain
+                : (theme == AppTheme.themeGardenOfWords 
+                    ? const Color(0xFF263238).withOpacity(0.8) // Dark Glass for Garden
+                    : (theme == AppTheme.themeTwilight 
+                        ? const Color(0xFF352044).withValues(alpha: 0.8) 
+                        : const Color(0xFF1E1E1E).withOpacity(0.5))), 
             elevation: 0,
             leading: Builder(
               builder: (context) {

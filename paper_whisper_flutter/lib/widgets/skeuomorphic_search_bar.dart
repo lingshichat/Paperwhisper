@@ -135,7 +135,8 @@ class _SkeuomorphicSearchBarState extends State<SkeuomorphicSearchBar> {
                       )
                     : null,
                 suffixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
-                contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                isDense: true,
+                contentPadding: const EdgeInsets.only(top: 8, bottom: 12),
               ),
               onChanged: widget.onChanged,
             ),

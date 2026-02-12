@@ -60,14 +60,14 @@ class AppTheme {
   static const Color _twilightSurface = Color(0xFF352044); // Deep Purple GlassBase
 
 
-  // Garden of Words Theme Colors (Redesigned: Rainy Garden)
-  static const Color _gardenBgCenter = Color(0xFF37474F); // Blue Grey 800 (Deep Rainy Sky)
-  static const Color _gardenBgEdge = Color(0xFF263238);   // Blue Grey 900 (Dark Stone)
-  static const Color _gardenSurface = Color(0xFFF5F9F8);  // Cold damp paper (Mint White)
-  static const Color _gardenTextPrimary = Color(0xFF263238); // Ink on wet paper
-  static const Color _gardenTextSecondary = Color(0xFF546E7A); // Slate Grey
-  static const Color _gardenAccent = Color(0xFF66BB6A);   // Fresh Green (New leaves)
-  static const Color _gardenAccentDark = Color(0xFF2E7D32); // Deep Forest Green
+  // Garden of Words Theme Colors (Redesigned: Rainy Garden - Dark Glass)
+  static const Color _gardenBgCenter = Color(0xFF37474F); // Blue Grey 800
+  static const Color _gardenBgEdge = Color(0xFF263238);   // Blue Grey 900
+  static const Color _gardenSurface = Color(0xFF455A64);  // Blue Grey 700 (Base for glass)
+  static const Color _gardenTextPrimary = Color(0xFFECEFF1); // Blue Grey 50 (Light Text)
+  static const Color _gardenTextSecondary = Color(0xFFB0BEC5); // Blue Grey 200 (Sub Text)
+  static const Color _gardenAccent = Color(0xFF81C784);   // Lighter Green for Dark Mode
+  static const Color _gardenAccentDark = Color(0xFF4CAF50); // Mid Green
 
 
   // 1. FAB Theme
@@ -180,31 +180,31 @@ class AppTheme {
     if (theme == themeGardenOfWords) {
       return {
         'bgDecoration': BoxDecoration(
-          color: Colors.white.withOpacity(0.15), // Frosty Glass (Rainy Window)
+          color: const Color(0xFF263238).withOpacity(0.6), // Darker glass
           border: Border(
-            right: BorderSide(color: Colors.white.withOpacity(0.2), width: 1),
+            right: BorderSide(color: Colors.white.withOpacity(0.05), width: 1),
           ), 
           boxShadow: [
              BoxShadow(
-               color: Colors.black.withOpacity(0.2), // Deeper shadow for depth
+               color: Colors.black.withOpacity(0.3), 
                blurRadius: 20, 
                offset: const Offset(5, 0)
              )
           ],
         ),
-        'textColor': const Color(0xFFCFD8DC), // Light Blue Grey text on dark/glass bg
-        'activeTextColor': _gardenAccent,     // Fresh Green glow
-        'subTextColor': const Color(0xFF90A4AE),
-        'pillColor': Colors.white.withOpacity(0.1), // Glass pill
+        'textColor': const Color(0xFFB0BEC5),
+        'activeTextColor': _gardenAccent,
+        'subTextColor': const Color(0xFF78909C),
+        'pillColor': Colors.white.withOpacity(0.05),
         'pillShadows': [
           BoxShadow(
               color: _gardenAccent.withOpacity(0.1), 
               offset: const Offset(0, 0), 
-              blurRadius: 8,
-              spreadRadius: 1), // Green Glow
+              blurRadius: 10,
+              spreadRadius: 0),
         ],
-        'pillBorder': Border.all(color: Colors.white.withOpacity(0.15)),
-        'buttonGradient': const LinearGradient(colors: [_gardenAccent, _gardenAccentDark]),
+        'pillBorder': Border.all(color: Colors.white.withOpacity(0.05)),
+        'buttonGradient': LinearGradient(colors: [_gardenAccentDark, _gardenAccent]), // Inverted for depth
       };
     } else if (theme == themeTwilight) {
       return {
@@ -345,23 +345,23 @@ class AppTheme {
     if (theme == themeGardenOfWords) {
       return {
         'groupDecoration': BoxDecoration(
-          color: Colors.white.withOpacity(0.7),
+          color: const Color(0xFF263238).withOpacity(0.5), // Dark Glass
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: _gardenAccent.withOpacity(0.3), width: 1),
           boxShadow: [
             BoxShadow(
-              color: _gardenAccent.withOpacity(0.1),
+              color: Colors.black.withOpacity(0.2),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
           ],
         ),
-        'dividerColor': _gardenAccent.withOpacity(0.1),
-        'textColor': _gardenTextSecondary,
+        'dividerColor': Colors.white.withOpacity(0.1),
+        'textColor': const Color(0xFFCFD8DC),
         'activeSwitchColor': _gardenAccent,
         'activeTrackColor': _gardenAccent.withOpacity(0.3),
-        'titleColor': _gardenTextSecondary,
-        'iconColor': _gardenAccentDark,
+        'titleColor': const Color(0xFFECEFF1),
+        'iconColor': _gardenAccent,
       };
     } else if (theme == themeTwilight) {
       return {
@@ -430,11 +430,11 @@ class AppTheme {
   static Map<String, dynamic> getEditorTheme(String theme) {
     if (theme == themeGardenOfWords) {
       return {
-        'appBarBg': _gardenSurface.withOpacity(0.9),
+        'appBarBg': const Color(0xFF263238).withOpacity(0.9),
         'iconColor': _gardenTextSecondary,
-        'cursorColor': _gardenAccentDark,
-        'lineColor': _gardenAccent.withOpacity(0.2),
-        'dividerColor': _gardenAccent.withOpacity(0.2),
+        'cursorColor': _gardenAccent,
+        'lineColor': Colors.white.withOpacity(0.05),
+        'dividerColor': Colors.white.withOpacity(0.05),
       };
     } else if (theme == themeTwilight) {
       return {
@@ -460,27 +460,27 @@ class AppTheme {
   static Map<String, dynamic> getDiaryCardTheme(String theme) {
     if (theme == themeGardenOfWords) {
       return {
-        'bgColor': Colors.white.withOpacity(0.8), // Clean washi paper
-        'titleColor': _gardenTextSecondary,
-        'contentColor': _gardenTextSecondary.withOpacity(0.9),
-        'dateColor': _gardenAccentDark,
-        'iconColor': _gardenAccentDark,
-        'dashedLineColor': _gardenAccent.withOpacity(0.3),
+        'bgColor': const Color(0xFF455A64).withOpacity(0.3), // Dark Glass Card
+        'titleColor': _gardenTextPrimary,
+        'contentColor': _gardenTextSecondary,
+        'dateColor': _gardenAccent,
+        'iconColor': _gardenAccent,
+        'dashedLineColor': Colors.white.withOpacity(0.1),
         'shadows': [
           BoxShadow(
-            color: _gardenAccent.withOpacity(0.1),
+            color: Colors.black.withOpacity(0.2),
             offset: const Offset(0, 4),
-            blurRadius: 10,
+            blurRadius: 12,
           )
         ],
         'hoverShadows': [
           BoxShadow(
-            color: _gardenAccent.withOpacity(0.2),
+            color: _gardenAccent.withOpacity(0.1),
             offset: const Offset(0, 8),
             blurRadius: 20,
           )
         ],
-        'border': Border.all(color: _gardenAccent.withOpacity(0.2), width: 1),
+        'border': Border.all(color: Colors.white.withOpacity(0.1), width: 1),
       };
     } else if (theme == themeTwilight) {
       return {
@@ -579,16 +579,16 @@ class AppTheme {
   static Map<String, dynamic> getMomentsTheme(String theme) {
     if (theme == themeGardenOfWords) {
       return {
-        'rulerBg': _gardenSurface.withOpacity(0.9),
+        'rulerBg': const Color(0xFF263238).withOpacity(0.95),
         'rulerTextColor': _gardenTextSecondary,
-        'rulerInactiveTextColor': _gardenTextSecondary.withOpacity(0.4),
-        'rulerSubTextColor': _gardenAccentDark,
-        'rulerInactiveSubTextColor': _gardenAccentDark.withOpacity(0.4),
-        'rulerIndicatorColor': _gardenAccentDark,
-        'rulerShadowColor': _gardenAccent.withOpacity(0.1),
-        'rulerBorderColor': _gardenAccent.withOpacity(0.3),
-        'appBarIconColor': _gardenTextSecondary,
-        'appBarTextColor': _gardenTextSecondary,
+        'rulerInactiveTextColor': _gardenTextSecondary.withOpacity(0.3),
+        'rulerSubTextColor': _gardenAccent,
+        'rulerInactiveSubTextColor': _gardenAccent.withOpacity(0.4),
+        'rulerIndicatorColor': _gardenAccent,
+        'rulerShadowColor': Colors.black.withOpacity(0.3),
+        'rulerBorderColor': Colors.white.withOpacity(0.05),
+        'appBarIconColor': _gardenTextPrimary,
+        'appBarTextColor': _gardenTextPrimary,
       };
     } else if (theme == themeTwilight) {
       return {
@@ -624,11 +624,11 @@ class AppTheme {
   static Map<String, dynamic> getSearchTheme(String theme) {
     if (theme == themeGardenOfWords) {
       return {
-        'bgColor': Colors.white.withOpacity(0.7),
+        'bgColor': const Color(0xFF263238).withOpacity(0.5), // Dark glass
         'textColor': _gardenTextSecondary,
         'hintColor': _gardenTextSecondary.withOpacity(0.5),
-        'iconColor': _gardenAccentDark,
-        'border': Border.all(color: _gardenAccent.withOpacity(0.3), width: 1.5),
+        'iconColor': _gardenAccent,
+        'border': Border.all(color: _gardenAccent.withOpacity(0.3), width: 1),
       };
     } else if (theme == themeTwilight) {
       return {
@@ -654,13 +654,13 @@ class AppTheme {
   static Map<String, dynamic> getMonthDividerTheme(String theme) {
     if (theme == themeGardenOfWords) {
       return {
-        'textColor': _gardenTextSecondary,
-        'lineColor': _gardenAccent.withOpacity(0.3),
-        'paperColor': Colors.white.withOpacity(0.8),
+        'textColor': _gardenAccent, // Grass Green Text
+        'lineColor': _gardenAccent.withOpacity(0.5), // Grass Green Line
+        'paperColor': _gardenSurface.withOpacity(0.8), // Dark Glass
         'shadows': [
           BoxShadow(
-            color: _gardenAccent.withOpacity(0.1),
-            blurRadius: 6,
+            color: _gardenAccent.withOpacity(0.15), // Greenish glow
+            blurRadius: 10,
             offset: const Offset(0, 3),
           )
         ],
@@ -699,7 +699,7 @@ class AppTheme {
         'icon': _gardenAccentDark,
         'tape': Colors.white.withOpacity(0.5), // Whitish translucent tape (like scotch tape)
         'shadow': Colors.black.withOpacity(0.15),
-        'border': Colors.white,
+        'border': Colors.white.withOpacity(0.2),
         'primaryBtn': _gardenAccent,
         'primaryBtnText': Colors.white,
         'secondaryBtn': _gardenTextSecondary,
@@ -762,36 +762,34 @@ class AppTheme {
   }
 
   // 12. Lock Screen Theme
+  // 12. Lock Screen Theme
   static Map<String, dynamic> getLockScreenTheme(String theme) {
     if (theme == themeGardenOfWords) {
       return {
-        'textColor': _gardenTextSecondary,
-        'accentColor': _gardenAccent,
-        'displayBg': Colors.white.withOpacity(0.4),
-        'displayBorder': Colors.white.withOpacity(0.6),
-        'keyBg': Colors.white.withOpacity(0.3),
-        'keyBorder': Colors.white.withOpacity(0.5),
-        'keyText': _gardenAccentDark,
+        'displayBg': _gardenSurface.withOpacity(0.3), // Darker glass
+        'displayBorder': _gardenAccent.withOpacity(0.3),
+        'accentColor': _gardenAccent, // Grass Green
+        'keyBg': _gardenSurface.withOpacity(0.4), // Frosted key
+        'keyBorder': _gardenAccent.withOpacity(0.2),
+        'keyText': _gardenTextSecondary,
       };
     } else if (theme == themeTwilight) {
       return {
-        'textColor': _twilightTextPrimary,
+        'displayBg': _twilightBgTop.withOpacity(0.3),
+        'displayBorder': _twilightAccentRed.withOpacity(0.3),
         'accentColor': _twilightAccentRed,
-        'displayBg': Colors.black.withOpacity(0.2),
-        'displayBorder': Colors.white.withOpacity(0.1),
-        'keyBg': _twilightSurface.withOpacity(0.5),
-        'keyBorder': Colors.white.withOpacity(0.1),
-        'keyText': _twilightAccentRed,
+        'keyBg': _twilightSurface.withOpacity(0.4),
+        'keyBorder': _twilightAccentRed.withOpacity(0.2),
+        'keyText': _twilightTextPrimary,
       };
     } else if (theme == themeAfterRain) {
       return {
-        'textColor': _afterRainTextSecondary,
+        'displayBg': Colors.white.withOpacity(0.4),
+        'displayBorder': Colors.white.withOpacity(0.6),
         'accentColor': _afterRainAccentBlue,
-        'displayBg': Colors.white.withOpacity(0.3),
-        'displayBorder': Colors.white.withOpacity(0.5),
-        'keyBg': Colors.white.withOpacity(0.2), // Water drop keys
-        'keyBorder': Colors.white.withOpacity(0.4),
-        'keyText': _afterRainAccentBlue,
+        'keyBg': Colors.white.withOpacity(0.5),
+        'keyBorder': Colors.white.withOpacity(0.8),
+        'keyText': _afterRainTextSecondary,
       };
     }
     return {};
@@ -1075,8 +1073,8 @@ class AppTheme {
     switch (theme) {
       case themeGardenOfWords:
         return {
-          'background': _gardenSurface.withOpacity(0.85),
-          'border': Colors.white.withOpacity(0.4),
+          'background': _gardenSurface.withOpacity(0.9), 
+          'border': _gardenAccent.withOpacity(0.3), // Grass Green Divider
           'iconColor': _gardenAccentDark,
           'titleColor': _gardenTextSecondary,
           'subtitleColor': _gardenTextSecondary.withOpacity(0.7),
@@ -1144,8 +1142,8 @@ class AppTheme {
 
     if (theme == themeGardenOfWords) {
       seedColor = _gardenAccent;
-      scaffoldBg = _gardenSurface;
-      brightness = Brightness.light;
+      scaffoldBg = _gardenBgCenter; // Use the dark background color
+      brightness = Brightness.dark; // Switch to Dark Mode
     } else if (theme == themeTwilight) {
       seedColor = _twilightBgMid;
       scaffoldBg = _twilightBgTop; // Base for scaffold, usually covered by container gradient
@@ -1205,6 +1203,8 @@ class AppTheme {
       ),
     );
   }
+
+
 }
 
 /// 自定义的拟物风转场动画
@@ -1242,4 +1242,5 @@ class _SkeuomorphicPageTransitionsBuilder extends PageTransitionsBuilder {
       ),
     );
   }
+
 }

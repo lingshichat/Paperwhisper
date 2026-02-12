@@ -9,6 +9,12 @@ class PlatformUtils {
   
   /// 缓存检测结果，避免重复调用原生代码
   static bool? _isHarmonyOSCached;
+
+  /// 是否为桌面端 (Windows, macOS, Linux)
+  static bool get isDesktop {
+    if (kIsWeb) return false;
+    return Platform.isWindows || Platform.isMacOS || Platform.isLinux;
+  }
   
   /// 检测当前设备是否为鸿蒙系统 (HarmonyOS)
   /// 

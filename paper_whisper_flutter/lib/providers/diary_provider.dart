@@ -18,7 +18,11 @@ class DiaryProvider with ChangeNotifier {
   Map<String, int> _monthIndexMap = {}; 
 
 
-  String _searchQuery = '';
+  String _diarySearchQuery = '';
+  String _momentsSearchQuery = '';
+  
+  // Legacy support for _searchQuery usage if any internal
+  String get _searchQuery => _diarySearchQuery;
   
 
   List<DiaryEntry> get entries => _entries;
@@ -28,7 +32,9 @@ class DiaryProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   String get debugPath => _debugPath;
   DiaryService get service => _service;
-  String get searchQuery => _searchQuery;
+  String get diarySearchQuery => _diarySearchQuery;
+  String get momentsSearchQuery => _momentsSearchQuery;
+  String get searchQuery => _diarySearchQuery;
 
   DiaryProvider([DiaryService? service, List<DiaryEntry>? initialEntries]) : _service = service ?? DiaryService() {
     if (initialEntries != null && initialEntries.isNotEmpty) {
@@ -44,9 +50,19 @@ class DiaryProvider with ChangeNotifier {
     }
   }
 
-  void setSearchQuery(String query) {
-    _searchQuery = query;
+  void setDiarySearchQuery(String query) {
+    _diarySearchQuery = query;
     notifyListeners();
+  }
+
+  void setMomentsSearchQuery(String query) {
+    _momentsSearchQuery = query;
+    notifyListeners();
+  }
+
+  // Legacy fallback
+  void setSearchQuery(String query) {
+    setDiarySearchQuery(query);
   }
 
   Future<void> loadEntries({bool silent = false}) async {

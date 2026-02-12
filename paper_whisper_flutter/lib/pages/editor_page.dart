@@ -194,6 +194,9 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   }
 
   // Restore Logic
+  // Static lock to prevent multiple dialogs (e.g. double click opening two pages)
+  static bool _isDialogShowing = false;
+
   Future<void> _checkDraft() async {
     if (_hasCheckedDraft) return;
     _hasCheckedDraft = true;
@@ -207,8 +210,6 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     // 如果是编辑旧日记，对比内容是否不同
     if (id != 'new') {
        final currentContent = widget.entry?.content ?? '';
-       // 如果草稿内容完全一样，就没必要提示了(可能是上次正常保存遗留的?)
-       // 但我们在 save() 成功后会 clearDraft，所以只要有草稿通常意味着有未保存修改
        if (draft.content == currentContent && draft.title == (widget.entry?.title ?? '')) {
           await _draftService.clearDraft(id);
           return;
@@ -222,17 +223,19 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     
     if (!mounted) return;
 
-    // 比对残缺 (Check if draft is SMALLER than original)
-    // 仅针对非新日记
+    // Critical Check: If dialog is already showing (globally), skip this one
+    if (_isDialogShowing) return;
+
     bool isIncomplete = false;
     if (id != 'new' && widget.entry != null) {
-       // 简单的长度对比，未必精准但有效
        if (draft.content.length < widget.entry!.content.length) {
           isIncomplete = true;
        }
     }
 
-    showDialog(
+    _isDialogShowing = true; // Lock
+
+    await showDialog( // await the dialog result to ensure lock is held
       context: context,
       barrierDismissible: false,
       builder: (ctx) => SkeuomorphicDialog(
@@ -300,6 +303,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                       isPrimary: !isIncomplete, 
                       onPressed: () {
                          Navigator.pop(ctx);
+                         if (!mounted) return;
                          setState(() {
                             _titleController.text = draft.title;
                             _contentController.text = draft.content;
@@ -307,7 +311,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                             _mood = draft.mood;
                             _currentDateStr = draft.dateString;
                          });
-                         SkeuomorphicToast.success(context, '内容已恢复');
+                         if (mounted) SkeuomorphicToast.success(context, '内容已恢复');
                       },
                    ),
                  ),
@@ -317,6 +321,8 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         ),
       ),
     );
+    
+    _isDialogShowing = false; // Reset lock
   }
 
   void _save() async {
@@ -625,9 +631,9 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                              child: Container(
                                width: 60,
                                height: 2,
-                               color: (AppTheme.getEditorTheme(theme).isNotEmpty ? AppTheme.getEditorTheme(theme)['cursorColor'] : (theme == AppTheme.themeSeaFlower
+                               color: (AppTheme.getEditorTheme(theme).isNotEmpty ? AppTheme.getEditorTheme(theme)['cursorColor'] : (theme == AppTheme.themeGardenOfWords ? const Color(0xFF8BC34A) : (theme == AppTheme.themeSeaFlower
                                    ? const Color(0xFFEC407A)
-                                   : (theme == AppTheme.themeAfterRain ? const Color(0xFF0288D1) : (theme == AppTheme.themeAmberLens ? const Color(0xFFFF9800) : (theme == AppTheme.themeMidnight ? const Color(0xFF7986cb) : const Color(0xFFC0392B)))))).withValues(alpha: 0.5),
+                                   : (theme == AppTheme.themeAfterRain ? const Color(0xFF0288D1) : (theme == AppTheme.themeAmberLens ? const Color(0xFFFF9800) : (theme == AppTheme.themeMidnight ? const Color(0xFF7986cb) : const Color(0xFFC0392B))))))).withValues(alpha: 0.5),
                              ),
                            ),
                          ),
@@ -665,9 +671,9 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                           child: Container(
                             width: 60,
                             height: 2,
-                            color: (AppTheme.getEditorTheme(theme).isNotEmpty ? AppTheme.getEditorTheme(theme)['cursorColor'] : (theme == AppTheme.themeSeaFlower
+                            color: (AppTheme.getEditorTheme(theme).isNotEmpty ? AppTheme.getEditorTheme(theme)['cursorColor'] : (theme == AppTheme.themeGardenOfWords ? const Color(0xFF8BC34A) : (theme == AppTheme.themeSeaFlower
                                 ? const Color(0xFFEC407A)
-                                : (theme == AppTheme.themeAfterRain ? const Color(0xFFD07982) : (theme == AppTheme.themeAmberLens ? const Color(0xFFFF9800) : (theme == AppTheme.themeMidnight ? const Color(0xFF7986cb) : const Color(0xFFC0392B)))))).withValues(alpha: 0.5),
+                                : (theme == AppTheme.themeAfterRain ? const Color(0xFFD07982) : (theme == AppTheme.themeAmberLens ? const Color(0xFFFF9800) : (theme == AppTheme.themeMidnight ? const Color(0xFF7986cb) : const Color(0xFFC0392B))))))).withValues(alpha: 0.5),
                           ),
                         ),
                         const SizedBox(height: 30),
@@ -844,7 +850,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                 fontWeight: FontWeight.bold, 
                 color: textColor // Use dynamic theme color
              ),
-             cursorColor: themeConfig.isNotEmpty ? themeConfig['cursorColor'] : (theme == AppTheme.themeMidnight ? const Color(0xFF7986cb) : (theme == AppTheme.themeAfterRain ? const Color(0xFF0288D1) : (theme == AppTheme.themeAmberLens ? const Color(0xFFFF9800) : const Color(0xFFC0392B)))),
+             cursorColor: themeConfig.isNotEmpty ? themeConfig['cursorColor'] : (theme == AppTheme.themeGardenOfWords ? const Color(0xFF8BC34A) : (theme == AppTheme.themeMidnight ? const Color(0xFF7986cb) : (theme == AppTheme.themeAfterRain ? const Color(0xFF0288D1) : (theme == AppTheme.themeAmberLens ? const Color(0xFFFF9800) : const Color(0xFFC0392B))))),
              decoration: InputDecoration(
                hintText: '在此输入标题...',
                hintStyle: TextStyle(color: themeConfig.isNotEmpty ? themeConfig['iconColor'].withValues(alpha: 0.3) : (theme == AppTheme.themeMidnight ? Colors.white24 : (theme == AppTheme.themeAmberLens ? Colors.grey : Colors.black26))),
@@ -935,7 +941,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                  forceStrutHeight: true,
                  leadingDistribution: TextLeadingDistribution.even,
                ),
-               cursorColor: theme == AppTheme.themeMidnight ? const Color(0xFF7986cb) : (theme == AppTheme.themeAfterRain ? const Color(0xFF0288D1) : (theme == AppTheme.themeAmberLens ? const Color(0xFFFF9800) : const Color(0xFFC0392B))),
+               cursorColor: theme == AppTheme.themeGardenOfWords ? const Color(0xFF8BC34A) : (theme == AppTheme.themeMidnight ? const Color(0xFF7986cb) : (theme == AppTheme.themeAfterRain ? const Color(0xFF0288D1) : (theme == AppTheme.themeAmberLens ? const Color(0xFFFF9800) : const Color(0xFFC0392B)))),
                cursorHeight: 22, 
                decoration: const InputDecoration(
                  border: InputBorder.none,

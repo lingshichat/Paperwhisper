@@ -691,10 +691,12 @@ class _DiaryListPageState extends State<DiaryListPage> with WidgetsBindingObserv
     // Prepare Data
     List<dynamic> rawFlatEntries = [];
     
-    if (_searchQuery.isNotEmpty) {
+    if (diaryProvider.diarySearchQuery.isNotEmpty) {
       // Search Mode
+      // We use the provider's query which might be set by Sidebar or Mobile Header
+      final query = diaryProvider.diarySearchQuery;
       rawFlatEntries = diaryProvider.entries.where((e) => 
-         e.title.contains(_searchQuery) || e.content.contains(_searchQuery) || e.dateString.contains(_searchQuery)
+         e.title.contains(query) || e.content.contains(query) || e.dateString.contains(query)
       ).toList();
     } else {
 
@@ -745,19 +747,17 @@ class _DiaryListPageState extends State<DiaryListPage> with WidgetsBindingObserv
                                  onPressed: () {
                                    setState(() {
                                      _isSearching = false;
-                                     _searchQuery = '';
+                                     diaryProvider.setSearchQuery('');
                                    });
                                  },
                                ),
                                Expanded(
                                  child: SkeuomorphicSearchBar(
-                                   value: _searchQuery,
+                                   value: diaryProvider.searchQuery,
                                    autoFocus: true,
                                    hintText: '搜索日记...',
                                    onChanged: (val) {
-                                     setState(() {
-                                       _searchQuery = val;
-                                     });
+                                     diaryProvider.setSearchQuery(val);
                                    },
                                  ),
                                ),
@@ -807,14 +807,15 @@ class _DiaryListPageState extends State<DiaryListPage> with WidgetsBindingObserv
                                     ),
                                   ),
                                 ),
-                               IconButton(
-                                 icon: Icon(Icons.search, color: headerColors['iconColor']),
-                                 onPressed: () {
-                                   setState(() {
-                                     _isSearching = true;
-                                   });
-                                 },
-                               ),
+                               if (isMobile) // Hide search icon on Desktop (Sidebar has one)
+                                 IconButton(
+                                   icon: Icon(Icons.search, color: headerColors['iconColor']),
+                                   onPressed: () {
+                                     setState(() {
+                                       _isSearching = true;
+                                     });
+                                   },
+                                 ),
                                const SizedBox(width: 4), 
                              ],
                            ),
@@ -881,7 +882,11 @@ class _DiaryListPageState extends State<DiaryListPage> with WidgetsBindingObserv
   }
 
   Widget _buildEmptyState(String theme) {
-    if (_searchQuery.isNotEmpty) {
+    // Need access to provider here. Since it's inside class method, we can use Provider.of or pass it.
+    // Provider.of is safe here as this is called during build.
+    final query = Provider.of<DiaryProvider>(context).diarySearchQuery;
+    
+    if (query.isNotEmpty) {
       // 搜索无结果状态
       final Color emptyTextColor = AppTheme.getTextColor(theme).withOpacity(0.7);
       return Center(
@@ -891,7 +896,7 @@ class _DiaryListPageState extends State<DiaryListPage> with WidgetsBindingObserv
              Icon(Icons.search_off, size: 80, color: emptyTextColor),
              const SizedBox(height: 24),
              Text(
-               '没有找到关于"$_searchQuery"的篇章...',
+               '没有找到关于"$query"的篇章...',
                style: GoogleFonts.notoSerifSc(
                  color: emptyTextColor,
                  fontSize: 16,

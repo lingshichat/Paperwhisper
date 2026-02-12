@@ -132,10 +132,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       StorageService().cleanTemporaryCache();
       _checkPrivacy();
       
-      // 冷启动时如果锁定，显示锁屏
-      if (widget.isLocked) {
-        _showLockScreen();
-      }
+      // 冷启动锁屏由 SplashPage 处理，此处不再重复触发
+      // 仅由 didChangeAppLifecycleState 中的 _checkLock() 处理 resume 时的锁屏
       
       if (mounted) {
          context.read<SyncProvider>().requestAutoSync(fromLifecycle: true);

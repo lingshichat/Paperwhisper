@@ -108,13 +108,24 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                    if (!isDesktop) return const SizedBox.shrink();
                    
                    try {
-                     // 使用 read 而非 watch：搜索栏只在用户输入时更新 Provider，不需要监听
-                     final diaryProvider = context.read<DiaryProvider>();
+                     // 使用 watch 以响应外部清空搜索的操作
+                     final diaryProvider = context.watch<DiaryProvider>();
+                     // Determine context
+                     final bool isMomentsContext = context.findAncestorWidgetOfExactType<MomentsPage>() != null;
+                     
                      return Padding(
                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
                        child: SkeuomorphicSearchBar(
-                         value: diaryProvider.searchQuery,
-                         onChanged: (val) => diaryProvider.setSearchQuery(val),
+                         value: isMomentsContext 
+                             ? diaryProvider.momentsSearchQuery 
+                             : diaryProvider.diarySearchQuery,
+                         onChanged: (val) {
+                           if (isMomentsContext) {
+                             diaryProvider.setMomentsSearchQuery(val);
+                           } else {
+                             diaryProvider.setDiarySearchQuery(val);
+                           }
+                         },
                        ),
                      );
                    } catch (e) {
@@ -284,11 +295,11 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                     color: (theme == AppTheme.themeSeaFlower || theme == AppTheme.themeAfterRain) 
                         ? Colors.white.withOpacity(0.4) 
                         : (theme == AppTheme.themeGardenOfWords 
-                            ? Colors.black.withOpacity(0.2) // Dark glass for Garden
+                            ? const Color(0xFF263238).withOpacity(0.4) // Deeper dark for Garden
                             : (theme == AppTheme.themeTwilight ? const Color(0xFF352044).withOpacity(0.4) : Colors.black26)),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: theme == AppTheme.themeGardenOfWords ? Colors.white.withOpacity(0.1) : Colors.white10
+                      color: theme == AppTheme.themeGardenOfWords ? Colors.white.withOpacity(0.05) : Colors.white10
                     ),
                   ),
                   child: Column(
@@ -355,7 +366,7 @@ class _SidebarWidgetState extends State<SidebarWidget> {
     if (theme == AppTheme.themeSeaFlower || theme == AppTheme.themeAfterRain || theme == AppTheme.themeTwilight || theme == AppTheme.themeGardenOfWords) {
       return ClipRect(
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20), // Increased blur for rain effect
           child: sidebarContent,
         ),
       );
