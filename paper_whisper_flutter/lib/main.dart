@@ -16,6 +16,7 @@ import 'pages/moments_page.dart';
 import 'services/storage_service.dart';
 import 'services/hitokoto_service.dart';
 import 'widgets/privacy_agreement_dialog.dart';
+import 'pages/splash_page.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'services/auth_service.dart';
@@ -130,7 +131,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       StorageService().cleanTemporaryCache();
-      _checkPrivacy();
       
       // 冷启动锁屏由 SplashPage 处理，此处不再重复触发
       // 仅由 didChangeAppLifecycleState 中的 _checkLock() 处理 resume 时的锁屏
@@ -141,26 +141,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     });
   }
   
-  Future<void> _checkPrivacy() async {
-    final prefs = await SharedPreferences.getInstance();
-    final agreed = prefs.getBool('privacy_agreed') ?? false;
-    if (!agreed && mounted) {
-      final result = await showDialog<bool>(
-        context: navigatorKey.currentContext!,
-        barrierDismissible: false,
-        builder: (ctx) => PrivacyAgreementDialog(
-          onAgree: () => Navigator.of(ctx).pop(true),
-          onDisagree: () => Navigator.of(ctx).pop(false),
-        ),
-      );
-      if (result == true) {
-        await prefs.setBool('privacy_agreed', true);
-      } else {
-        SystemChannels.platform.invokeMethod('SystemNavigator.pop');
-      }
-    }
-    if (mounted) setState(() { _privacyChecked = true; });
-  }
+  
   
   void _showLockScreen() {
     if (AuthService().isLockScreenVisible) return;
@@ -234,20 +215,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
              Locale('zh', 'CN'),
              Locale('en', 'US'),
           ],
-          home: _buildHomePage(),
+          home: SplashPage(showIntro: widget.showIntro),
           scrollBehavior: AppScrollBehavior(),
         );
       },
     );
-  }
-  
-  Widget _buildHomePage() {
-    if (widget.showIntro) return const IntroPage();
-    switch (widget.startupPage) {
-      case 'moments': return const MomentsPage();
-      case 'writer':
-      default: return const DiaryListPage();
-    }
   }
 }
 

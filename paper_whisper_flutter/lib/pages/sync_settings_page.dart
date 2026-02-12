@@ -352,8 +352,8 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                     child: SwitchListTile(
                       value: _compressImages,
                       onChanged: (val) => setState(() => _compressImages = val),
-                      activeColor: AppTheme.getSettingsTheme(theme).isNotEmpty ? AppTheme.getSettingsTheme(theme)['activeSwitchColor'] : (isSeaFlower ? const Color(0xFFAD1457) : (isMidnight ? const Color(0xFF7986cb) : (isTwilight ? const Color(0xFF4DD0E1) : const Color(0xFF5D4037)))),
-                      activeTrackColor: AppTheme.getSettingsTheme(theme).isNotEmpty ? AppTheme.getSettingsTheme(theme)['activeTrackColor'] : (isSeaFlower ? const Color(0xFFF48FB1) : (isMidnight ? const Color(0xFF9FA8DA) : (isTwilight ? const Color(0xFF4DD0E1).withOpacity(0.3) : const Color(0xFFA1887F)))),
+                      activeColor: AppTheme.getSettingsTheme(theme).isNotEmpty ? AppTheme.getSettingsTheme(theme)['activeSwitchColor'] : (isSeaFlower ? const Color(0xFFAD1457) : (isMidnight ? const Color(0xFF7986cb) : (isTwilight ? const Color(0xFFEF5350) : const Color(0xFF5D4037)))),
+                      activeTrackColor: AppTheme.getSettingsTheme(theme).isNotEmpty ? AppTheme.getSettingsTheme(theme)['activeTrackColor'] : (isSeaFlower ? const Color(0xFFF48FB1) : (isMidnight ? const Color(0xFF9FA8DA) : (isTwilight ? const Color(0xFFEF5350).withOpacity(0.3) : const Color(0xFFA1887F)))),
                       title: Text(
                         '开启图片压缩',
                         style: GoogleFonts.notoSerifSc(color: textColor, fontWeight: FontWeight.bold, fontSize: 15),
@@ -683,9 +683,9 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
       inactiveTextColor = const Color(0xFF0288D1).withOpacity(0.5);
     } else if (isTwilight) {
       trackColor = const Color(0xFF352044);
-      thumbColor = const Color(0xFF4DD0E1);
+      thumbColor = const Color(0xFFEF5350);
        activeTextColor = const Color(0xFF352044); // Text on thumb
-       inactiveTextColor = const Color(0xFF4DD0E1).withOpacity(0.6);
+       inactiveTextColor = const Color(0xFFEF5350).withOpacity(0.6);
     } else if (isGardenOfWords) {
       trackColor = const Color(0xFFF0F4F2);
       thumbColor = const Color(0xFF8BC34A);
