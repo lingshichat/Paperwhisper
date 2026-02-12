@@ -679,7 +679,7 @@ class AppTheme {
   static Map<String, dynamic> getMonthDividerTheme(String theme) {
     if (theme == themeGardenOfWords) {
       return {
-        'textColor': _gardenAccentDark,
+        'textColor': _gardenTextPrimary, // Soft white/grey instead of green
         'lineColor': _gardenAccent.withOpacity(0.4),
         'paperColor': _gardenSurface.withOpacity(0.8),
         'shadows': [
@@ -1169,7 +1169,67 @@ class AppTheme {
     }
   }
 
-  // --- 3. Dynamic Theme Data (Fixes Flash of White & Adds Transitions) ---
+  // 12. Dialog Input Theme
+  static Map<String, Color> getDialogInputTheme(String theme) {
+    final bool isMidnight = theme == themeMidnight;
+    final bool isTwilight = theme == themeTwilight;
+    final bool isGarden = theme == themeGardenOfWords;
+    final bool isDark = isMidnight || isTwilight || isGarden || theme == themeAmberLens;
+
+    if (isTwilight) {
+      return {
+        'textColor': _twilightTextPrimary,
+        'hintColor': _twilightTextSecondary.withOpacity(0.5),
+        'borderColor': _twilightAccentRed.withOpacity(0.3),
+        'focusedBorderColor': _twilightAccentRed,
+        'iconColor': _twilightAccentRed.withOpacity(0.6),
+        'backgroundColor': const Color(0xFF352044).withOpacity(0.6),
+        'descriptionColor': _twilightTextSecondary,
+      };
+    } else if (isGarden) {
+      return {
+        'textColor': _gardenTextPrimary,
+        'hintColor': _gardenTextSecondary.withOpacity(0.5),
+        'borderColor': _gardenAccent.withOpacity(0.3),
+        'focusedBorderColor': _gardenAccent,
+        'iconColor': _gardenAccent.withOpacity(0.6),
+        'backgroundColor': Colors.black.withOpacity(0.2),
+        'descriptionColor': _gardenTextPrimary.withOpacity(0.7),
+      };
+    } else if (isMidnight) {
+      return {
+        'textColor': Colors.white70,
+        'hintColor': Colors.white30,
+        'borderColor': Colors.white24,
+        'focusedBorderColor': Colors.white54,
+        'iconColor': Colors.white38,
+        'backgroundColor': Colors.black.withOpacity(0.3),
+        'descriptionColor': Colors.white54,
+      };
+    } else if (theme == themeAmberLens) {
+        return {
+          'textColor': _amberTextPrimary,
+          'hintColor': _amberTextSecondary.withOpacity(0.5),
+          'borderColor': _amberAccent.withOpacity(0.4),
+          'focusedBorderColor': _amberAccent,
+          'iconColor': _amberAccent.withOpacity(0.6),
+          'backgroundColor': Colors.black.withOpacity(0.3),
+          'descriptionColor': _amberTextSecondary,
+        };
+    } else {
+      // Default / Light Themes
+      final Color ink = (theme == themeSeaFlower) ? const Color(0xFF880E4F) : const Color(0xFF5D4037);
+      return {
+        'textColor': ink,
+        'hintColor': ink.withOpacity(0.4),
+        'borderColor': ink.withOpacity(0.2),
+        'focusedBorderColor': ink.withOpacity(0.6),
+        'iconColor': ink.withOpacity(0.4),
+        'backgroundColor': (theme == themeSeaFlower) ? const Color(0xFFFCE4EC).withOpacity(0.5) : Colors.white.withOpacity(0.5),
+        'descriptionColor': ink.withOpacity(0.7),
+      };
+    }
+  }
 
   static ThemeData getThemeData(String theme) {
     // 1. Determine Background Color & Brightness

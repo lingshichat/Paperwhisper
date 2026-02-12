@@ -206,12 +206,11 @@ class _BookshelfPageState extends State<BookshelfPage> {
     
     final settings = Provider.of<SettingsProvider>(context, listen: false);
     final theme = settings.currentTheme;
-    final isMidnight = theme == AppTheme.themeMidnight;
-
-    final textColor = isMidnight ? Colors.white70 : Colors.black87;
-    final hintColor = isMidnight ? Colors.white30 : Colors.black38;
-    final borderColor = isMidnight ? Colors.white24 : Colors.black26;
-    final focusedBorderColor = isMidnight ? Colors.white54 : Colors.black54;
+    final dialogTheme = AppTheme.getDialogInputTheme(theme);
+    final textColor = dialogTheme['textColor']!;
+    final hintColor = dialogTheme['hintColor']!;
+    final borderColor = dialogTheme['borderColor']!;
+    final focusedBorderColor = dialogTheme['focusedBorderColor']!;
 
     showDialog(
       context: context,
@@ -228,7 +227,7 @@ class _BookshelfPageState extends State<BookshelfPage> {
                decoration: InputDecoration(
                  labelText: '主标题 (默认为"你的专属故事")',
                  hintText: '例如：我的故事',
-                 labelStyle: TextStyle(color: textColor),
+                 labelStyle: TextStyle(color: textColor.withOpacity(0.7)),
                  hintStyle: TextStyle(color: hintColor),
                  enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: borderColor)),
                  focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: focusedBorderColor, width: 2)),
@@ -242,7 +241,7 @@ class _BookshelfPageState extends State<BookshelfPage> {
                decoration: InputDecoration(
                  labelText: '副标题',
                  hintText: '例如：2026年',
-                 labelStyle: TextStyle(color: textColor),
+                 labelStyle: TextStyle(color: textColor.withOpacity(0.7)),
                  hintStyle: TextStyle(color: hintColor),
                  enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: borderColor)),
                  focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: focusedBorderColor, width: 2)),

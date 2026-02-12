@@ -238,20 +238,12 @@ class _MomentsPageState extends State<MomentsPage> {
     // Prepare theme-aware colors
     final settings = Provider.of<SettingsProvider>(context, listen: false);
     final theme = settings.currentTheme;
-    final isMidnight = theme == AppTheme.themeMidnight;
-    final isTwilight = theme == AppTheme.themeTwilight;
-    
-    final inputBg = isTwilight 
-        ? const Color(0xFF352044).withOpacity(0.6) 
-        : (isMidnight ? Colors.black.withOpacity(0.3) : Colors.white.withValues(alpha: 0.5));
-        
-    final inputBorder = isTwilight 
-        ? const Color(0xFFFF5252).withOpacity(0.3) 
-        : (isMidnight ? Colors.white.withOpacity(0.1) : Colors.brown.shade300);
-        
-    final hintColor = isTwilight ? const Color(0xFFE4E0EC).withOpacity(0.5) : (isMidnight ? Colors.white38 : Colors.brown.shade700);
-    final textColor = isTwilight ? const Color(0xFFE4E0EC) : (isMidnight ? Colors.white70 : Colors.brown.shade900);
-    final descColor = isTwilight ? const Color(0xFFE4E0EC).withOpacity(0.7) : (isMidnight ? Colors.white60 : Colors.black87);
+    final dialogTheme = AppTheme.getDialogInputTheme(theme);
+    final inputBg = dialogTheme['backgroundColor']!;
+    final inputBorder = dialogTheme['borderColor']!;
+    final hintColor = dialogTheme['hintColor']!;
+    final textColor = dialogTheme['textColor']!;
+    final descColor = dialogTheme['descriptionColor']!;
 
     String? result = await showDialog<String>(
       context: context,

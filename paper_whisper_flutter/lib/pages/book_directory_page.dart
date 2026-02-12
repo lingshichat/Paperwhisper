@@ -227,13 +227,13 @@ class BookDirectoryPage extends StatelessWidget {
 
     final settings = Provider.of<SettingsProvider>(context, listen: false);
     final theme = settings.currentTheme;
-    final isMidnight = theme == AppTheme.themeMidnight;
-
-    final textColor = isMidnight ? Colors.white70 : Colors.black87;
-    final hintColor = isMidnight ? Colors.white30 : Colors.black38;
-    final borderColor = isMidnight ? Colors.white24 : Colors.black26;
-    final focusedBorderColor = isMidnight ? Colors.white54 : Colors.black54;
-    final iconColor = isMidnight ? Colors.white38 : Colors.black38;
+    final dialogTheme = AppTheme.getDialogInputTheme(theme);
+    final textColor = dialogTheme['textColor']!;
+    final hintColor = dialogTheme['hintColor']!;
+    final borderColor = dialogTheme['borderColor']!;
+    final focusedBorderColor = dialogTheme['focusedBorderColor']!;
+    final iconColor = dialogTheme['iconColor']!;
+    final descriptionColor = dialogTheme['descriptionColor']!;
 
     showDialog(
       context: context,
@@ -246,7 +246,7 @@ class BookDirectoryPage extends StatelessWidget {
              const SizedBox(height: 8),
              Text(
                '为 $year年 $month月 定义一个独特的名字',
-               style: TextStyle(color: isMidnight ? Colors.white54 : Colors.black54, fontSize: 13),
+               style: TextStyle(color: descriptionColor, fontSize: 13),
              ),
              const SizedBox(height: 16),
              TextField(
@@ -255,7 +255,7 @@ class BookDirectoryPage extends StatelessWidget {
                decoration: InputDecoration(
                  labelText: '章节标题',
                  hintText: '例如：初夏、启程、邂逅',
-                 labelStyle: TextStyle(color: textColor),
+                 labelStyle: TextStyle(color: textColor.withOpacity(0.7)),
                  hintStyle: TextStyle(color: hintColor),
                  enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: borderColor)),
                  focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: focusedBorderColor, width: 2)),
