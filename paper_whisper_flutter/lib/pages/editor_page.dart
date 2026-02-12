@@ -1027,8 +1027,8 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     final bool isAmber = theme == AppTheme.themeAmberLens;
 
     // Dropdown Menu Style
-    final Color dropdownBg = isMidnight ? const Color(0xFF2D333B) : (theme == AppTheme.themeTwilight ? const Color(0xFF352044) : (isSeaFlower ? const Color(0xFFFFF0F5) : (theme == AppTheme.themeAfterRain ? const Color(0xFFF0F8FF) : const Color(0xFFFAF9F6))));
-    final Color dropdownText = isMidnight ? const Color(0xFFc9d1d9) : (theme == AppTheme.themeTwilight ? const Color(0xFFE4E0EC) : (isSeaFlower ? const Color(0xFF880E4F) : (theme == AppTheme.themeAfterRain ? const Color(0xFF455A64) : const Color(0xFF5D4037))));
+    final Color dropdownBg = isMidnight ? const Color(0xFF2D333B) : (theme == AppTheme.themeTwilight ? const Color(0xFF352044) : (isSeaFlower ? const Color(0xFFFFF0F5) : (theme == AppTheme.themeAfterRain ? const Color(0xFFF0F8FF) : (theme == AppTheme.themeGardenOfWords ? const Color(0xFFF0F4F2) : const Color(0xFFFAF9F6)))));
+    final Color dropdownText = isMidnight ? const Color(0xFFc9d1d9) : (theme == AppTheme.themeTwilight ? const Color(0xFFE4E0EC) : (isSeaFlower ? const Color(0xFF880E4F) : (theme == AppTheme.themeAfterRain ? const Color(0xFF455A64) : (theme == AppTheme.themeGardenOfWords ? const Color(0xFF5A6B72) : const Color(0xFF5D4037)))));
 
     return DropdownButton<WeatherType>(
        value: _weather,
@@ -1073,8 +1073,8 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     final bool isMidnight = theme == AppTheme.themeMidnight;
     final bool isSeaFlower = theme == AppTheme.themeSeaFlower;
 
-    final Color menuBg = isMidnight ? const Color(0xFF2D333B) : (theme == AppTheme.themeTwilight ? const Color(0xFF352044) : (isSeaFlower ? const Color(0xFFFFF0F5) : (theme == AppTheme.themeAfterRain ? const Color(0xFFF0F8FF) : const Color(0xFFFAF9F6))));
-    final Color menuText = isMidnight ? const Color(0xFFc9d1d9) : (theme == AppTheme.themeTwilight ? const Color(0xFFE4E0EC) : (isSeaFlower ? const Color(0xFF880E4F) : (theme == AppTheme.themeAfterRain ? const Color(0xFF455A64) : const Color(0xFF5D4037))));
+    final Color menuBg = isMidnight ? const Color(0xFF2D333B) : (theme == AppTheme.themeTwilight ? const Color(0xFF352044) : (isSeaFlower ? const Color(0xFFFFF0F5) : (theme == AppTheme.themeAfterRain ? const Color(0xFFF0F8FF) : (theme == AppTheme.themeGardenOfWords ? const Color(0xFFF0F4F2) : const Color(0xFFFAF9F6)))));
+    final Color menuText = isMidnight ? const Color(0xFFc9d1d9) : (theme == AppTheme.themeTwilight ? const Color(0xFFE4E0EC) : (isSeaFlower ? const Color(0xFF880E4F) : (theme == AppTheme.themeAfterRain ? const Color(0xFF455A64) : (theme == AppTheme.themeGardenOfWords ? const Color(0xFF5A6B72) : const Color(0xFF5D4037)))));
 
     return PopupMenuButton<MoodType>(
        initialValue: _mood,
@@ -1378,6 +1378,8 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
          borderColor = const Color(0x339999BF);
       } else if (theme == AppTheme.themeTwilight) {
          borderColor = const Color(0xFFFF5252);
+      } else if (theme == AppTheme.themeGardenOfWords) {
+         borderColor = const Color(0xFF8BC34A);
       } else {
          borderColor = const Color(0xFFC0392B); // Red top for default, but sidebar? Default has no sidebar usually?
          // PaperSheetWidget default theme has top border only.
@@ -1527,6 +1529,8 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         accentColor = const Color(0xFFFF9800); 
       } else if (theme == AppTheme.themeAfterRain) {
         accentColor = const Color(0xFF29B6F6); 
+      } else if (theme == AppTheme.themeGardenOfWords) {
+        accentColor = const Color(0xFF8BC34A);
       } else {
         accentColor = const Color(0xFFC0392B); 
       }

@@ -172,6 +172,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
     final bool isAmber = theme == AppTheme.themeAmberLens;
     final bool isAfterRain = theme == AppTheme.themeAfterRain;
     final bool isTwilight = theme == AppTheme.themeTwilight;
+    final bool isGardenOfWords = theme == AppTheme.themeGardenOfWords;
 
     // 颜色定义 (与 SettingsPage 保持一致)
     final themeConfig = AppTheme.getSettingsTheme(theme);
@@ -232,7 +233,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                 children: [
                   // 协议选择器
                   // 协议选择器 (拟物化滑块)
-                  _buildSlidingSwitch(provider, isSeaFlower, isMidnight, isAfterRain, isTwilight),
+                  _buildSlidingSwitch(provider, isSeaFlower, isMidnight, isAfterRain, isTwilight, isGardenOfWords),
 
                   if (provider.config.syncType == SyncType.webdav) ...[
                     _buildSectionTitle('WebDAV 服务器配置', textColor),
@@ -383,6 +384,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                           isMidnight: isMidnight,
                           isAfterRain: isAfterRain,
                           isTwilight: isTwilight,
+                          isGardenOfWords: isGardenOfWords,
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -395,6 +397,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                           isMidnight: isMidnight,
                           isAfterRain: isAfterRain,
                           isTwilight: isTwilight,
+                          isGardenOfWords: isGardenOfWords,
                         ),
                       ),
                     ],
@@ -569,6 +572,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
     required bool isMidnight,
     required bool isAfterRain,
     required bool isTwilight,
+    required bool isGardenOfWords,
   }) {
     // 按钮样式
     Gradient? gradient;
@@ -584,6 +588,8 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
         gradient = const LinearGradient(colors: [Color(0xFF4FC3F7), Color(0xFF0288D1)]);
       } else if (isTwilight) {
         gradient = const LinearGradient(colors: [Color(0xFF4DD0E1), Color(0xFF26C6DA)]);
+      } else if (isGardenOfWords) {
+        gradient = const LinearGradient(colors: [Color(0xFF8BC34A), Color(0xFF558B2F)]); // Fresh Leaf
       } else {
         color = const Color(0xFF5D4037); 
       }
@@ -601,6 +607,9 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
       } else if (isTwilight) {
          color = const Color(0xFF352044).withOpacity(0.6);
          textColor = const Color(0xFF4DD0E1);
+      } else if (isGardenOfWords) {
+         color = Colors.white.withOpacity(0.6);
+         textColor = const Color(0xFF2E4A35);
       } else {
          color = Colors.white.withOpacity(0.2);
          textColor = const Color(0xFF3E2723);
@@ -624,15 +633,15 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                     ? const Color(0xFFAD1457).withOpacity(0.3) 
                     : (isMidnight 
                         ? const Color(0xFF283593).withOpacity(0.4) 
-                        : (isAfterRain ? const Color(0xFF0288D1).withOpacity(0.3) : (isTwilight ? const Color(0xFF4DD0E1).withOpacity(0.3) : Colors.black26))),
+                        : (isAfterRain ? const Color(0xFF0288D1).withOpacity(0.3) : (isTwilight ? const Color(0xFF4DD0E1).withOpacity(0.3) : (isGardenOfWords ? const Color(0xFF8BC34A).withOpacity(0.3) : Colors.black26)))),
                 blurRadius: 6,
                 offset: const Offset(0, 3)
               )
             ] : null,
             border: !isPrimary ? Border.all(
-              color: isSeaFlower 
+               color: isSeaFlower 
                   ? const Color(0xFFAD1457).withOpacity(0.2) 
-                  : (isAfterRain ? const Color(0xFF0288D1).withOpacity(0.2) : (isTwilight ? const Color(0xFF4DD0E1).withOpacity(0.2) : Colors.white.withOpacity(0.1)))
+                  : (isAfterRain ? const Color(0xFF0288D1).withOpacity(0.2) : (isTwilight ? const Color(0xFF4DD0E1).withOpacity(0.2) : (isGardenOfWords ? const Color(0xFF8BC34A).withOpacity(0.2) : Colors.white.withOpacity(0.1))))
             ) : null,
           ),
           child: Text(
@@ -650,7 +659,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
   }
 
   Widget _buildSlidingSwitch(
-    SyncProvider provider, bool isSeaFlower, bool isMidnight, bool isAfterRain, bool isTwilight) {
+    SyncProvider provider, bool isSeaFlower, bool isMidnight, bool isAfterRain, bool isTwilight, bool isGardenOfWords) {
     // 1. Determine Colors
     Color trackColor;
     Color thumbColor;
@@ -675,8 +684,13 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
     } else if (isTwilight) {
       trackColor = const Color(0xFF352044);
       thumbColor = const Color(0xFF4DD0E1);
-      activeTextColor = const Color(0xFF352044); // Text on thumb
-      inactiveTextColor = const Color(0xFF4DD0E1).withOpacity(0.6);
+       activeTextColor = const Color(0xFF352044); // Text on thumb
+       inactiveTextColor = const Color(0xFF4DD0E1).withOpacity(0.6);
+    } else if (isGardenOfWords) {
+      trackColor = const Color(0xFFF0F4F2);
+      thumbColor = const Color(0xFF8BC34A);
+      activeTextColor = const Color(0xFFF0F4F2);
+      inactiveTextColor = const Color(0xFF5A6B72);
     } else {
       // Vintage / Default
       trackColor = const Color(0xFFD7CCC8); 

@@ -164,11 +164,17 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
                 offset: const Offset(0, 1),
                 blurRadius: 0,
               )
-            : const Shadow(
-                color: Color.fromRGBO(0, 0, 0, 0.3),
+            : (theme == AppTheme.themeGardenOfWords
+                ? Shadow( // Soft Green Glow
+                    color: const Color(0xFF8BC34A).withValues(alpha: 0.3),
+                    offset: const Offset(0, 2),
+                    blurRadius: 4,
+                  )
+                : const Shadow(
+                  color: Color.fromRGBO(0, 0, 0, 0.3),
                 offset: Offset(0, 2),
                 blurRadius: 4,
-              ));
+              )));
 
     // Scaffold 内容
     Widget content = Scaffold(
@@ -894,6 +900,7 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
       case AppTheme.themeAmberLens: return '琥珀光圈';
       case AppTheme.themeAfterRain: return '雨后天空';
       case AppTheme.themeTwilight: return '黄昏之时';
+      case AppTheme.themeGardenOfWords: return '言叶之庭';
       default: return '复古纸张';
     }
   }
@@ -921,6 +928,7 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
           _buildRadioItem(ctx, '琥珀光圈', 'amber_lens', settings.currentTheme, (val) => settings.setTheme(val), closeOnSelect: false),
           _buildRadioItem(ctx, '雨后天空', 'after_rain', settings.currentTheme, (val) => settings.setTheme(val), closeOnSelect: false),
           _buildRadioItem(ctx, '黄昏之时', 'twilight', settings.currentTheme, (val) => settings.setTheme(val), closeOnSelect: false),
+          _buildRadioItem(ctx, '言叶之庭', 'garden_of_words', settings.currentTheme, (val) => settings.setTheme(val), closeOnSelect: false),
         ]
       )
     );
@@ -1256,6 +1264,16 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
             bgColor = const Color(0xFF352044).withOpacity(0.6);
             textColor = const Color(0xFFBCAAA4);
             border = Border.all(color: Colors.white.withOpacity(0.1));
+        }
+    } else if (theme == AppTheme.themeGardenOfWords) {
+        if (isSelected) {
+            bgColor = const Color(0xFF66BB6A); // Fresh Green Accent
+            textColor = Colors.white;          // White text
+            shadow = const BoxShadow(color: Color.fromRGBO(102, 187, 106, 0.4), offset: Offset(0, 4), blurRadius: 8);
+        } else {
+            bgColor = const Color(0xFF37474F).withOpacity(0.6); // Dark Blue Grey glass
+            textColor = const Color(0xFFCFD8DC);                // Light Blue Grey text
+            border = Border.all(color: const Color(0xFF66BB6A).withOpacity(0.3));
         }
     } else {
       // Vintage

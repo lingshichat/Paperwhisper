@@ -32,7 +32,7 @@ class BookDirectoryPage extends StatelessWidget {
     // - Default/Amber/Midnight backgrounds are dark/vibrant -> Use White Text
     // - SeaFlower background is light -> Use Ink Color (Indigo)
     Color appBarColor = Colors.white;
-    if (theme == AppTheme.themeSeaFlower || theme == AppTheme.themeAfterRain) {
+    if (theme == AppTheme.themeSeaFlower || theme == AppTheme.themeAfterRain || theme == AppTheme.themeGardenOfWords) {
       appBarColor = inkColor;
     }
 

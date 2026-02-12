@@ -89,8 +89,10 @@ class _SkeuomorphicSearchBarState extends State<SkeuomorphicSearchBar> {
                     colors: theme == AppTheme.themeAfterRain 
                         ? [const Color(0xFF0288D1).withValues(alpha: 0.15), Colors.transparent] // Blue shadow for After Rain
                         : (theme == AppTheme.themeTwilight 
-                            ? [const Color(0xFFFF5252).withValues(alpha: 0.15), Colors.transparent] // Musubi Red shadow for Twilight
-                            : [Colors.black.withValues(alpha: 0.2), Colors.transparent]),
+                            ? [const Color(0xFFFF5252).withValues(alpha: 0.15), Colors.transparent]
+                            : (theme == AppTheme.themeGardenOfWords 
+                                ? [const Color(0xFF8BC34A).withValues(alpha: 0.15), Colors.transparent] // Green shadow
+                                : [Colors.black.withValues(alpha: 0.2), Colors.transparent])),
                   ),
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                 ),

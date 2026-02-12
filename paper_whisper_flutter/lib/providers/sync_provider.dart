@@ -447,7 +447,7 @@ class SyncProvider with ChangeNotifier {
       bool connected = await connect(test: false);
       if (!connected) {
         _setStatus(SyncStatus.failed, error: '无法连接到服务器');
-        if (context != null) {
+        if (context != null && context.mounted) {
              SkeuomorphicToast.error(context, "无法连接到云存储服务器");
         }
         // THROW so callers like BookFlipRefreshWidget know it failed
@@ -486,7 +486,7 @@ class SyncProvider with ChangeNotifier {
       await _diaryProvider!.loadEntries();
       
       // Success Feedback
-      if (context != null) {
+      if (context != null && context.mounted) {
          String statMsg = "已同步: $_statDiaries篇日记, $_statMoments篇随心记\n$_statImages张图片, $_statAudio条语音";
          if (_statDiaries == 0 && _statMoments == 0 && _statImages == 0 && _statAudio == 0) {
             statMsg = "同步完成 (无变更)";
@@ -506,7 +506,7 @@ class SyncProvider with ChangeNotifier {
       _setStatus(SyncStatus.failed, error: e.toString());
       
       // Error Feedback via Toast
-      if (context != null) {
+      if (context != null && context.mounted) {
          String msg = "同步失败";
          final errStr = e.toString();
          if (errStr.contains("Forbidden") || errStr.contains("403")) {
@@ -597,11 +597,13 @@ class SyncProvider with ChangeNotifier {
          final localFile = File(path.join(service.dataDir!.path, filename));
          final localExists = await localFile.exists();
          
+         final localItem = localManifest.items[filename];
+         final remoteItem = remoteManifest.items[filename];
+         
          if (item.isDeleted) {
             if (localExists) {
                toDeleteLocal.add(filename);
             }
-            final remoteItem = remoteManifest.items[filename];
             if (remoteItem == null || !remoteItem.isDeleted) {
                toTrashRemote.add(filename);
             }
@@ -609,9 +611,6 @@ class SyncProvider with ChangeNotifier {
             if (!localExists) {
                toDownload.add(filename);
             } else {
-               final localItem = localManifest.items[filename];
-               final remoteItem = remoteManifest.items[filename];
-               
                bool fromRemote = remoteItem != null && 
                    remoteItem.versionTimestamp == item.versionTimestamp &&
                    remoteItem.versionTimestamp != (localItem?.versionTimestamp ?? -1);
@@ -702,9 +701,19 @@ class SyncProvider with ChangeNotifier {
          _processedOps++; // Global Counter
       });
       
+      // [FIX] 只更新磁盘上确实存在的文件（或标记删除的文件）到本地 manifest
+      // 之前的实现会把所有合并条目都写入本地 manifest，
+      // 导致下载失败的文件也被记录为"已有"，manifest 与磁盘状态不一致
       for (var item in mergedItems.values) {
         if (ghostItems.contains(item.filename)) continue; 
-        if (transientItems.contains(item.filename)) continue; // Don't claim we have it locally
+        if (transientItems.contains(item.filename)) continue;
+        if (!item.isDeleted) {
+          final f = File(path.join(service.dataDir!.path, item.filename));
+          if (!f.existsSync()) {
+            debugPrint('[SYNC] 跳过 manifest 更新(文件不存在): ${item.filename}');
+            continue;
+          }
+        }
         service.manifestService.updateItem(item.filename, 
            timestamp: item.versionTimestamp,
            isDeleted: item.isDeleted
@@ -990,11 +999,13 @@ class SyncProvider with ChangeNotifier {
           final localFile = File(path.join(service.dataDir!.path, filename));
           final localExists = await localFile.exists();
           
+          final localItem = localManifest.items[filename];
+          final remoteItem = remoteManifest.items[filename];
+          
           if (item.isDeleted) {
              if (localExists) {
                 toDeleteLocal.add(filename);
              }
-             final remoteItem = remoteManifest.items[filename];
              if (remoteItem == null || !remoteItem.isDeleted) {
                 toTrashRemote.add(filename);
              }
@@ -1002,9 +1013,6 @@ class SyncProvider with ChangeNotifier {
              if (!localExists) {
                 toDownload.add(filename);
              } else {
-                final localItem = localManifest.items[filename];
-                final remoteItem = remoteManifest.items[filename];
-                
                 bool fromRemote = remoteItem != null && 
                     remoteItem.versionTimestamp == item.versionTimestamp &&
                     remoteItem.versionTimestamp != (localItem?.versionTimestamp ?? -1);
@@ -1106,9 +1114,17 @@ class SyncProvider with ChangeNotifier {
        });
        
        // 5. 更新 Local Manifest (Merge Result)
+       // [FIX] 只更新磁盘上确实存在的文件到本地 manifest
        for (var item in mergedItems.values) {
          if (ghostItems.contains(item.filename)) continue;
          if (transientItems.contains(item.filename)) continue;
+         if (!item.isDeleted) {
+           final f = File(path.join(service.dataDir!.path, item.filename));
+           if (!f.existsSync()) {
+             debugPrint('[SYNC-M] 跳过 manifest 更新(文件不存在): ${item.filename}');
+             continue;
+           }
+         }
          service.manifestService.updateItem(item.filename, 
             timestamp: item.versionTimestamp,
             isDeleted: item.isDeleted
@@ -1184,17 +1200,11 @@ class SyncProvider with ChangeNotifier {
       List<String> toDeleteRemote = [];
       List<String> toDownload = [];
 
-      // DEBUG: List local files to check path issues
-      try {
-        // ... (Keep existing debug logic if needed, or remove to clean up)
-      } catch (e) {}
-
       for (var remoteFile in remoteImagesRaw) {
          String name = remoteFile.name;
          
          // ORPHAN CHECK: If not in validImageNames, it's trash!
          if (!validImageNames.contains(name)) {
-            // debugPrint("Found Orphan Image on Remote: $name");
             toDeleteRemote.add(name);
             continue; // Skip download check
          }
@@ -1202,7 +1212,6 @@ class SyncProvider with ChangeNotifier {
          File localFile = File(path.join(localImagesDir.path, name));
          bool exists = localFile.existsSync();
          if (!exists) {
-            // debugPrint("Image missing: $name at ${localFile.path}");
             toDownload.add(name);
          }
       }

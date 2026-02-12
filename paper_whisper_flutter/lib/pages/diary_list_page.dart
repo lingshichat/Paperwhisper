@@ -266,7 +266,9 @@ class _DiaryListPageState extends State<DiaryListPage> with WidgetsBindingObserv
         ? const Color(0xFF8b949e) // Midnight Secondary
         : (theme == AppTheme.themeSeaFlower 
             ? const Color(0xFFC2185B) // SeaFlower Secondary
-            : const Color(0xFF8D6E63)); // Vintage/Default Secondary
+            : (theme == AppTheme.themeGardenOfWords 
+                ? const Color(0xFF5A6B72) // Garden Secondary
+                : const Color(0xFF8D6E63))); // Vintage/Default Secondary
 
     showDialog(
       context: context,
@@ -907,6 +909,10 @@ class _DiaryListPageState extends State<DiaryListPage> with WidgetsBindingObserv
     Color linkColor;
     
     if (theme == AppTheme.themeAfterRain) {
+      iconColor = AppTheme.getTextSecondaryColor(theme).withValues(alpha: 0.6);
+      textColor = AppTheme.getTextSecondaryColor(theme).withValues(alpha: 0.8);
+      linkColor = AppTheme.getAccentColor(theme);
+    } else if (theme == AppTheme.themeGardenOfWords) {
       iconColor = AppTheme.getTextSecondaryColor(theme).withValues(alpha: 0.6);
       textColor = AppTheme.getTextSecondaryColor(theme).withValues(alpha: 0.8);
       linkColor = AppTheme.getAccentColor(theme);

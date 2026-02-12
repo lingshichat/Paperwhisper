@@ -283,9 +283,13 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                   decoration: BoxDecoration(
                     color: (theme == AppTheme.themeSeaFlower || theme == AppTheme.themeAfterRain) 
                         ? Colors.white.withOpacity(0.4) 
-                        : (theme == AppTheme.themeTwilight ? const Color(0xFF352044).withOpacity(0.4) : Colors.black26),
+                        : (theme == AppTheme.themeGardenOfWords 
+                            ? Colors.black.withOpacity(0.2) // Dark glass for Garden
+                            : (theme == AppTheme.themeTwilight ? const Color(0xFF352044).withOpacity(0.4) : Colors.black26)),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white10),
+                    border: Border.all(
+                      color: theme == AppTheme.themeGardenOfWords ? Colors.white.withOpacity(0.1) : Colors.white10
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -316,7 +320,12 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                   ),
                ),
                
-               Divider(color: theme == AppTheme.themeSeaFlower ? Colors.black12 : Colors.white10, height: 1),
+               Divider(
+                 color: (theme == AppTheme.themeSeaFlower) 
+                    ? Colors.black12 
+                    : (theme == AppTheme.themeGardenOfWords ? Colors.white.withOpacity(0.1) : Colors.white10), 
+                 height: 1
+               ),
                
 
                // Settings
@@ -343,7 +352,7 @@ class _SidebarWidgetState extends State<SidebarWidget> {
       ),
     );
 
-    if (theme == AppTheme.themeSeaFlower || theme == AppTheme.themeAfterRain || theme == AppTheme.themeTwilight) {
+    if (theme == AppTheme.themeSeaFlower || theme == AppTheme.themeAfterRain || theme == AppTheme.themeTwilight || theme == AppTheme.themeGardenOfWords) {
       return ClipRect(
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),

@@ -202,34 +202,65 @@ class S3SyncService implements CloudStorageService {
 
   @override
   Future<void> downloadFile(String remotePath, String localPath, {Function(int, int)? onProgress}) async {
-     if (_client == null || _bucketName == null) return;
-     final key = _normalizeKey(remotePath);
+   if (_client == null || _bucketName == null) {
+     debugPrint('S3 Download skipped: client or bucket is null');
+     throw Exception('S3 客户端未初始化');
+   }
+   final key = _normalizeKey(remotePath);
+   
+   // 确保目标目录存在
+   final parentDir = File(localPath).parent;
+   if (!await parentDir.exists()) {
+     await parentDir.create(recursive: true);
+   }
+   
+   // 1. 尝试获取文件元信息（可选，失败不影响下载）
+   //    某些 S3 兼容服务（如 Cloudflare R2）的 HEAD 请求会返回 204，
+   //    minio 客户端会抛出 "200 expected, got 204" 异常
+   int total = 0;
+   try {
+     final stat = await _client!.statObject(_bucketName!, key);
+     total = stat.size ?? 0;
+     debugPrint('S3 Download stat OK: $key (size: $total bytes)');
+   } catch (e) {
+     // statObject 失败不阻止下载，只是无法预知文件大小
+     debugPrint('S3 statObject skipped (non-fatal): $key → $e');
+   }
+   
+   // 2. 执行实际下载（GET 请求）
+   try {
+     final stream = await _client!.getObject(_bucketName!, key);
      
-     try {
-       final stat = await _client!.statObject(_bucketName!, key);
-       final total = stat.size ?? 0;
-       
-       final stream = await _client!.getObject(_bucketName!, key);
-       
-       final file = File(localPath);
-       final sink = file.openWrite();
-       
-       int bytesReceived = 0;
-       
-       await stream.listen((chunk) {
-          bytesReceived += chunk.length;
-          sink.add(chunk);
-          if (onProgress != null) onProgress(bytesReceived, total);
-       }).asFuture();
-       
-       await sink.flush();
-       await sink.close();
-       debugPrint('S3 Downloaded: $key');
-     } catch (e) {
-       if (_isSuccess204(e)) return;
-       debugPrint('S3 Download failed: $e');
-       rethrow;
+     final file = File(localPath);
+     final sink = file.openWrite();
+     
+     int bytesReceived = 0;
+     
+     await stream.listen((chunk) {
+        bytesReceived += chunk.length;
+        sink.add(chunk);
+        if (onProgress != null) onProgress(bytesReceived, total > 0 ? total : bytesReceived);
+     }).asFuture();
+     
+     await sink.flush();
+     await sink.close();
+     
+     // 3. 验证文件确实写入成功
+     final writtenFile = File(localPath);
+     if (!await writtenFile.exists()) {
+       throw Exception('S3 下载后文件不存在: $localPath');
      }
+     final writtenSize = await writtenFile.length();
+     debugPrint('S3 Downloaded OK: $key → $localPath ($writtenSize bytes)');
+   } catch (e) {
+     // 如果 getObject 也返回 204，说明文件可能真的不存在或为空
+     if (_isSuccess204(e)) {
+       debugPrint('S3 getObject also got 204: $key — 文件可能不存在于远端');
+       throw Exception('S3 下载失败(GET 204): $key');
+     }
+     debugPrint('S3 Download FAILED: $key → $e');
+     rethrow;
+   }
   }
 
   @override

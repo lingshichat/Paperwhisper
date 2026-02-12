@@ -332,6 +332,14 @@ class _LetterFoldTransition extends StatelessWidget {
           shadow: const Color(0xFFFF5252),
           foldLine: const Color(0xFFFF5252),
         );
+      case AppTheme.themeGardenOfWords:
+        return _LetterColors(
+          paper: const Color(0xFFF0F4F2), // Mist White
+          foldedBack: const Color(0xFFE0E8E4), // Slightly darker
+          border: const Color(0xFF8BC34A), // Fresh Leaf
+          shadow: const Color(0xFF2E4A35), // Dark Green
+          foldLine: const Color(0xFF8BC34A),
+        );
       default: // Vintage
         return _LetterColors(
           paper: const Color(0xFFF4ECD8),

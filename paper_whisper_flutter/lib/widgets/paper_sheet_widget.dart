@@ -40,6 +40,8 @@ class PaperSheetWidget extends StatelessWidget {
       accentColor = const Color(0xFF29B6F6); // After Rain Ribbon (Light Blue)
     } else if (theme == AppTheme.themeTwilight) {
       accentColor = const Color(0xFFFF5252); // Red Knot
+    } else if (theme == AppTheme.themeGardenOfWords) {
+      accentColor = const Color(0xFF8BC34A); // Fresh Leaf
     } else {
       accentColor = const Color(0xFFC0392B); // Default Red Ribbon
     }
@@ -55,6 +57,8 @@ class PaperSheetWidget extends StatelessWidget {
       border = Border.all(color: const Color(0x339999BF), width: 1); // After Rain Border
     } else if (theme == AppTheme.themeTwilight) {
       border = Border.all(color: const Color(0xFFFF5252).withOpacity(0.3), width: 1);
+    } else if (theme == AppTheme.themeGardenOfWords) {
+      border = Border.all(color: const Color(0xFF8BC34A).withOpacity(0.3), width: 1);
     } else {
       border = const Border(top: BorderSide(color: Color(0xFFC0392B), width: 8)); // Default Red Top
     }
@@ -92,6 +96,15 @@ class PaperSheetWidget extends StatelessWidget {
       shadows = [
         BoxShadow(
           color: const Color(0xFF4DD0E1).withOpacity(0.15),
+          blurRadius: 15,
+          offset: const Offset(0, 5),
+        )
+
+      ];
+    } else if (theme == AppTheme.themeGardenOfWords) {
+      shadows = [
+         BoxShadow(
+          color: const Color(0xFF8BC34A).withOpacity(0.15),
           blurRadius: 15,
           offset: const Offset(0, 5),
         )

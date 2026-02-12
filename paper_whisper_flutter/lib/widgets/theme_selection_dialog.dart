@@ -148,6 +148,19 @@ class ThemeSelectionDialog extends StatelessWidget {
                       ),
                       currentTheme == AppTheme.themeTwilight,
                     ),
+                    _buildThemeCard(
+                      context,
+                      settings,
+                      AppTheme.themeGardenOfWords,
+                      '言叶之庭',
+                      '隐约雷鸣，阴霾天空',
+                      const LinearGradient(
+                        colors: [Color(0xFF37474F), Color(0xFF263238)], // Rainy Sky -> Wet Stone
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                      currentTheme == AppTheme.themeGardenOfWords,
+                    ),
                   ],
                 ),
               ),

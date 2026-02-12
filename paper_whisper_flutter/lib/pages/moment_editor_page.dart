@@ -9,6 +9,9 @@ import '../services/moment_service.dart';
 import '../providers/sync_provider.dart';
 import '../widgets/skeuomorphic_dialog.dart';
 
+import '../config/app_theme.dart';
+import '../providers/settings_provider.dart';
+
 class MomentEditorPage extends StatefulWidget {
   const MomentEditorPage({super.key});
 
@@ -146,17 +149,33 @@ class _MomentEditorPageState extends State<MomentEditorPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Provider.of<SettingsProvider>(context).currentTheme;
+    final themeConfig = AppTheme.getMomentEditorTheme(theme);
+    
+    // Background can be complex (texture), so we use getBackground if available, 
+    // or fallback to solid color from config.
+    // However, MomentEditorPage usually has a solid/simple background.
+    // Let's use the one from config.
+    final bgColor = themeConfig['bgColor'] as Color;
+    final appBarTextColor = themeConfig['appBarTextColor'] as Color;
+    final appBarIconColor = themeConfig['appBarIconColor'] as Color;
+    final inputBg = themeConfig['inputBg'] as Color;
+    final inputTextColor = themeConfig['inputTextColor'] as Color;
+    final hintColor = themeConfig['hintColor'] as Color;
+    final photoEmptyColor = themeConfig['photoEmptyColor'] as Color;
+    final photoIconColor = themeConfig['photoIconColor'] as Color;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF4ECD8),
+      backgroundColor: bgColor,
       appBar: AppBar(
-        title: Text('记一笔', style: GoogleFonts.notoSerifSc(color: const Color(0xFF5D4037))),
+        title: Text('记一笔', style: GoogleFonts.notoSerifSc(color: appBarTextColor)),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Color(0xFF5D4037)),
+        iconTheme: IconThemeData(color: appBarIconColor),
         actions: [
           IconButton(
             icon: _isSaving 
-               ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(Color(0xFF5D4037)))) 
+               ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(appBarIconColor))) 
                : const Icon(Icons.check),
             tooltip: '保存',
             onPressed: _isSaving ? null : _save,
@@ -180,18 +199,19 @@ class _MomentEditorPageState extends State<MomentEditorPage> {
              // Text Input
              Container(
                decoration: BoxDecoration(
-                 color: Colors.white.withOpacity(0.5),
+                 color: inputBg,
                  borderRadius: BorderRadius.circular(8),
                ),
                child: TextField(
                  controller: _contentController,
                  maxLines: null,
                  minLines: 5,
-                 style: GoogleFonts.notoSerifSc(fontSize: 16, height: 1.5, color: const Color(0xFF3E2723)),
-                 decoration: const InputDecoration(
+                 style: GoogleFonts.notoSerifSc(fontSize: 16, height: 1.5, color: inputTextColor),
+                 decoration: InputDecoration(
                    hintText: '写下此刻的想法...',
+                   hintStyle: TextStyle(color: hintColor),
                    border: InputBorder.none,
-                   contentPadding: EdgeInsets.all(15),
+                   contentPadding: const EdgeInsets.all(15),
                  ),
                ),
              ),
@@ -211,7 +231,7 @@ class _MomentEditorPageState extends State<MomentEditorPage> {
                  itemCount: _images.length + 1,
                  itemBuilder: (context, index) {
                    if (index == _images.length) {
-                     return _buildAddButton();
+                     return _buildAddButton(photoEmptyColor, photoIconColor);
                    }
                    return Stack(
                      fit: StackFit.expand,
@@ -239,7 +259,7 @@ class _MomentEditorPageState extends State<MomentEditorPage> {
                  },
                )
              else
-               _buildAddButton(isLarge: true),
+               _buildAddButton(photoEmptyColor, photoIconColor, isLarge: true),
           ],
         ),
       ),
@@ -247,43 +267,51 @@ class _MomentEditorPageState extends State<MomentEditorPage> {
   }
 
   Widget _buildDropdown(List<String> items, String? value, String hint, Function(String?) onChanged) {
+    final theme = Provider.of<SettingsProvider>(context).currentTheme;
+    final themeConfig = AppTheme.getMomentEditorTheme(theme);
+    final dropdownBg = themeConfig['dropdownBg'] as Color;
+    final dropdownIconColor = themeConfig['dropdownIconColor'] as Color;
+    final dropdownMenuBg = themeConfig['dropdownMenuBg'] as Color;
+    final dropdownItemColor = themeConfig['dropdownItemColor'] as Color;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.5),
+        color: dropdownBg,
         borderRadius: BorderRadius.circular(8),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: value,
-          hint: Text(hint, style: TextStyle(color: Colors.grey[600], fontSize: 14)),
-          icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF8D6E63)),
-          dropdownColor: const Color(0xFFF4ECD8),
-          items: items.map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 20)))).toList(),
+          hint: Text(hint, style: TextStyle(color: dropdownItemColor.withOpacity(0.6), fontSize: 14)),
+          icon: Icon(Icons.arrow_drop_down, color: dropdownIconColor),
+          dropdownColor: dropdownMenuBg,
+          items: items.map((e) => DropdownMenuItem(value: e, child: Text(e, style: TextStyle(fontSize: 20, color: dropdownItemColor)))).toList(),
           onChanged: onChanged,
         ),
       ),
     );
   }
 
-  Widget _buildAddButton({bool isLarge = false}) {
+  Widget _buildAddButton(Color bgColor, Color iconColor, {bool isLarge = false}) {
     return GestureDetector(
       onTap: _pickImage,
       child: Container(
         height: isLarge ? 120 : null,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.3),
-          border: Border.all(color: const Color(0xFFA1887F), style: BorderStyle.none), // Removed dashed border for skeuomorphic feel, just bg
+          color: bgColor,
+          border: Border.all(color: iconColor.withOpacity(0.5), style: BorderStyle.none), // Removed dashed border for skeuomorphic feel, just bg
           borderRadius: BorderRadius.circular(8),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.add_a_photo_outlined, color: const Color(0xFF8D6E63), size: isLarge ? 32 : 24),
+            Icon(Icons.add_a_photo_outlined, color: iconColor, size: isLarge ? 32 : 24),
             if (isLarge) ...[
               const SizedBox(height: 8),
-              Text("添加图片", style: TextStyle(color: const Color(0xFF8D6E63).withOpacity(0.7)))
+              Text("添加图片", style: TextStyle(color: iconColor.withOpacity(0.7)))
             ]
           ],
         ),

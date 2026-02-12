@@ -138,7 +138,9 @@ class _TrashPageState extends State<TrashPage> {
     final bool isSeaFlower = theme == AppTheme.themeSeaFlower;
     final bool isMidnight = theme == AppTheme.themeMidnight;
     final bool isAmber = theme == AppTheme.themeAmberLens;
+
     final bool isTwilight = theme == AppTheme.themeTwilight;
+    final bool isGardenOfWords = theme == AppTheme.themeGardenOfWords;
 
     final themeConfig = AppTheme.getSettingsTheme(theme);
     
@@ -152,7 +154,7 @@ class _TrashPageState extends State<TrashPage> {
         ? themeConfig['iconColor']
         : (isSeaFlower
             ? const Color(0xFFAD1457)
-            : (isMidnight ? const Color(0xFFc9d1d9) : (isTwilight ? const Color(0xFFFF5252) : (isAmber ? const Color(0xFFFF9800) : const Color(0xFFD7CCC8)))));
+            : (isMidnight ? const Color(0xFFc9d1d9) : (isTwilight ? const Color(0xFFFF5252) : (isAmber ? const Color(0xFFFF9800) : (isGardenOfWords ? const Color(0xFF558B2F) : const Color(0xFFD7CCC8))))));
 
     return Stack(
       children: [
@@ -201,7 +203,7 @@ class _TrashPageState extends State<TrashPage> {
                       padding: const EdgeInsets.all(16),
                       itemCount: _trashEntries.length,
                       itemBuilder: (context, index) {
-                        return _buildTrashItem(context, _trashEntries[index], isSeaFlower, isMidnight, isAmber, isTwilight, titleColor, iconColor);
+                        return _buildTrashItem(context, _trashEntries[index], isSeaFlower, isMidnight, isAmber, isTwilight, isGardenOfWords, titleColor, iconColor);
                       },
                   ),
         ),
@@ -216,6 +218,7 @@ class _TrashPageState extends State<TrashPage> {
     bool isMidnight, 
     bool isAmber,
     bool isTwilight,
+    bool isGardenOfWords,
     Color titleColor, 
     Color iconColor
   ) {
@@ -224,7 +227,7 @@ class _TrashPageState extends State<TrashPage> {
     Color cardTitleColor;
     Color cardDateColor;
 
-    if (!isSeaFlower && !isMidnight && !isAmber && !isTwilight) {
+    if (!isSeaFlower && !isMidnight && !isAmber && !isTwilight && !isGardenOfWords) {
        // Vintage Mode
        cardTitleColor = const Color(0xFF2d241f); // Dark Brown
        cardDateColor = const Color(0xFF5D4037).withOpacity(0.6);
@@ -282,6 +285,19 @@ class _TrashPageState extends State<TrashPage> {
          border: Border.all(color: const Color(0xFF4DD0E1).withOpacity(0.3), width: 1),
          boxShadow: const [
            BoxShadow(color: Colors.black26, blurRadius: 6, offset: Offset(0, 2))
+         ]
+       );
+    } else if (isGardenOfWords) {
+       decoration = BoxDecoration(
+         color: Colors.white.withOpacity(0.7),
+         borderRadius: BorderRadius.circular(16),
+         border: Border.all(color: const Color(0xFF8BC34A).withOpacity(0.3), width: 1),
+         boxShadow: [
+           BoxShadow(
+             color: const Color(0xFF8BC34A).withOpacity(0.1),
+             blurRadius: 8,
+             offset: const Offset(0, 2)
+           )
          ]
        );
     } else {
@@ -354,12 +370,12 @@ class _TrashPageState extends State<TrashPage> {
               ),
             ),
             IconButton(
-              icon: Icon(Icons.restore, color: isSeaFlower ? const Color(0xFFE91E63) : (isMidnight ? const Color(0xFF69f0ae) : (isTwilight ? const Color(0xFF4DD0E1) : Colors.green))),
+              icon: Icon(Icons.restore, color: isSeaFlower ? const Color(0xFFE91E63) : (isMidnight ? const Color(0xFF69f0ae) : (isTwilight ? const Color(0xFF4DD0E1) : (isGardenOfWords ? const Color(0xFF8BC34A) : Colors.green)))),
               tooltip: '恢复',
               onPressed: () => _restoreFile(entry.filename),
             ),
             IconButton(
-              icon: Icon(Icons.delete_forever_outlined, color: isSeaFlower ? const Color(0xFFC2185B) : (isMidnight ? const Color(0xFFff5252) : (isTwilight ? const Color(0xFFE91E63) : Colors.redAccent))),
+              icon: Icon(Icons.delete_forever_outlined, color: isSeaFlower ? const Color(0xFFC2185B) : (isMidnight ? const Color(0xFFff5252) : (isTwilight ? const Color(0xFFE91E63) : (isGardenOfWords ? const Color(0xFFE57373) : Colors.redAccent)))),
               tooltip: '彻底删除',
               onPressed: () => _deletePermanently(entry.filename),
             ),

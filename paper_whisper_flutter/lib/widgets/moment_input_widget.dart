@@ -327,6 +327,23 @@ class _MomentInputWidgetState extends State<MomentInputWidget> with TickerProvid
            blurRadius: 10
          )
        ];
+    } else if (theme == AppTheme.themeGardenOfWords) {
+       containerColor = const Color(0xFF2E4A35).withValues(alpha: 0.95);
+       inputBgColor = const Color(0xFFF0F4F2);
+       inputBorderColor = const Color(0xFF8BC34A).withValues(alpha: 0.5);
+       textColor = const Color(0xFF5A6B72);
+       hintColor = const Color(0xFF5A6B72).withValues(alpha: 0.7);
+       iconColor = const Color(0xFF8BC34A);
+       sendColor = const Color(0xFF8BC34A);
+       imageIconColor = const Color(0xFF8BC34A);
+       cursorColor = const Color(0xFF8BC34A);
+       boxShadows = [
+         BoxShadow(
+           color: const Color(0xFF2E4A35).withValues(alpha: 0.2), 
+           offset: const Offset(0, -4), 
+           blurRadius: 10
+         )
+       ];
     } else {
        // Default
        containerColor = const Color(0xFF2D1E1B); 
