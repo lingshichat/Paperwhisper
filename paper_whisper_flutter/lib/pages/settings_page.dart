@@ -1117,7 +1117,7 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
         bgColor = const Color(0xFF352044).withOpacity(0.95);
         titleColor = const Color(0xFFE4E0EC);
         tapeColor = const Color(0xFFFF5252).withOpacity(0.3);
-        shadows = [BoxShadow(color: const Color(0xFF4DD0E1).withOpacity(0.15), blurRadius: 20, offset: const Offset(0, -5))];
+        shadows = [BoxShadow(color: const Color(0xFFEF5350).withOpacity(0.15), blurRadius: 20, offset: const Offset(0, -5))];
         border = Border.all(color: Colors.white.withOpacity(0.1), width: 1);
     } else if (theme == AppTheme.themeGardenOfWords) {
         // Garden of Words: Dark Glass + Green Accent

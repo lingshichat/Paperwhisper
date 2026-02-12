@@ -153,13 +153,13 @@ class _SkeuomorphicDatePickerState extends State<SkeuomorphicDatePicker> {
     } else if (theme == AppTheme.themeTwilight) {
       dialogBg = const Color(0xFF352044);
       headerBg = const Color(0xFF2E1A3C);
-      headerText = const Color(0xFF4DD0E1);
+      headerText = const Color(0xFFEF5350);
       bodyText = const Color(0xFFB39DDB);
-      accentColor = const Color(0xFF4DD0E1);
+      accentColor = const Color(0xFFEF5350);
       weekDayColor = const Color(0xFF90CAF9);
-      border = Border.all(color: const Color(0xFF4DD0E1).withOpacity(0.3), width: 1);
+      border = Border.all(color: const Color(0xFFEF5350).withOpacity(0.3), width: 1);
       shadows = [
-         BoxShadow(color: const Color(0xFF4DD0E1).withValues(alpha: 0.15), blurRadius: 15, offset: const Offset(0, 5))
+         BoxShadow(color: const Color(0xFFEF5350).withValues(alpha: 0.15), blurRadius: 15, offset: const Offset(0, 5))
       ];
     } else if (theme == AppTheme.themeGardenOfWords) {
       dialogBg = const Color(0xFFF0F4F2); // Mist White

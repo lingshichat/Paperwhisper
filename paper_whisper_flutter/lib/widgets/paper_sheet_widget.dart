@@ -95,7 +95,7 @@ class PaperSheetWidget extends StatelessWidget {
     } else if (theme == AppTheme.themeTwilight) {
       shadows = [
         BoxShadow(
-          color: const Color(0xFF4DD0E1).withOpacity(0.15),
+          color: const Color(0xFFEF5350).withOpacity(0.15),
           blurRadius: 15,
           offset: const Offset(0, 5),
         )

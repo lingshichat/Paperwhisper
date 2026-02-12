@@ -10,6 +10,7 @@ class DiaryProvider with ChangeNotifier {
   final DiaryService _service;
   List<DiaryEntry> _entries = [];
   bool _isLoading = false;
+  int _lastUpdateTick = 0; // Data versioning for UI cache invalidation
   String _debugPath = '';
 
   // New: Flattened List Support
@@ -35,6 +36,7 @@ class DiaryProvider with ChangeNotifier {
   String get diarySearchQuery => _diarySearchQuery;
   String get momentsSearchQuery => _momentsSearchQuery;
   String get searchQuery => _diarySearchQuery;
+  int get lastUpdateTick => _lastUpdateTick;
 
   DiaryProvider([DiaryService? service, List<DiaryEntry>? initialEntries]) : _service = service ?? DiaryService() {
     if (initialEntries != null && initialEntries.isNotEmpty) {
@@ -115,13 +117,11 @@ class DiaryProvider with ChangeNotifier {
     } catch (e) {
       debugPrint("Error loading entries: $e");
     } finally {
+      _lastUpdateTick++; // Increment version after any data change
       if (!silent) {
          _isLoading = false;
          notifyListeners();
       } else {
-         // If silent, we still need to notify if data changed (which it likely did or didn't)
-         // Since we just replaced _entries, we MUST notify to ensure UI reflects latest file state
-         // (e.g. if cache was stale)
          notifyListeners();
       }
     }

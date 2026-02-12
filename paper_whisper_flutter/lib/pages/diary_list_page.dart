@@ -705,8 +705,9 @@ class _DiaryListPageState extends State<DiaryListPage> with WidgetsBindingObserv
       rawFlatEntries = diaryProvider.flatEntries;
     }
 
-    // 布局缓存检测：仅当数据变化时才重新计算
-    final cacheKey = '${rawFlatEntries.length}_${availableWidth.toInt()}_$theme';
+    // 布局缓存检测：仅当数据、视口宽度或主题变化时才重新计算
+    // 加入 provider.lastUpdateTick 确保日记内容修改后（即使长度不变）也能触发刷新
+    final cacheKey = '${rawFlatEntries.length}_${availableWidth.toInt()}_${theme}_${diaryProvider.lastUpdateTick}';
     if (_lastLayoutCacheKey != cacheKey) {
       _generateResponsiveLayout(rawFlatEntries, availableWidth, theme, diaryProvider);
       _lastLayoutCacheKey = cacheKey;

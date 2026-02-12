@@ -282,7 +282,7 @@ class _TrashPageState extends State<TrashPage> {
        decoration = BoxDecoration(
          color: const Color(0xFF352044).withOpacity(0.6),
          borderRadius: BorderRadius.circular(16),
-         border: Border.all(color: const Color(0xFF4DD0E1).withOpacity(0.3), width: 1),
+         border: Border.all(color: const Color(0xFFEF5350).withOpacity(0.3), width: 1),
          boxShadow: const [
            BoxShadow(color: Colors.black26, blurRadius: 6, offset: Offset(0, 2))
          ]
@@ -370,7 +370,7 @@ class _TrashPageState extends State<TrashPage> {
               ),
             ),
             IconButton(
-              icon: Icon(Icons.restore, color: isSeaFlower ? const Color(0xFFE91E63) : (isMidnight ? const Color(0xFF69f0ae) : (isTwilight ? const Color(0xFF4DD0E1) : (isGardenOfWords ? const Color(0xFF8BC34A) : Colors.green)))),
+              icon: Icon(Icons.restore, color: isSeaFlower ? const Color(0xFFE91E63) : (isMidnight ? const Color(0xFF69f0ae) : (isTwilight ? const Color(0xFFEF5350) : (isGardenOfWords ? const Color(0xFF8BC34A) : Colors.green)))),
               tooltip: '恢复',
               onPressed: () => _restoreFile(entry.filename),
             ),

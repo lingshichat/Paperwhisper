@@ -524,7 +524,7 @@ class AppTheme {
         ],
         'hoverShadows': [
           BoxShadow(
-            color: _twilightAccentCyan.withOpacity(0.2), // Blue glow
+            color: _twilightAccentRed.withOpacity(0.2), // Red glow
             offset: const Offset(0, 8),
             blurRadius: 20,
           )
@@ -679,23 +679,29 @@ class AppTheme {
   static Map<String, dynamic> getMonthDividerTheme(String theme) {
     if (theme == themeGardenOfWords) {
       return {
-        'textColor': _gardenAccent, // Grass Green Text
-        'lineColor': _gardenAccent.withOpacity(0.5), // Grass Green Line
-        'paperColor': _gardenSurface.withOpacity(0.8), // Dark Glass
+        'textColor': _gardenAccentDark,
+        'lineColor': _gardenAccent.withOpacity(0.4),
+        'paperColor': _gardenSurface.withOpacity(0.8),
         'shadows': [
           BoxShadow(
-            color: _gardenAccent.withOpacity(0.15), // Greenish glow
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          )
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
         ],
       };
     } else if (theme == themeTwilight) {
       return {
-        'textColor': _twilightTextSecondary,
-        'lineColor': Colors.white.withOpacity(0.1),
-        'paperColor': _twilightSurface.withOpacity(0.8),
-        'shadows': [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 5)],
+        'textColor': _twilightTextPrimary, // Softer white instead of stinging red
+        'lineColor': _twilightAccentRed.withOpacity(0.4),
+        'paperColor': _twilightSurface.withOpacity(0.7),
+        'shadows': [
+          BoxShadow(
+            color: _twilightAccentRed.withOpacity(0.15),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
       };
     } else if (theme == themeAfterRain) {
       return {
@@ -709,6 +715,12 @@ class AppTheme {
             offset: const Offset(0, 3),
           )
         ],
+      };
+    } else if (theme == themeMidnight) {
+      return {
+        'textColor': const Color(0xFFE8EAF6),
+        'lineColor': const Color(0xFF5C6BC0).withOpacity(0.5),
+        'paperColor': const Color(0xFF283593).withOpacity(0.9),
       };
     }
     return {};
@@ -1229,8 +1241,6 @@ class AppTheme {
       ),
     );
   }
-
-
 }
 
 /// 自定义的拟物风转场动画
@@ -1268,5 +1278,4 @@ class _SkeuomorphicPageTransitionsBuilder extends PageTransitionsBuilder {
       ),
     );
   }
-
 }
