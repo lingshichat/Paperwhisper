@@ -1,19 +1,15 @@
 {
-    "latestVersion": "1.5.1",
-    "latestBuildNumber": 16,
-    "releaseDate": "2026-01-29",
-    "title": "纸语 1.5.1 —— 雨后天空",
+    "latestVersion": "1.5.5",
+    "latestBuildNumber": 17,
+    "releaseDate": "2026-02-13",
+    "title": "纸语 1.5.5 —— 黄昏之时与言叶之庭",
     "isForceUpdate": true,
     "changelog": [
-        "🛠️ 优化应用占用，放弃32位支持，应用体验更加丝滑",
+        "🆕 新增主题：黄昏之时，致敬君名十周年！",
+        "🆕 新增主题：言叶之庭，带你漫步在这片新绿中",
+        "🛠️ 优化s3同步逻辑",
         "🛠️ 优化三方云同步逻辑",
-        "---以下为1.5.0的更新内容---",
-        "🆕 新增主题：雨后天空",
-        "🆕 设置新增：赞助支持",
-        "🆕 数据同步上新：支持S3存储同步",
-        "🛠️ 优化性能问题",
-        "🛠️ 优化长图导出",
-        "🛠️ 其他优化"
+        "🛠️ 其余优化若干"
     ],
     "downloadUrl": {
         "android": "https://paperwhisper.s3.bitiful.net/Android/latest.apk",
