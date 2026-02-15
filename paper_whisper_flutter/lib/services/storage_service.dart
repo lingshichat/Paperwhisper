@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 import 'moment_service.dart';
+import 'thumbnail_cache_service.dart';
 import 'package:flutter/painting.dart';
 
 class StorageService {
@@ -11,20 +12,31 @@ class StorageService {
   /// 获取缓存大小（字节）
   Future<int> getCacheSize() async {
     try {
-      final tempDir = await getTemporaryDirectory();
+      int totalSize = 0;
       
-      // On Windows, tempDir is the System Temp (shared).
-      // We should only count our specific cache folders.
+      // 1. 临时目录缓存
+      final tempDir = await getTemporaryDirectory();
       if (Platform.isWindows) {
         final libCache = Directory(path.join(tempDir.path, 'libCachedImageData'));
         if (await libCache.exists()) {
-           return _getDirSize(libCache); 
+           totalSize += await _getDirSize(libCache);
         }
-        return 0;
       } else {
-        // Android/iOS tempDir is scoped to app
-        return _getDirSize(tempDir);
+        totalSize += await _getDirSize(tempDir);
       }
+      
+      // 2. 图库缩略图缓存
+      final thumbnailCache = ThumbnailCacheService();
+      await thumbnailCache.init();
+      final thumbDir = Directory(path.join(
+        (await getApplicationDocumentsDirectory()).path,
+        'thumbnail_cache'
+      ));
+      if (await thumbDir.exists()) {
+        totalSize += await _getDirSize(thumbDir);
+      }
+      
+      return totalSize;
     } catch (e) {
       debugPrint("Error getting cache size: $e");
       return 0;
@@ -95,7 +107,12 @@ class StorageService {
         }
       }
       
-      // 2. 清理内存图片缓存
+      // 2. 清理图库缩略图缓存
+      final thumbnailCache = ThumbnailCacheService();
+      await thumbnailCache.clearCache();
+      debugPrint("Deleted thumbnail cache");
+      
+      // 3. 清理内存图片缓存
       PaintingBinding.instance.imageCache.clear();
       PaintingBinding.instance.imageCache.clearLiveImages();
       

@@ -46,10 +46,12 @@ class _SidebarWidgetState extends State<SidebarWidget> {
   Widget build(BuildContext context) {
     bool isWriter = context.findAncestorWidgetOfExactType<DiaryListPage>() != null;
     bool isMoments = context.findAncestorWidgetOfExactType<MomentsPage>() != null;
+    bool isStatistics = context.findAncestorWidgetOfExactType<StatisticsPage>() != null;
     
     int activeIndex = -1;
     if (isWriter) activeIndex = 0;
     if (isMoments) activeIndex = 1;
+    if (isStatistics) activeIndex = 2;
 
     final theme = Provider.of<SettingsProvider>(context).currentTheme;
     
@@ -255,9 +257,9 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                          const SizedBox(height: 12),
                          
                          _buildMenuItem(
-                           context, 
+                           context,
                            icon: Icons.photo_library_outlined,
-                           label: "随心记", 
+                           label: "随心记",
                            onTap: () async {
                               final navigator = Navigator.of(context);
                               if (context.findAncestorWidgetOfExactType<Drawer>() != null) {
@@ -276,6 +278,34 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                               }
                            },
                            isActive: isMoments,
+                           textColor: textColor,
+                           activeColor: activeTextColor,
+                         ),
+                         
+                         const SizedBox(height: 12),
+                         
+                         _buildMenuItem(
+                           context,
+                           icon: Icons.bar_chart_outlined,
+                           label: "数据洞察",
+                           onTap: () async {
+                              final navigator = Navigator.of(context);
+                              if (context.findAncestorWidgetOfExactType<Drawer>() != null) {
+                                 navigator.pop();
+                                 await Future.delayed(const Duration(milliseconds: 300));
+                              }
+                              
+                              if (!isStatistics) {
+                                navigator.push(
+                                    PageRouteBuilder(
+                                      pageBuilder: (_, __, ___) => const StatisticsPage(),
+                                      transitionDuration: const Duration(milliseconds: 500),
+                                      transitionsBuilder: (_, a, __, c) => FadeTransition(opacity: a, child: c),
+                                    )
+                                );
+                              }
+                           },
+                           isActive: isStatistics,
                            textColor: textColor,
                            activeColor: activeTextColor,
                          ),

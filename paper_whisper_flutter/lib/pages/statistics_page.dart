@@ -6,6 +6,7 @@ import '../services/statistics_service.dart';
 import '../widgets/slide_page_route.dart';
 import 'diary_list_page.dart';
 import 'moments_page.dart';
+import 'gallery_page.dart';
 
 class StatisticsPage extends StatefulWidget {
   const StatisticsPage({super.key});
@@ -126,8 +127,12 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
                 _buildStreakCard(colorScheme),
                 const SizedBox(height: 30),
                 
-                // 写作趋势
+                // 写作趋势（按字数）
                 _buildTrendSection(colorScheme),
+                const SizedBox(height: 30),
+                
+                // 文思泉涌
+                _buildCreativeHighlights(colorScheme),
                 const SizedBox(height: 30),
                 
                 // 心情分布
@@ -209,10 +214,14 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
             Expanded(
               child: _buildStatCard(
                 colorScheme,
-                icon: Icons.delete_outline,
-                label: '回收站',
-                value: _stats.trashCount.toString(),
-                color: const Color(0xFFB8B8B8),
+                icon: Icons.photo_library,
+                label: '图片数',
+                value: _stats.totalMomentImages.toString(),
+                color: const Color(0xFF6B8E9F),
+                onTap: () => Navigator.push(
+                  context,
+                  SlidePageRoute(page: const GalleryPage()),
+                ),
               ),
             ),
           ],
@@ -357,7 +366,7 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
   }
 
   Widget _buildTrendSection(ColorScheme colorScheme) {
-    final trendData = _statisticsService.getLast30DaysTrend(_stats.dailyCounts);
+    final trendData = _statisticsService.getLast30DaysWordTrend(_stats.dailyWordCounts);
     final maxValue = trendData.isEmpty ? 0 : trendData.reduce((a, b) => a > b ? a : b);
     
     return Column(
@@ -398,7 +407,7 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
               : BarChart(
                   BarChartData(
                     alignment: BarChartAlignment.spaceAround,
-                    maxY: maxValue > 0 ? maxValue * 1.2 : 5,
+                    maxY: maxValue > 0 ? maxValue * 1.2 : 100,
                     barTouchData: BarTouchData(enabled: false),
                     titlesData: FlTitlesData(
                       show: true,
@@ -451,6 +460,148 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
                 ),
         ),
       ],
+    );
+  }
+
+  // 文思泉涌板块
+  Widget _buildCreativeHighlights(ColorScheme colorScheme) {
+    final hasLongestDiary = _stats.longestDiary != null && _stats.longestDiary!.wordCount > 0;
+    final hasMaxMomentsDay = _stats.maxMomentsDay != null && _stats.maxMomentsDay!.momentCount > 0;
+    
+    if (!hasLongestDiary && !hasMaxMomentsDay) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '文思泉涌',
+          style: GoogleFonts.notoSerifSc(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 16),
+        if (hasLongestDiary)
+          _buildHighlightCard(
+            colorScheme,
+            icon: Icons.auto_stories,
+            title: '最长的一篇日记',
+            subtitle: _stats.longestDiary!.title.isNotEmpty
+                ? _stats.longestDiary!.title
+                : '无标题',
+            value: '${_formatNumber(_stats.longestDiary!.wordCount)} 字',
+            date: _stats.longestDiary!.dateString,
+            iconColor: const Color(0xFFFFA726),
+          ),
+        if (hasLongestDiary && hasMaxMomentsDay)
+          const SizedBox(height: 12),
+        if (hasMaxMomentsDay)
+          _buildHighlightCard(
+            colorScheme,
+            icon: Icons.emoji_objects,
+            title: '单日最多随心记',
+            subtitle: '${_stats.maxMomentsDay!.momentCount} 条随心记',
+            value: '灵感爆发',
+            date: '${_stats.maxMomentsDay!.date.year}-${_stats.maxMomentsDay!.date.month.toString().padLeft(2, '0')}-${_stats.maxMomentsDay!.date.day.toString().padLeft(2, '0')}',
+            iconColor: const Color(0xFF66BB6A),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildHighlightCard(
+    ColorScheme colorScheme, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required String value,
+    required String date,
+    required Color iconColor,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            iconColor.withOpacity(0.15),
+            iconColor.withOpacity(0.05),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: iconColor.withOpacity(0.3),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: iconColor.withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              color: iconColor,
+              size: 28,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.notoSerifSc(
+                    fontSize: 13,
+                    color: colorScheme.onSurface.withOpacity(0.6),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: GoogleFonts.notoSerifSc(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurface,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  date,
+                  style: GoogleFonts.notoSerifSc(
+                    fontSize: 12,
+                    color: colorScheme.onSurface.withOpacity(0.5),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: iconColor.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              value,
+              style: GoogleFonts.notoSerifSc(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: iconColor,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -710,6 +861,13 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
                 icon: Icons.image,
                 label: '带图随心记',
                 value: '${_stats.momentsWithImages} 条',
+              ),
+              Divider(height: 24, color: colorScheme.outline.withOpacity(0.2)),
+              _buildDetailRow(
+                colorScheme,
+                icon: Icons.photo_library,
+                label: '图片总数',
+                value: '${_stats.totalMomentImages} 张',
               ),
               Divider(height: 24, color: colorScheme.outline.withOpacity(0.2)),
               _buildDetailRow(

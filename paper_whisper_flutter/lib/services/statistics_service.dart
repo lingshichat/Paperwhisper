@@ -6,6 +6,28 @@ import 'diary_service.dart';
 import 'moment_service.dart';
 import 'trash_service.dart';
 
+class DiaryRecord {
+  final String title;
+  final int wordCount;
+  final String dateString;
+
+  DiaryRecord({
+    required this.title,
+    required this.wordCount,
+    required this.dateString,
+  });
+}
+
+class DayRecord {
+  final DateTime date;
+  final int momentCount;
+
+  DayRecord({
+    required this.date,
+    required this.momentCount,
+  });
+}
+
 class StatisticsData {
   final int totalDiaries;
   final int totalMoments;
@@ -18,6 +40,10 @@ class StatisticsData {
   final List<DateTime> allActiveDates;
   final int momentsWithImages;
   final int momentsWithAudio;
+  final int totalMomentImages; // 所有随心记中的图片总数
+  final Map<String, int> dailyWordCounts; // YYYY-MM-DD -> word count (for trend)
+  final DiaryRecord? longestDiary; // 最长日记
+  final DayRecord? maxMomentsDay; // 单日最多随心记
 
   StatisticsData({
     this.totalDiaries = 0,
@@ -31,6 +57,10 @@ class StatisticsData {
     this.allActiveDates = const [],
     this.momentsWithImages = 0,
     this.momentsWithAudio = 0,
+    this.totalMomentImages = 0,
+    this.dailyWordCounts = const {},
+    this.longestDiary,
+    this.maxMomentsDay,
   });
 }
 
@@ -77,6 +107,18 @@ class StatisticsService {
       final momentsWithImages = moments.where((m) => m.images.isNotEmpty).length;
       final momentsWithAudio = moments.where((m) => m.audioPath != null).length;
 
+      // 计算所有随心记中的图片总数
+      final totalMomentImages = moments.fold<int>(0, (sum, m) => sum + m.images.length);
+
+      // 计算每日字数统计（用于趋势图）
+      final dailyWordCounts = _calculateDailyWordCounts(diaries, moments);
+
+      // 计算最长日记
+      final longestDiary = _findLongestDiary(diaries);
+
+      // 计算单日最多随心记
+      final maxMomentsDay = _findMaxMomentsDay(moments);
+
       return StatisticsData(
         totalDiaries: totalDiaries,
         totalMoments: totalMoments,
@@ -89,6 +131,10 @@ class StatisticsService {
         allActiveDates: allDates.toList(),
         momentsWithImages: momentsWithImages,
         momentsWithAudio: momentsWithAudio,
+        totalMomentImages: totalMomentImages,
+        dailyWordCounts: dailyWordCounts,
+        longestDiary: longestDiary,
+        maxMomentsDay: maxMomentsDay,
       );
     } catch (e) {
       debugPrint('Error calculating statistics: $e');
@@ -206,5 +252,91 @@ class StatisticsService {
     });
     
     return monthly;
+  }
+
+  // 计算每日字数统计（日记字数 + 随心记字数）
+  Map<String, int> _calculateDailyWordCounts(List<DiaryEntry> diaries, List<Moment> moments) {
+    final wordCounts = <String, int>{};
+    
+    // 统计日记字数（同一天多篇合并）
+    for (var diary in diaries) {
+      final diaryWords = diary.content.length + diary.title.length;
+      wordCounts[diary.dateString] = (wordCounts[diary.dateString] ?? 0) + diaryWords;
+    }
+    
+    // 统计随心记字数（同一天多篇合并）
+    for (var moment in moments) {
+      final dateStr = '${moment.createdAt.year}-${moment.createdAt.month.toString().padLeft(2, '0')}-${moment.createdAt.day.toString().padLeft(2, '0')}';
+      wordCounts[dateStr] = (wordCounts[dateStr] ?? 0) + moment.content.length;
+    }
+    
+    return wordCounts;
+  }
+
+  // 查找最长日记
+  DiaryRecord? _findLongestDiary(List<DiaryEntry> diaries) {
+    if (diaries.isEmpty) return null;
+    
+    DiaryEntry? longest;
+    int maxWords = 0;
+    
+    for (var diary in diaries) {
+      final wordCount = diary.content.length + diary.title.length;
+      if (wordCount > maxWords) {
+        maxWords = wordCount;
+        longest = diary;
+      }
+    }
+    
+    if (longest == null) return null;
+    
+    return DiaryRecord(
+      title: longest.title,
+      wordCount: longest.content.length + longest.title.length,
+      dateString: longest.dateString,
+    );
+  }
+
+  // 查找单日最多随心记
+  DayRecord? _findMaxMomentsDay(List<Moment> moments) {
+    if (moments.isEmpty) return null;
+    
+    final dayCounts = <DateTime, int>{};
+    
+    for (var moment in moments) {
+      final date = DateTime(moment.createdAt.year, moment.createdAt.month, moment.createdAt.day);
+      dayCounts[date] = (dayCounts[date] ?? 0) + 1;
+    }
+    
+    DateTime? maxDay;
+    int maxCount = 0;
+    
+    dayCounts.forEach((date, count) {
+      if (count > maxCount) {
+        maxCount = count;
+        maxDay = date;
+      }
+    });
+    
+    if (maxDay == null) return null;
+    
+    return DayRecord(
+      date: maxDay!,
+      momentCount: maxCount,
+    );
+  }
+
+  // 获取最近30天的字数趋势数据
+  List<int> getLast30DaysWordTrend(Map<String, int> dailyWordCounts) {
+    final trend = <int>[];
+    final today = DateTime.now();
+    
+    for (int i = 29; i >= 0; i--) {
+      final date = today.subtract(Duration(days: i));
+      final dateStr = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+      trend.add(dailyWordCounts[dateStr] ?? 0);
+    }
+    
+    return trend;
   }
 }

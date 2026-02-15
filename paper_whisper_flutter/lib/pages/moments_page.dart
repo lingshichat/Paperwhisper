@@ -154,6 +154,12 @@ class _MomentsPageState extends State<MomentsPage> {
     ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
   }
 
+  // 计算指定日期随心记中的图片总数
+  int _getImageCountForDate(DateTime date) {
+    final moments = _getMomentsForDate(date);
+    return moments.fold<int>(0, (sum, m) => sum + m.images.length);
+  }
+
   void _onDateChanged(DateTime date, {bool animate = true}) {
     if (_isSameDay(date, _selectedDate)) return;
     
@@ -671,18 +677,49 @@ class _MomentsPageState extends State<MomentsPage> {
              autoFocus: true,
            );
         } else {
+           final imageCount = _getImageCountForDate(_selectedDate);
            headerTitle = Column(
-              children: [
-                 Text(
-                   "${_selectedDate.year}年${_selectedDate.month}月",
-                   style: GoogleFonts.notoSerifSc(color: appBarTextColor.withOpacity(0.8), fontSize: 13),
-                 ),
-                 Text(
-                   "随心记",
-                   style: GoogleFonts.notoSerifSc(color: appBarTextColor, fontWeight: FontWeight.bold, fontSize: 16),
-                 )
-              ],
-           );
+               children: [
+                  Text(
+                    "${_selectedDate.year}年${_selectedDate.month}月",
+                    style: GoogleFonts.notoSerifSc(color: appBarTextColor.withOpacity(0.8), fontSize: 13),
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        "随心记",
+                        style: GoogleFonts.notoSerifSc(color: appBarTextColor, fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      if (imageCount > 0) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: appBarIconColor.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.image, size: 10, color: appBarIconColor),
+                              const SizedBox(width: 2),
+                              Text(
+                                '$imageCount',
+                                style: GoogleFonts.notoSerifSc(
+                                  color: appBarIconColor,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+               ],
+            );
         }
 
         return Scaffold(
@@ -902,10 +939,46 @@ class _MomentsPageState extends State<MomentsPage> {
                      "${_selectedDate.year}年${_selectedDate.month}月",
                      style: GoogleFonts.notoSerifSc(color: textColor.withOpacity(0.8), fontSize: 13),
                    ),
-                   Text(
-                     "随心记",
-                     style: GoogleFonts.notoSerifSc(color: textColor, fontWeight: FontWeight.bold, fontSize: 16),
-                   )
+                   Builder(
+                     builder: (context) {
+                       final imageCount = _getImageCountForDate(_selectedDate);
+                       return Row(
+                         mainAxisSize: MainAxisSize.min,
+                         mainAxisAlignment: MainAxisAlignment.center,
+                         children: [
+                           Text(
+                             "随心记",
+                             style: GoogleFonts.notoSerifSc(color: textColor, fontWeight: FontWeight.bold, fontSize: 16),
+                           ),
+                           if (imageCount > 0) ...[
+                             const SizedBox(width: 6),
+                             Container(
+                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                               decoration: BoxDecoration(
+                                 color: iconColor.withOpacity(0.2),
+                                 borderRadius: BorderRadius.circular(10),
+                               ),
+                               child: Row(
+                                 mainAxisSize: MainAxisSize.min,
+                                 children: [
+                                   Icon(Icons.image, size: 10, color: iconColor),
+                                   const SizedBox(width: 2),
+                                   Text(
+                                     '$imageCount',
+                                     style: GoogleFonts.notoSerifSc(
+                                       color: iconColor,
+                                       fontSize: 10,
+                                       fontWeight: FontWeight.w600,
+                                     ),
+                                   ),
+                                 ],
+                               ),
+                             ),
+                           ],
+                         ],
+                       );
+                     },
+                   ),
                 ],
              ),
            ),
