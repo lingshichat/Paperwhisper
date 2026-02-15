@@ -64,6 +64,7 @@ dependencies:
   gal: ^2.3.2
   device_info_plus: ^12.3.0
   image: ^4.7.2
+  fl_chart: ^0.70.2
 
 dependency_overrides:
   record_linux: ^1.2.0

@@ -7,6 +7,7 @@ import '../config/app_theme.dart';
 import '../pages/diary_list_page.dart';
 import '../pages/moments_page.dart';
 import '../pages/settings_page.dart';
+import '../pages/statistics_page.dart';
 import '../widgets/slide_page_route.dart';
 import '../providers/settings_provider.dart';
 import '../pages/editor_page.dart';
