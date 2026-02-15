@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../services/statistics_service.dart';
+import '../providers/settings_provider.dart';
+import '../config/app_theme.dart';
 import '../widgets/slide_page_route.dart';
+import '../widgets/vintage_stamp.dart';
+import '../widgets/mood_badge_ring.dart';
 import 'diary_list_page.dart';
 import 'moments_page.dart';
 import 'gallery_page.dart';
@@ -15,16 +20,24 @@ class StatisticsPage extends StatefulWidget {
   State<StatisticsPage> createState() => _StatisticsPageState();
 }
 
-class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProviderStateMixin {
+class _StatisticsPageState extends State<StatisticsPage>
+    with SingleTickerProviderStateMixin {
   final StatisticsService _statisticsService = StatisticsService();
   StatisticsData _stats = StatisticsData();
   bool _isLoading = true;
+  late PageController _pageController;
+  int _currentPage = 0;
+  
+  // 心情分布筛选
+  String _moodFilter = '本月'; // '本月', '本年', '全部'
+
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
   @override
   void initState() {
     super.initState();
+    _pageController = PageController();
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
@@ -38,6 +51,7 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
 
   @override
   void dispose() {
+    _pageController.dispose();
     _animationController.dispose();
     super.dispose();
   }
@@ -52,10 +66,19 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
     _animationController.forward();
   }
 
+  void _onPageChanged(int page) {
+    setState(() {
+      _currentPage = page;
+    });
+    HapticFeedback.lightImpact();
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+    final settings = context.watch<SettingsProvider>();
+    final currentTheme = settings.currentTheme;
+
     return Scaffold(
       backgroundColor: colorScheme.background,
       body: RefreshIndicator(
@@ -64,7 +87,7 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
             ? _buildLoadingView(colorScheme)
             : FadeTransition(
                 opacity: _fadeAnimation,
-                child: _buildContent(colorScheme),
+                child: _buildContent(colorScheme, currentTheme),
               ),
       ),
     );
@@ -80,7 +103,7 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
           ),
           const SizedBox(height: 16),
           Text(
-            '正在统计数据...',
+            '正在翻开纪念册...',
             style: GoogleFonts.notoSerifSc(
               color: colorScheme.onSurface.withOpacity(0.6),
               fontSize: 14,
@@ -91,264 +114,192 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
     );
   }
 
-  Widget _buildContent(ColorScheme colorScheme) {
-    return CustomScrollView(
-      slivers: [
-        // 顶部导航栏
-        SliverAppBar(
-          floating: true,
-          backgroundColor: colorScheme.surface.withOpacity(0.95),
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios, size: 20),
-            onPressed: () => Navigator.pop(context),
-          ),
-          title: Text(
-            '数据洞察',
-            style: GoogleFonts.notoSerifSc(
-              fontWeight: FontWeight.w600,
-              fontSize: 18,
-            ),
-          ),
-          centerTitle: true,
-        ),
-
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 概览卡片
-                _buildOverviewCards(colorScheme),
-                const SizedBox(height: 30),
-                
-                // 连续写作天数
-                _buildStreakCard(colorScheme),
-                const SizedBox(height: 30),
-                
-                // 写作趋势（按字数）
-                _buildTrendSection(colorScheme),
-                const SizedBox(height: 30),
-                
-                // 文思泉涌
-                _buildCreativeHighlights(colorScheme),
-                const SizedBox(height: 30),
-                
-                // 心情分布
-                _buildMoodDistribution(colorScheme),
-                const SizedBox(height: 30),
-                
-                // 天气分布
-                _buildWeatherDistribution(colorScheme),
-                const SizedBox(height: 30),
-                
-                // 随心记详情
-                _buildMomentsDetail(colorScheme),
-                const SizedBox(height: 40),
-              ],
-            ),
+  Widget _buildContent(ColorScheme colorScheme, String theme) {
+    return Column(
+      children: [
+        _buildAppBar(colorScheme),
+        // 删除了 _buildPageIndicator(theme)
+        Expanded(
+          child: PageView(
+            controller: _pageController,
+            onPageChanged: _onPageChanged,
+            physics: const BouncingScrollPhysics(),
+            children: [
+              _buildFirstPage(theme),
+              _buildSecondPage(theme),
+            ],
           ),
         ),
+        _buildPageHint(theme),
       ],
     );
   }
 
-  Widget _buildOverviewCards(ColorScheme colorScheme) {
+  Widget _buildAppBar(ColorScheme colorScheme) {
+    return SafeArea(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.arrow_back_ios, size: 20),
+              onPressed: () => Navigator.pop(context),
+            ),
+            const Spacer(),
+            Text(
+              '数据洞察',
+              style: GoogleFonts.notoSerifSc(
+                fontWeight: FontWeight.w600,
+                fontSize: 18,
+              ),
+            ),
+            const Spacer(),
+            const SizedBox(width: 40),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ==================== 第一页：相遇纪念 ====================
+  Widget _buildFirstPage(String theme) {
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 40),
+        child: Column(
+          children: [
+            const SizedBox(height: 20),
+            _buildDaysTogether(theme),
+            const SizedBox(height: 60),
+            _buildQuote(theme),
+            const SizedBox(height: 80),
+            _buildDivider(theme),
+            const SizedBox(height: 60),
+            _buildCoreStats(theme),
+            const SizedBox(height: 50),
+            _buildMonthlyKeyword(theme),
+            const SizedBox(height: 80),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDaysTogether(String theme) {
+    final days = _stats.daysTogether > 0 ? _stats.daysTogether : 1;
+
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '写作概览',
+          '我们已相遇',
           style: GoogleFonts.notoSerifSc(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: colorScheme.onSurface,
+            fontSize: 15,
+            color: _getTextColor(theme).withOpacity(0.5),
+            letterSpacing: 3,
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 24),
         Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Expanded(
-              child: _buildStatCard(
-                colorScheme,
-                icon: Icons.menu_book,
-                label: '日记篇数',
-                value: _stats.totalDiaries.toString(),
-                color: colorScheme.primary,
-                onTap: () => Navigator.push(
-                  context,
-                  SlidePageRoute(page: const DiaryListPage()),
-                ),
+            Text(
+              '$days',
+              style: GoogleFonts.notoSerifSc(
+                fontSize: 72,
+                fontWeight: FontWeight.bold,
+                color: _getAccentColor(theme),
+                height: 1,
+                shadows: [
+                  Shadow(
+                    color: _getAccentColor(theme).withOpacity(0.2),
+                    blurRadius: 30,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildStatCard(
-                colorScheme,
-                icon: Icons.photo_camera_outlined,
-                label: '随心记数',
-                value: _stats.totalMoments.toString(),
-                color: colorScheme.secondary,
-                onTap: () => Navigator.push(
-                  context,
-                  SlidePageRoute(page: const MomentsPage()),
+            const SizedBox(width: 8),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Text(
+                '天',
+                style: GoogleFonts.notoSerifSc(
+                  fontSize: 22,
+                  color: _getTextColor(theme).withOpacity(0.6),
                 ),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _buildStatCard(
-                colorScheme,
-                icon: Icons.text_fields,
-                label: '总字数',
-                value: _formatNumber(_stats.totalWords),
-                color: const Color(0xFF8E6C88),
-              ),
+        const SizedBox(height: 20),
+        if (_stats.firstRecordDate != null)
+          Text(
+            '始于 ${_formatDate(_stats.firstRecordDate!)}',
+            style: GoogleFonts.notoSerifSc(
+              fontSize: 12,
+              color: _getTextColor(theme).withOpacity(0.35),
+              fontStyle: FontStyle.italic,
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildStatCard(
-                colorScheme,
-                icon: Icons.photo_library,
-                label: '图片数',
-                value: _stats.totalMomentImages.toString(),
-                color: const Color(0xFF6B8E9F),
-                onTap: () => Navigator.push(
-                  context,
-                  SlidePageRoute(page: const GalleryPage()),
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
       ],
     );
   }
 
-  Widget _buildStatCard(
-    ColorScheme colorScheme, {
-    required IconData icon,
-    required String label,
-    required String value,
-    required Color color,
-    VoidCallback? onTap,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: colorScheme.surface,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: colorScheme.shadow.withOpacity(0.08),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-            border: Border.all(
-              color: colorScheme.outline.withOpacity(0.1),
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(icon, color: color, size: 24),
-              const SizedBox(height: 12),
-              Text(
-                value,
-                style: GoogleFonts.notoSerifSc(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: colorScheme.onSurface,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: GoogleFonts.notoSerifSc(
-                  fontSize: 13,
-                  color: colorScheme.onSurface.withOpacity(0.6),
-                ),
-              ),
-            ],
-          ),
+  Widget _buildQuote(String theme) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Text(
+        '"每一天的记录，\n都是时光最温柔的见证"',
+        textAlign: TextAlign.center,
+        style: GoogleFonts.notoSerifSc(
+          fontSize: 15,
+          color: _getTextColor(theme).withOpacity(0.5),
+          height: 1.8,
+          fontStyle: FontStyle.italic,
         ),
       ),
     );
   }
 
-  Widget _buildStreakCard(ColorScheme colorScheme) {
+  Widget _buildDivider(String theme) {
     return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            colorScheme.primary.withOpacity(0.15),
-            colorScheme.primary.withOpacity(0.05),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: colorScheme.primary.withOpacity(0.2),
-        ),
-      ),
+      margin: const EdgeInsets.symmetric(horizontal: 40),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: colorScheme.primary.withOpacity(0.2),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.local_fire_department,
-              color: colorScheme.primary,
-              size: 32,
+          Expanded(
+            child: Container(
+              height: 1,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.transparent,
+                    _getAccentColor(theme).withOpacity(0.3),
+                  ],
+                ),
+              ),
             ),
           ),
-          const SizedBox(width: 20),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Icon(
+              Icons.favorite,
+              size: 12,
+              color: _getAccentColor(theme).withOpacity(0.4),
+            ),
+          ),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '连续写作天数',
-                  style: GoogleFonts.notoSerifSc(
-                    fontSize: 14,
-                    color: colorScheme.onSurface.withOpacity(0.6),
-                  ),
+            child: Container(
+              height: 1,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    _getAccentColor(theme).withOpacity(0.3),
+                    Colors.transparent,
+                  ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  '${_stats.continuousDays} 天',
-                  style: GoogleFonts.notoSerifSc(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: colorScheme.primary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  _getStreakMessage(_stats.continuousDays),
-                  style: GoogleFonts.notoSerifSc(
-                    fontSize: 12,
-                    color: colorScheme.onSurface.withOpacity(0.5),
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ],
@@ -356,199 +307,242 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
     );
   }
 
-  String _getStreakMessage(int days) {
-    if (days == 0) return '开始你的第一篇日记吧！';
-    if (days < 3) return '不错的开始，继续保持！';
-    if (days < 7) return '养成习惯的初期，加油！';
-    if (days < 30) return '你正在形成写作习惯！';
-    if (days < 100) return '坚持就是胜利，太棒了！';
-    return '你已经是个写作大师了！';
-  }
-
-  Widget _buildTrendSection(ColorScheme colorScheme) {
-    final trendData = _statisticsService.getLast30DaysWordTrend(_stats.dailyWordCounts);
-    final maxValue = trendData.isEmpty ? 0 : trendData.reduce((a, b) => a > b ? a : b);
-    
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  // 简洁统计展示
+  Widget _buildCoreStats(String theme) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text(
-          '近30天写作趋势',
-          style: GoogleFonts.notoSerifSc(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: colorScheme.onSurface,
-          ),
+        _buildStatItem(
+          theme: theme,
+          icon: Icons.edit_note,
+          value: '${_stats.totalDiaries + _stats.totalMoments}',
+          label: '记录',
         ),
-        const SizedBox(height: 16),
-        Container(
-          height: 200,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: colorScheme.surface,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: colorScheme.shadow.withOpacity(0.08),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
+        _buildDividerDot(theme),
+        _buildStatItem(
+          theme: theme,
+          icon: Icons.text_fields,
+          value: _formatNumber(_stats.totalWords),
+          label: '字数',
+        ),
+        _buildDividerDot(theme),
+        _buildStatItem(
+          theme: theme,
+          icon: Icons.photo_library,
+          value: '${_stats.totalMomentImages}',
+          label: '图片',
+          onTap: () => Navigator.push(
+            context,
+            SlidePageRoute(page: const GalleryPage()),
           ),
-          child: trendData.every((d) => d == 0)
-              ? Center(
-                  child: Text(
-                    '暂无数据',
-                    style: GoogleFonts.notoSerifSc(
-                      color: colorScheme.onSurface.withOpacity(0.4),
-                    ),
-                  ),
-                )
-              : BarChart(
-                  BarChartData(
-                    alignment: BarChartAlignment.spaceAround,
-                    maxY: maxValue > 0 ? maxValue * 1.2 : 100,
-                    barTouchData: BarTouchData(enabled: false),
-                    titlesData: FlTitlesData(
-                      show: true,
-                      bottomTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          getTitlesWidget: (value, meta) {
-                            if (value % 5 != 0) return const SizedBox.shrink();
-                            final day = DateTime.now().subtract(
-                              Duration(days: (29 - value).toInt()),
-                            );
-                            return Text(
-                              '${day.day}',
-                              style: TextStyle(
-                                color: colorScheme.onSurface.withOpacity(0.4),
-                                fontSize: 10,
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      leftTitles: const AxisTitles(
-                        sideTitles: SideTitles(showTitles: false),
-                      ),
-                      rightTitles: const AxisTitles(
-                        sideTitles: SideTitles(showTitles: false),
-                      ),
-                      topTitles: const AxisTitles(
-                        sideTitles: SideTitles(showTitles: false),
-                      ),
-                    ),
-                    borderData: FlBorderData(show: false),
-                    gridData: const FlGridData(show: false),
-                    barGroups: trendData.asMap().entries.map((entry) {
-                      return BarChartGroupData(
-                        x: entry.key,
-                        barRods: [
-                          BarChartRodData(
-                            toY: entry.value.toDouble(),
-                            color: entry.value > 0
-                                ? colorScheme.primary
-                                : colorScheme.outline.withOpacity(0.2),
-                            width: 6,
-                            borderRadius: BorderRadius.circular(3),
-                          ),
-                        ],
-                      );
-                    }).toList(),
-                  ),
-                ),
         ),
       ],
     );
   }
 
-  // 文思泉涌板块
-  Widget _buildCreativeHighlights(ColorScheme colorScheme) {
-    final hasLongestDiary = _stats.longestDiary != null && _stats.longestDiary!.wordCount > 0;
-    final hasMaxMomentsDay = _stats.maxMomentsDay != null && _stats.maxMomentsDay!.momentCount > 0;
+  Widget _buildDividerDot(String theme) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      width: 4,
+      height: 4,
+      decoration: BoxDecoration(
+        color: _getAccentColor(theme).withOpacity(0.3),
+        shape: BoxShape.circle,
+      ),
+    );
+  }
+
+  Widget _buildStatItem({
+    required String theme,
+    required IconData icon,
+    required String value,
+    required String label,
+    VoidCallback? onTap,
+  }) {
+    final accentColor = _getAccentColor(theme);
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Icon(
+            icon,
+            size: 20,
+            color: accentColor.withOpacity(0.7),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: GoogleFonts.notoSerifSc(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: _getTextColor(theme),
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: GoogleFonts.notoSerifSc(
+              fontSize: 12,
+              color: _getTextColor(theme).withOpacity(0.5),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 本月关键词模块 - 简洁版
+  Widget _buildMonthlyKeyword(String theme) {
+    final keyword = _getMonthlyKeyword();
     
-    if (!hasLongestDiary && !hasMaxMomentsDay) {
-      return const SizedBox.shrink();
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.auto_awesome,
+            size: 14,
+            color: _getAccentColor(theme).withOpacity(0.5),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '本月关键词 · ${keyword['title']}',
+            style: GoogleFonts.notoSerifSc(
+              fontSize: 13,
+              color: _getTextColor(theme).withOpacity(0.6),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Map<String, String> _getMonthlyKeyword() {
+    // 根据数据生成本月关键词
+    if (_stats.totalDiaries + _stats.totalMoments == 0) {
+      return {
+        'title': '静待花开 🌱',
+        'desc': '开始你的第一篇记录吧',
+      };
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '文思泉涌',
-          style: GoogleFonts.notoSerifSc(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: colorScheme.onSurface,
-          ),
-        ),
-        const SizedBox(height: 16),
-        if (hasLongestDiary)
-          _buildHighlightCard(
-            colorScheme,
-            icon: Icons.auto_stories,
-            title: '最长的一篇日记',
-            subtitle: _stats.longestDiary!.title.isNotEmpty
-                ? _stats.longestDiary!.title
-                : '无标题',
-            value: '${_formatNumber(_stats.longestDiary!.wordCount)} 字',
-            date: _stats.longestDiary!.dateString,
-            iconColor: const Color(0xFFFFA726),
-          ),
-        if (hasLongestDiary && hasMaxMomentsDay)
+    // 检查连续写作天数
+    if (_stats.continuousDays >= 30) {
+      return {
+        'title': '笔耕不辍 ✍️',
+        'desc': '坚持就是胜利，你做到了！',
+      };
+    }
+
+    // 检查字数
+    if (_stats.totalWords > 50000) {
+      return {
+        'title': '文思泉涌 📝',
+        'desc': '你的文字如泉涌般流淌',
+      };
+    }
+
+    // 检查图片数量
+    if (_stats.totalMomentImages > 50) {
+      return {
+        'title': '光影收藏家 📸',
+        'desc': '用镜头记录生活的美好',
+      };
+    }
+
+    // 检查心情分布
+    if (_stats.moodDistribution.isNotEmpty) {
+      final maxMood = _stats.moodDistribution.entries
+          .reduce((a, b) => a.value > b.value ? a : b);
+      if (maxMood.key.toString().contains('happy')) {
+        return {
+          'title': '快乐源泉 😊',
+          'desc': '最近心情不错呢，加油鸭！',
+        };
+      }
+      if (maxMood.key.toString().contains('calm')) {
+        return {
+          'title': '心如止水 🍃',
+          'desc': '享受这份宁静与平和',
+        };
+      }
+    }
+
+    // 默认
+    return {
+      'title': '成长路上 🌟',
+      'desc': '每一篇记录都是成长的足迹',
+    };
+  }
+
+  // ==================== 第二页：详细数据 ====================
+  Widget _buildSecondPage(String theme) {
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 连续写作 - 简洁卡片
+          _buildStreakCard(theme),
+          const SizedBox(height: 24),
+
+          // 心情分布（带筛选和提示）
+          if (_stats.moodDistribution.isNotEmpty) ...[
+            _buildMoodSection(theme),
+            const SizedBox(height: 24),
+          ],
+
+          // 天气记录
+          if (_stats.weatherDistribution.isNotEmpty) ...[
+            _buildSectionTitle(theme, '天气记录', Icons.wb_sunny),
+            const SizedBox(height: 12),
+            _buildWeatherDistribution(theme),
+            const SizedBox(height: 24),
+          ],
+
+          // 随心记详情
+          _buildSectionTitle(theme, '随心记详情', Icons.photo_camera),
           const SizedBox(height: 12),
-        if (hasMaxMomentsDay)
-          _buildHighlightCard(
-            colorScheme,
-            icon: Icons.emoji_objects,
-            title: '单日最多随心记',
-            subtitle: '${_stats.maxMomentsDay!.momentCount} 条随心记',
-            value: '灵感爆发',
-            date: '${_stats.maxMomentsDay!.date.year}-${_stats.maxMomentsDay!.date.month.toString().padLeft(2, '0')}-${_stats.maxMomentsDay!.date.day.toString().padLeft(2, '0')}',
-            iconColor: const Color(0xFF66BB6A),
-          ),
-      ],
+          _buildMomentsDetail(theme),
+          const SizedBox(height: 30),
+        ],
+      ),
     );
   }
 
-  Widget _buildHighlightCard(
-    ColorScheme colorScheme, {
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required String value,
-    required String date,
-    required Color iconColor,
-  }) {
+  Widget _buildStreakCard(String theme) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            iconColor.withOpacity(0.15),
-            iconColor.withOpacity(0.05),
+            _getAccentColor(theme).withOpacity(0.15),
+            _getAccentColor(theme).withOpacity(0.05),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: iconColor.withOpacity(0.3),
+          color: _getAccentColor(theme).withOpacity(0.2),
+          width: 1,
         ),
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.2),
+              color: _getAccentColor(theme).withOpacity(0.2),
               shape: BoxShape.circle,
             ),
             child: Icon(
-              icon,
-              color: iconColor,
-              size: 28,
+              Icons.local_fire_department,
+              color: _getAccentColor(theme),
+              size: 24,
             ),
           ),
           const SizedBox(width: 16),
@@ -557,47 +551,44 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
+                  '连续写作',
                   style: GoogleFonts.notoSerifSc(
                     fontSize: 13,
-                    color: colorScheme.onSurface.withOpacity(0.6),
+                    color: _getTextColor(theme).withOpacity(0.6),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: GoogleFonts.notoSerifSc(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: colorScheme.onSurface,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 2),
-                Text(
-                  date,
-                  style: GoogleFonts.notoSerifSc(
-                    fontSize: 12,
-                    color: colorScheme.onSurface.withOpacity(0.5),
-                  ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(
+                      '${_stats.continuousDays}',
+                      style: GoogleFonts.notoSerifSc(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: _getAccentColor(theme),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '天',
+                      style: GoogleFonts.notoSerifSc(
+                        fontSize: 14,
+                        color: _getTextColor(theme).withOpacity(0.6),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              value,
-              style: GoogleFonts.notoSerifSc(
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-                color: iconColor,
-              ),
+          Text(
+            _getStreakMessage(_stats.continuousDays),
+            style: GoogleFonts.notoSerifSc(
+              fontSize: 12,
+              color: _getTextColor(theme).withOpacity(0.5),
+              fontStyle: FontStyle.italic,
             ),
           ),
         ],
@@ -605,314 +596,247 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
     );
   }
 
-  Widget _buildMoodDistribution(ColorScheme colorScheme) {
+  // 心情分布模块（带筛选和提示）
+  Widget _buildMoodSection(String theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.mood,
+              size: 16,
+              color: _getAccentColor(theme),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '心情分布',
+              style: GoogleFonts.notoSerifSc(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: _getTextColor(theme),
+              ),
+            ),
+            const Spacer(),
+            // 筛选按钮
+            _buildFilterButton(theme, '本月'),
+            const SizedBox(width: 8),
+            _buildFilterButton(theme, '本年'),
+            const SizedBox(width: 8),
+            _buildFilterButton(theme, '全部'),
+          ],
+        ),
+        const SizedBox(height: 8),
+        // 状态提示语
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: _getAccentColor(theme).withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            _getMoodMessage(theme),
+            style: GoogleFonts.notoSerifSc(
+              fontSize: 13,
+              color: _getTextColor(theme).withOpacity(0.7),
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        // 心情分布图表
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: _getCardColor(theme).withOpacity(0.3),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: _getAccentColor(theme).withOpacity(0.1),
+              width: 1,
+            ),
+          ),
+          child: MoodBadgeList(
+            moodData: _stats.moodDistribution.map(
+              (key, value) => MapEntry(key.toString().split('.').last, value),
+            ),
+            theme: theme,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFilterButton(String theme, String label) {
+    final isSelected = _moodFilter == label;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _moodFilter = label;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? _getAccentColor(theme).withOpacity(0.2)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected
+                ? _getAccentColor(theme).withOpacity(0.5)
+                : _getTextColor(theme).withOpacity(0.2),
+            width: 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.notoSerifSc(
+            fontSize: 11,
+            color: isSelected
+                ? _getAccentColor(theme)
+                : _getTextColor(theme).withOpacity(0.5),
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _getMoodMessage(String theme) {
     if (_stats.moodDistribution.isEmpty) {
-      return const SizedBox.shrink();
+      return '还没有记录心情哦~';
     }
 
-    final moodColors = {
-      'happy': const Color(0xFFFFD93D),
-      'calm': const Color(0xFF6BCB77),
-      'sad': const Color(0xFF4D96FF),
-      'excited': const Color(0xFFFF6B6B),
-      'tired': const Color(0xFFB8B8B8),
-    };
+    final maxMood = _stats.moodDistribution.entries
+        .reduce((a, b) => a.value > b.value ? a : b);
+    final moodName = maxMood.key.toString().split('.').last;
 
-    final moodLabels = {
-      'happy': '开心',
-      'calm': '平静',
-      'sad': '难过',
-      'excited': '兴奋',
-      'tired': '疲惫',
-    };
-
-    final total = _stats.moodDistribution.values.reduce((a, b) => a + b);
-    final sortedMoods = _stats.moodDistribution.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '心情分布',
-          style: GoogleFonts.notoSerifSc(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: colorScheme.onSurface,
-          ),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: colorScheme.surface,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: colorScheme.shadow.withOpacity(0.08),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              SizedBox(
-                height: 120,
-                width: 120,
-                child: PieChart(
-                  PieChartData(
-                    sectionsSpace: 2,
-                    centerSpaceRadius: 30,
-                    sections: sortedMoods.map((entry) {
-                      final percentage = (entry.value / total * 100).toInt();
-                      return PieChartSectionData(
-                        color: moodColors[entry.key.name] ?? Colors.grey,
-                        value: entry.value.toDouble(),
-                        title: '$percentage%',
-                        radius: 35,
-                        titleStyle: const TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 24),
-              Expanded(
-                child: Column(
-                  children: sortedMoods.map((entry) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 12,
-                            height: 12,
-                            decoration: BoxDecoration(
-                              color: moodColors[entry.key.name] ?? Colors.grey,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            moodLabels[entry.key.name] ?? entry.key.name,
-                            style: GoogleFonts.notoSerifSc(
-                              fontSize: 13,
-                              color: colorScheme.onSurface.withOpacity(0.8),
-                            ),
-                          ),
-                          const Spacer(),
-                          Text(
-                            entry.value.toString(),
-                            style: GoogleFonts.notoSerifSc(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: colorScheme.onSurface,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildWeatherDistribution(ColorScheme colorScheme) {
-    if (_stats.weatherDistribution.isEmpty) {
-      return const SizedBox.shrink();
+    switch (moodName) {
+      case 'happy':
+        return '最近心情不错呢，加油鸭！😊';
+      case 'calm':
+        return '最近心情很平和，享受这份宁静~ 🍃';
+      case 'sad':
+        return '最近有点辛苦呢，抱抱你，会好起来的 💙';
+      case 'excited':
+        return '最近充满活力呀，保持这份热情！⚡';
+      case 'tired':
+        return '最近有点累呢，记得好好休息 💤';
+      default:
+        return '每一种心情都值得被记录 ✨';
     }
+  }
 
-    final weatherIcons = {
-      'sunny': Icons.wb_sunny,
-      'cloudy': Icons.wb_cloudy,
-      'rainy': Icons.water_drop,
-      'snowy': Icons.ac_unit,
-      'windy': Icons.air,
-    };
-
-    final weatherLabels = {
-      'sunny': '晴天',
-      'cloudy': '多云',
-      'rainy': '雨天',
-      'snowy': '雪天',
-      'windy': ' windy',
-    };
-
-    final sortedWeather = _stats.weatherDistribution.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildSectionTitle(String theme, String title, IconData icon) {
+    return Row(
       children: [
-        Text(
-          '天气记录',
-          style: GoogleFonts.notoSerifSc(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: colorScheme.onSurface,
-          ),
+        Icon(
+          icon,
+          size: 16,
+          color: _getAccentColor(theme),
         ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: colorScheme.surface,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: colorScheme.shadow.withOpacity(0.08),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: sortedWeather.map((entry) {
-              return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                decoration: BoxDecoration(
-                  color: colorScheme.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      weatherIcons[entry.key.name] ?? Icons.wb_sunny,
-                      size: 18,
-                      color: colorScheme.primary,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      weatherLabels[entry.key.name] ?? entry.key.name,
-                      style: GoogleFonts.notoSerifSc(
-                        fontSize: 13,
-                        color: colorScheme.onSurface.withOpacity(0.8),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: colorScheme.primary,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        entry.value.toString(),
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: GoogleFonts.notoSerifSc(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: _getTextColor(theme),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildMomentsDetail(ColorScheme colorScheme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '随心记详情',
-          style: GoogleFonts.notoSerifSc(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: colorScheme.onSurface,
-          ),
+  Widget _buildWeatherDistribution(String theme) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: _getCardColor(theme).withOpacity(0.3),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: _getAccentColor(theme).withOpacity(0.1),
+          width: 1,
         ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: colorScheme.surface,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: colorScheme.shadow.withOpacity(0.08),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              _buildDetailRow(
-                colorScheme,
-                icon: Icons.image,
-                label: '带图随心记',
-                value: '${_stats.momentsWithImages} 条',
-              ),
-              Divider(height: 24, color: colorScheme.outline.withOpacity(0.2)),
-              _buildDetailRow(
-                colorScheme,
-                icon: Icons.photo_library,
-                label: '图片总数',
-                value: '${_stats.totalMomentImages} 张',
-              ),
-              Divider(height: 24, color: colorScheme.outline.withOpacity(0.2)),
-              _buildDetailRow(
-                colorScheme,
-                icon: Icons.mic,
-                label: '语音随心记',
-                value: '${_stats.momentsWithAudio} 条',
-              ),
-              Divider(height: 24, color: colorScheme.outline.withOpacity(0.2)),
-              _buildDetailRow(
-                colorScheme,
-                icon: Icons.text_snippet,
-                label: '纯文字随心记',
-                value: '${_stats.totalMoments - _stats.momentsWithImages - _stats.momentsWithAudio} 条',
-              ),
-            ],
-          ),
+      ),
+      child: WeatherStampCollection(
+        weatherData: _stats.weatherDistribution.map(
+          (key, value) => MapEntry(key.toString().split('.').last, value),
         ),
-      ],
+        theme: theme,
+      ),
     );
   }
 
-  Widget _buildDetailRow(
-    ColorScheme colorScheme, {
+  Widget _buildMomentsDetail(String theme) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _getCardColor(theme).withOpacity(0.3),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: _getAccentColor(theme).withOpacity(0.1),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        children: [
+          _buildDetailRow(
+            theme: theme,
+            icon: Icons.image,
+            label: '带图随心记',
+            value: '${_stats.momentsWithImages} 条',
+          ),
+          const SizedBox(height: 10),
+          Divider(
+            color: _getAccentColor(theme).withOpacity(0.1),
+            height: 1,
+          ),
+          const SizedBox(height: 10),
+          _buildDetailRow(
+            theme: theme,
+            icon: Icons.mic,
+            label: '语音随心记',
+            value: '${_stats.momentsWithAudio} 条',
+          ),
+          const SizedBox(height: 10),
+          Divider(
+            color: _getAccentColor(theme).withOpacity(0.1),
+            height: 1,
+          ),
+          const SizedBox(height: 10),
+          _buildDetailRow(
+            theme: theme,
+            icon: Icons.text_snippet,
+            label: '纯文字随心记',
+            value:
+                '${_stats.totalMoments - _stats.momentsWithImages - _stats.momentsWithAudio} 条',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailRow({
+    required String theme,
     required IconData icon,
     required String label,
     required String value,
   }) {
     return Row(
       children: [
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: colorScheme.primary.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, size: 20, color: colorScheme.primary),
+        Icon(
+          icon,
+          size: 18,
+          color: _getAccentColor(theme).withOpacity(0.7),
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: 12),
         Expanded(
           child: Text(
             label,
             style: GoogleFonts.notoSerifSc(
               fontSize: 14,
-              color: colorScheme.onSurface.withOpacity(0.8),
+              color: _getTextColor(theme).withOpacity(0.7),
             ),
           ),
         ),
@@ -921,11 +845,71 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
           style: GoogleFonts.notoSerifSc(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: colorScheme.onSurface,
+            color: _getTextColor(theme),
           ),
         ),
       ],
     );
+  }
+
+  Widget _buildPageHint(String theme) {
+    return Container(
+      padding: const EdgeInsets.only(bottom: 24, top: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            child: _currentPage == 0
+                ? Row(
+                    key: const ValueKey('hint1'),
+                    children: [
+                      Text(
+                        '向左滑动查看详细数据',
+                        style: GoogleFonts.notoSerifSc(
+                          fontSize: 13,
+                          color: _getTextColor(theme).withOpacity(0.4),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(
+                        Icons.arrow_forward_ios,
+                        size: 12,
+                        color: _getTextColor(theme).withOpacity(0.4),
+                      ),
+                    ],
+                  )
+                : Row(
+                    key: const ValueKey('hint2'),
+                    children: [
+                      Icon(
+                        Icons.arrow_back_ios,
+                        size: 12,
+                        color: _getTextColor(theme).withOpacity(0.4),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '向右滑动返回纪念页',
+                        style: GoogleFonts.notoSerifSc(
+                          fontSize: 13,
+                          color: _getTextColor(theme).withOpacity(0.4),
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getStreakMessage(int days) {
+    if (days == 0) return '开始记录吧';
+    if (days < 3) return '不错的开始';
+    if (days < 7) return '继续保持';
+    if (days < 30) return '养成习惯';
+    if (days < 100) return '太棒了';
+    return '写作大师';
   }
 
   String _formatNumber(int number) {
@@ -933,5 +917,41 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
       return '${(number / 10000).toStringAsFixed(1)}万';
     }
     return NumberFormat.decimalPattern().format(number);
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.year}年${date.month}月${date.day}日';
+  }
+
+  Color _getAccentColor(String theme) {
+    return AppTheme.getAccentColor(theme);
+  }
+
+  Color _getTextColor(String theme) {
+    // 统计页面使用深色背景，需要特殊处理
+    if (theme == AppTheme.themeDefault) {
+      return const Color(0xFFF4ECD8); // Vintage主题在统计页面使用浅色文字
+    }
+    return AppTheme.getTextColor(theme);
+  }
+
+  Color _getCardColor(String theme) {
+    switch (theme) {
+      case AppTheme.themeGardenOfWords:
+        return const Color(0xFF37474F);
+      case AppTheme.themeTwilight:
+        return const Color(0xFF352044);
+      case AppTheme.themeAfterRain:
+        return Colors.white;
+      case AppTheme.themeSeaFlower:
+        return const Color(0xFFFCE4EC);
+      case AppTheme.themeMidnight:
+        return const Color(0xFF161b22);
+      case AppTheme.themeAmberLens:
+        return const Color(0xFF2C2C2C);
+      default:
+        // Vintage主题使用深色卡片背景，让浅色文字更清晰
+        return const Color(0xFF3E2723);
+    }
   }
 }

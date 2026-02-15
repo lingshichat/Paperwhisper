@@ -1085,7 +1085,7 @@ class AppTheme {
       case themeSeaFlower: return const Color(0xFF880E4F);
       case themeAmberLens: return _amberTextPrimary;
       case themeAfterRain: return _afterRainTextSecondary; // User: "Main body text"
-      default: return _vintageTextPrimary;
+      default: return _vintageTextPrimary; // 恢复原来的深色文字
     }
   }
   
@@ -1307,6 +1307,196 @@ class AppTheme {
         },
       ),
     );
+  }
+
+  // 13. Statistics Theme
+  static Map<String, dynamic> getStatisticsTheme(String theme) {
+    if (theme == themeGardenOfWords) {
+      return {
+        'cardBackground': BoxDecoration(
+          color: const Color(0xFF263238).withOpacity(0.5),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
+        ),
+        'cardShadow': BoxShadow(
+          color: Colors.black.withOpacity(0.3),
+          blurRadius: 15,
+          offset: const Offset(0, 6),
+          spreadRadius: -2,
+        ),
+        'cardBorder': Border.all(color: Colors.white.withOpacity(0.1), width: 1),
+        'accentColor': _gardenAccent,
+        'textColor': _gardenTextPrimary,
+        'secondaryTextColor': _gardenTextSecondary,
+        'chartColor': _gardenAccent,
+        'badgeStyle': {
+          'backgroundColor': _gardenAccent.withOpacity(0.2),
+          'textColor': _gardenAccent,
+          'borderColor': _gardenAccent.withOpacity(0.3),
+        },
+      };
+    } else if (theme == themeTwilight) {
+      return {
+        'cardBackground': BoxDecoration(
+          color: _twilightSurface.withOpacity(0.5),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: _twilightBgBottom.withOpacity(0.2), width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: _twilightAccentRed.withOpacity(0.1),
+              blurRadius: 20,
+              offset: const Offset(0, 0),
+              spreadRadius: -2,
+            ),
+          ],
+        ),
+        'cardShadow': BoxShadow(
+          color: _twilightAccentRed.withOpacity(0.2),
+          blurRadius: 20,
+          offset: const Offset(0, 0),
+          spreadRadius: -2,
+        ),
+        'cardBorder': Border.all(color: Colors.white.withOpacity(0.1), width: 1),
+        'accentColor': _twilightAccentRed,
+        'textColor': _twilightTextPrimary,
+        'secondaryTextColor': _twilightTextSecondary,
+        'chartColor': _twilightAccentRed,
+        'badgeStyle': {
+          'backgroundColor': _twilightAccentRed.withOpacity(0.2),
+          'textColor': _twilightAccentRed,
+          'borderColor': _twilightAccentRed.withOpacity(0.3),
+        },
+      };
+    } else if (theme == themeAfterRain) {
+      return {
+        'cardBackground': BoxDecoration(
+          color: Colors.white.withOpacity(0.6),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withOpacity(0.8), width: 1.5),
+        ),
+        'cardShadow': BoxShadow(
+          color: _afterRainAccentBlue.withOpacity(0.15),
+          blurRadius: 20,
+          offset: const Offset(0, 8),
+          spreadRadius: -4,
+        ),
+        'cardBorder': Border.all(color: Colors.white.withOpacity(0.8), width: 1.5),
+        'accentColor': _afterRainAccentBlue,
+        'textColor': _afterRainTextSecondary,
+        'secondaryTextColor': _afterRainTextSecondary.withOpacity(0.7),
+        'chartColor': _afterRainPrimaryMain,
+        'badgeStyle': {
+          'backgroundColor': _afterRainPrimaryLight.withOpacity(0.4),
+          'textColor': _afterRainAccentBlue,
+          'borderColor': _afterRainAccentBlue.withOpacity(0.3),
+        },
+      };
+    } else if (theme == themeSeaFlower) {
+      return {
+        'cardBackground': BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFFCE4EC), Color(0xFFF8BBD0)],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withOpacity(0.6), width: 1),
+        ),
+        'cardShadow': const BoxShadow(
+          color: Color.fromRGBO(240, 98, 146, 0.2),
+          blurRadius: 15,
+          offset: Offset(0, 6),
+          spreadRadius: -2,
+        ),
+        'cardBorder': Border.all(color: Colors.white.withOpacity(0.6), width: 1),
+        'accentColor': const Color(0xFFF06292),
+        'textColor': const Color(0xFF880E4F),
+        'secondaryTextColor': const Color(0xFFC2185B),
+        'chartColor': const Color(0xFFF06292),
+        'badgeStyle': {
+          'backgroundColor': const Color(0xFFFCE4EC),
+          'textColor': const Color(0xFFD81B60),
+          'borderColor': const Color(0xFFF48FB1),
+        },
+      };
+    } else if (theme == themeMidnight) {
+      return {
+        'cardBackground': BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF1a237e), Color(0xFF283593)],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
+        ),
+        'cardShadow': BoxShadow(
+          color: const Color(0xFF7986cb).withOpacity(0.3),
+          blurRadius: 20,
+          offset: const Offset(0, 0),
+          spreadRadius: 2,
+        ),
+        'cardBorder': Border.all(color: Colors.white.withOpacity(0.1), width: 1),
+        'accentColor': const Color(0xFF7986cb),
+        'textColor': const Color(0xFFe6edf3),
+        'secondaryTextColor': const Color(0xFF8b949e),
+        'chartColor': const Color(0xFF7986cb),
+        'badgeStyle': {
+          'backgroundColor': const Color(0xFF1a237e).withOpacity(0.6),
+          'textColor': const Color(0xFF7986cb),
+          'borderColor': const Color(0xFF7986cb).withOpacity(0.3),
+        },
+      };
+    } else if (theme == themeAmberLens) {
+      return {
+        'cardBackground': BoxDecoration(
+          color: const Color(0xFF2C2C2C),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFFF9800).withOpacity(0.3), width: 1),
+        ),
+        'cardShadow': BoxShadow(
+          color: const Color(0xFFFF9800).withOpacity(0.2),
+          blurRadius: 15,
+          offset: const Offset(0, 6),
+          spreadRadius: -2,
+        ),
+        'cardBorder': Border.all(color: const Color(0xFFFF9800).withOpacity(0.3), width: 1),
+        'accentColor': const Color(0xFFFF9800),
+        'textColor': const Color(0xFFE0E0E0),
+        'secondaryTextColor': const Color(0xFF9E9E9E),
+        'chartColor': const Color(0xFFFFB74D),
+        'badgeStyle': {
+          'backgroundColor': const Color(0xFFFF9800).withOpacity(0.2),
+          'textColor': const Color(0xFFFF9800),
+          'borderColor': const Color(0xFFFF9800).withOpacity(0.4),
+        },
+      };
+    } else {
+      // themeDefault (Vintage - 时光旧物)
+      return {
+        'cardBackground': BoxDecoration(
+          color: _vintagePaper,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFF5D4037).withOpacity(0.2), width: 1),
+        ),
+        'cardShadow': BoxShadow(
+          color: const Color(0xFF3E2723).withOpacity(0.3),
+          blurRadius: 10,
+          offset: const Offset(0, 4),
+          spreadRadius: -2,
+        ),
+        'cardBorder': Border.all(color: const Color(0xFF5D4037).withOpacity(0.2), width: 1),
+        'accentColor': const Color(0xFFFF3D00),
+        'textColor': const Color(0xFF2C3E50),
+        'secondaryTextColor': const Color(0xFF5D4037),
+        'chartColor': const Color(0xFFFF3D00),
+        'badgeStyle': {
+          'backgroundColor': const Color(0xFFFF3D00).withOpacity(0.15),
+          'textColor': const Color(0xFFFF3D00),
+          'borderColor': const Color(0xFFFF3D00).withOpacity(0.3),
+        },
+      };
+    }
   }
 }
 

@@ -34,6 +34,8 @@ class StatisticsData {
   final int trashCount;
   final int continuousDays;
   final int totalWords;
+  final int daysTogether; // 从第一篇日记到现在共多少天
+  final DateTime? firstRecordDate; // 第一篇日记的日期
   final Map<MoodType, int> moodDistribution;
   final Map<WeatherType, int> weatherDistribution;
   final Map<String, int> dailyCounts; // YYYY-MM-DD -> count
@@ -51,6 +53,8 @@ class StatisticsData {
     this.trashCount = 0,
     this.continuousDays = 0,
     this.totalWords = 0,
+    this.daysTogether = 0,
+    this.firstRecordDate,
     this.moodDistribution = const {},
     this.weatherDistribution = const {},
     this.dailyCounts = const {},
@@ -90,9 +94,11 @@ class StatisticsService {
         totalWords += moment.content.length;
       }
 
-      // 计算连续天数
+      // 计算连续天数和相遇天数
       final allDates = _collectAllDates(diaries, moments);
       final continuousDays = _calculateContinuousDays(allDates);
+      final firstRecordDate = _findFirstRecordDate(diaries, moments);
+      final daysTogether = _calculateDaysTogether(firstRecordDate);
 
       // 心情分布
       final moodDistribution = _calculateMoodDistribution(diaries);
@@ -125,6 +131,8 @@ class StatisticsService {
         trashCount: trashCount,
         continuousDays: continuousDays,
         totalWords: totalWords,
+        daysTogether: daysTogether,
+        firstRecordDate: firstRecordDate,
         moodDistribution: moodDistribution,
         weatherDistribution: weatherDistribution,
         dailyCounts: dailyCounts,
@@ -161,6 +169,35 @@ class StatisticsService {
     }
     
     return dates;
+  }
+
+  DateTime? _findFirstRecordDate(List<DiaryEntry> diaries, List<Moment> moments) {
+    DateTime? firstDate;
+    
+    // 从日记找最早日期
+    for (var diary in diaries) {
+      final date = DateTime.parse(diary.dateString);
+      if (firstDate == null || date.isBefore(firstDate)) {
+        firstDate = date;
+      }
+    }
+    
+    // 从随心记找最早日期
+    for (var moment in moments) {
+      if (firstDate == null || moment.createdAt.isBefore(firstDate)) {
+        firstDate = moment.createdAt;
+      }
+    }
+    
+    return firstDate;
+  }
+
+  int _calculateDaysTogether(DateTime? firstDate) {
+    if (firstDate == null) return 0;
+    
+    final today = DateTime.now();
+    final difference = today.difference(firstDate);
+    return difference.inDays + 1; // 包含第一天
   }
 
   int _calculateContinuousDays(Set<DateTime> dates) {
@@ -227,63 +264,34 @@ class StatisticsService {
     return counts;
   }
 
-  // 获取最近30天的写作趋势数据
-  List<int> getLast30DaysTrend(Map<String, int> dailyCounts) {
-    final trend = <int>[];
-    final today = DateTime.now();
-    
-    for (int i = 29; i >= 0; i--) {
-      final date = today.subtract(Duration(days: i));
-      final dateStr = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-      trend.add(dailyCounts[dateStr] ?? 0);
-    }
-    
-    return trend;
-  }
-
-  // 获取月度统计
-  Map<String, int> getMonthlyStatistics(Map<String, int> dailyCounts) {
-    final monthly = <String, int>{};
-    
-    dailyCounts.forEach((dateStr, count) {
-      final parts = dateStr.split('-');
-      final monthKey = '${parts[0]}-${parts[1]}';
-      monthly[monthKey] = (monthly[monthKey] ?? 0) + count;
-    });
-    
-    return monthly;
-  }
-
-  // 计算每日字数统计（日记字数 + 随心记字数）
   Map<String, int> _calculateDailyWordCounts(List<DiaryEntry> diaries, List<Moment> moments) {
-    final wordCounts = <String, int>{};
+    final counts = <String, int>{};
     
-    // 统计日记字数（同一天多篇合并）
+    // 统计日记字数
     for (var diary in diaries) {
-      final diaryWords = diary.content.length + diary.title.length;
-      wordCounts[diary.dateString] = (wordCounts[diary.dateString] ?? 0) + diaryWords;
+      final wordCount = diary.content.length + diary.title.length;
+      counts[diary.dateString] = (counts[diary.dateString] ?? 0) + wordCount;
     }
     
-    // 统计随心记字数（同一天多篇合并）
+    // 统计随心记字数
     for (var moment in moments) {
       final dateStr = '${moment.createdAt.year}-${moment.createdAt.month.toString().padLeft(2, '0')}-${moment.createdAt.day.toString().padLeft(2, '0')}';
-      wordCounts[dateStr] = (wordCounts[dateStr] ?? 0) + moment.content.length;
+      counts[dateStr] = (counts[dateStr] ?? 0) + moment.content.length;
     }
     
-    return wordCounts;
+    return counts;
   }
 
-  // 查找最长日记
   DiaryRecord? _findLongestDiary(List<DiaryEntry> diaries) {
     if (diaries.isEmpty) return null;
     
     DiaryEntry? longest;
-    int maxWords = 0;
+    int maxLength = 0;
     
     for (var diary in diaries) {
-      final wordCount = diary.content.length + diary.title.length;
-      if (wordCount > maxWords) {
-        maxWords = wordCount;
+      final length = diary.content.length;
+      if (length > maxLength) {
+        maxLength = length;
         longest = diary;
       }
     }
@@ -292,19 +300,22 @@ class StatisticsService {
     
     return DiaryRecord(
       title: longest.title,
-      wordCount: longest.content.length + longest.title.length,
+      wordCount: longest.content.length,
       dateString: longest.dateString,
     );
   }
 
-  // 查找单日最多随心记
   DayRecord? _findMaxMomentsDay(List<Moment> moments) {
     if (moments.isEmpty) return null;
     
     final dayCounts = <DateTime, int>{};
     
     for (var moment in moments) {
-      final date = DateTime(moment.createdAt.year, moment.createdAt.month, moment.createdAt.day);
+      final date = DateTime(
+        moment.createdAt.year,
+        moment.createdAt.month,
+        moment.createdAt.day,
+      );
       dayCounts[date] = (dayCounts[date] ?? 0) + 1;
     }
     
@@ -326,6 +337,20 @@ class StatisticsService {
     );
   }
 
+  // 获取最近30天的写作趋势数据
+  List<int> getLast30DaysTrend(Map<String, int> dailyCounts) {
+    final trend = <int>[];
+    final today = DateTime.now();
+    
+    for (int i = 29; i >= 0; i--) {
+      final date = today.subtract(Duration(days: i));
+      final dateStr = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+      trend.add(dailyCounts[dateStr] ?? 0);
+    }
+    
+    return trend;
+  }
+
   // 获取最近30天的字数趋势数据
   List<int> getLast30DaysWordTrend(Map<String, int> dailyWordCounts) {
     final trend = <int>[];
@@ -338,5 +363,20 @@ class StatisticsService {
     }
     
     return trend;
+  }
+
+  // 获取月度统计
+  Map<String, int> getMonthlyStatistics(Map<String, int> dailyCounts) {
+    final monthly = <String, int>{};
+    
+    dailyCounts.forEach((dateStr, count) {
+      final parts = dateStr.split('-');
+      if (parts.length >= 2) {
+        final monthKey = '${parts[0]}-${parts[1]}';
+        monthly[monthKey] = (monthly[monthKey] ?? 0) + count;
+      }
+    });
+    
+    return monthly;
   }
 }
