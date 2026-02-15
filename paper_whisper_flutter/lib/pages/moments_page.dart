@@ -24,6 +24,8 @@ import '../widgets/visual_effects.dart'; // Added for petal effects
 import '../services/payment_service.dart';
 import '../pages/premium_membership_page.dart';
 import '../widgets/slide_page_route.dart';
+import '../services/update_service.dart'; // Added
+import '../widgets/update_dialog.dart'; // Added
 
 class MomentsPage extends StatefulWidget {
   const MomentsPage({super.key});
@@ -59,6 +61,9 @@ class _MomentsPageState extends State<MomentsPage> {
   // Dynamic Input Height
   double _inputHeight = 80.0;
 
+  // Static flag to ensure update check only happens once per app session
+  static bool _hasCheckedUpdate = false;
+
   @override
   void initState() {
     super.initState();
@@ -70,6 +75,37 @@ class _MomentsPageState extends State<MomentsPage> {
     _inputFocusNode.addListener(() {
         if (mounted) setState(() {});
     });
+
+    // Check for updates once
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkUpdate();
+    });
+  }
+
+  Future<void> _checkUpdate() async {
+    if (_hasCheckedUpdate) return;
+    _hasCheckedUpdate = true;
+
+    try {
+      final updateService = UpdateService();
+      // Add a small delay to not block UI rendering immediately
+      await Future.delayed(const Duration(seconds: 2));
+      if (!mounted) return;
+
+      final info = await updateService.checkForUpdate();
+      if (info != null && mounted) {
+        final currentVersion = await updateService.getCurrentVersion();
+        if (mounted) {
+          UpdateDialog.show(
+            context,
+            updateInfo: info,
+            currentVersion: currentVersion,
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('自动更新检查失败: $e');
+    }
   }
   
   void _initDates() {
