@@ -2,3 +2,4 @@
 - [] 统计页面
 - [] 桌面小组件
 - [] 自定义主题
+- [] 午夜星尘主题下日记列表list页面显示异常，type 'Null' is not a subtype of type 'List<BoxShadow>'

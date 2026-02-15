@@ -721,6 +721,13 @@ class AppTheme {
         'textColor': const Color(0xFFE8EAF6),
         'lineColor': const Color(0xFF5C6BC0).withOpacity(0.5),
         'paperColor': const Color(0xFF283593).withOpacity(0.9),
+        'shadows': [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.4),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       };
     }
     return {};
