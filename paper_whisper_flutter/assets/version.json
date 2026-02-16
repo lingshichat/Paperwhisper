@@ -1,15 +1,12 @@
 {
-    "latestVersion": "1.5.5",
-    "latestBuildNumber": 17,
-    "releaseDate": "2026-02-13",
-    "title": "纸语 1.5.5 —— 黄昏之时与言叶之庭",
+    "latestVersion": "1.5.8",
+    "latestBuildNumber": 18,
+    "releaseDate": "2026-02-16",
+    "title": "纸语 1.5.8 —— 黄昏之时与言叶之庭",
     "isForceUpdate": true,
     "changelog": [
-        "🆕 新增主题：黄昏之时，致敬君名十周年！",
-        "🆕 新增主题：言叶之庭，带你漫步在这片新绿中",
-        "🛠️ 优化s3同步逻辑",
-        "🛠️ 优化三方云同步逻辑",
-        "🛠️ 其余优化若干"
+        "🆕 新增：数据洞察",
+        "🛠️ 优化：午夜星尘主题显示异常"
     ],
     "downloadUrl": {
         "android": "https://paperwhisper.s3.bitiful.net/Android/latest.apk",
