@@ -6,6 +6,11 @@ $R2_REMOTE = "bitiful"
 $DOMAIN = "https://paperwhisper.s3.bitiful.net"
 # --------------------
 
+# 设置工作目录为 Flutter 项目根目录
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$ProjectRoot = Join-Path $ScriptDir ".."
+Set-Location $ProjectRoot
+
 # 0. 同步版本号
 Write-Host "🔄 [Sync] 正在从 version.json 同步版本号..." -ForegroundColor Cyan
 dart run tool/sync_version.dart
@@ -48,5 +53,3 @@ Write-Host "--------------------------------------"
 Write-Host "🎉 Android 发布任务完成！" -ForegroundColor Green
 Write-Host "⬇️ Android 最新版: $DOMAIN/Android/latest.apk"
 Write-Host "📦 历史存档: $DOMAIN/Android/$APK_NAME"
-Write-Host ""
-Write-Host "🔔 别忘了手动把 APK 拖到网盘备份文件夹哦！" -ForegroundColor Magenta

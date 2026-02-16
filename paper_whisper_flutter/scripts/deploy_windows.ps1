@@ -1,4 +1,5 @@
 # PowerShell 脚本: Windows 自动构建发布
+# 注意：此脚本应从 paper_whisper_flutter/scripts/ 目录运行
 $ErrorActionPreference = "Stop"
 
 # --- 🛠️ 配置区域 (与 deploy.sh 保持一致) ---
@@ -7,6 +8,10 @@ $R2Remote = "bitiful"
 $Domain = "https://paperwhisper.s3.bitiful.net"
 # ----------------------------------------
 
+# 设置工作目录为 Flutter 项目根目录
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$ProjectRoot = Join-Path $ScriptDir ".."
+Set-Location $ProjectRoot
 
 Write-Host "🔄 [1/5] 正在从 version.json 同步版本号..." -ForegroundColor Cyan
 dart run tool/sync_version.dart
@@ -98,4 +103,3 @@ Write-Host "⬇️ 最新版 (Exe): $Domain/Windows/latest.exe"
 Write-Host "📦 历史存档: $Domain/Windows/$ZipName"
 Write-Host ""
 Write-Host "🔔 别忘了手动把 Zip/Exe 拖到网盘备份文件夹哦！" -ForegroundColor Yellow
-

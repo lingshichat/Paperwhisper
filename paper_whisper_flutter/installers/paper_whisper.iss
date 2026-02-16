@@ -29,7 +29,7 @@ SolidCompression=yes
 WizardStyle=modern
 
 ; Icon configuration
-SetupIconFile=..\..\icon.ico
+SetupIconFile=..\..\legacy_desktop\icons\icon.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
 
 [Languages]
