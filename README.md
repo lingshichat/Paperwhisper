@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="icon.svg" alt="PaperWhisper Icon" width="128" height="128">
+  <img src="legacy_desktop/icons/icon.svg" alt="PaperWhisper Icon" width="128" height="128">
 </div>
 
 # 纸语 PaperWhisper 📖
