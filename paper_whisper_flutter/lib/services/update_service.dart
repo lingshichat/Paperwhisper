@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart'; // Add this for rootBundle
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
@@ -25,7 +26,7 @@ class UpdateService {
         .timeout(_timeout);
 
     if (response.statusCode == 404) {
-      print('版本文件不存在 (404)，跳过更新检查');
+      debugPrint('版本文件不存在 (404)，跳过更新检查');
       return null;
     }
 
@@ -62,7 +63,7 @@ class UpdateService {
       }
       return false; // 版本相同
     } catch (e) {
-      print('版本解析错误: $e');
+      debugPrint('版本解析错误: $e');
       return false;
     }
   }
@@ -102,7 +103,7 @@ class UpdateService {
     }
 
     if (url == null || url.isEmpty) {
-      print('没有找到 $platform 平台的${useBackup ? "备用" : ""}下载链接');
+      debugPrint('没有找到 $platform 平台的${useBackup ? "备用" : ""}下载链接');
       return false;
     }
 
@@ -114,7 +115,7 @@ class UpdateService {
       }
       return false;
     } catch (e) {
-      print('打开链接失败: $e');
+      debugPrint('打开链接失败: $e');
       return false;
     }
   }
@@ -126,7 +127,7 @@ class UpdateService {
       final json = jsonDecode(jsonString);
       return UpdateInfo.fromJson(json);
     } catch (e) {
-      print('Failed to load local version info: $e');
+      debugPrint('Failed to load local version info: $e');
       return null;
     }
   }

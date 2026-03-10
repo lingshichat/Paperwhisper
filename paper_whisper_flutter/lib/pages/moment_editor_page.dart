@@ -276,7 +276,6 @@ class _MomentEditorPageState extends State<MomentEditorPage> {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
         color: dropdownBg,
         borderRadius: BorderRadius.circular(8),

@@ -9,7 +9,7 @@ import '../providers/settings_provider.dart';
 import '../widgets/skeuomorphic_dialog.dart';
 import '../widgets/skeuomorphic_toast.dart';
 import '../widgets/visual_effects.dart';
-import 'package:google_fonts/google_fonts.dart'; // Ensure google fonts is imported if used
+import 'package:google_fonts/google_fonts.dart';
 
 class TrashPage extends StatefulWidget {
   const TrashPage({super.key});
@@ -19,7 +19,7 @@ class TrashPage extends StatefulWidget {
 }
 
 class _TrashPageState extends State<TrashPage> {
-  List<DiaryEntry> _trashEntries = []; // Change to store parsed entries
+  List<DiaryEntry> _trashEntries = [];
   bool _isLoading = true;
 
   @override
@@ -30,12 +30,12 @@ class _TrashPageState extends State<TrashPage> {
 
   Future<void> _loadTrash() async {
     setState(() => _isLoading = true);
-    final diaryProvider = Provider.of<DiaryProvider>(context, listen: false); // Use provider directly
+    final diaryProvider = Provider.of<DiaryProvider>(context, listen: false);
     final service = diaryProvider.service;
     
     try {
       final files = await service.trashService.listValidTrashFiles();
-      // Sort by Date Modified (desc) first to align with files
+      // 按修改时间降序排列
       files.sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
       
       List<DiaryEntry> loadedEntries = [];
@@ -43,7 +43,6 @@ class _TrashPageState extends State<TrashPage> {
          try {
            final content = await file.readAsString();
            final filename = path.basename(file.path);
-           // Parse entry
            loadedEntries.add(DiaryEntry.fromFileContent(filename, content));
          } catch (e) {
            debugPrint('Error parsing trash file ${file.path}: $e');
@@ -66,16 +65,14 @@ class _TrashPageState extends State<TrashPage> {
     final service = Provider.of<DiaryProvider>(context, listen: false).service;
     
     try {
-      // Need to find the File object again or construct path? 
-      // TrashService uses filename to restore.
       await service.trashService.restoreFromTrash(filename, service.dataDir!);
-      // Update Manifest: Mark as NOT deleted
+      // 更新清单：标记为未删除
       service.manifestService.updateItem(filename, isDeleted: false);
       
       if (mounted) {
         SkeuomorphicToast.success(context, '已恢复: $filename');
         _loadTrash();
-        // Reload main list
+        // 重新加载主列表
         Provider.of<DiaryProvider>(context, listen: false).loadEntries();
       }
     } catch (e) {
@@ -84,7 +81,6 @@ class _TrashPageState extends State<TrashPage> {
   }
 
   Future<void> _deletePermanently(String filename) async {
-    // Show confirmation
     showDialog(
       context: context,
       builder: (ctx) => SkeuomorphicDialog(
@@ -103,20 +99,12 @@ class _TrashPageState extends State<TrashPage> {
           SkeuomorphicDialogButton(
             label: '删除', 
             isPrimary: true, 
-             // Red color implies danger, usually primary is theme color. 
-             // We can customize button color if needed but standard is fine.
             onPressed: () async {
               Navigator.pop(ctx);
               final service = Provider.of<DiaryProvider>(context, listen: false).service;
               
               try {
                 await service.trashService.deletePermanently(filename);
-                // Note: We DO NOT update manifest to 'not deleted'. 
-                // We keep it 'deleted' in manifest so sync knows it's gone.
-                // In fact, if we want sync to propagate "Remote Trash Delete" we might need a status?
-                // But current plan says "Cloud Trash is Safe Archive". It never deletes.
-                // So locally deleting purely saves space.
-                
                 if (mounted) {
                   SkeuomorphicToast.success(context, '已彻底删除');
                   _loadTrash();
@@ -137,24 +125,11 @@ class _TrashPageState extends State<TrashPage> {
     final theme = settings.currentTheme;
     final bool isSeaFlower = theme == AppTheme.themeSeaFlower;
     final bool isMidnight = theme == AppTheme.themeMidnight;
-    final bool isAmber = theme == AppTheme.themeAmberLens;
 
-    final bool isTwilight = theme == AppTheme.themeTwilight;
-    final bool isGardenOfWords = theme == AppTheme.themeGardenOfWords;
-
-    final themeConfig = AppTheme.getSettingsTheme(theme);
-    
-    final Color titleColor = themeConfig.isNotEmpty
-        ? themeConfig['titleColor']
-        : (isSeaFlower
-            ? const Color(0xFF880E4F)
-            : (isMidnight ? const Color(0xFFe6edf3) : (isTwilight ? const Color(0xFFE4E0EC) : (isAmber ? const Color(0xFFE0E0E0) : const Color(0xFFF4ECD8)))));
-        
-    final Color iconColor = themeConfig.isNotEmpty
-        ? themeConfig['iconColor']
-        : (isSeaFlower
-            ? const Color(0xFFAD1457)
-            : (isMidnight ? const Color(0xFFc9d1d9) : (isTwilight ? const Color(0xFFFF5252) : (isAmber ? const Color(0xFFFF9800) : (isGardenOfWords ? const Color(0xFF558B2F) : const Color(0xFFD7CCC8))))));
+    // 统一从 AppTheme 获取回收站页面配色
+    final tc = AppTheme.getTrashPageTheme(theme);
+    final Color titleColor = tc['titleColor'];
+    final Color iconColor = tc['iconColor'];
 
     return Stack(
       children: [
@@ -163,7 +138,7 @@ class _TrashPageState extends State<TrashPage> {
           child: Container(decoration: AppTheme.getBackground(theme)),
         ),
         
-        // 2. Visual Effects
+        // 2. 视觉特效
         if (isSeaFlower) Positioned.fill(child: const PetalRainWidget()),
         if (isMidnight) Positioned.fill(child: const StarrySkyWidget()),
 
@@ -203,7 +178,7 @@ class _TrashPageState extends State<TrashPage> {
                       padding: const EdgeInsets.all(16),
                       itemCount: _trashEntries.length,
                       itemBuilder: (context, index) {
-                        return _buildTrashItem(context, _trashEntries[index], isSeaFlower, isMidnight, isAmber, isTwilight, isGardenOfWords, titleColor, iconColor);
+                        return _buildTrashItem(context, _trashEntries[index], tc);
                       },
                   ),
         ),
@@ -211,116 +186,19 @@ class _TrashPageState extends State<TrashPage> {
     );
   }
 
+  /// 构建回收站列表项，所有颜色从 themeConfig 中获取
   Widget _buildTrashItem(
     BuildContext context, 
     DiaryEntry entry, 
-    bool isSeaFlower, 
-    bool isMidnight, 
-    bool isAmber,
-    bool isTwilight,
-    bool isGardenOfWords,
-    Color titleColor, 
-    Color iconColor
+    Map<String, dynamic> tc,
   ) {
-    // 针对列表项内部的文字颜色，复古模式下需要深色（因为卡片是白色的）
-    // 而传入的 titleColor 是用于 AppBar 的（浅色），所以这里需要反转一下复古模式的颜色
-    Color cardTitleColor;
-    Color cardDateColor;
+    final Color cardTitleColor = tc['cardTitleColor'];
+    final Color cardDateColor = tc['cardDateColor'];
+    final Color iconColor = tc['iconColor'];
+    final Color restoreColor = tc['restoreColor'];
+    final Color dangerColor = tc['dangerColor'];
+    final BoxDecoration decoration = tc['cardDecoration'];
 
-    if (!isSeaFlower && !isMidnight && !isAmber && !isTwilight && !isGardenOfWords) {
-       // Vintage Mode
-       cardTitleColor = const Color(0xFF2d241f); // Dark Brown
-       cardDateColor = const Color(0xFF5D4037).withOpacity(0.6);
-    } else {
-       cardTitleColor = titleColor;
-       cardDateColor = titleColor.withOpacity(0.6);
-    }
-
-    final theme = Provider.of<SettingsProvider>(context, listen: false).currentTheme;
-    final themeConfig = AppTheme.getSettingsTheme(theme);
-
-    BoxDecoration decoration;
-    
-    if (themeConfig.isNotEmpty) {
-       decoration = themeConfig['groupDecoration'];
-    } else if (isSeaFlower) {
-      decoration = BoxDecoration(
-         color: Colors.white.withOpacity(0.4),
-         borderRadius: BorderRadius.circular(16),
-         border: Border.all(color: Colors.white.withOpacity(0.6), width: 1),
-         boxShadow: [
-           BoxShadow(
-             color: const Color(0xFFF48FB1).withOpacity(0.2),
-             blurRadius: 8,
-             offset: const Offset(0, 2)
-           )
-         ],
-      );
-    } else if (isMidnight) {
-      decoration = BoxDecoration(
-         color: const Color(0xFF161b22).withOpacity(0.8),
-         borderRadius: BorderRadius.circular(16),
-         border: Border.all(color: const Color(0xFF30363d), width: 1),
-         boxShadow: const [
-           BoxShadow(
-             color: Colors.black,
-             blurRadius: 8,
-             offset: Offset(0, 2)
-           )
-         ],
-      );
-    } else if (isAmber) {
-       decoration = BoxDecoration(
-         color: const Color(0xFF2C2C2C).withOpacity(0.8),
-         borderRadius: BorderRadius.circular(16),
-         border: Border.all(color: const Color(0xFFFF9800).withOpacity(0.3), width: 1),
-         boxShadow: const [
-           BoxShadow(color: Colors.black, blurRadius: 6, offset: Offset(0, 2))
-         ]
-       );
-    } else if (isTwilight) {
-       decoration = BoxDecoration(
-         color: const Color(0xFF352044).withOpacity(0.6),
-         borderRadius: BorderRadius.circular(16),
-         border: Border.all(color: const Color(0xFFEF5350).withOpacity(0.3), width: 1),
-         boxShadow: const [
-           BoxShadow(color: Colors.black26, blurRadius: 6, offset: Offset(0, 2))
-         ]
-       );
-    } else if (isGardenOfWords) {
-       decoration = BoxDecoration(
-         color: Colors.white.withOpacity(0.7),
-         borderRadius: BorderRadius.circular(16),
-         border: Border.all(color: const Color(0xFF8BC34A).withOpacity(0.3), width: 1),
-         boxShadow: [
-           BoxShadow(
-             color: const Color(0xFF8BC34A).withOpacity(0.1),
-             blurRadius: 8,
-             offset: const Offset(0, 2)
-           )
-         ]
-       );
-    } else {
-      // Vintage
-      decoration = BoxDecoration(
-        color: const Color(0xFFF4F0E6), // Slightly warmer white
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 6,
-            offset: const Offset(0, 3),
-          ),
-           BoxShadow(
-            color: const Color(0xFF5D4037).withOpacity(0.05),
-            blurRadius: 2,
-            offset: const Offset(0, 1),
-          )
-        ],
-      );
-    }
-
-    // Remove Dismissible since we have explicit buttons and swipe is disabled
     return GestureDetector(
       onTap: () {
          _showPreview(context, entry);
@@ -358,7 +236,6 @@ class _TrashPageState extends State<TrashPage> {
                         )
                       ),
                       const SizedBox(width: 8),
-                      // Weather Icon small
                       Icon(
                         _getWeatherIcon(entry.weather),
                         size: 14,
@@ -370,12 +247,12 @@ class _TrashPageState extends State<TrashPage> {
               ),
             ),
             IconButton(
-              icon: Icon(Icons.restore, color: isSeaFlower ? const Color(0xFFE91E63) : (isMidnight ? const Color(0xFF69f0ae) : (isTwilight ? const Color(0xFFEF5350) : (isGardenOfWords ? const Color(0xFF8BC34A) : Colors.green)))),
+              icon: Icon(Icons.restore, color: restoreColor),
               tooltip: '恢复',
               onPressed: () => _restoreFile(entry.filename),
             ),
             IconButton(
-              icon: Icon(Icons.delete_forever_outlined, color: isSeaFlower ? const Color(0xFFC2185B) : (isMidnight ? const Color(0xFFff5252) : (isTwilight ? const Color(0xFFE91E63) : (isGardenOfWords ? const Color(0xFFE57373) : Colors.redAccent)))),
+              icon: Icon(Icons.delete_forever_outlined, color: dangerColor),
               tooltip: '彻底删除',
               onPressed: () => _deletePermanently(entry.filename),
             ),

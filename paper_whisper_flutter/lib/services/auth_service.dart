@@ -5,6 +5,7 @@ import 'package:crypto/crypto.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 
 class AuthService {
   static final AuthService _instance = AuthService._internal();
@@ -60,10 +61,10 @@ class AuthService {
     try {
       final canCheck = await _localAuth.canCheckBiometrics;
       final supported = await _localAuth.isDeviceSupported();
-      print('DEBUG: AuthService canCheck: $canCheck, supported: $supported');
+      debugPrint('AuthService canCheck: $canCheck, supported: $supported');
       return canCheck && supported;
     } on PlatformException catch (e) {
-      print('DEBUG: AuthService check error: $e');
+      debugPrint('AuthService check error: $e');
       return false;
     }
   }
@@ -105,11 +106,11 @@ class AuthService {
     try {
       final available = await canCheckBiometrics();
       if (!available) {
-        print('DEBUG: Biometrics not available');
+        debugPrint('Biometrics not available');
         return false;
       }
       
-      print('DEBUG: invoking _localAuth.authenticate');
+      debugPrint('Invoking _localAuth.authenticate');
 
       // Windows 上允许 PIN 认证（Windows Hello），移动端仅生物识别
       final bool bioOnly = !Platform.isWindows;
@@ -121,15 +122,15 @@ class AuthService {
       );
     } on LocalAuthException catch (e) {
       // local_auth v3.0：使用 LocalAuthException 代替 PlatformException
-      print('DEBUG: Auth error: $e');
+      debugPrint('Auth error: $e');
       return false;
     } on PlatformException catch (e) {
       // 兼容旧版本可能的异常
-      print('DEBUG: Platform error: $e');
+      debugPrint('Platform error: $e');
       return false;
     } catch (e) {
       // 兜底：捕获所有其他未知异常，防止崩溃
-      print('DEBUG: Unexpected auth error: $e');
+      debugPrint('Unexpected auth error: $e');
       return false;
     }
   }

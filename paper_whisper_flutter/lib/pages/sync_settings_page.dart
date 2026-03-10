@@ -118,21 +118,18 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
        if (mounted) {
          setState(() => _isLoading = false);
          // Feedback is already handled inside provider.sync with specific error messages
-         // But we can check status just in case
-         if (provider.status == SyncStatus.success) {
-           // SkeuomorphicToast.success(context, '同步完成'); // provider.sync does this now
-         }
        }
      } catch (e) {
        if (mounted) {
          setState(() => _isLoading = false);
-         // Error toast is also handled in provider.sync usually, but safe to show if not
-         // provider.sync throws, so we catch here to stop loading state
        }
      }
   }
 
-  Widget _buildLockCard(BuildContext context, Color textColor, bool isSeaFlower, bool isMidnight) {
+  Widget _buildLockCard(BuildContext context, Map<String, dynamic> tc) {
+    final textColor = tc['textColor'] as Color;
+    final lockBtnColor = tc['lockBtnColor'] as Color;
+    
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -141,17 +138,20 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
           children: [
             Icon(Icons.lock_outline, size: 64, color: textColor.withOpacity(0.6)),
             const SizedBox(height: 16),
-            Text('需要赞助才能使用 WebDAV 同步', style: GoogleFonts.notoSerifSc(color: textColor, fontSize: 16, fontWeight: FontWeight.bold)),
+            Text('需要赞助才能使用数据同步', style: GoogleFonts.notoSerifSc(color: textColor, fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Text('赞助后即可多端同步日记与随心记', style: GoogleFonts.notoSerifSc(color: textColor.withOpacity(0.7), fontSize: 14)),
             const SizedBox(height: 24),
             Material(
-              color: isSeaFlower ? const Color(0xFFAD1457) : (isMidnight ? const Color(0xFF7986cb) : const Color(0xFF5D4037)),
+              color: lockBtnColor,
               borderRadius: BorderRadius.circular(10),
               child: InkWell(
                 onTap: () => Navigator.push(context, SlidePageRoute(page: const PremiumMembershipPage())),
                 borderRadius: BorderRadius.circular(10),
-                child: Padding(padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14), child: Text('去赞助', style: GoogleFonts.notoSerifSc(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15))),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14), 
+                  child: Text('去赞助', style: GoogleFonts.notoSerifSc(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15))
+                ),
               ),
             ),
           ],
@@ -169,26 +169,12 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
     final bool isSeaFlower = theme == AppTheme.themeSeaFlower;
     final bool isMidnight = theme == AppTheme.themeMidnight;
 
-    final bool isAmber = theme == AppTheme.themeAmberLens;
-    final bool isAfterRain = theme == AppTheme.themeAfterRain;
-    final bool isTwilight = theme == AppTheme.themeTwilight;
-    final bool isGardenOfWords = theme == AppTheme.themeGardenOfWords;
-
-    // 颜色定义 (与 SettingsPage 保持一致)
+    // 统一配置获取
     final themeConfig = AppTheme.getSettingsTheme(theme);
+    final tc = AppTheme.getSyncSettingsTheme(theme);
     
-    final Color titleColor = themeConfig.isNotEmpty
-        ? themeConfig['titleColor']
-        : (isSeaFlower
-            ? const Color(0xFF880E4F)
-            : (isMidnight ? const Color(0xFFe6edf3) : const Color(0xFFEEFFEB)));
-            
-    final Color textColor = themeConfig.isNotEmpty
-        ? themeConfig['textColor']
-        : (isSeaFlower
-            ? const Color(0xFFAD1457)
-            : (isMidnight ? const Color(0xFFc9d1d9) : const Color(0xFFD7CCC8)));
-            
+    final Color titleColor = tc['titleColor'];
+    final Color textColor = tc['textColor'];
     final Color hintColor = textColor.withOpacity(0.5);
 
     return Stack(
@@ -231,9 +217,8 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // 协议选择器
                   // 协议选择器 (拟物化滑块)
-                  _buildSlidingSwitch(provider, isSeaFlower, isMidnight, isAfterRain, isTwilight, isGardenOfWords),
+                  _buildSlidingSwitch(provider, tc, isMidnight),
 
                   if (provider.config.syncType == SyncType.webdav) ...[
                     _buildSectionTitle('WebDAV 服务器配置', textColor),
@@ -242,11 +227,8 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                       controller: _serverController,
                       label: '服务器地址',
                       hint: '例如: https://dav.jianguoyun.com/dav/',
-                      textColor: textColor,
-                      hintColor: hintColor,
-                      isSeaFlower: isSeaFlower,
-                      isMidnight: isMidnight,
-                      isTwilight: isTwilight,
+                      tc: tc,
+                      themeConfig: themeConfig,
                       icon: Icons.link,
                     ),
                     const SizedBox(height: 16),
@@ -254,11 +236,8 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                       controller: _usernameController,
                       label: '账号 (Email)',
                       hint: '您的 WebDAV 账号邮箱',
-                      textColor: textColor,
-                      hintColor: hintColor,
-                      isSeaFlower: isSeaFlower,
-                      isMidnight: isMidnight,
-                      isTwilight: isTwilight,
+                      tc: tc,
+                      themeConfig: themeConfig,
                       icon: Icons.person_outline,
                     ),
                     const SizedBox(height: 16),
@@ -266,11 +245,8 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                       controller: _passwordController,
                       label: '密码 / 应用授权码',
                       hint: '坚果云请使用"第三方应用密码"',
-                      textColor: textColor,
-                      hintColor: hintColor,
-                      isSeaFlower: isSeaFlower,
-                      isMidnight: isMidnight,
-                      isTwilight: isTwilight,
+                      tc: tc,
+                      themeConfig: themeConfig,
                       icon: Icons.lock_outline,
                       obscureText: true,
                     ),
@@ -281,11 +257,8 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                       controller: _s3EndPointController,
                       label: 'Endpoint (API 地址)',
                       hint: '例如: play.min.io 或 oss-cn-hangzhou.aliyuncs.com',
-                      textColor: textColor,
-                      hintColor: hintColor,
-                      isSeaFlower: isSeaFlower,
-                      isMidnight: isMidnight,
-                      isTwilight: isTwilight,
+                      tc: tc,
+                      themeConfig: themeConfig,
                       icon: Icons.dns_outlined,
                     ),
                     const SizedBox(height: 16),
@@ -293,11 +266,8 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                       controller: _s3BucketController,
                       label: 'Bucket (存储桶名称)',
                       hint: '例如: paper-whisper-backup',
-                      textColor: textColor,
-                      hintColor: hintColor,
-                      isSeaFlower: isSeaFlower,
-                      isMidnight: isMidnight,
-                      isTwilight: isTwilight,
+                      tc: tc,
+                      themeConfig: themeConfig,
                       icon: Icons.folder_open_outlined,
                     ),
                     const SizedBox(height: 16),
@@ -305,11 +275,8 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                       controller: _s3AccessKeyController,
                       label: 'Access Key (访问密钥)',
                       hint: 'AK...',
-                      textColor: textColor,
-                      hintColor: hintColor,
-                      isSeaFlower: isSeaFlower,
-                      isMidnight: isMidnight,
-                      isTwilight: isTwilight,
+                      tc: tc,
+                      themeConfig: themeConfig,
                       icon: Icons.vpn_key_outlined,
                     ),
                     const SizedBox(height: 16),
@@ -317,11 +284,8 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                       controller: _s3SecretKeyController,
                       label: 'Secret Key (私有密钥)',
                       hint: 'SK...',
-                      textColor: textColor,
-                      hintColor: hintColor,
-                      isSeaFlower: isSeaFlower,
-                      isMidnight: isMidnight,
-                      isTwilight: isTwilight,
+                      tc: tc,
+                      themeConfig: themeConfig,
                       icon: Icons.password_outlined,
                       obscureText: true,
                     ),
@@ -330,11 +294,8 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                        controller: _s3RegionController,
                        label: 'Region (区域 - 可选)',
                        hint: '默认自动，如 us-east-1',
-                       textColor: textColor,
-                       hintColor: hintColor,
-                       isSeaFlower: isSeaFlower,
-                       isMidnight: isMidnight,
-                       isTwilight: isTwilight,
+                       tc: tc,
+                       themeConfig: themeConfig,
                        icon: Icons.map_outlined,
                     ),
                   ],
@@ -344,7 +305,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                   // 图片压缩开关
                   Container(
                     decoration: BoxDecoration(
-                      color: isSeaFlower ? Colors.white.withOpacity(0.4) : (isMidnight ? const Color(0xFF0D1117).withOpacity(0.5) : (isTwilight ? const Color(0xFF352044).withOpacity(0.6) : Colors.black.withOpacity(0.05))),
+                      color: tc['switchBgColor'],
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(color: textColor.withOpacity(0.1)),
                     ),
@@ -352,8 +313,8 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                     child: SwitchListTile(
                       value: _compressImages,
                       onChanged: (val) => setState(() => _compressImages = val),
-                      activeColor: AppTheme.getSettingsTheme(theme).isNotEmpty ? AppTheme.getSettingsTheme(theme)['activeSwitchColor'] : (isSeaFlower ? const Color(0xFFAD1457) : (isMidnight ? const Color(0xFF7986cb) : (isTwilight ? const Color(0xFFEF5350) : const Color(0xFF5D4037)))),
-                      activeTrackColor: AppTheme.getSettingsTheme(theme).isNotEmpty ? AppTheme.getSettingsTheme(theme)['activeTrackColor'] : (isSeaFlower ? const Color(0xFFF48FB1) : (isMidnight ? const Color(0xFF9FA8DA) : (isTwilight ? const Color(0xFFEF5350).withOpacity(0.3) : const Color(0xFFA1887F)))),
+                      activeColor: themeConfig.isNotEmpty ? themeConfig['activeSwitchColor'] : tc['accentColor'],
+                      activeTrackColor: themeConfig.isNotEmpty ? themeConfig['activeTrackColor'] : (tc['accentColor'] as Color).withOpacity(0.5),
                       title: Text(
                         '开启图片压缩',
                         style: GoogleFonts.notoSerifSc(color: textColor, fontWeight: FontWeight.bold, fontSize: 15),
@@ -380,11 +341,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                           label: '测试连接',
                           onTap: _isLoading ? null : _saveAndTest,
                           isPrimary: false,
-                          isSeaFlower: isSeaFlower,
-                          isMidnight: isMidnight,
-                          isAfterRain: isAfterRain,
-                          isTwilight: isTwilight,
-                          isGardenOfWords: isGardenOfWords,
+                          tc: tc,
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -393,11 +350,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                           label: '立即同步',
                           onTap: _isLoading ? null : _syncNow,
                           isPrimary: true,
-                          isSeaFlower: isSeaFlower,
-                          isMidnight: isMidnight,
-                          isAfterRain: isAfterRain,
-                          isTwilight: isTwilight,
-                          isGardenOfWords: isGardenOfWords,
+                          tc: tc,
                         ),
                       ),
                     ],
@@ -425,9 +378,9 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                            ClipRRect(
                              borderRadius: BorderRadius.circular(4),
                              child: LinearProgressIndicator(
-                               value: provider.totalProgress > 0 ? provider.totalProgress : null, // Total Progress
+                               value: provider.totalProgress > 0 ? provider.totalProgress : null,
                                backgroundColor: textColor.withOpacity(0.1),
-                               color: isSeaFlower ? const Color(0xFFD81B60) : (isMidnight ? const Color(0xFF7986cb) : (isAfterRain ? const Color(0xFF0288D1) : (isTwilight ? const Color(0xFFFF5252) : const Color(0xFF795548)))),
+                               color: tc['accentColor'],
                                minHeight: 6,
                              ),
                            ),
@@ -466,12 +419,12 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                      ),
                      
                   const SizedBox(height: 40),
-                  _buildTips(textColor, isMidnight, isTwilight, provider.config.syncType),
+                  _buildTips(textColor, tc, provider.config.syncType),
                 ],
               ),
             ),
           )
-            : _buildLockCard(context, textColor, isSeaFlower, isMidnight),
+            : _buildLockCard(context, tc),
         ),
       ],
     );
@@ -492,75 +445,64 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
     required TextEditingController controller,
     required String label,
     required String hint,
-    required Color textColor,
-    required Color hintColor,
-    required bool isSeaFlower,
-    required bool isMidnight,
-    required bool isTwilight,
+    required Map<String, dynamic> tc,
+    required Map<String, dynamic> themeConfig,
     required IconData icon,
     bool obscureText = false,
   }) {
-    return Builder(
-      builder: (context) {
-        final theme = Provider.of<SettingsProvider>(context).currentTheme;
-        final themeConfig = AppTheme.getSettingsTheme(theme);
-        
-        final borderSide = BorderSide(
-          color: themeConfig.isNotEmpty
-              ? themeConfig['groupDecoration'].border.top.color 
-              : (isSeaFlower
-                  ? const Color(0xFFEC407A).withOpacity(0.3)
-                  : (isMidnight ? const Color(0xFF30363d) : Colors.white.withOpacity(0.3))),
-        );
-        
-        final fillColor = themeConfig.isNotEmpty
-            ? themeConfig['groupDecoration'].color 
-            : (isSeaFlower
-                ? Colors.white.withOpacity(0.4)
-                : (isMidnight ? const Color(0xFF0D1117).withOpacity(0.5) : (isTwilight ? const Color(0xFF352044).withOpacity(0.5) : Colors.black.withOpacity(0.1))));
+    final textColor = tc['textColor'] as Color;
+    final hintColor = textColor.withOpacity(0.5);
+    
+    final borderSide = BorderSide(
+      color: themeConfig.isNotEmpty
+          ? themeConfig['groupDecoration'].border.top.color 
+          : textColor.withOpacity(0.2), // Fallback slightly visible border
+    );
+    
+    final fillColor = themeConfig.isNotEmpty
+        ? themeConfig['groupDecoration'].color 
+        : tc['switchBgColor'];
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: GoogleFonts.notoSerifSc(
-                color: textColor.withOpacity(0.8),
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-              ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.notoSerifSc(
+            color: textColor.withOpacity(0.8),
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: fillColor,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.fromBorderSide(borderSide),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 2,
+                offset: const Offset(0, 1),
+              )
+            ],
+          ),
+          child: TextFormField(
+            controller: controller,
+            obscureText: obscureText,
+            style: TextStyle(color: textColor),
+            validator: (v) => v == null || v.isEmpty ? '不能为空' : null,
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: TextStyle(color: hintColor, fontSize: 13),
+              prefixIcon: Icon(icon, color: textColor.withOpacity(0.6), size: 20),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
             ),
-            const SizedBox(height: 8),
-            Container(
-              decoration: BoxDecoration(
-                color: fillColor,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.fromBorderSide(borderSide),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 2,
-                    offset: const Offset(0, 1),
-                  )
-                ],
-              ),
-              child: TextFormField(
-                controller: controller,
-                obscureText: obscureText,
-                style: TextStyle(color: textColor),
-                validator: (v) => v == null || v.isEmpty ? '不能为空' : null,
-                decoration: InputDecoration(
-                  hintText: hint,
-                  hintStyle: TextStyle(color: hintColor, fontSize: 13),
-                  prefixIcon: Icon(icon, color: textColor.withOpacity(0.6), size: 20),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-                ),
-              ),
-            ),
-          ],
-        );
-      }
+          ),
+        ),
+      ],
     );
   }
 
@@ -568,53 +510,28 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
     required String label,
     required VoidCallback? onTap,
     required bool isPrimary,
-    required bool isSeaFlower,
-    required bool isMidnight,
-    required bool isAfterRain,
-    required bool isTwilight,
-    required bool isGardenOfWords,
+    required Map<String, dynamic> tc,
   }) {
-    // 按钮样式
-    Gradient? gradient;
-    Color? color;
-    Color textColor = Colors.white;
-
-    if (isPrimary) {
-      if (isSeaFlower) {
-        gradient = const LinearGradient(colors: [Color(0xFFF06292), Color(0xFFAD1457)]);
-      } else if (isMidnight) {
-        gradient = const LinearGradient(colors: [Color(0xFF7986cb), Color(0xFF283593)]);
-      } else if (isAfterRain) {
-        gradient = const LinearGradient(colors: [Color(0xFF4FC3F7), Color(0xFF0288D1)]);
-      } else if (isTwilight) {
-      gradient = const LinearGradient(colors: [Color(0xFFEF5350), Color(0xFFC62828)]); // 黄昏红
-      } else if (isGardenOfWords) {
-        gradient = const LinearGradient(colors: [Color(0xFF8BC34A), Color(0xFF558B2F)]); // Fresh Leaf
-      } else {
-        color = const Color(0xFF5D4037); 
-      }
-    } else {
-      // Secondary
-      if (isSeaFlower) {
-         color = Colors.white.withOpacity(0.5);
-         textColor = const Color(0xFF880E4F);
-      } else if (isMidnight) {
-         color = const Color(0xFF21262d);
-         textColor = const Color(0xFFc9d1d9);
-      } else if (isAfterRain) {
-         color = Colors.white.withOpacity(0.6);
-         textColor = const Color(0xFF0277BD);
-      } else if (isTwilight) {
-       color = const Color(0xFF352044).withOpacity(0.6);
-       textColor = const Color(0xFFEF5350); // 黄昏红
-      } else if (isGardenOfWords) {
-         color = Colors.white.withOpacity(0.6);
-         textColor = const Color(0xFF2E4A35);
-      } else {
-         color = Colors.white.withOpacity(0.2);
-         textColor = const Color(0xFF3E2723);
-      }
-    }
+    // 按主/次按钮读取相应的配置
+    final gradient = isPrimary ? tc['primaryGradient'] as Gradient? : null;
+    final color = isPrimary 
+        ? ((tc['primaryBtnColor'] != null) ? tc['primaryBtnColor'] as Color : Colors.transparent)
+        : tc['secondaryBtnColor'] as Color;
+    final textColor = isPrimary ? Colors.white : tc['secondaryBtnTextColor'] as Color;
+    
+    final boxShadows = isPrimary 
+        ? [
+            BoxShadow(
+              color: tc['primaryShadowColor'],
+              blurRadius: 6,
+              offset: const Offset(0, 3)
+            )
+          ]
+        : null;
+        
+    final border = !isPrimary 
+        ? Border.all(color: tc['secondaryBorderColor']) 
+        : null;
 
     return Material(
       color: Colors.transparent,
@@ -625,24 +542,10 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
           padding: const EdgeInsets.symmetric(vertical: 14),
           decoration: BoxDecoration(
             gradient: gradient,
-            color: color,
+            color: color == Colors.transparent && gradient != null ? null : color,
             borderRadius: BorderRadius.circular(10),
-            boxShadow: isPrimary ? [
-              BoxShadow(
-                color: isSeaFlower 
-                    ? const Color(0xFFAD1457).withOpacity(0.3) 
-                    : (isMidnight 
-                        ? const Color(0xFF283593).withOpacity(0.4) 
-                        : (isAfterRain ? const Color(0xFF0288D1).withOpacity(0.3) : (isTwilight ? const Color(0xFFEF5350).withOpacity(0.3) : (isGardenOfWords ? const Color(0xFF8BC34A).withOpacity(0.3) : Colors.black26)))),
-                blurRadius: 6,
-                offset: const Offset(0, 3)
-              )
-            ] : null,
-            border: !isPrimary ? Border.all(
-               color: isSeaFlower 
-                  ? const Color(0xFFAD1457).withOpacity(0.2) 
-                  : (isAfterRain ? const Color(0xFF0288D1).withOpacity(0.2) : (isTwilight ? const Color(0xFFEF5350).withOpacity(0.2) : (isGardenOfWords ? const Color(0xFF8BC34A).withOpacity(0.2) : Colors.white.withOpacity(0.1))))
-            ) : null,
+            boxShadow: boxShadows,
+            border: border,
           ),
           child: Text(
             label,
@@ -658,46 +561,11 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
     );
   }
 
-  Widget _buildSlidingSwitch(
-    SyncProvider provider, bool isSeaFlower, bool isMidnight, bool isAfterRain, bool isTwilight, bool isGardenOfWords) {
-    // 1. Determine Colors
-    Color trackColor;
-    Color thumbColor;
-    Color activeTextColor;
-    Color inactiveTextColor;
-
-    if (isSeaFlower) {
-      trackColor = Colors.pink[50]!; 
-      thumbColor = Colors.white;
-      activeTextColor = const Color(0xFFAD1457);
-      inactiveTextColor = const Color(0xFFAD1457).withOpacity(0.5);
-    } else if (isMidnight) {
-      trackColor = const Color(0xFF0D1117); 
-      thumbColor = const Color(0xFF37474F); 
-      activeTextColor = const Color(0xFF7986cb); 
-      inactiveTextColor = Colors.white54;
-    } else if (isAfterRain) {
-      trackColor = Colors.lightBlue[50]!;
-      thumbColor = Colors.white;
-      activeTextColor = const Color(0xFF0288D1);
-      inactiveTextColor = const Color(0xFF0288D1).withOpacity(0.5);
-    } else if (isTwilight) {
-      trackColor = const Color(0xFF352044);
-      thumbColor = const Color(0xFFEF5350);
-       activeTextColor = const Color(0xFF352044); // Text on thumb
-       inactiveTextColor = const Color(0xFFEF5350).withOpacity(0.6);
-    } else if (isGardenOfWords) {
-      trackColor = const Color(0xFFF0F4F2);
-      thumbColor = const Color(0xFF8BC34A);
-      activeTextColor = const Color(0xFFF0F4F2);
-      inactiveTextColor = const Color(0xFF5A6B72);
-    } else {
-      // Vintage / Default
-      trackColor = const Color(0xFFD7CCC8); 
-      thumbColor = const Color(0xFFEFEBE9); 
-      activeTextColor = const Color(0xFF5D4037);
-      inactiveTextColor = const Color(0xFF5D4037).withOpacity(0.5);
-    }
+  Widget _buildSlidingSwitch(SyncProvider provider, Map<String, dynamic> tc, bool isMidnight) {
+    final trackColor = tc['switchTrackColor'] as Color;
+    final thumbColor = tc['switchThumbColor'] as Color;
+    final activeTextColor = tc['switchActiveText'] as Color;
+    final inactiveTextColor = tc['switchInactiveText'] as Color;
 
     final isWebDav = provider.config.syncType == SyncType.webdav;
 
@@ -786,7 +654,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
     );
   }
 
-  Widget _buildTips(Color textColor, bool isMidnight, bool isTwilight, SyncType syncType) {
+  Widget _buildTips(Color textColor, Map<String, dynamic> tc, SyncType syncType) {
     String tips;
     if (syncType == SyncType.webdav) {
       tips = '1. 推荐使用坚果云 WebDAV 服务。\n'
@@ -803,7 +671,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isMidnight ? const Color(0xFF161b22).withOpacity(0.8) : (isTwilight ? const Color(0xFF352044).withOpacity(0.8) : Colors.white.withOpacity(0.2)),
+        color: tc['tipsBgColor'],
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: textColor.withOpacity(0.1)),
       ),

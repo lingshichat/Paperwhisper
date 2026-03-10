@@ -1498,6 +1498,353 @@ class AppTheme {
       };
     }
   }
+
+  // ==================== 回收站页面主题 ====================
+  /// 回收站页面主题配置
+  static Map<String, dynamic> getTrashPageTheme(String theme) {
+    switch (theme) {
+      case themeSeaFlower:
+        return {
+          'titleColor': const Color(0xFF880E4F),
+          'iconColor': const Color(0xFFAD1457),
+          'restoreColor': const Color(0xFFE91E63),
+          'dangerColor': const Color(0xFFC2185B),
+          'cardTitleColor': const Color(0xFF880E4F),
+          'cardDateColor': const Color(0xFF880E4F).withOpacity(0.6),
+          'cardDecoration': BoxDecoration(
+            color: Colors.white.withOpacity(0.4),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withOpacity(0.6), width: 1),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFF48FB1).withOpacity(0.2),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+        };
+      case themeMidnight:
+        return {
+          'titleColor': _midnightTextPrimary,
+          'iconColor': const Color(0xFFc9d1d9),
+          'restoreColor': const Color(0xFF69f0ae),
+          'dangerColor': const Color(0xFFff5252),
+          'cardTitleColor': _midnightTextPrimary,
+          'cardDateColor': _midnightTextPrimary.withOpacity(0.6),
+          'cardDecoration': BoxDecoration(
+            color: const Color(0xFF161b22).withOpacity(0.8),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFF30363d), width: 1),
+            boxShadow: const [
+              BoxShadow(color: Colors.black, blurRadius: 8, offset: Offset(0, 2)),
+            ],
+          ),
+        };
+      case themeAmberLens:
+        return {
+          'titleColor': const Color(0xFFE0E0E0),
+          'iconColor': _amberAccent,
+          'restoreColor': Colors.green,
+          'dangerColor': Colors.redAccent,
+          'cardTitleColor': const Color(0xFFE0E0E0),
+          'cardDateColor': const Color(0xFFE0E0E0).withOpacity(0.6),
+          'cardDecoration': BoxDecoration(
+            color: const Color(0xFF2C2C2C).withOpacity(0.8),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: _amberAccent.withOpacity(0.3), width: 1),
+            boxShadow: const [
+              BoxShadow(color: Colors.black, blurRadius: 6, offset: Offset(0, 2)),
+            ],
+          ),
+        };
+      case themeTwilight:
+        return {
+          'titleColor': _twilightTextPrimary,
+          'iconColor': _twilightAccentRed,
+          'restoreColor': _twilightAccentRed,
+          'dangerColor': const Color(0xFFE91E63),
+          'cardTitleColor': _twilightTextPrimary,
+          'cardDateColor': _twilightTextPrimary.withOpacity(0.6),
+          'cardDecoration': BoxDecoration(
+            color: _twilightSurface.withOpacity(0.6),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: _twilightAccentRed.withOpacity(0.3), width: 1),
+            boxShadow: const [
+              BoxShadow(color: Colors.black26, blurRadius: 6, offset: Offset(0, 2)),
+            ],
+          ),
+        };
+      case themeGardenOfWords:
+        return {
+          'titleColor': _gardenTextPrimary,
+          'iconColor': const Color(0xFF558B2F),
+          'restoreColor': const Color(0xFF8BC34A),
+          'dangerColor': const Color(0xFFE57373),
+          'cardTitleColor': _gardenTextPrimary,
+          'cardDateColor': _gardenTextPrimary.withOpacity(0.6),
+          'cardDecoration': BoxDecoration(
+            color: Colors.white.withOpacity(0.7),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFF8BC34A).withOpacity(0.3), width: 1),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF8BC34A).withOpacity(0.1),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+        };
+      case themeAfterRain:
+        return {
+          'titleColor': _afterRainTextSecondary,
+          'iconColor': _afterRainAccentBlue,
+          'restoreColor': _afterRainAccentBlue,
+          'dangerColor': const Color(0xFFE57373),
+          'cardTitleColor': _afterRainTextSecondary,
+          'cardDateColor': _afterRainTextSecondary.withOpacity(0.6),
+          'cardDecoration': BoxDecoration(
+            color: Colors.white.withOpacity(0.7),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withOpacity(0.6), width: 1),
+            boxShadow: [
+              BoxShadow(
+                color: _afterRainAccentBlue.withOpacity(0.1),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+        };
+      default: // Vintage
+        return {
+          'titleColor': _vintagePaper,
+          'iconColor': const Color(0xFFD7CCC8),
+          'restoreColor': Colors.green,
+          'dangerColor': Colors.redAccent,
+          'cardTitleColor': const Color(0xFF2d241f),
+          'cardDateColor': const Color(0xFF5D4037).withOpacity(0.6),
+          'cardDecoration': BoxDecoration(
+            color: const Color(0xFFF4F0E6),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 6,
+                offset: const Offset(0, 3),
+              ),
+              BoxShadow(
+                color: const Color(0xFF5D4037).withOpacity(0.05),
+                blurRadius: 2,
+                offset: const Offset(0, 1),
+              ),
+            ],
+          ),
+        };
+    }
+  }
+
+  // ==================== 同步设置页面主题 ====================
+  /// 同步设置页面主题配置
+  static Map<String, dynamic> getSyncSettingsTheme(String theme) {
+    switch (theme) {
+      case themeSeaFlower:
+        return {
+          'titleColor': const Color(0xFF880E4F),
+          'textColor': const Color(0xFFAD1457),
+          'accentColor': const Color(0xFFD81B60),
+          'lockBtnColor': const Color(0xFFAD1457),
+          'switchTrackColor': Colors.pink[50]!,
+          'switchThumbColor': Colors.white,
+          'switchActiveText': const Color(0xFFAD1457),
+          'switchInactiveText': const Color(0xFFAD1457).withOpacity(0.5),
+          'primaryGradient': const LinearGradient(colors: [Color(0xFFF06292), Color(0xFFAD1457)]),
+          'primaryShadowColor': const Color(0xFFAD1457).withOpacity(0.3),
+          'secondaryBtnColor': Colors.white.withOpacity(0.5),
+          'secondaryBtnTextColor': const Color(0xFF880E4F),
+          'secondaryBorderColor': const Color(0xFFAD1457).withOpacity(0.2),
+          'tipsBgColor': Colors.white.withOpacity(0.2),
+          'switchBgColor': Colors.white.withOpacity(0.4),
+        };
+      case themeMidnight:
+        return {
+          'titleColor': _midnightTextPrimary,
+          'textColor': const Color(0xFFc9d1d9),
+          'accentColor': _midnightAccent,
+          'lockBtnColor': _midnightAccent,
+          'switchTrackColor': const Color(0xFF0D1117),
+          'switchThumbColor': const Color(0xFF37474F),
+          'switchActiveText': _midnightAccent,
+          'switchInactiveText': Colors.white54,
+          'primaryGradient': const LinearGradient(colors: [Color(0xFF7986cb), Color(0xFF283593)]),
+          'primaryShadowColor': const Color(0xFF283593).withOpacity(0.4),
+          'secondaryBtnColor': const Color(0xFF21262d),
+          'secondaryBtnTextColor': const Color(0xFFc9d1d9),
+          'secondaryBorderColor': Colors.white.withOpacity(0.1),
+          'tipsBgColor': const Color(0xFF161b22).withOpacity(0.8),
+          'switchBgColor': const Color(0xFF0D1117).withOpacity(0.5),
+        };
+      case themeAmberLens:
+        return {
+          'titleColor': const Color(0xFFE0E0E0),
+          'textColor': const Color(0xFFD7CCC8),
+          'accentColor': _amberAccent,
+          'lockBtnColor': const Color(0xFF5D4037),
+          'switchTrackColor': const Color(0xFFD7CCC8),
+          'switchThumbColor': const Color(0xFFEFEBE9),
+          'switchActiveText': const Color(0xFF5D4037),
+          'switchInactiveText': const Color(0xFF5D4037).withOpacity(0.5),
+          'primaryGradient': null,
+          'primaryBtnColor': const Color(0xFF5D4037),
+          'primaryShadowColor': Colors.black26,
+          'secondaryBtnColor': Colors.white.withOpacity(0.2),
+          'secondaryBtnTextColor': const Color(0xFF3E2723),
+          'secondaryBorderColor': Colors.white.withOpacity(0.1),
+          'tipsBgColor': Colors.white.withOpacity(0.2),
+          'switchBgColor': Colors.black.withOpacity(0.05),
+        };
+      case themeAfterRain:
+        return {
+          'titleColor': _afterRainTextSecondary,
+          'textColor': _afterRainTextSecondary,
+          'accentColor': _afterRainAccentBlue,
+          'lockBtnColor': _afterRainAccentBlue,
+          'switchTrackColor': Colors.lightBlue[50]!,
+          'switchThumbColor': Colors.white,
+          'switchActiveText': _afterRainAccentBlue,
+          'switchInactiveText': _afterRainAccentBlue.withOpacity(0.5),
+          'primaryGradient': const LinearGradient(colors: [Color(0xFF4FC3F7), Color(0xFF0288D1)]),
+          'primaryShadowColor': _afterRainAccentBlue.withOpacity(0.3),
+          'secondaryBtnColor': Colors.white.withOpacity(0.6),
+          'secondaryBtnTextColor': const Color(0xFF0277BD),
+          'secondaryBorderColor': _afterRainAccentBlue.withOpacity(0.2),
+          'tipsBgColor': Colors.white.withOpacity(0.2),
+          'switchBgColor': Colors.black.withOpacity(0.05),
+        };
+      case themeTwilight:
+        return {
+          'titleColor': _twilightTextPrimary,
+          'textColor': _twilightTextPrimary,
+          'accentColor': _twilightAccentRed,
+          'lockBtnColor': _twilightAccentRed,
+          'switchTrackColor': _twilightSurface,
+          'switchThumbColor': _twilightAccentRed,
+          'switchActiveText': _twilightSurface,
+          'switchInactiveText': _twilightAccentRed.withOpacity(0.6),
+          'primaryGradient': const LinearGradient(colors: [Color(0xFFEF5350), Color(0xFFC62828)]),
+          'primaryShadowColor': _twilightAccentRed.withOpacity(0.3),
+          'secondaryBtnColor': _twilightSurface.withOpacity(0.6),
+          'secondaryBtnTextColor': _twilightAccentRed,
+          'secondaryBorderColor': _twilightAccentRed.withOpacity(0.2),
+          'tipsBgColor': _twilightSurface.withOpacity(0.8),
+          'switchBgColor': _twilightSurface.withOpacity(0.6),
+        };
+      case themeGardenOfWords:
+        return {
+          'titleColor': _gardenTextPrimary,
+          'textColor': _gardenTextSecondary,
+          'accentColor': _gardenAccent,
+          'lockBtnColor': _gardenAccentDark,
+          'switchTrackColor': const Color(0xFFF0F4F2),
+          'switchThumbColor': const Color(0xFF8BC34A),
+          'switchActiveText': const Color(0xFFF0F4F2),
+          'switchInactiveText': const Color(0xFF5A6B72),
+          'primaryGradient': const LinearGradient(colors: [Color(0xFF8BC34A), Color(0xFF558B2F)]),
+          'primaryShadowColor': const Color(0xFF8BC34A).withOpacity(0.3),
+          'secondaryBtnColor': Colors.white.withOpacity(0.6),
+          'secondaryBtnTextColor': const Color(0xFF2E4A35),
+          'secondaryBorderColor': const Color(0xFF8BC34A).withOpacity(0.2),
+          'tipsBgColor': Colors.white.withOpacity(0.2),
+          'switchBgColor': Colors.black.withOpacity(0.05),
+        };
+      default: // Vintage
+        return {
+          'titleColor': _vintagePaper,
+          'textColor': const Color(0xFFD7CCC8),
+          'accentColor': const Color(0xFF795548),
+          'lockBtnColor': const Color(0xFF5D4037),
+          'switchTrackColor': const Color(0xFFD7CCC8),
+          'switchThumbColor': const Color(0xFFEFEBE9),
+          'switchActiveText': const Color(0xFF5D4037),
+          'switchInactiveText': const Color(0xFF5D4037).withOpacity(0.5),
+          'primaryGradient': null,
+          'primaryBtnColor': const Color(0xFF5D4037),
+          'primaryShadowColor': Colors.black26,
+          'secondaryBtnColor': Colors.white.withOpacity(0.2),
+          'secondaryBtnTextColor': const Color(0xFF3E2723),
+          'secondaryBorderColor': Colors.white.withOpacity(0.1),
+          'tipsBgColor': Colors.white.withOpacity(0.2),
+          'switchBgColor': Colors.black.withOpacity(0.05),
+        };
+    }
+  }
+
+  // ==================== 瞬间编辑器页面主题 ====================
+  /// 瞬间编辑器页面主题配置
+  static Map<String, dynamic> getMomentEditorTheme(String theme) {
+    if (theme == themeGardenOfWords) {
+      return {
+        'bgColor': _gardenSurface.withOpacity(0.95),
+        'appBarTextColor': _gardenTextSecondary,
+        'appBarIconColor': _gardenTextSecondary,
+        'inputBg': Colors.white.withOpacity(0.7),
+        'inputTextColor': _gardenTextSecondary,
+        'hintColor': _gardenTextSecondary.withOpacity(0.5),
+        'dropdownBg': Colors.white.withOpacity(0.7),
+        'dropdownIconColor': _gardenAccentDark,
+        'dropdownMenuBg': _gardenSurface,
+        'dropdownItemColor': _gardenTextSecondary,
+        'photoEmptyColor': _gardenAccent.withOpacity(0.1),
+        'photoIconColor': _gardenAccentDark,
+      };
+    } else if (theme == themeTwilight) {
+      return {
+        'bgColor': _twilightSurface,
+        'appBarTextColor': _twilightTextPrimary,
+        'appBarIconColor': _twilightTextPrimary,
+        'inputBg': Colors.black.withOpacity(0.2),
+        'inputTextColor': _twilightTextPrimary,
+        'hintColor': _twilightTextSecondary.withOpacity(0.6),
+        'dropdownBg': Colors.black.withOpacity(0.2),
+        'dropdownIconColor': _twilightAccentRed,
+        'dropdownMenuBg': _twilightBgTop,
+        'dropdownItemColor': _twilightTextPrimary,
+        'photoEmptyColor': Colors.white.withOpacity(0.05),
+        'photoIconColor': _twilightAccentRed,
+      };
+    } else if (theme == themeAfterRain) {
+      return {
+        'bgColor': _afterRainSurface,
+        'appBarTextColor': _afterRainTextSecondary,
+        'appBarIconColor': _afterRainTextSecondary,
+        'inputBg': Colors.white.withOpacity(0.6),
+        'inputTextColor': _afterRainTextSecondary,
+        'hintColor': _afterRainTextSecondary.withOpacity(0.5),
+        'dropdownBg': Colors.white.withOpacity(0.6),
+        'dropdownIconColor': _afterRainAccentBlue,
+        'dropdownMenuBg': _afterRainSurface,
+        'dropdownItemColor': _afterRainTextSecondary,
+        'photoEmptyColor': _afterRainAccentBlue.withOpacity(0.05),
+        'photoIconColor': _afterRainAccentBlue,
+      };
+    }
+    // Default Vintage
+    return {
+      'bgColor': const Color(0xFFF4ECD8),
+      'appBarTextColor': const Color(0xFF5D4037),
+      'appBarIconColor': const Color(0xFF5D4037),
+      'inputBg': Colors.white.withOpacity(0.5),
+      'inputTextColor': const Color(0xFF3E2723),
+      'hintColor': const Color(0xFF3E2723).withOpacity(0.5),
+      'dropdownBg': Colors.white.withOpacity(0.5),
+      'dropdownIconColor': const Color(0xFF8D6E63),
+      'dropdownMenuBg': const Color(0xFFF4ECD8),
+      'dropdownItemColor': const Color(0xFF5D4037),
+      'photoEmptyColor': Colors.white.withOpacity(0.3),
+      'photoIconColor': const Color(0xFF8D6E63),
+    };
+  }
 }
 
 /// 自定义的拟物风转场动画

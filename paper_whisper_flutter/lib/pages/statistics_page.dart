@@ -11,7 +11,7 @@ import '../widgets/vintage_stamp.dart';
 import '../widgets/mood_badge_ring.dart';
 import 'diary_list_page.dart';
 import 'moments_page.dart';
-import 'gallery_page.dart';
+
 
 class StatisticsPage extends StatefulWidget {
   const StatisticsPage({super.key});
@@ -331,10 +331,6 @@ class _StatisticsPageState extends State<StatisticsPage>
           icon: Icons.photo_library,
           value: '${_stats.totalMomentImages}',
           label: '图片',
-          onTap: () => Navigator.push(
-            context,
-            SlidePageRoute(page: const GalleryPage()),
-          ),
         ),
       ],
     );

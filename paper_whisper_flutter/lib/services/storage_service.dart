@@ -223,7 +223,7 @@ class StorageService {
         }
         docDetails = items.join(", ");
       }
-    } catch (e) { print(e); }
+    } catch (e) { debugPrint('StorageService getInternalStorageStats doc error: $e'); }
 
     try {
       final supportDir = await getApplicationSupportDirectory();
@@ -238,7 +238,7 @@ class StorageService {
         }
         supportDetails = items.join(", ");
       }
-    } catch (e) { print(e); }
+    } catch (e) { debugPrint('StorageService getInternalStorageStats support error: $e'); }
     
     return {
       'doc': docSize,
