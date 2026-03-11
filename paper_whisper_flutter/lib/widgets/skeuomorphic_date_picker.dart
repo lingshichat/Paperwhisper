@@ -398,47 +398,50 @@ class _SkeuomorphicDatePickerState extends State<SkeuomorphicDatePicker> {
      return Padding(
         padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16, top: 0),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            SkeuomorphicDialogButton(
-              label: '取消',
-              isPrimary: false,
-              onPressed: () => Navigator.pop(context),
+            Expanded(
+              child: SkeuomorphicDialogButton(
+                label: '取消',
+                isPrimary: false,
+                onPressed: () => Navigator.pop(context),
+              ),
             ),
-
+            const SizedBox(width: 10),
             // Confirm button changes meaning in Year mode
-            SkeuomorphicDialogButton(
-              label: _isYearSelection ? '确定' : '今天',
-              isPrimary: true,
-              onPressed: () {
-                if (_isYearSelection) {
-                  _confirmYearSelection(_yearScrollController.selectedItem);
-                } else {
-                  // Jump to today
-                  final now = DateTime.now();
+            Expanded(
+              child: SkeuomorphicDialogButton(
+                label: _isYearSelection ? '确定' : '今天',
+                isPrimary: true,
+                onPressed: () {
+                  if (_isYearSelection) {
+                    _confirmYearSelection(_yearScrollController.selectedItem);
+                  } else {
+                    // Jump to today
+                    final now = DateTime.now();
 
-                  // Calculate target page for Today
-                  final offset = (now.year - widget.initialDate.year) * 12 + (now.month - widget.initialDate.month);
-                  final targetPage = _initialPage + offset;
+                    // Calculate target page for Today
+                    final offset = (now.year - widget.initialDate.year) * 12 + (now.month - widget.initialDate.month);
+                    final targetPage = _initialPage + offset;
 
-                  setState(() {
-                     _selectedDate = now;
-                     _currentMonth = DateTime(now.year, now.month);
-                     _isYearSelection = false;
+                    setState(() {
+                       _selectedDate = now;
+                       _currentMonth = DateTime(now.year, now.month);
+                       _isYearSelection = false;
 
-                     // If we were in year selection or just need to be safe
-                     if (_pageController.hasClients) {
-                        _pageController.jumpToPage(targetPage);
-                     } else {
-                        _pageController.dispose();
-                        _pageController = PageController(initialPage: targetPage);
-                     }
-                  });
+                       // If we were in year selection or just need to be safe
+                       if (_pageController.hasClients) {
+                          _pageController.jumpToPage(targetPage);
+                       } else {
+                          _pageController.dispose();
+                          _pageController = PageController(initialPage: targetPage);
+                       }
+                    });
 
-                  widget.onDateSelected(_selectedDate);
-                  Navigator.pop(context);
-                }
-              },
+                    widget.onDateSelected(_selectedDate);
+                    Navigator.pop(context);
+                  }
+                },
+              ),
             ),
           ],
         ),
