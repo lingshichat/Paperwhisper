@@ -9,6 +9,7 @@ import 'services/diary_service.dart';
 import 'providers/settings_provider.dart';
 import 'providers/sync_provider.dart';
 import 'config/app_theme.dart';
+import 'config/theme/theme_registry.dart';
 import 'services/storage_service.dart';
 import 'services/hitokoto_service.dart';
 import 'pages/splash_page.dart';
@@ -25,7 +26,10 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
+  // 0. 初始化主题注册中心
+  ThemeRegistry.init();
+
   // 1. 初始化统计服务 (最优先)
   final analytics = AnalyticsService();
   // 不 await，让它后台初始化，反正 trackEvent 会自己处理未初始化的情况
