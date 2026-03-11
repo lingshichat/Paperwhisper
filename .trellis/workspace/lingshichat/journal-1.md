@@ -134,3 +134,60 @@
 ### Status
 
 [OK] **Completed**
+
+
+## Session 3: 主题系统架构重构 - Registry + 类型安全数据类
+
+**Date**: 2026-03-11
+**Task**: 主题系统架构重构 - Registry + 类型安全数据类
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+## 概要
+
+将 `app_theme.dart`（4170 行，35+ 个静态方法 × 7 主题分支 if-else）重构为 Registry + 类型安全数据类架构。
+
+## 变更内容
+
+| 类别 | 说明 |
+|------|------|
+| 核心类 | `ThemeColors`, `PaperWhisperTheme`, `ThemeRegistry` |
+| 组件数据类 | 26 个（`lib/config/theme/components/`），每个含 `toMap()` 向后兼容 |
+| 主题定义 | 7 个文件（`lib/config/theme/themes/`），每个主题一个文件 |
+| Facade | `app_theme.dart` 从 4170 行 → 255 行，35 个方法改为一行委托 |
+| 初始化 | `main.dart` 添加 `ThemeRegistry.init()` |
+| 消费者改动 | 0 个（37 个消费者完全向后兼容） |
+
+## 关键决策
+
+- Flutter 内置类名冲突处理：`AppDatePickerThemeData`, `AppRefreshIndicatorThemeData`, `AppDialogThemeData`
+- 使用 3 个并行 Agent 加速机械性主题值提取
+- `toMap()` 方法保证向后兼容，消费者零改动
+
+## 数据
+
+- **+5501 / -4014 行**，38 个文件变更
+- `flutter analyze` 零新增错误
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `3876cdf` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

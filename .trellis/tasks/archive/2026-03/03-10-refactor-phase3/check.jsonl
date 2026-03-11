@@ -1,0 +1,5 @@
+{"file": ".opencode/commands/trellis/finish-work.md", "reason": "Finish work checklist"}
+{"file": ".opencode/commands/trellis/check-frontend.md", "reason": "Frontend check spec"}
+{"file": "paper_whisper_flutter/lib/config/app_theme.dart", "reason": "Central theme file - verify all themes covered"}
+{"file": ".trellis/spec/refactoring-roadmap.md", "reason": "Validation rules for refactoring"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Quality standards"}
