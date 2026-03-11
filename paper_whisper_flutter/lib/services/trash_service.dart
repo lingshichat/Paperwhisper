@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as path;
-import 'manifest_service.dart';
 
 class TrashService {
   Directory? _trashDir;

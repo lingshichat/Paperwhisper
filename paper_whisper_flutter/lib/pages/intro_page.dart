@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
-import 'dart:math';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
-import '../config/app_theme.dart';
 import '../widgets/visual_effects.dart';
-import '../widgets/skeuomorphic_container.dart';
 import 'diary_list_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

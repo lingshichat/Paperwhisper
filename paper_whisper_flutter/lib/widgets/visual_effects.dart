@@ -1,5 +1,4 @@
 import 'dart:math';
-import 'package:flutter/scheduler.dart';
 import 'package:flutter/material.dart';
 
 // --- Petal Rain Effect ---
@@ -246,30 +245,6 @@ class PetalPainter extends CustomPainter {
   final int frameId;
 
   PetalPainter(this.petals, this.frameId);
-
-  // 按尺寸和颜色缓存已布局的 TextPainter
-  static final Map<String, TextPainter> _layoutCache = {};
-  
-  /// 获取或创建指定尺寸和颜色的 TextPainter（已预布局）
-  TextPainter _getOrCreatePainter(int sizeKey, Color color) {
-    final cacheKey = '$sizeKey-${color.value}';
-    if (!_layoutCache.containsKey(cacheKey)) {
-      final tp = TextPainter(
-        text: TextSpan(
-          text: '✿',
-          style: TextStyle(
-            fontSize: sizeKey.toDouble(),
-            color: color,
-            fontFamily: 'Noto Serif SC',
-          ),
-        ),
-        textDirection: TextDirection.ltr,
-      );
-      tp.layout();
-      _layoutCache[cacheKey] = tp;
-    }
-    return _layoutCache[cacheKey]!;
-  }
 
   @override
   void paint(Canvas canvas, Size size) {

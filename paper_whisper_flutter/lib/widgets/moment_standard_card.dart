@@ -28,13 +28,11 @@ class MomentStandardCard extends StatelessWidget {
     
     final settings = Provider.of<SettingsProvider>(context);
     final theme = settings.currentTheme;
-    final bool isAmber = theme == AppTheme.themeAmberLens;
-    final bool isSeaFlower = theme == AppTheme.themeSeaFlower;
-    final bool isMidnight = theme == AppTheme.themeMidnight;
+    final tc = AppTheme.getMomentStandardCardTheme(theme);
 
-    final Color cardBg = isAmber || isMidnight ? const Color(0xFF1E1E1E) : Colors.white;
-    final Color textColor = isAmber || isMidnight ? const Color(0xFFE0E0E0) : const Color(0xFF3E2723);
-    final Color metaColor = isAmber ? const Color(0xFF9E9E9E) : Colors.grey[400]!;
+    final Color cardBg = tc['cardBg'] as Color;
+    final Color textColor = tc['textColor'] as Color;
+    final Color metaColor = tc['metaColor'] as Color;
 
     return Container(
       width: 400, // Fixed width for export consistency

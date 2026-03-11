@@ -21,10 +21,7 @@ class DiaryProvider with ChangeNotifier {
 
   String _diarySearchQuery = '';
   String _momentsSearchQuery = '';
-  
-  // Legacy support for _searchQuery usage if any internal
-  String get _searchQuery => _diarySearchQuery;
-  
+
 
   List<DiaryEntry> get entries => _entries;
   List<dynamic> get flatEntries => _flatEntries;
@@ -391,9 +388,6 @@ class DiaryProvider with ChangeNotifier {
       // Optionally yes, to clean up, or just remove reference.
       // Let's remove reference for safety.
       if (_bookCoverPaths.containsKey(year)) {
-         final oldPath = _bookCoverPaths[year];
-         // Optional: Delete file if it was in dataDir? 
-         // For now, let's keep it simple (orphaned files are acceptable vs accidental data loss)
       }
       _bookCoverPaths.remove(year);
       await prefs.remove('book_cover_$year');

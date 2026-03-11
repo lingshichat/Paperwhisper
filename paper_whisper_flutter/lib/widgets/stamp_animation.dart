@@ -1,6 +1,5 @@
 
 import 'package:flutter/material.dart';
-import 'dart:math';
 
 class StampAnimation extends StatefulWidget {
   final Widget child;

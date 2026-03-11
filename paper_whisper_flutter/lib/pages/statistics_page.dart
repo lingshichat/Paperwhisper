@@ -6,11 +6,8 @@ import 'package:provider/provider.dart';
 import '../services/statistics_service.dart';
 import '../providers/settings_provider.dart';
 import '../config/app_theme.dart';
-import '../widgets/slide_page_route.dart';
 import '../widgets/vintage_stamp.dart';
 import '../widgets/mood_badge_ring.dart';
-import 'diary_list_page.dart';
-import 'moments_page.dart';
 
 
 class StatisticsPage extends StatefulWidget {

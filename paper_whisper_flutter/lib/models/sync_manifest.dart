@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 class SyncItem {
   final String filename;
   final String versionHash; // Simple: md5 or modified time string

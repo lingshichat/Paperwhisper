@@ -1,9 +1,6 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import '../providers/diary_provider.dart';
 import '../services/hitokoto_service.dart';
 import '../services/update_service.dart';
 import '../widgets/update_dialog.dart';

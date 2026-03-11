@@ -6,7 +6,6 @@ import 'package:image_picker/image_picker.dart';
 import '../providers/diary_provider.dart';
 import '../providers/settings_provider.dart';
 import '../config/app_theme.dart';
-import '../widgets/visual_effects.dart';
 import '../widgets/skeuomorphic_book.dart';
 import '../widgets/smooth_cover_page_route.dart'; // SmoothCoverPageRoute
 import 'book_directory_page.dart';
@@ -32,10 +31,6 @@ class _BookshelfPageState extends State<BookshelfPage> {
   
   @override
   Widget build(BuildContext context) {
-    // Access settings for theme
-    final settings = Provider.of<SettingsProvider>(context);
-    final theme = settings.currentTheme;
-
     return Scaffold(
       extendBodyBehindAppBar: true, 
       appBar: AppBar(

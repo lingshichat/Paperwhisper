@@ -1,10 +1,8 @@
 import 'dart:math' as math;
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/physics.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../config/app_theme.dart';
-import 'skeuomorphic_toast.dart';
 
 /// 刷新状态
 enum BookRefreshStatus {
@@ -182,19 +180,10 @@ class _BookFlipRefreshWidgetState extends State<BookFlipRefreshWidget>
 
   @override
   Widget build(BuildContext context) {
-    final bool isSeaFlower = widget.theme == AppTheme.themeSeaFlower;
-    final bool isMidnight = widget.theme == AppTheme.themeMidnight;
-    final bool isAmber = widget.theme == AppTheme.themeAmberLens;
-    
-    final Color bookColor = isSeaFlower 
-        ? const Color(0xFFAD1457)
-        : (isMidnight ? const Color(0xFF5C6BC0) : (isAmber ? const Color(0xFFFF6F00) : (widget.theme == AppTheme.themeAfterRain ? const Color(0xFF0288D1) : (widget.theme == AppTheme.themeTwilight ? const Color(0xFF352044) : (widget.theme == AppTheme.themeGardenOfWords ? const Color(0xFF2E4A35) : const Color(0xFF6D4C41))))));
-    final Color pageColor = isSeaFlower
-        ? const Color(0xFFFCE4EC)
-        : (isMidnight ? const Color(0xFFE8EAF6) : (isAmber ? const Color(0xFF424242) : (widget.theme == AppTheme.themeAfterRain ? const Color(0xFFF0F8FF) : (widget.theme == AppTheme.themeTwilight ? const Color(0xFF2D1E1B) : (widget.theme == AppTheme.themeGardenOfWords ? const Color(0xFFF0F4F2) : const Color(0xFFFAF8F5))))));
-    final Color textColor = isSeaFlower
-        ? const Color(0xFFAD1457)
-        : (isMidnight ? const Color(0xFFB0BEC5) : (isAmber ? const Color(0xFFFFB74D) : (widget.theme == AppTheme.themeAfterRain ? const Color(0xFF455A64) : (widget.theme == AppTheme.themeTwilight ? const Color(0xFFFF5252) : (widget.theme == AppTheme.themeGardenOfWords ? const Color(0xFF5A6B72) : const Color(0xFF8D6E63))))));
+    final tc = AppTheme.getRefreshIndicatorTheme(widget.theme);
+    final Color bookColor = tc['bookColor'] as Color;
+    final Color pageColor = tc['pageColor'] as Color;
+    final Color textColor = tc['textColor'] as Color;
 
     final double progress = (_dragOffset / _triggerOffset).clamp(0.0, 1.0);
 

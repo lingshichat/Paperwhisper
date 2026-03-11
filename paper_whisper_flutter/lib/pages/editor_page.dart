@@ -10,7 +10,6 @@ import '../models/diary_entry.dart';
 import '../config/app_theme.dart';
 import '../providers/settings_provider.dart';
 import '../widgets/paper_sheet_widget.dart';
-import '../widgets/visual_effects.dart';
 import '../widgets/skeuomorphic_dialog.dart';
 import '../widgets/skeuomorphic_toast.dart';
 import '../services/draft_service.dart'; // Added
@@ -54,7 +53,6 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   late String _currentDateStr;
   
   // 懒加载状态
-  bool _isContentLoaded = false; // 内容是否已加载
   bool _isPreviewMode = false; // 是否处于首屏预览模式
 
   // Draft Logic
@@ -89,16 +87,13 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     _currentDateStr = e?.dateString ?? DateTime.now().toString().split(' ')[0];
     
     // 初始化状态
-    _isContentLoaded = !widget.lazyLoad;
     _isPreviewMode = widget.usePreviewMode;
-    
-    // 注册内容加载回调（复用 onContentReady 回调机制来关闭预览模式）
+
     if (widget.onContentReady != null) {
       widget.onContentReady!(() {
         if (mounted) {
           setState(() {
-            _isContentLoaded = true;
-            _isPreviewMode = false; // 动画结束，切换回完整渲染
+            _isPreviewMode = false;
           });
         }
       });
@@ -473,23 +468,19 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     final theme = Provider.of<SettingsProvider>(context).currentTheme;
     final textColor = AppTheme.getTextColor(theme);
     final secondaryColor = AppTheme.getTextSecondaryColor(theme);
-    final bool isSeaFlower = theme == AppTheme.themeSeaFlower;
-    final bool isAmber = theme == AppTheme.themeAmberLens;
-    
+
     // 700px width constraint handled by PaperSheetWidget
     return WillPopScope(
       onWillPop: _onWillPop,
       child: Scaffold(
-        backgroundColor: Colors.transparent, 
+        backgroundColor: Colors.transparent,
         body: Stack(
           children: [
              // 1. Background
              Container(decoration: AppTheme.getBackground(theme)),
-             
-             // 2. Visual Effects
-             if (isSeaFlower) const PetalRainWidget(),
-             if (theme == AppTheme.themeMidnight) const StarrySkyWidget(),
-             if (theme == AppTheme.themeAfterRain) const AfterRainVisuals(),
+
+             // 2. Visual Effects (由 AppTheme 统一管理)
+             ...AppTheme.getBackgroundOverlays(theme),
 
              if (!_isCaptureMode)
                Column(
@@ -605,7 +596,8 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   Widget _buildAdaptiveContent(Color textColor, Color secondaryColor, String theme) {
       // Threshold for switching to performance mode
       // ~200 lines or ~5000 chars
-      bool usePerformanceMode = _contentController.text.length > 3000; 
+      bool usePerformanceMode = _contentController.text.length > 3000;
+      final tc = AppTheme.getEditorTheme(theme);
 
       if (usePerformanceMode) {
          // --- Performance Mode (Slivers) ---
@@ -631,9 +623,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                              child: Container(
                                width: 60,
                                height: 2,
-                               color: (AppTheme.getEditorTheme(theme).isNotEmpty ? AppTheme.getEditorTheme(theme)['cursorColor'] : (theme == AppTheme.themeGardenOfWords ? const Color(0xFF8BC34A) : (theme == AppTheme.themeSeaFlower
-                                   ? const Color(0xFFEC407A)
-                                   : (theme == AppTheme.themeAfterRain ? const Color(0xFF0288D1) : (theme == AppTheme.themeAmberLens ? const Color(0xFFFF9800) : (theme == AppTheme.themeMidnight ? const Color(0xFF7986cb) : const Color(0xFFC0392B))))))).withValues(alpha: 0.5),
+                               color: (tc['cursorColor'] as Color).withValues(alpha: 0.5),
                              ),
                            ),
                          ),
@@ -671,9 +661,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                           child: Container(
                             width: 60,
                             height: 2,
-                            color: (AppTheme.getEditorTheme(theme).isNotEmpty ? AppTheme.getEditorTheme(theme)['cursorColor'] : (theme == AppTheme.themeGardenOfWords ? const Color(0xFF8BC34A) : (theme == AppTheme.themeSeaFlower
-                                ? const Color(0xFFEC407A)
-                                : (theme == AppTheme.themeAfterRain ? const Color(0xFFD07982) : (theme == AppTheme.themeAmberLens ? const Color(0xFFFF9800) : (theme == AppTheme.themeMidnight ? const Color(0xFF7986cb) : const Color(0xFFC0392B))))))).withValues(alpha: 0.5),
+                            color: (tc['cursorColor'] as Color).withValues(alpha: 0.5),
                           ),
                         ),
                         const SizedBox(height: 30),
@@ -695,28 +683,11 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   }
 
   Widget _buildTopBar(BuildContext context, String theme, Color textColor) {
-    final bool isSeaFlower = theme == AppTheme.themeSeaFlower;
-    final bool isAmber = theme == AppTheme.themeAmberLens;
-    
-    final themeConfig = AppTheme.getEditorTheme(theme);
-    
-    final Color barBg = themeConfig.isNotEmpty
-        ? themeConfig['appBarBg']
-        : (isSeaFlower
-            ? Colors.white.withOpacity(0.2)
-            : (theme == AppTheme.themeMidnight
-                ? const Color(0xFF0D1117).withValues(alpha: 0.9)
-                : (isAmber ? const Color(0xFF1E1E1E).withValues(alpha: 0.9) : const Color(0xFF281815).withValues(alpha: 0.75))));
-        
-    final Color iconColor = themeConfig.isNotEmpty
-        ? themeConfig['iconColor']
-        : (isSeaFlower || theme == AppTheme.themeMidnight || isAmber
-            ? (isSeaFlower ? const Color(0xFF880E4F) : (isAmber ? const Color(0xFFFF9800) : const Color(0xFFc9d1d9)))
-            : const Color(0xFFD7CCC8));
-        
-    final Border? border = isSeaFlower
-        ? Border(bottom: BorderSide(color: Colors.white.withValues(alpha: 0.3)))
-        : (isAmber ? Border(bottom: BorderSide(color: Colors.white.withValues(alpha: 0.1))) : null);
+    final tc = AppTheme.getEditorTheme(theme);
+
+    final Color barBg = tc['appBarBg'];
+    final Color iconColor = tc['iconColor'];
+    final Border? border = tc['appBarBorder'];
 
     Widget barContent = Container(
       // 移除固定高度，改用最小高度约束+padding适配
@@ -725,7 +696,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
       ),
       padding: EdgeInsets.only(
         top: MediaQuery.of(context).padding.top > 0 ? MediaQuery.of(context).padding.top : 24,
-        left: 10, 
+        left: 10,
         right: 20,
         bottom: 8, // 添加底部留白以保证美观
       ),
@@ -735,19 +706,28 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
       ),
       child: Row(
         children: [
-          TextButton.icon(
-             icon: Icon(Icons.arrow_back, color: iconColor, size: 18),
-             label: Text('返回列表', style: TextStyle(color: iconColor)),
-             onPressed: () async {
-                if (await _onWillPop()) {
-                   if (context.mounted) Navigator.pop(context);
-                }
-             }, 
+          GestureDetector(
+            onTap: () async {
+              if (await _onWillPop()) {
+                if (context.mounted) Navigator.pop(context);
+              }
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.arrow_back, color: iconColor, size: 18),
+                  const SizedBox(width: 4),
+                  Text('返回列表', style: TextStyle(color: iconColor)),
+                ],
+              ),
+            ),
           ),
           const Spacer(),
           // Action Buttons
           IconButton(
-            icon: Icon(Icons.share_outlined, color: iconColor), 
+            icon: Icon(Icons.share_outlined, color: iconColor),
             onPressed: _captureAndSave,
             tooltip: '导出为图片',
           ),
@@ -755,28 +735,44 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
 
           if (!_isEditing && widget.entry != null) ...[
              IconButton(
-               icon: Icon(Icons.delete_outline, color: iconColor), 
+               icon: Icon(Icons.delete_outline, color: iconColor),
                onPressed: _delete,
                tooltip: '撕毁',
              ),
              const SizedBox(width: 10),
           ],
-          
+
           if (_isEditing)
-             ElevatedButton.icon(
-               icon: Text('✓', style: TextStyle(
-                 color: isSeaFlower ? const Color(0xFFC2185B) : (isAmber ? Colors.black : const Color(0xFFC0392B)), 
-                 fontWeight: FontWeight.bold
-               )),
-               label: Text('完成', style: TextStyle(
-                 color: isSeaFlower ? const Color(0xFF880E4F) : (isAmber ? Colors.black : const Color(0xFF5D4037)), 
-                 fontWeight: FontWeight.bold
-               )),
-               style: ElevatedButton.styleFrom(
-                 backgroundColor: isSeaFlower ? Colors.white.withValues(alpha: 0.9) : (isAmber ? const Color(0xFFFF9800) : const Color(0xFFF7F1E3)),
-                 elevation: 4,
+             GestureDetector(
+               onTap: _save,
+               child: Container(
+                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                 decoration: BoxDecoration(
+                   color: tc['saveButtonBg'],
+                   borderRadius: BorderRadius.circular(8),
+                   boxShadow: [
+                     BoxShadow(
+                       color: Colors.black.withValues(alpha: 0.2),
+                       offset: const Offset(0, 2),
+                       blurRadius: 4,
+                     ),
+                     BoxShadow(
+                       color: Colors.white.withValues(alpha: 0.3),
+                       offset: const Offset(0, -1),
+                       blurRadius: 0,
+                       spreadRadius: 0,
+                     ),
+                   ],
+                 ),
+                 child: Row(
+                   mainAxisSize: MainAxisSize.min,
+                   children: [
+                     Text('✓', style: TextStyle(color: tc['saveButtonCheckColor'], fontWeight: FontWeight.bold)),
+                     const SizedBox(width: 4),
+                     Text('完成', style: TextStyle(color: tc['saveButtonTextColor'], fontWeight: FontWeight.bold)),
+                   ],
+                 ),
                ),
-               onPressed: _save,
              )
           else
              IconButton(
@@ -787,9 +783,9 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         ],
       ),
     );
-    
-    // Apply blur for Sea Flower
-    if (isSeaFlower) {
+
+    // 部分主题需要模糊效果
+    if (tc['applyBlur'] == true) {
       return ClipRect(
         child: BackdropFilter(
           filter: ui.ImageFilter.blur(sigmaX: 15, sigmaY: 15),
@@ -797,7 +793,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         ),
       );
     }
-    
+
     return barContent;
   }
 
@@ -835,10 +831,9 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   }
 
   Widget _buildHeader(Color textColor, Color secondaryColor) {
-    // Need theme context here for cursor color check
+    // 通过 AppTheme 获取编辑器主题配置
     final theme = Provider.of<SettingsProvider>(context).currentTheme;
-    final themeConfig = AppTheme.getEditorTheme(theme);
-    final bool isSeaFlower = theme == AppTheme.themeSeaFlower; // Re-declare for snippet context or use theme check directly
+    final tc = AppTheme.getEditorTheme(theme);
     return Column(
       children: [
          if (_isEditing)
@@ -846,14 +841,14 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
              controller: _titleController,
              textAlign: TextAlign.center,
              style: GoogleFonts.notoSerifSc(
-                fontSize: 36, 
-                fontWeight: FontWeight.bold, 
-                color: textColor // Use dynamic theme color
+                fontSize: 36,
+                fontWeight: FontWeight.bold,
+                color: textColor
              ),
-             cursorColor: themeConfig.isNotEmpty ? themeConfig['cursorColor'] : (theme == AppTheme.themeGardenOfWords ? const Color(0xFF8BC34A) : (theme == AppTheme.themeMidnight ? const Color(0xFF7986cb) : (theme == AppTheme.themeAfterRain ? const Color(0xFF0288D1) : (theme == AppTheme.themeAmberLens ? const Color(0xFFFF9800) : const Color(0xFFC0392B))))),
+             cursorColor: tc['cursorColor'],
              decoration: InputDecoration(
                hintText: '在此输入标题...',
-               hintStyle: TextStyle(color: themeConfig.isNotEmpty ? themeConfig['iconColor'].withValues(alpha: 0.3) : (theme == AppTheme.themeMidnight ? Colors.white24 : (theme == AppTheme.themeAmberLens ? Colors.grey : Colors.black26))),
+               hintStyle: TextStyle(color: tc['hintColor']),
                border: InputBorder.none,
              ),
            )
@@ -910,16 +905,14 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   Widget _buildContentArea(Color textColor, String theme) {
     const double fontSize = 18.0;
     const double lineHeight = 32.0;
-    
+
     // Strict alignment: height = 32/18 = 1.7777...
     final bool hideLines = Provider.of<SettingsProvider>(context).compatibilityMode;
-    
-    final themeConfig = AppTheme.getEditorTheme(theme);
+
+    final tc = AppTheme.getEditorTheme(theme);
     return CustomPaint(
       foregroundPainter: LinedPaperPainter(
-         lineColor: hideLines ? Colors.transparent : (themeConfig.isNotEmpty ? themeConfig['lineColor'] : (theme == AppTheme.themeMidnight
-            ? Colors.white.withValues(alpha: 0.08)
-            : (theme == AppTheme.themeAfterRain ? const Color(0xFF9999BF).withOpacity(0.2) : (theme == AppTheme.themeAmberLens ? const Color(0x1FFFFFFF) : const Color(0xFF5D4037).withValues(alpha: 0.12))))),
+         lineColor: hideLines ? Colors.transparent : tc['lineColor'],
          lineHeight: lineHeight,
       ),
       child: Container(
@@ -941,14 +934,14 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                  forceStrutHeight: true,
                  leadingDistribution: TextLeadingDistribution.even,
                ),
-               cursorColor: theme == AppTheme.themeGardenOfWords ? const Color(0xFF8BC34A) : (theme == AppTheme.themeMidnight ? const Color(0xFF7986cb) : (theme == AppTheme.themeAfterRain ? const Color(0xFF0288D1) : (theme == AppTheme.themeAmberLens ? const Color(0xFFFF9800) : const Color(0xFFC0392B)))),
-               cursorHeight: 22, 
+               cursorColor: tc['cursorColor'],
+               cursorHeight: 22,
                decoration: const InputDecoration(
                  border: InputBorder.none,
                  contentPadding: EdgeInsets.zero, // Important: keep zero to match Strut
-                 isCollapsed: true, 
-                 isDense: true, 
-                 counterText: "", 
+                 isCollapsed: true,
+                 isDense: true,
+                 counterText: "",
                ),
                maxLines: null,
              )
@@ -972,46 +965,6 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
       ),
     );
   }
-  
-  /// Dedicated export content builder - uses pure Text widget to avoid
-  /// TextField selection handles, IME overlays, and other interactive artifacts.
-  Widget _buildExportContentArea(Color textColor, String theme) {
-    const double fontSize = 18.0;
-    const double lineHeight = 32.0;
-    
-    final bool hideLines = Provider.of<SettingsProvider>(context).compatibilityMode;
-    final themeConfig = AppTheme.getEditorTheme(theme);
-    
-    return CustomPaint(
-      foregroundPainter: LinedPaperPainter(
-         lineColor: hideLines ? Colors.transparent : (themeConfig.isNotEmpty ? themeConfig['lineColor'] : (theme == AppTheme.themeMidnight
-            ? Colors.white.withValues(alpha: 0.08)
-            : (theme == AppTheme.themeAfterRain ? const Color(0xFF9999BF).withOpacity(0.2) : (theme == AppTheme.themeAmberLens ? const Color(0x1FFFFFFF) : const Color(0xFF5D4037).withValues(alpha: 0.12))))),
-         lineHeight: lineHeight,
-      ),
-      child: Container(
-        padding: const EdgeInsets.only(top: 0),
-        constraints: const BoxConstraints(minHeight: 300),
-        // ALWAYS use Text for export (never TextField)
-        child: Text(
-          _isPreviewMode ? _previewController.text : _contentController.text,
-          style: GoogleFonts.notoSerifSc(
-             fontSize: fontSize,
-             color: textColor,
-             height: lineHeight / fontSize,
-          ),
-          strutStyle: StrutStyle(
-            fontFamily: GoogleFonts.notoSerifSc().fontFamily,
-            fontSize: fontSize,
-            height: (lineHeight / fontSize),
-            leading: 0,
-            forceStrutHeight: true,
-            leadingDistribution: TextLeadingDistribution.even,
-          ),
-        ),
-      ),
-    );
-  }
 
   // Helpers
   TextStyle _metaStyle(Color color) => GoogleFonts.courierPrime(fontSize: 14, color: color);
@@ -1025,16 +978,14 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     if (!_isEditing) {
        return Text(_weather.name.toUpperCase(), style: _metaStyle(color));
     }
-    
+
     final settings = Provider.of<SettingsProvider>(context, listen: false);
     final theme = settings.currentTheme;
-    final bool isMidnight = theme == AppTheme.themeMidnight;
-    final bool isSeaFlower = theme == AppTheme.themeSeaFlower;
-    final bool isAmber = theme == AppTheme.themeAmberLens;
+    final tc = AppTheme.getEditorTheme(theme);
 
     // Dropdown Menu Style
-    final Color dropdownBg = isMidnight ? const Color(0xFF2D333B) : (theme == AppTheme.themeTwilight ? const Color(0xFF352044) : (isSeaFlower ? const Color(0xFFFFF0F5) : (theme == AppTheme.themeAfterRain ? const Color(0xFFF0F8FF) : (theme == AppTheme.themeGardenOfWords ? const Color(0xFFF0F4F2) : const Color(0xFFFAF9F6)))));
-    final Color dropdownText = isMidnight ? const Color(0xFFc9d1d9) : (theme == AppTheme.themeTwilight ? const Color(0xFFE4E0EC) : (isSeaFlower ? const Color(0xFF880E4F) : (theme == AppTheme.themeAfterRain ? const Color(0xFF455A64) : (theme == AppTheme.themeGardenOfWords ? const Color(0xFF5A6B72) : const Color(0xFF5D4037)))));
+    final Color dropdownBg = tc['dropdownBg'];
+    final Color dropdownText = tc['dropdownText'];
 
     return DropdownButton<WeatherType>(
        value: _weather,
@@ -1076,11 +1027,10 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
 
     final settings = Provider.of<SettingsProvider>(context, listen: false);
     final theme = settings.currentTheme;
-    final bool isMidnight = theme == AppTheme.themeMidnight;
-    final bool isSeaFlower = theme == AppTheme.themeSeaFlower;
+    final tc = AppTheme.getEditorTheme(theme);
 
-    final Color menuBg = isMidnight ? const Color(0xFF2D333B) : (theme == AppTheme.themeTwilight ? const Color(0xFF352044) : (isSeaFlower ? const Color(0xFFFFF0F5) : (theme == AppTheme.themeAfterRain ? const Color(0xFFF0F8FF) : (theme == AppTheme.themeGardenOfWords ? const Color(0xFFF0F4F2) : const Color(0xFFFAF9F6)))));
-    final Color menuText = isMidnight ? const Color(0xFFc9d1d9) : (theme == AppTheme.themeTwilight ? const Color(0xFFE4E0EC) : (isSeaFlower ? const Color(0xFF880E4F) : (theme == AppTheme.themeAfterRain ? const Color(0xFF455A64) : (theme == AppTheme.themeGardenOfWords ? const Color(0xFF5A6B72) : const Color(0xFF5D4037)))));
+    final Color menuBg = tc['dropdownBg'];
+    final Color menuText = tc['dropdownText'];
 
     return PopupMenuButton<MoodType>(
        initialValue: _mood,
@@ -1113,14 +1063,6 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   Future<void> _captureAndSave() async {
      try {
        // 1. Prepare Data & Keys
-       final String fullText = _isEditing 
-           ? _contentController.text 
-           : (_isPreviewMode ? _previewController.text : _contentController.text); // Should use full content for export!
-       
-       // Note: If in preview mode, _contentController might be full text (if we didn't clear it). 
-       // But _previewController is truncated. 
-       // We should ALWAYS use _contentController.text for export unless it's empty/sync issue.
-       // Actually `_contentController` holds the full text. `_previewController` is just for display.
        final String textToExport = _contentController.text;
        
        final List<String> lines = textToExport.split('\n');
@@ -1252,7 +1194,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
       final text = _isPreviewMode ? _previewController.text : _contentController.text;
       final lines = text.split('\n');
       if (lines.isEmpty) lines.add('');
-      
+
       const double fontSize = 18.0;
       const double lineHeight = 32.0;
 
@@ -1262,18 +1204,17 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         color: textColor,
       );
 
+      final tc = AppTheme.getEditorTheme(theme);
+
       return SliverList(
         delegate: SliverChildBuilderDelegate(
           (context, index) {
             final line = lines[index];
             final bool hideLines = Provider.of<SettingsProvider>(context).compatibilityMode;
-            
-            final themeConfig = AppTheme.getEditorTheme(theme);
+
             return CustomPaint(
               foregroundPainter: LinedPaperPainter(
-                 lineColor: hideLines ? Colors.transparent : (themeConfig.isNotEmpty ? themeConfig['lineColor'] : (theme == AppTheme.themeMidnight
-                    ? Colors.white.withValues(alpha: 0.08)
-                    : (theme == AppTheme.themeAfterRain ? const Color(0xFF9999BF).withOpacity(0.2) : (theme == AppTheme.themeAmberLens ? const Color(0x1FFFFFFF) : const Color(0xFF5D4037).withValues(alpha: 0.12))))),
+                 lineColor: hideLines ? Colors.transparent : tc['lineColor'],
                  lineHeight: lineHeight,
               ),
               child: Container(
@@ -1290,7 +1231,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                     });
                   },
                   child: Text(
-                    line.isEmpty ? ' ' : line, 
+                    line.isEmpty ? ' ' : line,
                     style: style,
                     strutStyle: StrutStyle(
                        fontFamily: GoogleFonts.notoSerifSc().fontFamily,
@@ -1313,13 +1254,11 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
      const double fontSize = 18.0;
      const double lineHeight = 32.0;
      final bool hideLines = Provider.of<SettingsProvider>(context).compatibilityMode;
-     
-     final themeConfig = AppTheme.getEditorTheme(theme);
+
+     final tc = AppTheme.getEditorTheme(theme);
      return CustomPaint(
         foregroundPainter: LinedPaperPainter(
-          lineColor: hideLines ? Colors.transparent : (themeConfig.isNotEmpty ? themeConfig['lineColor'] : (theme == AppTheme.themeMidnight
-             ? Colors.white.withValues(alpha: 0.08)
-             : (theme == AppTheme.themeAfterRain ? const Color(0xFF9999BF).withOpacity(0.2) : (theme == AppTheme.themeAmberLens ? const Color(0x1FFFFFFF) : const Color(0xFF5D4037).withValues(alpha: 0.12))))),
+          lineColor: hideLines ? Colors.transparent : tc['lineColor'],
           lineHeight: lineHeight,
         ),
         child: Padding(
@@ -1359,42 +1298,16 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
 
       List<Widget> chunks = [];
       int keyIndex = 0;
-      
-      // Theme colors for manual styling
-      final bool isSeaFlower = theme == AppTheme.themeSeaFlower;
-      final Color paperColor = isSeaFlower 
-          ? Colors.white.withValues(alpha: 0.95) // Opaque for export
-          : AppTheme.getPaperColor(theme);
 
-      // Border Logic (Flat, no shadow for seamless stitching)
-      // We will draw a continuous border: Top has top-border, Body has side-borders, Footer has bottom-border.
-      // Actually, standard Recourse usually just has the paper color. 
-      // Let's keep it simple: Flat color, no border stroke if possible to avoid alignment issues, or ensure border is handled.
-      // Setting a border on each chunk might double the border width at the seam? 
-      // No, Body top/bottom has no border.
-      
-      final Color borderColor;
-      if (isSeaFlower) {
-         borderColor = Colors.pink.withValues(alpha: 0.1);
-      } else if (theme == AppTheme.themeMidnight) {
-         borderColor = const Color(0xFF30363d);
-      } else if (theme == AppTheme.themeAmberLens) {
-         borderColor = const Color(0xFFFF9800);
-      } else if (theme == AppTheme.themeAfterRain) {
-         borderColor = const Color(0x339999BF);
-      } else if (theme == AppTheme.themeTwilight) {
-         borderColor = const Color(0xFFFF5252);
-      } else if (theme == AppTheme.themeGardenOfWords) {
-         borderColor = const Color(0xFF8BC34A);
-      } else {
-         borderColor = const Color(0xFFC0392B); // Red top for default, but sidebar? Default has no sidebar usually?
-         // PaperSheetWidget default theme has top border only.
-      }
-      
+      // 通过 AppTheme 获取导出相关颜色
+      final tc = AppTheme.getEditorTheme(theme);
+      final Color paperColor = tc['exportPaperColor'];
+      final Color borderColor = tc['exportBorderColor'];
+
       // Default theme special case: Top border only.
-      final bool isDefaultTheme = theme != AppTheme.themeSeaFlower && 
-                                  theme != AppTheme.themeMidnight && 
-                                  theme != AppTheme.themeAmberLens && 
+      final bool isDefaultTheme = theme != AppTheme.themeSeaFlower &&
+                                  theme != AppTheme.themeMidnight &&
+                                  theme != AppTheme.themeAmberLens &&
                                   theme != AppTheme.themeAfterRain;
 
       // --- Chunk 1: Header ---
@@ -1407,18 +1320,12 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                decoration: BoxDecoration(
                  color: paperColor,
                  border: Border(top: BorderSide(color: borderColor, width: 8)),
-                 borderRadius: const BorderRadius.vertical(top: Radius.circular(0)), // Flat top for long image look? Or rounded? User said "Top space too much", maybe they want a full-bleed look? Let's keep slight rounding or square. Square is safer for 'Long Image'. Let's go SQUARE for max seamlessness, as standard screenshot.
-                 // Actually, let's stick to standard paper look -> Rounded Top.
-                 // But wait, user complains about "Upper part empty space".
-                 // Let's reduce padding significantly.
+                 borderRadius: const BorderRadius.vertical(top: Radius.circular(0)),
                ),
                // Padding handled inside
                child: Stack(
                  children: [
                     Padding(
-                       // REDUCED PADDING: Top 20 -> 10 or 20? 
-                       // Was 40. Let's try 30.
-                       // User feedback: "Too squeezed". Reverting/Increasing to 60 to match preview feel.
                        padding: const EdgeInsets.only(left: 60, right: 60, top: 60, bottom: 0),
                        child: Column(
                          mainAxisSize: MainAxisSize.min,
@@ -1427,22 +1334,18 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                            if (isDefaultTheme)
                              Container(
                                height: 8,
-                               width: 80, // Center little mark? Or full top? PaperSheet implies full top border.
-                               // PaperSheetWith default: border: Border(top: BorderSide(color: Color(0xFFC0392B), width: 8));
-                               // We can just add a colored Line at the very top.
+                               width: 80,
                                margin: const EdgeInsets.only(bottom: 20),
                                color: const Color(0xFFC0392B),
                              ),
 
                            _buildExportHeader(textColor, secondaryColor),
-                           const SizedBox(height: 20), // Reduced from 30
+                           const SizedBox(height: 20),
                            Center(
                               child: Container(
                                 width: 60,
                                 height: 2,
-                                color: (AppTheme.getEditorTheme(theme).isNotEmpty ? AppTheme.getEditorTheme(theme)['cursorColor'] : (theme == AppTheme.themeSeaFlower
-                                    ? const Color(0xFFEC407A)
-                                    : (theme == AppTheme.themeAfterRain ? const Color(0xFF0288D1) : (theme == AppTheme.themeAmberLens ? const Color(0xFFFF9800) : (theme == AppTheme.themeMidnight ? const Color(0xFF7986cb) : const Color(0xFFC0392B)))))).withValues(alpha: 0.5),
+                                color: (tc['cursorColor'] as Color).withValues(alpha: 0.5),
                               ),
                            ),
                            const SizedBox(height: 30), // Spacing between line and text
@@ -1525,29 +1428,9 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   }
 
   Widget _buildRibbonForExport(String theme) {
-      final bool isSeaFlower = theme == AppTheme.themeSeaFlower;
-      final Color accentColor;
-      if (isSeaFlower) {
-        accentColor = const Color(0xFFEC407A); 
-      } else if (theme == AppTheme.themeMidnight) {
-        accentColor = const Color(0xFF7986cb); 
-      } else if (theme == AppTheme.themeAmberLens) {
-        accentColor = const Color(0xFFFF9800); 
-      } else if (theme == AppTheme.themeAfterRain) {
-        accentColor = const Color(0xFF29B6F6); 
-      } else if (theme == AppTheme.themeGardenOfWords) {
-        accentColor = const Color(0xFF8BC34A);
-      } else {
-        accentColor = const Color(0xFFC0392B); 
-      }
-      
-      // Use the RibbonPainter logic locally or extract?
-      // Since _RibbonPainter is private in paper_sheet_widget.dart, we can't use it directly unless we make it public.
-      // For now, I'll essentially replicate the visual simply using a path or Icon? 
-      // But user wants "SKEUOMORPHIC". 
-      // The easiest way is to use `PaperSheetWidget`'s ribbon? No, it's coupled.
-      // Let's just create a simple ribbon shape here.
-      
+      final tc = AppTheme.getEditorTheme(theme);
+      final Color accentColor = tc['ribbonAccentColor'];
+
       return CustomPaint(
          size: const Size(50, 90),
          painter: _ExportRibbonPainter(color: accentColor),
@@ -1558,13 +1441,11 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
       const double fontSize = 18.0;
       const double lineHeight = 32.0;
       final bool hideLines = Provider.of<SettingsProvider>(context).compatibilityMode;
-      final themeConfig = AppTheme.getEditorTheme(theme);
+      final tc = AppTheme.getEditorTheme(theme);
 
       return CustomPaint(
         foregroundPainter: LinedPaperPainter(
-           lineColor: hideLines ? Colors.transparent : (themeConfig.isNotEmpty ? themeConfig['lineColor'] : (theme == AppTheme.themeMidnight
-              ? Colors.white.withValues(alpha: 0.08)
-              : (theme == AppTheme.themeAfterRain ? const Color(0xFF9999BF).withOpacity(0.2) : (theme == AppTheme.themeAmberLens ? const Color(0x1FFFFFFF) : const Color(0xFF5D4037).withValues(alpha: 0.12))))),
+           lineColor: hideLines ? Colors.transparent : tc['lineColor'],
            lineHeight: lineHeight,
         ),
         child: Container(

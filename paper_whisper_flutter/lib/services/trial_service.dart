@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// 管理 7 天尊享试用：默认关闭，仅当用户在赞助页点击「开启」时写入 trial_start。

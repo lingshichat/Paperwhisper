@@ -247,14 +247,20 @@ class SkeuomorphicDialogButton extends StatelessWidget {
     final colors = _getButtonColors(theme);
 
     if (!isPrimary) {
-      return TextButton(
-        onPressed: onPressed,
-        style: TextButton.styleFrom(
-          foregroundColor: colors.secondary,
-        ),
-        child: Text(
-          label,
-          style: GoogleFonts.notoSerifSc(fontWeight: FontWeight.bold),
+      return GestureDetector(
+        onTap: onPressed,
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Center(
+            child: Text(
+              label,
+              style: GoogleFonts.notoSerifSc(
+                fontWeight: FontWeight.bold,
+                color: colors.secondary,
+              ),
+            ),
+          ),
         ),
       );
     }

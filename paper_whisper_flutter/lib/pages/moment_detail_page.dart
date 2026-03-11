@@ -11,7 +11,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../models/moment.dart';
 import '../widgets/postmark_stamp.dart';
-import '../config/app_theme.dart';
 import '../providers/settings_provider.dart';
 import '../widgets/skeuomorphic_toast.dart';
 import '../widgets/export_success_dialog.dart';

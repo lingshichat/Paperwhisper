@@ -5,7 +5,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:gal/gal.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'trial_service.dart';
 
 class PaymentService extends ChangeNotifier {
   static final PaymentService _instance = PaymentService._internal();

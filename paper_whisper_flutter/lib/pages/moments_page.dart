@@ -15,12 +15,10 @@ import '../providers/sync_provider.dart'; // Added
 import '../config/app_theme.dart'; // Added
 import '../widgets/skeuomorphic_toast.dart'; // Added
 import '../widgets/skeuomorphic_dialog.dart'; // Added
-import 'package:flutter_svg/flutter_svg.dart'; // Added
 
 
 import '../providers/diary_provider.dart'; // Added
 import '../widgets/skeuomorphic_search_bar.dart'; // Added
-import '../widgets/visual_effects.dart'; // Added for petal effects
 import '../services/payment_service.dart';
 import '../pages/premium_membership_page.dart';
 import '../widgets/slide_page_route.dart';
@@ -38,7 +36,6 @@ class _MomentsPageState extends State<MomentsPage> {
   final MomentService _momentService = MomentService();
   List<Moment> _allMoments = []; // Cache all
   List<Moment> _filteredMoments = [];
-  bool _isLoading = true;
   Directory? _baseDir;
   DateTime _selectedDate = DateTime.now();
 
@@ -227,11 +224,6 @@ class _MomentsPageState extends State<MomentsPage> {
     
     // 3. Create Moment
     // ...
-    
-    DateTime timestamp = DateTime(
-      _selectedDate.year, _selectedDate.month, _selectedDate.day,
-      DateTime.now().hour, DateTime.now().minute, DateTime.now().second
-    );
 
     Moment newMoment = Moment.create(
       content: content,
@@ -367,15 +359,12 @@ class _MomentsPageState extends State<MomentsPage> {
   }
 
   Future<void> _loadData() async {
-    setState(() => _isLoading = true);
     await _momentService.init();
     final moments = await _momentService.getMoments();
     if (mounted) {
       setState(() {
         _allMoments = moments;
         _baseDir = _momentService.dataDir;
-        _isLoading = false;
-        // No pre-filtering needed
       });
     }
   }
@@ -384,44 +373,24 @@ class _MomentsPageState extends State<MomentsPage> {
   Widget build(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context);
     final theme = settings.currentTheme;
-    final bool isSeaFlower = theme == AppTheme.themeSeaFlower;
-    final bool isMidnight = theme == AppTheme.themeMidnight;
-    final bool isAmber = theme == AppTheme.themeAmberLens;
 
-    // Theme Colors
-    final themeConfig = AppTheme.getMomentsTheme(theme);
-    
-    Color appBarIconColor = themeConfig.isNotEmpty
-        ? themeConfig['appBarIconColor']
-        : (isSeaFlower ? const Color(0xFFD81B60) : (isMidnight || isAmber ? Colors.white70 : const Color(0xFFD7CCC8)));
-    
-    Color appBarTextColor = themeConfig.isNotEmpty
-        ? themeConfig['appBarTextColor']
-        : (isSeaFlower ? const Color(0xFF880E4F) : (isMidnight || isAmber ? Colors.white : const Color(0xFFD7CCC8)));
+    // 主题颜色统一由 AppTheme.getMomentsTheme 管理
+    final tc = AppTheme.getMomentsTheme(theme);
+
+    final Color appBarIconColor = tc['appBarIconColor'];
+    final Color appBarTextColor = tc['appBarTextColor'];
 
     final Color rulerAccent = AppTheme.getAccentColor(theme);
 
     // Ruler Colors Configuration
-    Color? rulerBg = themeConfig['rulerBg'];
-    Color? rulerTextColor = themeConfig['rulerTextColor'];
-    Color? rulerInactiveTextColor = themeConfig['rulerInactiveTextColor'];
-    Color? rulerSubTextColor = themeConfig['rulerSubTextColor'];
-    Color? rulerInactiveSubTextColor = themeConfig['rulerInactiveSubTextColor'];
-    Color? rulerIndicatorColor = themeConfig['rulerIndicatorColor'];
-    Color? rulerShadowColor = themeConfig['rulerShadowColor'];
-    Color? rulerBorderColor = themeConfig['rulerBorderColor'];
-
-    if (isSeaFlower && themeConfig.isEmpty) {
-      // 拟物风：浅白色半透明磨砂质感
-      rulerBg = Colors.white.withOpacity(0.9);
-      rulerTextColor = const Color(0xFF880E4F);
-      rulerInactiveTextColor = const Color(0xFF880E4F).withOpacity(0.4);
-      rulerSubTextColor = const Color(0xFF880E4F);
-      rulerInactiveSubTextColor = const Color(0xFF880E4F).withOpacity(0.4);
-      rulerIndicatorColor = const Color(0xFFF50057);
-      rulerShadowColor = const Color(0x1F880E4F); // 柔和粉色阴影
-      rulerBorderColor = Colors.transparent;
-    }
+    final Color? rulerBg = tc['rulerBg'];
+    final Color? rulerTextColor = tc['rulerTextColor'];
+    final Color? rulerInactiveTextColor = tc['rulerInactiveTextColor'];
+    final Color? rulerSubTextColor = tc['rulerSubTextColor'];
+    final Color? rulerInactiveSubTextColor = tc['rulerInactiveSubTextColor'];
+    final Color? rulerIndicatorColor = tc['rulerIndicatorColor'];
+    final Color? rulerShadowColor = tc['rulerShadowColor'];
+    final Color? rulerBorderColor = tc['rulerBorderColor'];
     
     // Search Integration
     final diaryProvider = Provider.of<DiaryProvider>(context);
@@ -653,8 +622,7 @@ class _MomentsPageState extends State<MomentsPage> {
                  Container(decoration: AppTheme.getBackground(theme)),
                  
                  // 2. Visual Effects
-                 if (isSeaFlower) const PetalRainWidget(),
-                 if (isMidnight) const StarrySkyWidget(),
+                 ...AppTheme.getBackgroundOverlays(theme),
                  
                  // 3. Main Layout
                  Row(
@@ -726,7 +694,7 @@ class _MomentsPageState extends State<MomentsPage> {
           extendBodyBehindAppBar: true, 
           backgroundColor: Colors.transparent,
           resizeToAvoidBottomInset: false,
-          drawerScrimColor: (isSeaFlower || theme == AppTheme.themeAfterRain) ? Colors.transparent : Colors.black54, // 统一遮罩逻辑
+          drawerScrimColor: tc['drawerScrimColor'], // 统一遮罩逻辑
           drawer: const Drawer(
              width: 300,
              elevation: 0,
@@ -734,15 +702,7 @@ class _MomentsPageState extends State<MomentsPage> {
              child: SidebarWidget(),
           ),
           appBar: AppBar(
-            backgroundColor: (isSeaFlower || theme == AppTheme.themeAfterRain) 
-                ? (isSeaFlower 
-                    ? const Color(0xFFFCE4EC).withOpacity(0.8) 
-                    : const Color(0xFFF0F8FF).withOpacity(0.6)) // AfterRain
-                : (theme == AppTheme.themeGardenOfWords 
-                    ? const Color(0xFF263238).withOpacity(0.8) // Dark Glass for Garden
-                    : (theme == AppTheme.themeTwilight 
-                        ? const Color(0xFF352044).withValues(alpha: 0.8) 
-                        : const Color(0xFF1E1E1E).withOpacity(0.5))), 
+            backgroundColor: tc['appBarBg'], 
             elevation: 0,
             leading: Builder(
               builder: (context) {
@@ -795,8 +755,7 @@ class _MomentsPageState extends State<MomentsPage> {
                   ),
                   
                   // 0.5. Visual Effects
-                  if (isSeaFlower) Positioned.fill(child: const PetalRainWidget()),
-                  if (isMidnight) Positioned.fill(child: const StarrySkyWidget()),
+                  ...AppTheme.getBackgroundOverlays(theme),
 
                   // 1. Main Content
                   // Use AnimatedPositioned for smooth resizing content area
@@ -877,9 +836,12 @@ class _MomentsPageState extends State<MomentsPage> {
               style: GoogleFonts.notoSerifSc(color: Colors.white, fontSize: 13),
             ),
           ),
-          TextButton(
-            onPressed: () => Navigator.push(context, SlidePageRoute(page: const PremiumMembershipPage())),
-            child: Text('去赞助', style: GoogleFonts.notoSerifSc(color: const Color(0xFFFFE0B2), fontWeight: FontWeight.bold)),
+          GestureDetector(
+            onTap: () => Navigator.push(context, SlidePageRoute(page: const PremiumMembershipPage())),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: Text('去赞助', style: GoogleFonts.notoSerifSc(color: const Color(0xFFFFE0B2), fontWeight: FontWeight.bold, fontSize: 13)),
+            ),
           ),
         ],
       ),
@@ -997,34 +959,10 @@ class _MomentsPageState extends State<MomentsPage> {
   Widget _buildEmptyStateForDate(DateTime date) {
     bool isToday = _isSameDay(date, DateTime.now());
     final theme = Provider.of<SettingsProvider>(context, listen: false).currentTheme;
-    
-    // 简洁拟物化配置 - 仅颜色适配
-    final themeConfig = AppTheme.getMomentsTheme(theme);
-    Color iconColor;
-    Color textColor;
-    
-    if (themeConfig.isNotEmpty) {
-        iconColor = AppTheme.getAccentColor(theme);
-        textColor = AppTheme.getTextSecondaryColor(theme);
-    } else {
-        switch (theme) {
-          case AppTheme.themeMidnight:
-            iconColor = const Color(0xFF7986cb);
-            textColor = const Color(0xFFc9d1d9);
-            break;
-          case AppTheme.themeSeaFlower:
-            iconColor = const Color(0xFFF50057);
-            textColor = const Color(0xFF880E4F);
-            break;
-          case AppTheme.themeAmberLens:
-            iconColor = const Color(0xFFFF9800);
-            textColor = const Color(0xFFE0E0E0);
-            break;
-          default: // Vintage
-            iconColor = const Color(0xFFD7CCC8).withValues(alpha: 0.5);
-            textColor = const Color(0xFFD7CCC8).withValues(alpha: 0.8);
-        }
-    }
+
+    // 简洁拟物化配置 - 仅颜色适配，统一由 AppTheme 管理
+    final Color iconColor = AppTheme.getAccentColor(theme);
+    final Color textColor = AppTheme.getTextSecondaryColor(theme);
 
     return Center(
       child: Column(

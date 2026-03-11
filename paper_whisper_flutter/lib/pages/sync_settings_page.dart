@@ -9,7 +9,6 @@ import '../providers/settings_provider.dart';
 import '../providers/sync_provider.dart';
 import '../services/payment_service.dart';
 import '../widgets/skeuomorphic_toast.dart';
-import '../widgets/visual_effects.dart';
 import 'premium_membership_page.dart';
 import '../widgets/slide_page_route.dart';
 
@@ -166,8 +165,6 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
     final provider = Provider.of<SyncProvider>(context);
     final canUse = Provider.of<PaymentService>(context, listen: true).canUseProFeatures;
     final theme = settings.currentTheme;
-    final bool isSeaFlower = theme == AppTheme.themeSeaFlower;
-    final bool isMidnight = theme == AppTheme.themeMidnight;
 
     // 统一配置获取
     final themeConfig = AppTheme.getSettingsTheme(theme);
@@ -175,7 +172,6 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
     
     final Color titleColor = tc['titleColor'];
     final Color textColor = tc['textColor'];
-    final Color hintColor = textColor.withOpacity(0.5);
 
     return Stack(
       children: [
@@ -185,8 +181,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
         ),
         
         // 2. Visual Effects
-        if (isSeaFlower) Positioned.fill(child: const PetalRainWidget()),
-        if (isMidnight) Positioned.fill(child: const StarrySkyWidget()),
+        ...AppTheme.getBackgroundOverlays(theme),
         
         // 3. 内容
         Scaffold(
@@ -218,7 +213,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // 协议选择器 (拟物化滑块)
-                  _buildSlidingSwitch(provider, tc, isMidnight),
+                  _buildSlidingSwitch(provider, tc),
 
                   if (provider.config.syncType == SyncType.webdav) ...[
                     _buildSectionTitle('WebDAV 服务器配置', textColor),
@@ -561,11 +556,13 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
     );
   }
 
-  Widget _buildSlidingSwitch(SyncProvider provider, Map<String, dynamic> tc, bool isMidnight) {
+  Widget _buildSlidingSwitch(SyncProvider provider, Map<String, dynamic> tc) {
     final trackColor = tc['switchTrackColor'] as Color;
     final thumbColor = tc['switchThumbColor'] as Color;
     final activeTextColor = tc['switchActiveText'] as Color;
     final inactiveTextColor = tc['switchInactiveText'] as Color;
+    final double slidingSwitchShadowOpacity = tc['slidingSwitchShadowOpacity'] as double;
+    final double thumbShadowOpacity = tc['thumbShadowOpacity'] as double;
 
     final isWebDav = provider.config.syncType == SyncType.webdav;
 
@@ -579,7 +576,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
           borderRadius: BorderRadius.circular(22),
           boxShadow: [
              BoxShadow(
-               color: Colors.black.withOpacity(isMidnight ? 0.3 : 0.05),
+               color: Colors.black.withOpacity(slidingSwitchShadowOpacity),
                offset: const Offset(0, 1),
                blurRadius: 1,
              ),
@@ -606,7 +603,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                       borderRadius: BorderRadius.circular(18),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(isMidnight ? 0.3 : 0.1),
+                          color: Colors.black.withOpacity(thumbShadowOpacity),
                           blurRadius: 4,
                           offset: const Offset(0, 2),
                         ),

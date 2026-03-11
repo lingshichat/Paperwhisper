@@ -44,8 +44,7 @@ class SkeuomorphicToast {
         case _ToastType.success: key = 'success'; break;
         case _ToastType.error: key = 'error'; break;
         case _ToastType.warning: key = 'warning'; break;
-        case _ToastType.info:
-        default: key = 'info'; break;
+        case _ToastType.info: key = 'info'; break;
       }
       final colorMap = themeConfig[key];
       return _ToastColors(
@@ -95,7 +94,6 @@ class SkeuomorphicToast {
           text: textColor,
         );
       case _ToastType.info:
-      default:
         return _ToastColors(
           background: bgColor,
           border: const Color(0xFF8D6E63),
@@ -133,7 +131,6 @@ class SkeuomorphicToast {
           text: textColor,
         );
       case _ToastType.info:
-      default:
         return _ToastColors(
           background: bgColor,
           border: const Color(0xFF30363d),
@@ -171,7 +168,6 @@ class SkeuomorphicToast {
           text: textColor,
         );
       case _ToastType.info:
-      default:
         return _ToastColors(
           background: bgColor,
           border: const Color(0xFFC2185B),

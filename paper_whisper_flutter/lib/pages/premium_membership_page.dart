@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../services/payment_service.dart';
 import '../widgets/skeuomorphic_toast.dart';
 import '../widgets/stamp_animation.dart';

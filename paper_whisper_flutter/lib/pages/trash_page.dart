@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:path/path.dart' as path;
@@ -8,7 +7,6 @@ import '../config/app_theme.dart';
 import '../providers/settings_provider.dart';
 import '../widgets/skeuomorphic_dialog.dart';
 import '../widgets/skeuomorphic_toast.dart';
-import '../widgets/visual_effects.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class TrashPage extends StatefulWidget {
@@ -123,8 +121,6 @@ class _TrashPageState extends State<TrashPage> {
   Widget build(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context);
     final theme = settings.currentTheme;
-    final bool isSeaFlower = theme == AppTheme.themeSeaFlower;
-    final bool isMidnight = theme == AppTheme.themeMidnight;
 
     // 统一从 AppTheme 获取回收站页面配色
     final tc = AppTheme.getTrashPageTheme(theme);
@@ -137,10 +133,9 @@ class _TrashPageState extends State<TrashPage> {
         Positioned.fill(
           child: Container(decoration: AppTheme.getBackground(theme)),
         ),
-        
+
         // 2. 视觉特效
-        if (isSeaFlower) Positioned.fill(child: const PetalRainWidget()),
-        if (isMidnight) Positioned.fill(child: const StarrySkyWidget()),
+        ...AppTheme.getBackgroundOverlays(theme),
 
         // 3. 内容
         Scaffold(

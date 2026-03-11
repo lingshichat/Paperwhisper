@@ -9,14 +9,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import '../providers/settings_provider.dart';
 import '../models/diary_entry.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import '../config/app_theme.dart';
-import '../widgets/skeuomorphic_container.dart';
 import '../widgets/sidebar_widget.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../providers/diary_provider.dart';
 import '../providers/sync_provider.dart';
-import '../widgets/visual_effects.dart';
 import '../widgets/book_flip_refresh_widget.dart';
 import '../widgets/dashed_line_painter.dart';
 import '../widgets/skeuomorphic_dialog.dart'; // Updated import
@@ -29,14 +26,11 @@ import 'sync_settings_page.dart';
 import '../widgets/slide_page_route.dart';
 import '../widgets/unfold_page_route.dart';
 import '../widgets/paper_fold_page_route.dart'; // LetterFoldPageRoute
-import '../widgets/book_flip_page_route.dart'; // BookFlipPageRoute
 import '../widgets/smooth_cover_page_route.dart'; // SmoothCoverPageRoute
 import 'dart:io' show Platform;
-import 'package:permission_handler/permission_handler.dart';
 import '../models/update_info.dart';
 import '../services/update_service.dart';
 import '../utils/platform_utils.dart';
-import 'bookshelf_page.dart';
 import 'book_directory_page.dart';
 
 class DiaryListPage extends StatefulWidget {
@@ -50,7 +44,6 @@ class DiaryListPage extends StatefulWidget {
 }
 
 class _DiaryListPageState extends State<DiaryListPage> with WidgetsBindingObserver {
-  String _searchQuery = '';
   bool _isSearching = false;
   
   // Filter and Navigation
@@ -261,14 +254,9 @@ class _DiaryListPageState extends State<DiaryListPage> with WidgetsBindingObserv
   void _showUnifiedDialog(UpdateInfo info, {required bool isAnnouncement}) {
     final settings = Provider.of<SettingsProvider>(context, listen: false);
     final theme = settings.currentTheme;
-    // Determine secondary text color based on theme
-    final secondaryColor = (theme == AppTheme.themeMidnight) 
-        ? const Color(0xFF8b949e) // Midnight Secondary
-        : (theme == AppTheme.themeSeaFlower 
-            ? const Color(0xFFC2185B) // SeaFlower Secondary
-            : (theme == AppTheme.themeGardenOfWords 
-                ? const Color(0xFF5A6B72) // Garden Secondary
-                : const Color(0xFF8D6E63))); // Vintage/Default Secondary
+    // 从 AppTheme 获取对话框副文本颜色
+    final dlpTheme = AppTheme.getDiaryListPageTheme(theme);
+    final secondaryColor = dlpTheme['updateDialogSecondaryColor'] as Color;
 
     showDialog(
       context: context,
@@ -605,9 +593,7 @@ class _DiaryListPageState extends State<DiaryListPage> with WidgetsBindingObserv
                  Container(decoration: AppTheme.getBackground(theme)),
                  
                  // 2. Visual Effects
-                 if (theme == AppTheme.themeSeaFlower) const PetalRainWidget(),
-                 if (theme == AppTheme.themeMidnight) const StarrySkyWidget(),
-                 if (theme == AppTheme.themeAfterRain) const AfterRainVisuals(),
+                 ...AppTheme.getBackgroundOverlays(theme),
 
                  // 3. Main Layout
                  Row(
@@ -626,15 +612,15 @@ class _DiaryListPageState extends State<DiaryListPage> with WidgetsBindingObserv
           );
         } else {
           // Mobile: Drawer + Content
-          final bool isSeaFlower = theme == AppTheme.themeSeaFlower;
-          
+          final dlpThemeMobile = AppTheme.getDiaryListPageTheme(theme);
+
           return Scaffold(
             backgroundColor: Colors.transparent,
-            drawerScrimColor: (isSeaFlower || theme == AppTheme.themeAfterRain) ? Colors.transparent : Colors.black54, // 海底花海/雨后天空去遮罩，透出背景
+            drawerScrimColor: dlpThemeMobile['drawerScrimColor'] as Color,
             drawer: const Drawer(
               width: 300,
-              elevation: 0, 
-              backgroundColor: Colors.transparent, 
+              elevation: 0,
+              backgroundColor: Colors.transparent,
               child: SidebarWidget(),
             ),
             // Mobile Body
@@ -642,12 +628,10 @@ class _DiaryListPageState extends State<DiaryListPage> with WidgetsBindingObserv
               children: [
                 // 1. Background
                 Container(decoration: AppTheme.getBackground(theme)),
-                
+
                 // 2. Visual Effects
-                if (theme == AppTheme.themeSeaFlower) const PetalRainWidget(),
-                if (theme == AppTheme.themeMidnight) const StarrySkyWidget(),
-                if (theme == AppTheme.themeAfterRain) const AfterRainVisuals(),
-                
+                ...AppTheme.getBackgroundOverlays(theme),
+
                 // 3. Content
                 contentArea,
               ],
@@ -719,8 +703,8 @@ class _DiaryListPageState extends State<DiaryListPage> with WidgetsBindingObserv
            Builder(
              builder: (scaffoldContext) {
                final headerColors = AppTheme.getMobileHeaderColors(theme);
-               final bool isSeaFlower = theme == AppTheme.themeSeaFlower;
-               
+               final dlpThemeHeader = AppTheme.getDiaryListPageTheme(theme);
+
                Widget headerContent = Container(
                      height: 56 + MediaQuery.of(scaffoldContext).padding.top,
                      padding: EdgeInsets.only(top: MediaQuery.of(scaffoldContext).padding.top),
@@ -729,13 +713,7 @@ class _DiaryListPageState extends State<DiaryListPage> with WidgetsBindingObserv
                        border: Border(
                          bottom: BorderSide(color: headerColors['border']!, width: 1),
                        ),
-                       boxShadow: isSeaFlower ? [] : [
-                         BoxShadow(
-                           color: Colors.black.withValues(alpha: 0.1), // Lighter shadow
-                           blurRadius: 4,
-                           offset: const Offset(0, 2),
-                         ),
-                       ],
+                       boxShadow: dlpThemeHeader['headerBoxShadow'] as List<BoxShadow>,
                      ),
                      child: AnimatedSwitcher(
                        duration: const Duration(milliseconds: 300),
@@ -823,8 +801,8 @@ class _DiaryListPageState extends State<DiaryListPage> with WidgetsBindingObserv
                      ),
                    );
 
-               // Apply Blur for Sea Flower
-               if (isSeaFlower) {
+               // Apply Blur for themes that need it
+               if (dlpThemeHeader['headerApplyBlur'] == true) {
                  return ClipRRect(
                    child: BackdropFilter(
                      filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
@@ -910,39 +888,10 @@ class _DiaryListPageState extends State<DiaryListPage> with WidgetsBindingObserv
     }
 
     // 获取主题适配的颜色
-    Color iconColor;
-    Color textColor;
-    Color linkColor;
-    
-    if (theme == AppTheme.themeAfterRain) {
-      iconColor = AppTheme.getTextSecondaryColor(theme).withValues(alpha: 0.6);
-      textColor = AppTheme.getTextSecondaryColor(theme).withValues(alpha: 0.8);
-      linkColor = AppTheme.getAccentColor(theme);
-    } else if (theme == AppTheme.themeGardenOfWords) {
-      iconColor = AppTheme.getTextSecondaryColor(theme).withValues(alpha: 0.6);
-      textColor = AppTheme.getTextSecondaryColor(theme).withValues(alpha: 0.8);
-      linkColor = AppTheme.getAccentColor(theme);
-    } else if (theme == AppTheme.themeSeaFlower) {
-        // 浅色背景，使用深色图标和文字
-        iconColor = const Color(0xFF6D5D5D).withValues(alpha: 0.6);
-        textColor = const Color(0xFF6D5D5D).withValues(alpha: 0.8);
-        linkColor = const Color(0xFFC2185B); // 粉红强调色
-    } else if (theme == AppTheme.themeTwilight) {
-        // Twilight Style
-        iconColor = AppTheme.getAccentColor(theme).withValues(alpha: 0.5);
-        textColor = AppTheme.getTextSecondaryColor(theme).withValues(alpha: 0.8);
-        linkColor = AppTheme.getAccentColor(theme);
-    } else if (theme == AppTheme.themeMidnight || theme == AppTheme.themeAmberLens) {
-        // 深色背景，使用灰色图标和文字
-        iconColor = Colors.grey.shade500.withValues(alpha: 0.7);
-        textColor = Colors.grey.shade400;
-        linkColor = AppTheme.getAccentColor(theme);
-    } else {
-        // 复古纸张
-        iconColor = const Color(0xFFD7CCC8).withValues(alpha: 0.5);
-        textColor = const Color(0xFFD7CCC8).withValues(alpha: 0.8);
-        linkColor = const Color(0xFFFF5252);
-    }
+    final dlpThemeEmpty = AppTheme.getDiaryListPageTheme(theme);
+    final Color iconColor = dlpThemeEmpty['emptyStateIconColor'] as Color;
+    final Color textColor = dlpThemeEmpty['emptyStateTextColor'] as Color;
+    final Color linkColor = dlpThemeEmpty['emptyStateLinkColor'] as Color;
     
     return Center(
       child: Column(
@@ -993,99 +942,6 @@ class _DiaryListPageState extends State<DiaryListPage> with WidgetsBindingObserv
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildWaterfallGrid(BuildContext context, List<DiaryEntry> list, String theme) {
-    // Determine column count based on width
-    // We use LayoutBuilder again for the inner content width
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final width = constraints.maxWidth;
-        int columnCount = 1;
-        if (width > 1100) {
-          columnCount = 3;
-        } else if (width > 700) {
-          columnCount = 2;
-        }
-
-        // Masonry Logic: Distribute items into columns
-        List<List<DiaryEntry>> columns = List.generate(columnCount, (_) => []);
-        for (int i = 0; i < list.length; i++) {
-          columns[i % columnCount].add(list[i]);
-        }
-
-        return SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(40),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              for (int i = 0; i < columnCount; i++)
-                Expanded(
-                  child: Padding(
-                    padding: i < columnCount - 1 
-                        ? const EdgeInsets.only(right: 30) // Column Gap
-                        : EdgeInsets.zero,
-                    child: Column(
-                      children: columns[i].map((entry) {
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 30), // Item Gap
-                          child: _buildDiaryCard(context, entry, theme),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  /// 不带 ScrollView 的瀑布流内容（供 BookFlipRefreshWidget 使用）
-  Widget _buildWaterfallGridContent(BuildContext context, List<DiaryEntry> list, String theme) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final width = constraints.maxWidth;
-        int columnCount = 1;
-        if (width > 1100) {
-          columnCount = 3;
-        } else if (width > 700) {
-          columnCount = 2;
-        }
-
-        List<List<DiaryEntry>> columns = List.generate(columnCount, (_) => []);
-        for (int i = 0; i < list.length; i++) {
-          columns[i % columnCount].add(list[i]);
-        }
-
-        return Padding(
-          padding: const EdgeInsets.all(40),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              for (int i = 0; i < columnCount; i++)
-                Expanded(
-                  child: Padding(
-                    padding: i < columnCount - 1 
-                        ? const EdgeInsets.only(right: 30)
-                        : EdgeInsets.zero,
-                    child: Column(
-                      children: columns[i].map((entry) {
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 30),
-                          child: _buildDiaryCard(context, entry, theme),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        );
-      },
     );
   }
 

@@ -49,8 +49,7 @@ class _LockScreenState extends State<LockScreen> with TickerProviderStateMixin {
   
   // Animations
   late AnimationController _shakeController; // Error shake
-  late Animation<double> _shakeAnimation;
-  
+
   late AnimationController _fingerprintEntryController; // Biometric entry
   late Animation<double> _fingerprintScale;
   late Animation<double> _fingerprintOpacity;
@@ -512,24 +511,31 @@ class _LockScreenState extends State<LockScreen> with TickerProviderStateMixin {
             ),
           ),
           const SizedBox(height: 16),
-          TextButton(
-            onPressed: () => _triggerBiometric(),
-            child: Text("验证身份", style: TextStyle(color: iconColor.withOpacity(0.8))),
+          GestureDetector(
+            onTap: _triggerBiometric,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Text('验证身份', style: TextStyle(color: iconColor.withOpacity(0.8), fontSize: 16)),
+            ),
           ),
           const SizedBox(height: 48), // Increased spacing
-          TextButton(
-            onPressed: () {
+          GestureDetector(
+            onTap: () {
                setState(() {
                  _useBiometric = false;
                });
             },
-            child: Text(
-              "使用密码", 
-              style: TextStyle(
-                color: theme == AppTheme.themeDefault 
-                  ? const Color(0xFFF4ECD8).withOpacity(0.9) 
-                  : AppTheme.getTextColor(theme).withOpacity(0.8)
-              )
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Text(
+                '使用密码',
+                style: TextStyle(
+                  color: theme == AppTheme.themeDefault
+                    ? const Color(0xFFF4ECD8).withOpacity(0.9)
+                    : AppTheme.getTextColor(theme).withOpacity(0.8),
+                  fontSize: 16,
+                ),
+              ),
             ),
           )
        ],
@@ -806,72 +812,6 @@ class _SkeuomorphicKeyState extends State<SkeuomorphicKey> {
             fontWeight: FontWeight.w500,
             color: const Color(0xFF880E4F),
           ),
-        ),
-      ),
-    );
-  }
-  // 4. Dewdrop / Organic Glass Style (Garden of Words)
-  Widget _buildDewdropStyle() {
-    final accent = AppTheme.getAccentColor(AppTheme.themeGardenOfWords);
-    
-    return GestureDetector(
-      onTapDown: _handleTapDown,
-      onTapUp: _handleTapUp,
-      onTapCancel: _handleTapCancel,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        width: 76,
-        height: 76,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          // Glassy reflection + color when pressed
-          color: _isPressed 
-             ? accent.withOpacity(0.4) 
-             : const Color(0xFF1B2B21).withOpacity(0.3),
-          border: Border.all(
-             color: _isPressed ? Colors.white.withOpacity(0.8) : accent.withOpacity(0.3),
-             width: _isPressed ? 2.0 : 1.0,
-          ),
-          boxShadow: [
-             // Drop shadow for depth
-             BoxShadow(color: Colors.black.withOpacity(0.3), offset: const Offset(0, 4), blurRadius: 8),
-             // Inner glow when pressed
-             if (_isPressed) BoxShadow(color: accent, blurRadius: 12, spreadRadius: 0),
-          ]
-        ),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            // Top shine (Dewdrop reflection)
-            Positioned(
-              top: 10,
-              left: 15,
-              child: Container(
-                width: 25,
-                height: 10,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Colors.white.withOpacity(0.3), Colors.transparent],
-                  )
-                ),
-              ),
-            ),
-            
-            Text(
-              widget.label,
-              style: GoogleFonts.notoSerifSc(
-                fontSize: 32,
-                fontWeight: _isPressed ? FontWeight.w700 : FontWeight.w400,
-                color: _isPressed ? Colors.white : accent,
-                shadows: [
-                  Shadow(color: Colors.black.withOpacity(0.3), offset: const Offset(0, 1), blurRadius: 2)
-                ]
-              ),
-            ),
-          ],
         ),
       ),
     );

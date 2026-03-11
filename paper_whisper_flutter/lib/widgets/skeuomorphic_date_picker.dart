@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter/services.dart'; // For HapticFeedback
 import '../config/app_theme.dart';
 import '../providers/settings_provider.dart';
+import 'skeuomorphic_dialog.dart';
 
 class SkeuomorphicDatePicker extends StatefulWidget {
   final DateTime initialDate;
@@ -95,94 +96,17 @@ class _SkeuomorphicDatePickerState extends State<SkeuomorphicDatePicker> {
   @override
   Widget build(BuildContext context) {
     final theme = Provider.of<SettingsProvider>(context).currentTheme;
-    final isSeaFlower = theme == AppTheme.themeSeaFlower;
-    final isMidnight = theme == AppTheme.themeMidnight;
-    final isAmber = theme == AppTheme.themeAmberLens;
+    final tc = AppTheme.getDatePickerTheme(theme);
 
     // Theme Colors
-    Color dialogBg;
-    Color headerBg;
-    Color headerText;
-    Color bodyText;
-    Color accentColor;
-    Color weekDayColor;
-    BoxBorder? border;
-    List<BoxShadow> shadows;
-
-    if (isSeaFlower) {
-      dialogBg = const Color(0xFFFFF0F5);
-      headerBg = const Color(0xFFF8BBD0);
-      headerText = const Color(0xFF880E4F);
-      bodyText = const Color(0xFF880E4F);
-      accentColor = const Color(0xFFF50057);
-      weekDayColor = const Color(0xFFAD1457);
-      border = Border.all(color: Colors.white, width: 2);
-      shadows = AppTheme.cardShadow;
-    } else if (isMidnight) {
-      dialogBg = const Color(0xFF161b22);
-      headerBg = const Color(0xFF0D1117);
-      headerText = const Color(0xFFe6edf3);
-      bodyText = const Color(0xFFc9d1d9);
-      accentColor = const Color(0xFF7986cb);
-      weekDayColor = const Color(0xFF8b949e);
-      border = Border.all(color: const Color(0xFF30363d));
-      shadows = [
-         BoxShadow(color: Colors.black.withValues(alpha: 0.5), blurRadius: 20, offset: const Offset(0, 10))
-      ];
-    } else if (isAmber) {
-      dialogBg = const Color(0xFF1E1E1E);
-      headerBg = Colors.black;
-      headerText = const Color(0xFFE0E0E0);
-      bodyText = const Color(0xFFBDBDBD);
-      accentColor = const Color(0xFFFF9800);
-      weekDayColor = const Color(0xFFFB8C00);
-      border = Border.all(color: const Color(0xFFFF9800), width: 1);
-      shadows = [
-      ];
-    } else if (theme == AppTheme.themeAfterRain) {
-      dialogBg = const Color(0xFFF0F8FF); // Alice Blue
-      headerBg = const Color(0xFFB3E5FC); // Lighter Blue
-      headerText = const Color(0xFF455A64);
-      bodyText = const Color(0xFF455A64);
-      accentColor = const Color(0xFF0288D1); // Deep Blue Accent
-      weekDayColor = const Color(0xFF0277BD);
-      border = Border.all(color: Colors.white, width: 2);
-      shadows = [
-         BoxShadow(color: const Color(0xFF81D4FA).withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 4))
-      ];
-    } else if (theme == AppTheme.themeTwilight) {
-      dialogBg = const Color(0xFF352044);
-      headerBg = const Color(0xFF2E1A3C);
-      headerText = const Color(0xFFEF5350);
-      bodyText = const Color(0xFFB39DDB);
-      accentColor = const Color(0xFFEF5350);
-      weekDayColor = const Color(0xFF90CAF9);
-      border = Border.all(color: const Color(0xFFEF5350).withOpacity(0.3), width: 1);
-      shadows = [
-         BoxShadow(color: const Color(0xFFEF5350).withValues(alpha: 0.15), blurRadius: 15, offset: const Offset(0, 5))
-      ];
-    } else if (theme == AppTheme.themeGardenOfWords) {
-      dialogBg = const Color(0xFFF0F4F2); // Mist White
-      headerBg = const Color(0xFF2E4A35); // Kotonoha Green
-      headerText = const Color(0xFFF0F4F2); // Mist White
-      bodyText = const Color(0xFF5A6B72); // Rainy Slate
-      accentColor = const Color(0xFF8BC34A); // Fresh Leaf
-      weekDayColor = const Color(0xFF1B3321); // Dark Green
-      border = Border.all(color: const Color(0xFF8BC34A).withValues(alpha: 0.3), width: 1);
-      shadows = [
-         BoxShadow(color: const Color(0xFF8BC34A).withValues(alpha: 0.15), blurRadius: 15, offset: const Offset(0, 5))
-      ];
-    } else {
-      // Vintage / Default
-      dialogBg = const Color(0xFFF4ECD8);
-      headerBg = const Color(0xFF5D4037);
-      headerText = const Color(0xFFF4ECD8);
-      bodyText = const Color(0xFF5D4037);
-      accentColor = const Color(0xFFD32F2F);
-      weekDayColor = const Color(0xFF795548);
-      border = Border.all(color: const Color(0xFF3E2723), width: 1);
-      shadows = AppTheme.cardShadow;
-    }
+    final Color dialogBg = tc['dialogBg'] as Color;
+    final Color headerBg = tc['headerBg'] as Color;
+    final Color headerText = tc['headerText'] as Color;
+    final Color bodyText = tc['bodyText'] as Color;
+    final Color accentColor = tc['accentColor'] as Color;
+    final Color weekDayColor = tc['weekDayColor'] as Color;
+    final BoxBorder? border = tc['border'] as BoxBorder?;
+    final List<BoxShadow> shadows = tc['shadows'] as List<BoxShadow>;
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -476,23 +400,23 @@ class _SkeuomorphicDatePickerState extends State<SkeuomorphicDatePicker> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            TextButton(
+            SkeuomorphicDialogButton(
+              label: '取消',
+              isPrimary: false,
               onPressed: () => Navigator.pop(context),
-              child: Text(
-                '取消',
-                style: TextStyle(color: bodyText.withValues(alpha: 0.7)),
-              ),
             ),
-            
+
             // Confirm button changes meaning in Year mode
-            TextButton(
+            SkeuomorphicDialogButton(
+              label: _isYearSelection ? '确定' : '今天',
+              isPrimary: true,
               onPressed: () {
                 if (_isYearSelection) {
                   _confirmYearSelection(_yearScrollController.selectedItem);
                 } else {
                   // Jump to today
                   final now = DateTime.now();
-                  
+
                   // Calculate target page for Today
                   final offset = (now.year - widget.initialDate.year) * 12 + (now.month - widget.initialDate.month);
                   final targetPage = _initialPage + offset;
@@ -501,7 +425,7 @@ class _SkeuomorphicDatePickerState extends State<SkeuomorphicDatePicker> {
                      _selectedDate = now;
                      _currentMonth = DateTime(now.year, now.month);
                      _isYearSelection = false;
-                     
+
                      // If we were in year selection or just need to be safe
                      if (_pageController.hasClients) {
                         _pageController.jumpToPage(targetPage);
@@ -510,15 +434,11 @@ class _SkeuomorphicDatePickerState extends State<SkeuomorphicDatePicker> {
                         _pageController = PageController(initialPage: targetPage);
                      }
                   });
-                  
+
                   widget.onDateSelected(_selectedDate);
                   Navigator.pop(context);
                 }
               },
-              child: Text(
-                _isYearSelection ? '确定' : '今天',
-                style: TextStyle(color: accentColor, fontWeight: FontWeight.bold),
-              ),
             ),
           ],
         ),

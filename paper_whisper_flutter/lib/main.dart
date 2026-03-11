@@ -2,20 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:ui';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'providers/diary_provider.dart';
 import 'services/diary_service.dart';
 import 'providers/settings_provider.dart';
 import 'providers/sync_provider.dart';
-import 'pages/diary_list_page.dart';
 import 'config/app_theme.dart';
-import 'pages/intro_page.dart';
-import 'pages/moments_page.dart';
 import 'services/storage_service.dart';
 import 'services/hitokoto_service.dart';
-import 'widgets/privacy_agreement_dialog.dart';
 import 'pages/splash_page.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -122,9 +117,6 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
-  bool _privacyChecked = false;
-  bool _privacyAgreed = true;
-  
   @override
   void initState() {
     super.initState();

@@ -11,7 +11,6 @@ import '../pages/statistics_page.dart';
 import '../widgets/slide_page_route.dart';
 import '../providers/settings_provider.dart';
 import '../pages/editor_page.dart';
-import '../pages/trash_page.dart';
 import '../widgets/paper_fold_page_route.dart';
 import '../widgets/skeuomorphic_search_bar.dart';
 import '../providers/diary_provider.dart';

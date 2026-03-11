@@ -5,7 +5,6 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:minio/minio.dart';
-import 'package:minio/models.dart';
 import 'package:path/path.dart' as path;
 import 'cloud_storage_service.dart';
 

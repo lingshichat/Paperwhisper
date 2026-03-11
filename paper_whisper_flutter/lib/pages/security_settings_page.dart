@@ -1,14 +1,13 @@
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
+import '../config/app_theme.dart';
+import '../providers/settings_provider.dart';
 import '../services/auth_service.dart';
 import '../services/payment_service.dart';
-import '../providers/settings_provider.dart';
-import '../widgets/skeuomorphic_toast.dart';
-import '../config/app_theme.dart';
 import '../widgets/lock_screen.dart';
+import '../widgets/skeuomorphic_toast.dart';
 import '../widgets/visual_effects.dart';
 
 class SecuritySettingsPage extends StatefulWidget {
@@ -21,7 +20,6 @@ class SecuritySettingsPage extends StatefulWidget {
 class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
   final AuthService _authService = AuthService();
   bool _isLoading = true;
-  
   bool _isLockEnabled = false;
   bool _isBiometricEnabled = false;
   bool _canUseBio = false;
@@ -36,236 +34,321 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
     final lock = await _authService.isLockEnabled();
     final bio = await _authService.isBiometricEnabled();
     final canBio = await _authService.canCheckBiometrics();
-    
-    if (mounted) {
-      setState(() {
-        _isLockEnabled = lock;
-        _isBiometricEnabled = bio;
-        _canUseBio = canBio;
-        _isLoading = false;
-      });
-    }
+
+    if (!mounted) return;
+    setState(() {
+      _isLockEnabled = lock;
+      _isBiometricEnabled = bio;
+      _canUseBio = canBio;
+      _isLoading = false;
+    });
   }
 
   Future<void> _toggleLock(bool value) async {
     if (value) {
-      // Enable -> Setup Flow (Full Screen)
-      // Navigate to LockScreen in SETUP mode
+      // 启用密码锁时进入设置流程
       await Navigator.of(context).push(
         PageRouteBuilder(
-           pageBuilder: (context, animation, secondaryAnimation) => LockScreen(
-             mode: LockScreenMode.setup,
-             enableBack: true,
-             onUnlocked: () {
-               Navigator.pop(context); // Return from LockScreen
-             },
-           ),
-           transitionsBuilder: (context, animation, secondaryAnimation, child) {
-             return FadeTransition(opacity: animation, child: child);
-           }
-        )
-      );
-      // Refresh state after return (user might have canceled or succeeded)
-      await _loadState();
-      
-    } else {
-      // Disable -> Verify Flow first
-      await Navigator.of(context).push(
-        PageRouteBuilder(
-           pageBuilder: (context, animation, secondaryAnimation) => LockScreen(
-             mode: LockScreenMode.verify,
-             enableBack: true,
-             onUnlocked: () async {
-                // Verified success
-                await _authService.clearLock();
-                if (mounted) Navigator.pop(context); // Pop LockScreen
-             },
-           ),
-           transitionsBuilder: (context, animation, secondaryAnimation, child) {
-             return FadeTransition(opacity: animation, child: child);
-           }
-        )
+          pageBuilder:
+              (context, animation, secondaryAnimation) => LockScreen(
+                mode: LockScreenMode.setup,
+                enableBack: true,
+                onUnlocked: () {
+                  Navigator.pop(context);
+                },
+              ),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+        ),
       );
       await _loadState();
+      return;
     }
+
+    // 关闭密码锁前先验证一次
+    await Navigator.of(context).push(
+      PageRouteBuilder(
+        pageBuilder:
+            (context, animation, secondaryAnimation) => LockScreen(
+              mode: LockScreenMode.verify,
+              enableBack: true,
+              onUnlocked: () async {
+                await _authService.clearLock();
+                if (context.mounted) {
+                  Navigator.pop(context);
+                }
+              },
+            ),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
+    );
+    await _loadState();
   }
 
   Future<void> _toggleBiometric(bool value) async {
     if (!value) {
-      // Disable directly
       await _authService.setBiometricEnabled(false);
       await _loadState();
-    } else {
-      // Enable: Verify Bio first to ensure it works
-      // Push LockScreen? Or just quick check?
-      // Better to check quickly here without full screen if possible,
-      // BUT for consistency, maybe just show the toast and check locally.
-      // Or actually trigger a quick bio check.
-      
-      final success = await _authService.authenticateBiometric();
-      if (success) {
-        await _authService.setBiometricEnabled(true);
-        await _loadState();
-        if (mounted) SkeuomorphicToast.success(context, '生物识别已开启');
-      } else {
-        if (mounted) SkeuomorphicToast.error(context, '验证失败，无法开启');
+      return;
+    }
+
+    final success = await _authService.authenticateBiometric();
+    if (success) {
+      await _authService.setBiometricEnabled(true);
+      await _loadState();
+      if (mounted) {
+        SkeuomorphicToast.success(context, '生物识别已开启');
       }
+      return;
+    }
+
+    if (mounted) {
+      SkeuomorphicToast.error(context, '验证失败，无法开启');
     }
   }
 
   Future<void> _changePin() async {
-    // 1. Verify Old
     await Navigator.of(context).push(
-        PageRouteBuilder(
-           pageBuilder: (context, animation, secondaryAnimation) => LockScreen(
-             mode: LockScreenMode.verify,
-             enableBack: true,
-             onUnlocked: () async {
-                 // Verified old pin, now go to Setup new pin
-                 // We need to replace the current LockScreen(Verify) with LockScreen(Setup)
-                 Navigator.pushReplacement(context, 
-                    PageRouteBuilder(
-                      pageBuilder: (ctx, anim, secAnim) => LockScreen(
-                        mode: LockScreenMode.setup,
-                        enableBack: true, 
-                        onUnlocked: () {
-                           Navigator.pop(ctx); // Done setup
-                        }
-                      ),
-                      transitionsBuilder: (ctx, anim, secAnim, child) => FadeTransition(opacity: anim, child: child)
-                    )
-                 );
-             },
-           ),
-           transitionsBuilder: (context, animation, secondaryAnimation, child) {
-             return FadeTransition(opacity: animation, child: child);
-           }
-        )
-      );
-      await _loadState();
+      PageRouteBuilder(
+        pageBuilder:
+            (context, animation, secondaryAnimation) => LockScreen(
+              mode: LockScreenMode.verify,
+              enableBack: true,
+              onUnlocked: () async {
+                Navigator.pushReplacement(
+                  context,
+                  PageRouteBuilder(
+                    pageBuilder:
+                        (ctx, anim, secAnim) => LockScreen(
+                          mode: LockScreenMode.setup,
+                          enableBack: true,
+                          onUnlocked: () {
+                            Navigator.pop(ctx);
+                          },
+                        ),
+                    transitionsBuilder:
+                        (ctx, anim, secAnim, child) =>
+                            FadeTransition(opacity: anim, child: child),
+                  ),
+                );
+              },
+            ),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
+    );
+    await _loadState();
   }
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider = Provider.of<SettingsProvider>(context);
-    final canUsePro = Provider.of<PaymentService>(context, listen: true).canUseProFeatures;
-    final theme = themeProvider.currentTheme;
-    final bool isSeaFlower = theme == AppTheme.themeSeaFlower;
-    final bool isMidnight = theme == AppTheme.themeMidnight;
-    
-    final textColor = AppTheme.getTextColor(theme);
-    final bgColor = AppTheme.getPaperColor(theme);
-
+    final settingsProvider = Provider.of<SettingsProvider>(context);
+    final canUsePro = Provider.of<PaymentService>(context).canUseProFeatures;
+    final theme = settingsProvider.currentTheme;
     final headerColors = AppTheme.getMobileHeaderColors(theme);
-    
-    // Get Settings Theme Config for overrides (specifically textColor for Vintage theme)
-    final settingsTheme = AppTheme.getSettingsTheme(theme);
-    final tileTextColor = settingsTheme['textColor'] as Color? ?? textColor;
+    final themeConfig = AppTheme.getSettingsTheme(theme);
+    final activeSwitchColor = themeConfig['activeSwitchColor'] as Color;
 
-    Widget content = Scaffold(
+    final content = Scaffold(
       appBar: AppBar(
-        title: Text('密码锁', style: GoogleFonts.notoSerifSc(color: headerColors['titleColor'])),
+        title: Text(
+          '密码锁',
+          style: GoogleFonts.notoSerifSc(
+            color: headerColors['titleColor'] as Color,
+          ),
+        ),
         backgroundColor: headerColors['background'],
         elevation: 0,
         iconTheme: IconThemeData(color: headerColors['iconColor']),
         centerTitle: true,
       ),
       backgroundColor: Colors.transparent,
-      body: _isLoading ? const Center(child: CircularProgressIndicator()) : ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          _buildSkeuomorphicTile(
-            title: '启用安全锁',
-            subtitle: '启动应用时需验证密码',
-            value: _isLockEnabled,
-            onChanged: (v) => _toggleLock(v),
-            theme: theme,
-          ),
-          
-          if (_isLockEnabled && _canUseBio) ...[
-             const SizedBox(height: 16),
-             _buildSkeuomorphicTile(
-               title: '使用生物识别',
-               subtitle: canUsePro ? '解锁更快、更安全' : '赞助后可用',
-               value: _isBiometricEnabled,
-               onChanged: canUsePro ? (v) => _toggleBiometric(v) : null,
-               theme: theme,
-             ),
-          ],
-          
-          if (_isLockEnabled) ...[
-            const SizedBox(height: 32),
-            InkWell(
-              onTap: _changePin,
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-                decoration: BoxDecoration(
-                  color: tileTextColor.withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: tileTextColor.withOpacity(0.1)),
+      body:
+          _isLoading
+              ? Center(
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(activeSwitchColor),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text("修改密码", style: GoogleFonts.notoSerifSc(fontSize: 16, color: tileTextColor)),
-                    Icon(Icons.arrow_forward_ios, size: 16, color: tileTextColor.withOpacity(0.5))
+              )
+              : ListView(
+                padding: const EdgeInsets.all(20),
+                children: [
+                  _buildSecuritySwitchTile(
+                    icon: Icons.lock_outline,
+                    title: '启用安全锁',
+                    subtitle: '启动应用时需验证密码',
+                    value: _isLockEnabled,
+                    onChanged: _toggleLock,
+                    themeConfig: themeConfig,
+                  ),
+                  if (_isLockEnabled && _canUseBio) ...[
+                    const SizedBox(height: 16),
+                    _buildSecuritySwitchTile(
+                      icon: Icons.fingerprint_rounded,
+                      title: '使用生物识别',
+                      subtitle: canUsePro ? '解锁更快、更安全' : '赞助后可用',
+                      value: _isBiometricEnabled,
+                      onChanged: canUsePro ? _toggleBiometric : null,
+                      themeConfig: themeConfig,
+                    ),
                   ],
-                ),
+                  if (_isLockEnabled) ...[
+                    const SizedBox(height: 16),
+                    _buildActionTile(
+                      icon: Icons.password_outlined,
+                      title: '修改密码',
+                      subtitle: '重新设置应用锁密码',
+                      onTap: _changePin,
+                      themeConfig: themeConfig,
+                    ),
+                  ],
+                ],
               ),
-            ),
-          ]
-        ],
-      ),
     );
 
     return Stack(
       children: [
-        // 1. Background
         Positioned.fill(
           child: Container(decoration: AppTheme.getBackground(theme)),
         ),
-        
-        // 2. Visual Effects
-        if (isSeaFlower) Positioned.fill(child: const PetalRainWidget()),
-        if (isMidnight) Positioned.fill(child: const StarrySkyWidget()),
-        
-        // 3. Content
+        if (themeConfig['showPetalRain'] as bool)
+          Positioned.fill(child: const PetalRainWidget()),
+        if (themeConfig['showStarrySky'] as bool)
+          Positioned.fill(child: const StarrySkyWidget()),
         Positioned.fill(child: content),
       ],
     );
   }
-  
-  Widget _buildSkeuomorphicTile({
+
+  Widget _buildSecuritySwitchTile({
+    required IconData icon,
     required String title,
     required String subtitle,
     required bool value,
-    required Function(bool)? onChanged,
-    required String theme,
+    required ValueChanged<bool>? onChanged,
+    required Map<String, dynamic> themeConfig,
   }) {
-    final themeConfig = AppTheme.getSettingsTheme(theme);
-    // Use override text color if available
-    final tileTextColor = themeConfig['textColor'] as Color? ?? AppTheme.getTextColor(theme);
-    final accentColor = AppTheme.getAccentColor(theme);
-    
+    final textColor = themeConfig['textColor'] as Color;
+    final iconColor = themeConfig['iconColor'] as Color? ?? textColor;
+    final activeThumbColor = themeConfig['activeSwitchColor'] as Color;
+    final activeTrackColor = themeConfig['activeTrackColor'] as Color;
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: themeConfig.isNotEmpty
-          ? themeConfig['groupDecoration']
-          : BoxDecoration(
-              color: tileTextColor.withOpacity(0.05),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: tileTextColor.withOpacity(0.15)),
+      decoration: themeConfig['groupDecoration'] as BoxDecoration,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: Row(
+          children: [
+            _buildTileIcon(icon: icon, iconColor: iconColor),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.notoSerifSc(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: textColor,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.notoSerifSc(
+                      fontSize: 12,
+                      color: textColor.withValues(alpha: 0.6),
+                    ),
+                  ),
+                ],
+              ),
             ),
-      child: SwitchListTile(
-        title: Text(title, style: GoogleFonts.notoSerifSc(fontWeight: FontWeight.bold, color: tileTextColor)),
-        subtitle: Text(subtitle, style: GoogleFonts.notoSerifSc(fontSize: 12, color: tileTextColor.withOpacity(0.6))),
-        value: value,
-        onChanged: onChanged,
-        activeColor: accentColor,
-        activeTrackColor: accentColor.withOpacity(0.2),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            const SizedBox(width: 12),
+            Switch(
+              value: value,
+              onChanged: onChanged,
+              activeThumbColor: activeThumbColor,
+              activeTrackColor: activeTrackColor,
+            ),
+          ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildActionTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+    required Map<String, dynamic> themeConfig,
+  }) {
+    final textColor = themeConfig['textColor'] as Color;
+    final iconColor = themeConfig['iconColor'] as Color? ?? textColor;
+
+    return Container(
+      decoration: themeConfig['groupDecoration'] as BoxDecoration,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Row(
+              children: [
+                _buildTileIcon(icon: icon, iconColor: iconColor),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: GoogleFonts.notoSerifSc(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: textColor,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: GoogleFonts.notoSerifSc(
+                          fontSize: 12,
+                          color: textColor.withValues(alpha: 0.6),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16,
+                  color: textColor.withValues(alpha: 0.5),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTileIcon({required IconData icon, required Color iconColor}) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: iconColor.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Icon(icon, size: 22, color: iconColor),
     );
   }
 }

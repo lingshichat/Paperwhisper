@@ -1,10 +1,8 @@
-import 'dart:collection';
 import 'package:flutter/foundation.dart';
 import '../models/diary_entry.dart';
 import '../models/moment.dart';
 import 'diary_service.dart';
 import 'moment_service.dart';
-import 'trash_service.dart';
 
 class DiaryRecord {
   final String title;
@@ -202,10 +200,7 @@ class StatisticsService {
 
   int _calculateContinuousDays(Set<DateTime> dates) {
     if (dates.isEmpty) return 0;
-    
-    final sortedDates = dates.toList()
-      ..sort((a, b) => b.compareTo(a)); // 降序排列
-    
+
     int continuousDays = 0;
     final today = DateTime.now();
     final todayDate = DateTime(today.year, today.month, today.day);

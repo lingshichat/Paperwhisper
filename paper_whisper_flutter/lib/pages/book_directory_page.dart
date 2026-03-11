@@ -4,10 +4,8 @@ import 'package:provider/provider.dart';
 import '../providers/diary_provider.dart';
 import '../providers/settings_provider.dart';
 import '../config/app_theme.dart';
-import '../widgets/visual_effects.dart';
 import '../widgets/skeuomorphic_dialog.dart';
 import '../widgets/smooth_cover_page_route.dart'; // SmoothCoverPageRoute
-import 'diary_list_page.dart';
 import 'bookshelf_page.dart';
 
 class BookDirectoryPage extends StatelessWidget {

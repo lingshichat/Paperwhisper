@@ -24,12 +24,9 @@ class PrivacyAgreementDialog extends StatelessWidget {
     // 获取当前主题颜色用于链接高亮
     final settings = Provider.of<SettingsProvider>(context, listen: false);
     final theme = settings.currentTheme;
-    final isSeaFlower = theme == AppTheme.themeSeaFlower;
-    final isMidnight = theme == AppTheme.themeMidnight;
+    final tc = AppTheme.getPrivacyDialogTheme(theme);
 
-    final linkColor = isSeaFlower
-        ? const Color(0xFFAD1457)
-        : (isMidnight ? const Color(0xFF7986cb) : const Color(0xFF6D4C41));
+    final linkColor = tc['linkColor'] as Color;
 
     return PopScope(
       canPop: false, // 禁止返回键关闭
@@ -50,9 +47,7 @@ class PrivacyAgreementDialog extends StatelessWidget {
                 style: GoogleFonts.notoSerifSc(
                   fontSize: 15,
                   height: 1.6,
-                  color: isSeaFlower
-                      ? const Color(0xFFAD1457)
-                      : (isMidnight ? const Color(0xFFc9d1d9) : const Color(0xFF5D4037)),
+                  color: tc['contentTextColor'] as Color,
                 ),
                 children: [
                   const TextSpan(text: '请您在使用前仔细阅读并同意'),
@@ -78,9 +73,7 @@ class PrivacyAgreementDialog extends StatelessWidget {
               '如您同意以上协议，请点击“同意并继续”开始使用我们的服务。如不同意，很遗憾我们将无法为您提供服务。',
               style: GoogleFonts.notoSerifSc(
                 fontSize: 14,
-                color: isSeaFlower
-                      ? const Color(0xFFAD1457).withOpacity(0.7)
-                      : (isMidnight ? const Color(0xFF8b949e) : const Color(0xFF8D6E63)),
+                color: tc['disclaimerTextColor'] as Color,
               ),
             ),
           ],

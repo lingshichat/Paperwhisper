@@ -2,12 +2,10 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import '../models/sync_manifest.dart';
-import '../models/diary_entry.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path/path.dart' as path;
-import 'package:webdav_client/webdav_client.dart' as webdav;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -799,129 +797,6 @@ class SyncProvider with ChangeNotifier {
     } catch (e) {
       debugPrint("Trash sync failed (non-critical): $e");
     }
-  }
-
-  // ==========================================
-  // 日记同步逻辑 (Txt) - LEGACY
-  // ==========================================
-  Future<void> _syncDiariesLegacy(bool isAuto) async {
-      await _diaryProvider!.service.init();
-      final localDir = _diaryProvider!.service.dataDir;
-      if (localDir == null) throw Exception('本地日记目录不可用');
-
-      final prefs = await SharedPreferences.getInstance();
-      List<String> lastKnownRemoteFiles = prefs.getStringList('last_known_remote_manifest') ?? [];
-
-      if (!isAuto) _showNotification(null, null, body: "正在检查日记列表...");
-      
-      List<RemoteFile> currentRemoteFilesRaw = await _storageService.listFiles(
-        WebDavSyncService.diaryBasePath
-      );
-      
-      List<RemoteFile> currentRemoteFilesList = currentRemoteFilesRaw
-          .where((f) => f.name.endsWith('.txt'))
-          .toList();
-      Map<String, RemoteFile> currentRemoteMap = {
-        for (var f in currentRemoteFilesList) f.name: f
-      };
-      
-      List<FileSystemEntity> localFiles = localDir.listSync();
-      Map<String, File> currentLocalMap = {};
-      for (var f in localFiles) {
-        if (f is File && path.extension(f.path) == '.txt') {
-          currentLocalMap[path.basename(f.path)] = f;
-        }
-      }
-
-      // Cloud Delete -> Local Delete
-      for (var filename in lastKnownRemoteFiles) {
-        if (!currentRemoteMap.containsKey(filename) && currentLocalMap.containsKey(filename)) {
-           await _diaryProvider!.service.deleteEntry(filename);
-           currentLocalMap.remove(filename);
-        }
-      }
-
-      // Local Delete -> Cloud Delete
-      List<String> filesToDeleteRemote = [];
-      for (var filename in lastKnownRemoteFiles) {
-        if (currentRemoteMap.containsKey(filename) && !currentLocalMap.containsKey(filename)) {
-          filesToDeleteRemote.add(filename);
-        }
-      }
-      
-      if (filesToDeleteRemote.isNotEmpty) {
-        if (!isAuto) _showNotification(null, null, body: "正在同步删除...");
-        await _processBatch(filesToDeleteRemote, (filename) async {
-           await _storageService.deleteFile(WebDavSyncService.diaryBasePath + filename);
-        });
-        for (var f in filesToDeleteRemote) currentRemoteMap.remove(f);
-      }
-
-      // Update / Download List
-      List<String> toDownload = [];
-      List<String> toUpload = []; // Existing update
-      
-      for (var filename in currentRemoteMap.keys) {
-        final remote = currentRemoteMap[filename]!;
-        final localFile = currentLocalMap[filename];
-
-        if (localFile == null) {
-          toDownload.add(filename);
-        } else if (remote.lastModified != null) {
-            final remoteTime = remote.lastModified!;
-            final localTime = await localFile.lastModified();
-            if (remoteTime.difference(localTime).inSeconds > 2) {
-               toDownload.add(filename);
-             } else if (localTime.difference(remoteTime).inSeconds > 2) {
-               toUpload.add(filename);
-             }
-        }
-        if (toDownload.contains(filename) || toUpload.contains(filename)) {
-           currentLocalMap.remove(filename);
-        }
-      }
-
-      // New Uploads
-      for (var entry in currentLocalMap.entries) {
-        toUpload.add(entry.key);
-      }
-
-      int totalOps = toDownload.length + toUpload.length;
-      int processed = 0;
-      
-      Future<void> updateProgress(String action, String name) async {
-         processed++;
-         if (!isAuto) _showNotification(processed, totalOps, body: "$action: $name");
-      }
-
-      // Execute Downloads
-      await _processBatch(toDownload, (filename) async {
-          await _storageService.downloadFile(
-            WebDavSyncService.diaryBasePath + filename, 
-            path.join(localDir.path, filename)
-          );
-          await updateProgress("下载", filename);
-      });
-
-      // Execute Uploads
-      await _processBatch(toUpload, (filename) async {
-         // Re-find file object
-         File f = File(path.join(localDir.path, filename));
-         if (await f.exists()) {
-            await _storageService.uploadFile(
-              f.path, 
-              WebDavSyncService.diaryBasePath + filename
-            );
-            await updateProgress("上传", filename);
-         }
-      });
-
-      // Update Snapshot (Local Calculation)
-      Set<String> finalKeys = currentRemoteMap.keys.toSet();
-      finalKeys.removeAll(filesToDeleteRemote);
-      finalKeys.addAll(toUpload); // Add new/updated files
-      
-      await prefs.setStringList('last_known_remote_manifest', finalKeys.toList());
   }
 
   // ==========================================

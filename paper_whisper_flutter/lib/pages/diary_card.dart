@@ -33,19 +33,25 @@ class _DiaryCardState extends State<DiaryCard> {
 
   @override
   Widget build(BuildContext context) {
-    // 海底花海主题判断
-    final bool isSeaFlower = widget.theme == AppTheme.themeSeaFlower;
-    final bool isMidnight = widget.theme == AppTheme.themeMidnight;
-    final bool isAmber = widget.theme == AppTheme.themeAmberLens;
+    // 从 AppTheme 获取完整的主题配色
+    final tc = AppTheme.getDiaryCardTheme(widget.theme);
 
-    // 颜色配置
-    final themeConfig = AppTheme.getDiaryCardTheme(widget.theme);
-    
-    final Color titleColor = themeConfig.isNotEmpty ? themeConfig['titleColor'] : (isSeaFlower ? const Color(0xFF880E4F) : (isMidnight ? const Color(0xFFe6edf3) : (isAmber ? const Color(0xFFE0E0E0) : const Color(0xFF5D4037))));
-    final Color contentColor = themeConfig.isNotEmpty ? themeConfig['contentColor'] : (isSeaFlower ? const Color(0xFFC2185B) : (isMidnight ? const Color(0xFF8b949e) : (isAmber ? const Color(0xFFBDBDBD) : const Color(0xFF5D4037).withValues(alpha: 0.9))));
-    final Color dateColor = themeConfig.isNotEmpty ? themeConfig['dateColor'] : (isSeaFlower ? const Color(0xFFAD1457) : (isMidnight ? const Color(0xFF8b949e) : (isAmber ? const Color(0xFFFF9800) : const Color(0xFF8D6E63))));
-    final Color iconColor = themeConfig.isNotEmpty ? themeConfig['iconColor'] : (isSeaFlower ? const Color(0xFFEC407A) : (isMidnight ? const Color(0xFF7986cb) : (isAmber ? const Color(0xFFFF9800) : const Color(0xFF8D6E63))));
-    final Color dashedLineColor = themeConfig.isNotEmpty ? themeConfig['dashedLineColor'] : (isSeaFlower ? const Color(0x4DC2185B) : (isMidnight ? const Color(0xFF30363d) : (isAmber ? const Color(0x40FF9800) : const Color.fromRGBO(93, 64, 55, 0.15))));
+    final Color titleColor = tc['titleColor'];
+    final Color contentColor = tc['contentColor'];
+    final Color dateColor = tc['dateColor'];
+    final Color iconColor = tc['iconColor'];
+    final Color dashedLineColor = tc['dashedLineColor'];
+    final Color bgColor = tc['bgColor'];
+    final List<BoxShadow> normalShadows = tc['shadows'];
+    final List<BoxShadow> hoverShadows = tc['hoverShadows'];
+    final double borderRadius = tc['borderRadius'];
+
+    // 悬停时的边框处理：部分主题悬停时边框颜色会变化
+    final Color? hoverBorderColor = tc['hoverBorderColor'];
+    final Border? baseBorder = tc['border'];
+    final Border? border = (hoverBorderColor != null && _isHovering)
+        ? Border.all(color: hoverBorderColor)
+        : baseBorder;
 
     Widget cardContent = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -64,7 +70,7 @@ class _DiaryCardState extends State<DiaryCard> {
                   fontSize: 12,
                   height: 1.2, // Ensure clean baseline
                   color: dateColor,
-                  fontWeight: isSeaFlower || isAmber ? FontWeight.w600 : FontWeight.normal,
+                  fontWeight: tc['dateWeight'],
                 ),
               ),
               Row(
@@ -115,151 +121,61 @@ class _DiaryCardState extends State<DiaryCard> {
       ],
     );
 
-    // 通用悬停交互逻辑
-    List<BoxShadow> normalShadows;
-    List<BoxShadow> hoverShadows;
-    Color bgColor;
-    Border? border;
-
-    if (themeConfig.isNotEmpty) {
-      bgColor = themeConfig['bgColor'];
-      normalShadows = themeConfig['shadows'];
-      hoverShadows = themeConfig['hoverShadows'];
-      border = themeConfig['border'];
-    } else if (isSeaFlower) {
-      bgColor = Colors.white.withOpacity(0.35);
-      normalShadows = [
-        const BoxShadow(
-          color: Color.fromRGBO(200, 150, 200, 0.2),
-          offset: Offset(0, 8),
-          blurRadius: 32,
-        )
-      ];
-       hoverShadows = [
-          const BoxShadow(
-           color: Color.fromRGBO(255, 255, 255, 0.6), // White glow
-           offset: Offset(0, 0), // Surrounding glow
-           blurRadius: 20,
-           spreadRadius: 4,
-         )
-       ];
-      border = Border.all(color: Colors.white.withOpacity(0.5));
-    } else if (isMidnight) {
-      bgColor = const Color(0xFF161b22).withOpacity(0.9);
-      normalShadows = [
-        const BoxShadow(
-          color: Color.fromRGBO(0, 0, 0, 0.5),
-          offset: Offset(0, 4),
-          blurRadius: 10,
-        )
-      ];
-      hoverShadows = [
-         const BoxShadow(
-          color: Color(0xFF7986cb), // Indigo glow
-          offset: Offset(0, 0),
-          blurRadius: 15,
-          spreadRadius: 1,
-        ),
-         const BoxShadow(
-          color: Color.fromRGBO(0, 0, 0, 0.8),
-          offset: Offset(0, 10),
-          blurRadius: 25,
-        )
-      ];
-      border = Border.all(color: _isHovering ? const Color(0xFF7986cb) : const Color(0xFF30363d));
-    } else if (isAmber) {
-      bgColor = const Color(0xFF1E1E1E).withOpacity(0.95);
-      normalShadows = [
-        const BoxShadow(color: Colors.black, offset: Offset(0, 4), blurRadius: 8)
-      ];
-      hoverShadows = [
-        const BoxShadow(
-          color: Color(0x66FF9800), // Amber glow
-          offset: Offset(0, 0),
-          blurRadius: 15,
-          spreadRadius: 1,
-        ),
-        const BoxShadow(color: Colors.black, offset: Offset(0, 10), blurRadius: 20)
-      ];
-      border = Border.all(color: _isHovering ? const Color(0xFFFF9800) : const Color(0xFF424242));
-    } else {
-      bgColor = AppTheme.getPaperColor(widget.theme);
-      normalShadows = [
-        const BoxShadow(
-          color: Color.fromRGBO(0, 0, 0, 0.1),
-          offset: Offset(0, 5),
-          blurRadius: 10,
-        )
-      ];
-      hoverShadows = [
-        const BoxShadow(
-          color: Color.fromRGBO(0, 0, 0, 0.15),
-          offset: Offset(0, 10),
-          blurRadius: 20,
-        )
-      ];
-      border = null;
-    }
-
+    // 构建卡片容器
     Widget containerBody;
 
-    // 玻璃拟态逻辑 (SeaFlower 或 Twilight)
-    if ((isSeaFlower && themeConfig.isEmpty) || widget.theme == AppTheme.themeTwilight) {
-       final bool isTwilight = widget.theme == AppTheme.themeTwilight;
-       // 优化：增加背景不透明度，降低模糊强度，减少滚动时的视觉跳变
-       // SeaFlower 使用较高的不透明度，Twilight 使用深色半透明
-       Color glassColor = isTwilight 
-           ? (themeConfig['bgColor'] ?? Colors.black.withOpacity(0.4)) 
-           : Colors.white.withValues(alpha: 0.65);
-           
-       double blurSigma = isTwilight ? 10.0 : 8.0;
+    if (tc['glassEffect'] == true) {
+      // 玻璃拟态逻辑（SeaFlower / Twilight）
+      final Color glassColor = tc['glassColor'];
+      final double blurSigma = tc['blurSigma'];
 
-       containerBody = ClipRRect(
-         borderRadius: BorderRadius.circular(isTwilight ? 12 : 16),
-         child: BackdropFilter(
-           filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
-           child: AnimatedContainer(
-             duration: const Duration(milliseconds: 300),
-             curve: Curves.easeOut,
-             padding: const EdgeInsets.all(25),
-             decoration: BoxDecoration(
-               color: glassColor,
-               borderRadius: BorderRadius.circular(isTwilight ? 12 : 16),
-               border: border,
-               boxShadow: _isHovering ? hoverShadows : normalShadows,
-             ),
-             child: cardContent,
-           ),
-         ),
-       );
-    } else if (isMidnight || isAmber || themeConfig.isNotEmpty) {
-        containerBody = AnimatedContainer(
-             duration: const Duration(milliseconds: 300),
-             curve: Curves.easeOut,
-             padding: const EdgeInsets.all(25),
-             decoration: BoxDecoration(
-               color: bgColor,
-               borderRadius: BorderRadius.circular(6), // Slightly rounded
-               border: border,
-               boxShadow: _isHovering ? hoverShadows : normalShadows,
-             ),
-             child: cardContent,
-        );
-    } else {
-        containerBody = AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-          decoration: BoxDecoration(
-          ),
-          child: SkeuomorphicContainer.paper(
+      containerBody = ClipRRect(
+        borderRadius: BorderRadius.circular(borderRadius),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
             padding: const EdgeInsets.all(25),
-            bgColor: bgColor,
-            shadows: _isHovering ? hoverShadows : normalShadows, 
+            decoration: BoxDecoration(
+              color: glassColor,
+              borderRadius: BorderRadius.circular(borderRadius),
+              border: border,
+              boxShadow: _isHovering ? hoverShadows : normalShadows,
+            ),
             child: cardContent,
           ),
-        );
+        ),
+      );
+    } else if (tc['usePaperContainer'] == true) {
+      // 默认主题使用 SkeuomorphicContainer.paper
+      containerBody = AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+        decoration: const BoxDecoration(),
+        child: SkeuomorphicContainer.paper(
+          padding: const EdgeInsets.all(25),
+          bgColor: bgColor,
+          shadows: _isHovering ? hoverShadows : normalShadows,
+          child: cardContent,
+        ),
+      );
+    } else {
+      // 其他主题使用普通 AnimatedContainer
+      containerBody = AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+        padding: const EdgeInsets.all(25),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(borderRadius),
+          border: border,
+          boxShadow: _isHovering ? hoverShadows : normalShadows,
+        ),
+        child: cardContent,
+      );
     }
-    
+
     return GestureDetector(
       onTap: () {
         // 获取卡片位置并触发回调
@@ -282,14 +198,14 @@ class _DiaryCardState extends State<DiaryCard> {
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOut,
           transform: Matrix4.identity()
-            ..translate(0.0, _isHovering ? (isSeaFlower ? -8.0 : -4.0) : 0.0)
-            ..scale((_isHovering && isSeaFlower) ? 1.02 : 1.0),
+            ..translate(0.0, _isHovering ? (tc['hoverTranslateY'] as double) : 0.0)
+            ..scale(_isHovering ? (tc['hoverScale'] as double) : 1.0),
           child: Stack(
             children: [
                containerBody,
 
-               // Starry Sky Watermark
-               if (isMidnight)
+               // Starry Sky Watermark (午夜星尘)
+               if (tc['showStarWatermark'] == true)
                  Positioned(
                     bottom: 15,
                     right: 20,
@@ -301,7 +217,7 @@ class _DiaryCardState extends State<DiaryCard> {
                        builder: (context, value, child) {
                           // Prevent negative values from easeOutBack curve when animating to 0
                           final safeValue = value.clamp(0.0, 1.0);
-                          
+
                           return Transform(
                              transform: Matrix4.identity()
                                 ..translate(0.0, -10.0 * value) // Float up (allow overshoot here for effect)
@@ -310,13 +226,13 @@ class _DiaryCardState extends State<DiaryCard> {
                              child: Opacity(
                                opacity: (0.3 + 0.5 * safeValue).clamp(0.0, 1.0),
                                child: Text(
-                                 '✦',
+                                 '\u2726',
                                  style: GoogleFonts.notoSerifSc(
                                    fontSize: 40,
                                    color: const Color(0xFF7986cb),
                                    shadows: [
                                      BoxShadow(
-                                       color: const Color(0xFF7986cb).withValues(alpha: 0.8 * safeValue), 
+                                       color: const Color(0xFF7986cb).withValues(alpha: 0.8 * safeValue),
                                        blurRadius: max(0, 15 * value) // Ensure non-negative
                                      )
                                    ]
@@ -329,10 +245,10 @@ class _DiaryCardState extends State<DiaryCard> {
                     ),
                  ),
 
-               // Sea Flower Watermark
-               if (isSeaFlower)
+               // Sea Flower Watermark (海底花海)
+               if (tc['showFlowerWatermark'] == true)
                  Positioned(
-                   right: 0, 
+                   right: 0,
                    bottom: 0,
                    child: IgnorePointer(
                      child: TweenAnimationBuilder<double>(
@@ -340,34 +256,9 @@ class _DiaryCardState extends State<DiaryCard> {
                        duration: const Duration(milliseconds: 500),
                        curve: Curves.easeOutCubic,
                        builder: (context, value, child) {
-                          // 插值位置: (-2,-8) -> (8,2)
-                          // Right: -2 -> 8 (delta +10)
-                          // Bottom: -8 -> 2 (delta +10)
-                          
-                          // 我们使用 Transform.translate 移动 Container 内部内容
-                          // 锚点在 Container 右下角(因为父级 Positioned 是 right:0, bottom:0)
-                          
-                          // 初始视觉位置：right: -2, bottom: -8 (相对于 Stack 右下角)
-                          // 我们在 Positioned(right:0, bottom:0) 里面放置一个容器
-                          // 该容器应该偏移到 (-2, -8) 吗? 
-                          // Positioned(right:0, bottom:0) 意味着子组件右下角对齐 Stack 右下角
-                          // 如果我们要初始偏移 (-2, -8)，即向右2, 向下8 (出去了?) 
-                          // Web: right: -2px (overflows slightly), bottom: -8px (overflows)
-                          // Flutter Positioned right: -2 works.
-                          
-                          // 为了简单，我们让 Positioned 始终在 (0,0)，用 Transform 移动
-                          
-                          // 初始状态 (value=0): Translate(2, 8) -> 对应 right=-2, bottom=-8
-                          // 悬停状态 (value=1): Translate(-8, -2) -> 对应 right=8, bottom=2
-                          
                           final double currentRight = _lerp(-2.0, 8.0, value);
                           final double currentBottom = _lerp(-8.0, 2.0, value);
 
-                          // Positioned(right: 0, bottom: 0)
-                          // Translate(x, y)
-                          // right=N 意味着 x = -N (向左移动N距离)
-                          // bottom=M 意味着 y = -M (向上移动M距离)
-                          
                           return Transform.translate(
                              offset: Offset(-currentRight, -currentBottom),
                              child: Transform(
@@ -378,7 +269,7 @@ class _DiaryCardState extends State<DiaryCard> {
                                child: Opacity(
                                  opacity: 0.2 + 0.3 * value,
                                  child: const Text(
-                                   '✿',
+                                   '\u273F',
                                    style: TextStyle(
                                      fontSize: 60,
                                      color: Color(0xFFEC407A),
@@ -425,7 +316,7 @@ class _DiaryCardState extends State<DiaryCard> {
       case MoodType.calm: return Icons.spa;
       case MoodType.sad: return Icons.sentiment_dissatisfied;
       case MoodType.excited: return Icons.sentiment_very_satisfied;
-      case MoodType.tired: return Icons.airline_seat_flat_angled; 
+      case MoodType.tired: return Icons.airline_seat_flat_angled;
     }
   }
 }

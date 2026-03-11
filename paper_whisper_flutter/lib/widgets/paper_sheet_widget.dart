@@ -22,96 +22,15 @@ class PaperSheetWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context);
     final theme = settings.currentTheme;
-    final bool isSeaFlower = theme == AppTheme.themeSeaFlower;
-    
-    // Theme-based colors
-    final Color paperColor = isSeaFlower 
-        ? Colors.white.withValues(alpha: 0.55) // Sea Flower: Glassy white
-        : AppTheme.getPaperColor(theme);
-        
-    final Color accentColor;
-    if (isSeaFlower) {
-      accentColor = const Color(0xFFEC407A); // Pink Ribbon
-    } else if (theme == AppTheme.themeMidnight) {
-      accentColor = const Color(0xFF7986cb); // Indigo Ribbon for Midnight
-    } else if (theme == AppTheme.themeAmberLens) {
-      accentColor = const Color(0xFFFF9800); // Amber Ribbon
-    } else if (theme == AppTheme.themeAfterRain) {
-      accentColor = const Color(0xFF29B6F6); // After Rain Ribbon (Light Blue)
-    } else if (theme == AppTheme.themeTwilight) {
-      accentColor = const Color(0xFFFF5252); // Red Knot
-    } else if (theme == AppTheme.themeGardenOfWords) {
-      accentColor = const Color(0xFF8BC34A); // Fresh Leaf
-    } else {
-      accentColor = const Color(0xFFC0392B); // Default Red Ribbon
-    }
-        
-    final Border? border;
-    if (isSeaFlower) {
-      border = Border.all(color: Colors.white.withValues(alpha: 0.6), width: 1);
-    } else if (theme == AppTheme.themeMidnight) {
-      border = Border.all(color: const Color(0xFF30363d), width: 1); // Subtle dark border
-    } else if (theme == AppTheme.themeAmberLens) {
-      border = Border.all(color: const Color(0xFFFF9800), width: 1); // Amber Border
-    } else if (theme == AppTheme.themeAfterRain) {
-      border = Border.all(color: const Color(0x339999BF), width: 1); // After Rain Border
-    } else if (theme == AppTheme.themeTwilight) {
-      border = Border.all(color: const Color(0xFFFF5252).withOpacity(0.3), width: 1);
-    } else if (theme == AppTheme.themeGardenOfWords) {
-      border = Border.all(color: const Color(0xFF8BC34A).withOpacity(0.3), width: 1);
-    } else {
-      border = const Border(top: BorderSide(color: Color(0xFFC0392B), width: 8)); // Default Red Top
-    }
+    final tc = AppTheme.getPaperSheetTheme(theme);
 
-    final List<BoxShadow> shadows;
-    if (isSeaFlower) {
-      shadows = [
-        const BoxShadow(
-          color: Color.fromRGBO(200, 150, 200, 0.2),
-          offset: Offset(0, 8),
-          blurRadius: 32,
-        )
-      ];
-    } else if (theme == AppTheme.themeMidnight) {
-      shadows = [
-        const BoxShadow(
-          color: Colors.black, // Deep black shadow
-          offset: Offset(0, 4),
-          blurRadius: 20,
-        )
-      ];
-    } else if (theme == AppTheme.themeAmberLens) {
-      shadows = [
-        const BoxShadow(color: Colors.black, offset: Offset(0, 5), blurRadius: 20)
-      ];
-    } else if (theme == AppTheme.themeAfterRain) {
-      shadows = [
-        BoxShadow(
-          color: const Color(0xFF8981AA).withOpacity(0.3),
-          blurRadius: 10,
-          offset: const Offset(0, 4),
-        )
-      ];
-    } else if (theme == AppTheme.themeTwilight) {
-      shadows = [
-        BoxShadow(
-          color: const Color(0xFFEF5350).withOpacity(0.15),
-          blurRadius: 15,
-          offset: const Offset(0, 5),
-        )
-
-      ];
-    } else if (theme == AppTheme.themeGardenOfWords) {
-      shadows = [
-         BoxShadow(
-          color: const Color(0xFF8BC34A).withOpacity(0.15),
-          blurRadius: 15,
-          offset: const Offset(0, 5),
-        )
-      ];
-    } else {
-      shadows = AppTheme.paperShadow;
-    }
+    // 从主题配置中读取样式
+    final Color paperColor = tc['paperColor'] as Color;
+    final Color accentColor = tc['accentColor'] as Color;
+    final BoxBorder border = tc['border'] as BoxBorder;
+    final List<BoxShadow> shadows = tc['shadows'] as List<BoxShadow>;
+    final double borderRadius = tc['borderRadius'] as double;
+    final bool useGlassEffect = tc['useGlassEffect'] as bool;
 
     Widget paperContent = Container(
       width: width,
@@ -119,17 +38,17 @@ class PaperSheetWidget extends StatelessWidget {
       padding: padding,
       decoration: BoxDecoration(
         color: paperColor,
-        borderRadius: BorderRadius.circular(isSeaFlower ? 16 : 2),
+        borderRadius: BorderRadius.circular(borderRadius),
         boxShadow: shadows,
         border: border,
       ),
       child: child,
     );
 
-    // Apply Blur for Sea Flower
-    if (isSeaFlower) {
+    // 毛玻璃效果
+    if (useGlassEffect) {
       paperContent = ClipRRect(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(borderRadius),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: paperContent,
