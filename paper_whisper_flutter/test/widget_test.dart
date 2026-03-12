@@ -1,30 +1,37 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:paper_whisper_flutter/main.dart';
+import 'package:paper_whisper_flutter/models/update_info.dart';
+import 'package:paper_whisper_flutter/widgets/update_dialog.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp(showIntro: false));
+  testWidgets('UpdateDialog renders basic update info', (
+    WidgetTester tester,
+  ) async {
+    final updateInfo = UpdateInfo(
+      latestVersion: '1.2.0',
+      changelog: ['新增应用内下载', '优化下载进度展示'],
+      downloadUrl: {
+        'android': 'https://example.com/app.apk',
+        'windows': 'https://example.com/app.exe',
+      },
+      backupUrl: {
+        'android': 'https://example.com/app-backup.apk',
+        'windows': 'https://example.com/app-backup.exe',
+      },
+    );
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: UpdateDialog(updateInfo: updateInfo, currentVersion: '1.1.0'),
+        ),
+      ),
+    );
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(find.text('发现新版本'), findsOneWidget);
+    expect(find.text('1.1.0 → 1.2.0'), findsOneWidget);
+    expect(find.text('新增应用内下载'), findsOneWidget);
+    expect(find.text('优化下载进度展示'), findsOneWidget);
+    expect(find.text('立即更新'), findsOneWidget);
   });
 }

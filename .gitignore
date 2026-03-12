@@ -28,9 +28,16 @@ config.json
 # IDE
 .vscode/
 .idea/
+.cursor/
 *.swp
 *.swo
 *~
+
+# AI Agent configs
+.agent/
+.agents/
+.claude/
+.opencode/
 
 # OS
 .DS_Store
@@ -61,4 +68,3 @@ paper_whisper_flutter/android/build.gradle.kts
 paper_whisper_flutter/paper_whisper_flutter_windows_1.3.5.zip
 paper_whisper_flutter/paper_whisper_flutter_windows_1.3.6.zip
 paper_whisper_flutter/paper_whisper_flutter_windows_1.3.7.zip
-.cursor/worktrees.json

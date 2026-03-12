@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../config/app_theme.dart';
+import '../models/update_info.dart';
 import '../providers/settings_provider.dart';
 import '../providers/sync_provider.dart';
 import '../services/update_service.dart';
@@ -19,6 +21,7 @@ import '../services/storage_service.dart';
 import 'sync_settings_page.dart';
 import 'security_settings_page.dart';
 import 'premium_membership_page.dart'; // Import Premium Page
+import 'about_page.dart';
 import '../services/payment_service.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -417,9 +420,23 @@ class _SettingsPageState extends State<SettingsPage>
               subtitle: '纸本无言，因你而语',
               textColor: textColor,
               onTap: () {
-                // TODO: Show About Dialog
+                Navigator.push(
+                  context,
+                  SlidePageRoute(page: const AboutPage()),
+                );
               },
             ),
+            if (kDebugMode) ...[
+              _buildDivider(themeConfig),
+              _buildSettingsItem(
+                context: context,
+                icon: Icons.science_outlined,
+                title: '开发测试：更新弹窗',
+                subtitle: '仅调试构建可见，快速验证更新流程',
+                textColor: textColor,
+                onTap: () => _showDebugUpdateTestPanel(context),
+              ),
+            ],
           ],
         ),
         const SizedBox(height: 40),
@@ -781,6 +798,144 @@ class _SettingsPageState extends State<SettingsPage>
         setState(() => _isCheckingUpdate = false);
       }
     }
+  }
+
+  /// 显示开发态更新测试面板
+  Future<void> _showDebugUpdateTestPanel(BuildContext context) async {
+    final updateService = UpdateService();
+    final currentVersion = await updateService.getCurrentVersion();
+    final localInfo =
+        await updateService.getLocalUpdateInfo() ??
+        UpdateInfo(
+          latestVersion: currentVersion,
+          isForceUpdate: false,
+          changelog: const ['开发测试入口：本地更新配置缺失时的回退数据'],
+          downloadUrl: const {
+            'android': 'https://paperwhisper.s3.bitiful.net/Android/latest.apk',
+            'windows': 'https://paperwhisper.s3.bitiful.net/Windows/latest.exe',
+          },
+          backupUrl: const {'android': '', 'windows': ''},
+        );
+
+    if (!context.mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return SkeuomorphicDialog(
+          title: '开发测试：更新弹窗',
+          headerIcon: Icons.science_outlined,
+          content: Text(
+            '选择一个预设测试场景。\n'
+            '本入口仅在 Debug 构建显示，不会进入正式版本。',
+          ),
+          footer: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SkeuomorphicDialogButton(
+                label: '普通更新弹窗',
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                  _openDebugUpdateDialog(
+                    context,
+                    currentVersion: currentVersion,
+                    updateInfo: _copyUpdateInfo(
+                      localInfo,
+                      isForceUpdate: false,
+                      changelog: [...localInfo.changelog, '【开发测试】普通更新弹窗'],
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 10),
+              SkeuomorphicDialogButton(
+                label: '下载失败场景',
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                  _openDebugUpdateDialog(
+                    context,
+                    currentVersion: currentVersion,
+                    updateInfo: _copyUpdateInfo(
+                      localInfo,
+                      isForceUpdate: false,
+                      downloadUrl: _buildDebugFailUrls(localInfo),
+                      changelog: [
+                        ...localInfo.changelog,
+                        '【开发测试】使用无效地址，验证下载失败提示',
+                      ],
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 10),
+              SkeuomorphicDialogButton(
+                label: '强制更新弹窗',
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                  _openDebugUpdateDialog(
+                    context,
+                    currentVersion: currentVersion,
+                    updateInfo: _copyUpdateInfo(
+                      localInfo,
+                      isForceUpdate: true,
+                      changelog: [...localInfo.changelog, '【开发测试】验证强制更新不可关闭'],
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 8),
+              SkeuomorphicDialogButton(
+                label: '取消',
+                isPrimary: false,
+                onPressed: () => Navigator.pop(dialogContext),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// 打开测试用更新弹窗
+  void _openDebugUpdateDialog(
+    BuildContext context, {
+    required String currentVersion,
+    required UpdateInfo updateInfo,
+  }) {
+    UpdateDialog.show(
+      context,
+      updateInfo: updateInfo,
+      currentVersion: currentVersion,
+    );
+  }
+
+  /// 复制更新信息并覆盖测试场景字段
+  UpdateInfo _copyUpdateInfo(
+    UpdateInfo source, {
+    bool? isForceUpdate,
+    Map<String, String>? downloadUrl,
+    Map<String, String>? backupUrl,
+    List<String>? changelog,
+  }) {
+    return UpdateInfo(
+      latestVersion: source.latestVersion,
+      buildNumber: source.buildNumber,
+      releaseDate: source.releaseDate,
+      title: source.title,
+      isForceUpdate: isForceUpdate ?? source.isForceUpdate,
+      changelog: changelog ?? source.changelog,
+      downloadUrl: downloadUrl ?? source.downloadUrl,
+      backupUrl: backupUrl ?? source.backupUrl,
+      minSupportedVersion: source.minSupportedVersion,
+    );
+  }
+
+  /// 构造下载失败测试地址
+  Map<String, String> _buildDebugFailUrls(UpdateInfo source) {
+    final result = <String, String>{...?source.downloadUrl};
+    result['android'] = 'http://127.0.0.1:9/debug-fail.apk';
+    result['windows'] = 'http://127.0.0.1:9/debug-fail.exe';
+    return result;
   }
 
   Future<void> _launchUrl(String url) async {

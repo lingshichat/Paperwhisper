@@ -1,0 +1,63 @@
+# 代码规范化重构计划 (Refactoring Roadmap)
+
+> 记录按 Trellis Spec 规范化 PaperWhisper 项目代码的进度与后续规划。
+
+---
+
+## 📅 当期目标
+
+消除项目中违反代码规范（特别是视觉和架构规范）的实现，重点解决：
+1. `print()` 被错误使用于日志记录。
+2. 基础 Material 等级控件 (`ElevatedButton`等) 未进行拟物化封装。
+3. **严重问题**：分散在各个 Widget 中的硬编码颜色，尤其是 `isSeaFlower ? ... : ...` 嵌套三元运算符判断主题，阻碍了未来新主题的扩展。
+
+---
+
+## 🧹 阶段 1：废弃代码清理与低风险重构（✅ 已完成）
+
+- [x] 删除 PyFlask 时代残留目录 (`legacy_desktop/`, `dist/`, `.venv/` 等)
+- [x] 删除旧版测试数据 (`diary_data/`)
+- [x] 移除已弃用的画廊页面 (`gallery_page.dart`)
+- [x] **日志规范化**：将 `update_service.dart`, `storage_service.dart`, `auth_service.dart` 中的 `print()` 替换为 `debugPrint()`
+
+---
+
+## 🎨 阶段 2：重灾区页面硬编码颜色收敛（✅ 已完成）
+
+- [x] **扩展 AppTheme**: 在 `app_theme.dart` 中新增 `getTrashPageTheme` 和 `getSyncSettingsTheme`，向页面层暴露统一的动态颜色字典。
+- [x] **重写回收站页面** (`trash_page.dart`): 移除了 20+ 处嵌套硬编码颜色，代码量减半，组件纯粹化。
+- [x] **重写同步设置** (`sync_settings_page.dart`): 移除了 50+ 处基于 `isSeaFlower/isMidnight/isTwilight/isGardenOfWords` 的三元条件分支颜色选择器，重构了自定义拟物化滑块与输入框的样式表。
+
+---
+
+## 🛠 阶段 3：其他页面逐步收敛与组件替换（✅ 已完成）
+
+### P0: 全局冗余清理（✅ 已完成）
+- [x] 清理全部 `flutter analyze` warnings（68 处：44 unused imports、7 unused elements、6 unused fields、6 unused variables、4 unreachable defaults、1 duplicate import）
+- [x] `getDialogInputTheme()` 从 if-else 转为 switch 语句，消除 theme boolean 残留
+- [x] `moment_input_widget.dart` 底栏按钮去除 Container+Border 外框，恢复纯图标拟物风格
+
+### P1: 高优页面样式收敛（✅ 已完成）
+- [x] `settings_page.dart`: 已统一由 `AppTheme.getSettingsTheme` 接管，无散落主题判断。
+
+### P2: 独立组件样式收敛（✅ 已完成）
+- [x] `security_settings_page.dart`: 无硬编码主题判断
+- [x] `moment_card.dart`: 无硬编码主题判断
+- [x] `moment_input_widget.dart`（底栏按钮已修复）
+
+### P3: 低风险/边缘组件清理（✅ 已完成）
+- [x] `skeuomorphic_date_picker.dart`: 无硬编码主题判断
+- [x] `paper_sheet_widget.dart`: 无硬编码主题判断
+- [x] `book_flip_refresh_widget.dart`: 无硬编码主题判断
+
+### P4: 控件降级替换（✅ 已完成）
+- [x] 全局无 `ElevatedButton`、`TextButton`、`TextButton.icon` 残留，Material 标准按钮已全部替换为拟物化自定义按钮。
+
+---
+
+## 📌 验收规则
+
+任何人认领推进上述 Phase 3 任务时，必须遵守以下约定：
+1. **不要在 Widget 层判断主题**。所有关于 `isSeaFlower` 的布尔值只能作为 `AppTheme` 内部判断，不能污染 UI 层。
+2. 修改完成后，必须在本地运行并切换**全部 7 种主题**，确保没有发生色彩断层或文字看不清的视觉回归。
+3. 提交前确保能通过 `flutter analyze` 无新引入的错误。

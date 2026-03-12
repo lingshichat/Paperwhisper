@@ -1,0 +1,42 @@
+{
+  "id": "about-page",
+  "name": "about-page",
+  "title": "关于纸语页面",
+  "description": "",
+  "status": "pending",
+  "dev_type": null,
+  "scope": "lib/pages/about_page.dart,lib/pages/settings_page.dart",
+  "priority": "P2",
+  "creator": "lingshichat",
+  "assignee": "lingshichat",
+  "createdAt": "2026-03-11",
+  "completedAt": null,
+  "branch": "feature/about-page",
+  "current_phase": 2,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "implement"
+    },
+    {
+      "phase": 2,
+      "action": "check"
+    },
+    {
+      "phase": 3,
+      "action": "finish"
+    },
+    {
+      "phase": 4,
+      "action": "create-pr"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}

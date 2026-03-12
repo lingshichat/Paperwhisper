@@ -1,0 +1,63 @@
+{
+  "id": "in-app-download",
+  "name": "in-app-download",
+  "title": "应用内下载更新",
+  "description": "将更新弹窗主路径改为应用内下载，并补齐下载进度、取消、安装结果和浏览器回退。",
+  "status": "pending",
+  "dev_type": "fullstack",
+  "scope": "lib/services/update_service.dart,lib/widgets/update_dialog.dart,pubspec.yaml,android/app/src/main/AndroidManifest.xml",
+  "priority": "P2",
+  "creator": "lingshichat",
+  "assignee": "lingshichat",
+  "createdAt": "2026-03-11",
+  "completedAt": null,
+  "branch": "feature/in-app-download",
+  "current_phase": 2,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "implement"
+    },
+    {
+      "phase": 2,
+      "action": "check"
+    },
+    {
+      "phase": 3,
+      "action": "finish"
+    },
+    {
+      "phase": 4,
+      "action": "create-pr"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [
+    ".trellis/tasks/03-11-in-app-download/prd.md",
+    "docs/plans/2026-03-11-in-app-download.md",
+    "paper_whisper_flutter/lib/services/update_service.dart",
+    "paper_whisper_flutter/lib/widgets/update_dialog.dart",
+    "paper_whisper_flutter/pubspec.yaml",
+    "paper_whisper_flutter/android/app/src/main/AndroidManifest.xml"
+  ],
+  "notes": "2026-03-11: 已根据 backend/frontend 规范和当前实现差距补齐 PRD 与实现计划。下一步优先实现结构化安装结果、下载超时与安装失败 UI 引导。",
+  "meta": {
+    "planDoc": "docs/plans/2026-03-11-in-app-download.md",
+    "relevantSpecs": [
+      ".trellis/spec/backend/error-handling.md",
+      ".trellis/spec/backend/logging-guidelines.md",
+      ".trellis/spec/backend/quality-guidelines.md",
+      ".trellis/spec/frontend/component-guidelines.md",
+      ".trellis/spec/frontend/quality-guidelines.md"
+    ],
+    "keyRisks": [
+      "Android 安装权限被拒时需要明确引导且不能丢失已下载文件",
+      "Windows 安装器启动失败时不能直接退出应用",
+      "下载链路需要显式超时，取消后必须清理临时文件"
+    ]
+  }
+}
