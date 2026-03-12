@@ -21,8 +21,12 @@ tasks/**/*.jsonl
 tasks/**/.plan-log
 
 # Developer workspace records
-workspace/*
-!workspace/index.md
+workspace/
+
+# Task working records (local workflow state)
+tasks/*/task.json
+tasks/*/prd.md
+tasks/archive/
 
 # Atomic update temp files
 *.tmp

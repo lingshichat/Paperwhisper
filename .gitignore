@@ -46,6 +46,12 @@ desktop.ini
 
 # Logs
 *.log
+paper_whisper_flutter/analysis_utf8.txt
+paper_whisper_flutter/analysis_2_utf8.txt
+paper_whisper_flutter/build_log.txt
+paper_whisper_flutter/build_log_utf8.txt
+paper_whisper_flutter/doctor_log.txt
+paper_whisper_flutter/flutter_build_log.txt
 
 # 临时文件
 *.tmp

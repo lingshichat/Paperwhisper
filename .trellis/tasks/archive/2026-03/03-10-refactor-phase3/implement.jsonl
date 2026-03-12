@@ -1,5 +1,0 @@
-{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
-{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
-{"file": "paper_whisper_flutter/lib/config/app_theme.dart", "reason": "Central theme file - all getXxxTheme methods live here"}
-{"file": ".trellis/spec/refactoring-roadmap.md", "reason": "Refactoring roadmap with validation rules"}
-{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Widget patterns and skeuomorphic design"}
