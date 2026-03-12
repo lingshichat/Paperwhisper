@@ -315,6 +315,8 @@ final seaFlowerTheme = PaperWhisperTheme(
     appBarTextColor: const Color(0xFF880E4F),
     drawerScrimColor: Colors.transparent,
     appBarBg: const Color(0xFFFCE4EC).withOpacity(0.8),
+    emptyStateIconColor: const Color(0xFFFFFFFF).withValues(alpha: 0.82),
+    emptyStateTextColor: const Color(0xFFFFFFFF),
   ),
 
   // --- Search (empty in original) ---

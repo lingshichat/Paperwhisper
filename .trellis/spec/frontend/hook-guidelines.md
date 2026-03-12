@@ -103,3 +103,4 @@ HitokotoService().fetchHitokoto(); // 不 await
 3. **Calling `setState` after `dispose`** — Guard with `if (mounted) setState(...)`.
 4. **Heavy work in `build()`** — Move data processing to `initState` or dedicated methods, not recalculated every frame.
 5. **Not using `const` constructors** — Missed rebuild optimization.
+6. **Using builder-local `context` after an async refresh** — In `ListView.builder` / `PageView.builder` callbacks, `await` may rebuild and deactivate that item subtree. After the async gap, use the owning `State.context` (guarded by `mounted`) or check `context.mounted` before reading `Provider` / showing dialogs / showing toasts.

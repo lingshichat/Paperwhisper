@@ -332,6 +332,8 @@ final afterRainTheme = PaperWhisperTheme(
     appBarTextColor: _textSecondary,
     drawerScrimColor: Colors.transparent,
     appBarBg: const Color(0xFFF0F8FF).withOpacity(0.6),
+    emptyStateIconColor: _accentBlue.withValues(alpha: 0.68),
+    emptyStateTextColor: _textSecondary.withValues(alpha: 0.92),
   ),
 
   // --- Search ---

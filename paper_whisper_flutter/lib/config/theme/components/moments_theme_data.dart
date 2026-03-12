@@ -14,6 +14,8 @@ class MomentsThemeData {
   final Color appBarTextColor;
   final Color drawerScrimColor;
   final Color appBarBg;
+  final Color emptyStateIconColor;
+  final Color emptyStateTextColor;
 
   const MomentsThemeData({
     required this.rulerBg,
@@ -28,6 +30,8 @@ class MomentsThemeData {
     required this.appBarTextColor,
     required this.drawerScrimColor,
     required this.appBarBg,
+    required this.emptyStateIconColor,
+    required this.emptyStateTextColor,
   });
 
   Map<String, dynamic> toMap() => {
@@ -43,5 +47,7 @@ class MomentsThemeData {
     'appBarTextColor': appBarTextColor,
     'drawerScrimColor': drawerScrimColor,
     'appBarBg': appBarBg,
+    'emptyStateIconColor': emptyStateIconColor,
+    'emptyStateTextColor': emptyStateTextColor,
   };
 }

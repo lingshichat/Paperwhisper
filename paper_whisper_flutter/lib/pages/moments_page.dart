@@ -419,6 +419,25 @@ class _MomentsPageState extends State<MomentsPage> {
     }
   }
 
+  Future<void> _handleMomentDeleted(
+    String uuid, {
+    bool showToast = false,
+  }) async {
+    await _momentService.deleteMoment(uuid);
+    await _loadData();
+
+    if (!mounted) return;
+
+    final syncProvider = context.read<SyncProvider>();
+    await syncProvider.refreshTrustSnapshot();
+
+    if (!mounted) return;
+
+    if (showToast) {
+      SkeuomorphicToast.success(context, '已移入回收站');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context);
@@ -677,17 +696,10 @@ class _MomentsPageState extends State<MomentsPage> {
                               moment: moments[i],
                               baseDir: _baseDir,
                               onDelete: () async {
-                                await _momentService.deleteMoment(
+                                await _handleMomentDeleted(
                                   moments[i].uuid,
+                                  showToast: true,
                                 );
-                                // Refresh
-                                await _loadData();
-                                final syncProvider =
-                                    context.read<SyncProvider>();
-                                await syncProvider.refreshTrustSnapshot();
-                                if (mounted) {
-                                  SkeuomorphicToast.success(context, '已移入回收站');
-                                }
                               },
                             );
                           },
@@ -991,12 +1003,7 @@ class _MomentsPageState extends State<MomentsPage> {
                     moment: _filteredMoments[i],
                     baseDir: _baseDir,
                     onDelete: () async {
-                      await _momentService.deleteMoment(
-                        _filteredMoments[i].uuid,
-                      );
-                      await _loadData();
-                      final syncProvider = context.read<SyncProvider>();
-                      await syncProvider.refreshTrustSnapshot();
+                      await _handleMomentDeleted(_filteredMoments[i].uuid);
                     },
                   );
                 },
@@ -1093,13 +1100,12 @@ class _MomentsPageState extends State<MomentsPage> {
   }
 
   Widget _buildEmptyStateForDate(DateTime date) {
-    bool isToday = _isSameDay(date, DateTime.now());
+    final bool isToday = _isSameDay(date, DateTime.now());
     final theme =
         Provider.of<SettingsProvider>(context, listen: false).currentTheme;
-
-    // 简洁拟物化配置 - 仅颜色适配，统一由 AppTheme 管理
-    final Color iconColor = AppTheme.getAccentColor(theme);
-    final Color textColor = AppTheme.getTextSecondaryColor(theme);
+    final themeConfig = AppTheme.getMomentsTheme(theme);
+    final Color iconColor = themeConfig['emptyStateIconColor'] as Color;
+    final Color textColor = themeConfig['emptyStateTextColor'] as Color;
 
     return Center(
       child: Column(
@@ -1108,7 +1114,7 @@ class _MomentsPageState extends State<MomentsPage> {
           Icon(
             isToday ? Icons.lightbulb_outline : Icons.edit_note,
             size: 80,
-            color: iconColor.withValues(alpha: 0.7), // 叠加透明度
+            color: iconColor,
           ),
           const SizedBox(height: 24),
           Text(
@@ -1179,13 +1185,7 @@ class _MomentsPageState extends State<MomentsPage> {
                                 moment: moment,
                                 baseDir: _baseDir,
                                 onDelete: () async {
-                                  await _momentService.deleteMoment(
-                                    moment.uuid,
-                                  );
-                                  await _loadData();
-                                  final syncProvider =
-                                      context.read<SyncProvider>();
-                                  await syncProvider.refreshTrustSnapshot();
+                                  await _handleMomentDeleted(moment.uuid);
                                 },
                               ),
                             );

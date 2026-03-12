@@ -378,6 +378,15 @@ class SyncProvider with ChangeNotifier {
     return '连接失败，请稍后重试';
   }
 
+  bool _isRemoteSourceAlreadyMissing(Object error) {
+    final text = error.toString();
+    return text.contains('404') ||
+        text.contains('Not Found') ||
+        text.contains('NoSuchKey') ||
+        text.contains('Copy Source must exist') ||
+        text.contains('source bucket and key');
+  }
+
   String _buildSyncScopeId([SyncConfig? config]) {
     final activeConfig = config ?? _config;
     final rawScope =
@@ -1348,6 +1357,14 @@ class SyncProvider with ChangeNotifier {
         processed++;
         _processedOps++;
       } catch (e) {
+        if (_isRemoteSourceAlreadyMissing(e)) {
+          nextRemoteManifest.updateItem(
+            mergedItems[filename]!.copyWith(isDeleted: true),
+          );
+          processed++;
+          _processedOps++;
+          return;
+        }
         outcome.addDeleteFailure('diary remote archive $filename: $e');
       }
     });
@@ -1640,6 +1657,14 @@ class SyncProvider with ChangeNotifier {
         processed++;
         _processedOps++;
       } catch (e) {
+        if (_isRemoteSourceAlreadyMissing(e)) {
+          nextRemoteManifest.updateItem(
+            mergedItems[filename]!.copyWith(isDeleted: true),
+          );
+          processed++;
+          _processedOps++;
+          return;
+        }
         outcome.addDeleteFailure('moment remote archive $filename: $e');
       }
     });

@@ -304,6 +304,8 @@ final midnightTheme = PaperWhisperTheme(
     appBarTextColor: Colors.white,
     drawerScrimColor: Colors.black54,
     appBarBg: const Color(0xFF1E1E1E).withOpacity(0.5),
+    emptyStateIconColor: _midnightTextSecondary.withOpacity(0.7),
+    emptyStateTextColor: _midnightTextSecondary,
   ),
   search: const SearchThemeData(),
   monthDivider: MonthDividerThemeData(

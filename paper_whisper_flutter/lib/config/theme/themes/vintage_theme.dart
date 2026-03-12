@@ -285,6 +285,8 @@ final vintageTheme = PaperWhisperTheme(
     appBarTextColor: const Color(0xFFD7CCC8),
     drawerScrimColor: Colors.black54,
     appBarBg: const Color(0xFF1E1E1E).withOpacity(0.5),
+    emptyStateIconColor: const Color(0xFFD7CCC8).withValues(alpha: 0.78),
+    emptyStateTextColor: const Color(0xFFD7CCC8),
   ),
   search: const SearchThemeData(),
   monthDivider: const MonthDividerThemeData(),

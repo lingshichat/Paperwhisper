@@ -10,24 +10,28 @@ import '../providers/settings_provider.dart';
 class SkeuomorphicToast {
   /// 显示成功提示
   static void success(BuildContext context, String message) {
+    if (!context.mounted) return;
     final colors = _getThemeColors(context, _ToastType.success);
     _show(context, message: message, icon: Icons.check_circle_outline, colors: colors);
   }
 
   /// 显示错误提示
   static void error(BuildContext context, String message) {
+    if (!context.mounted) return;
     final colors = _getThemeColors(context, _ToastType.error);
     _show(context, message: message, icon: Icons.error_outline, colors: colors, duration: const Duration(seconds: 4));
   }
 
   /// 显示信息提示
   static void info(BuildContext context, String message, {SnackBarAction? action}) {
+    if (!context.mounted) return;
     final colors = _getThemeColors(context, _ToastType.info);
     _show(context, message: message, icon: Icons.info_outline, colors: colors, action: action);
   }
 
   /// 显示警告提示
   static void warning(BuildContext context, String message, {SnackBarAction? action}) {
+    if (!context.mounted) return;
     final colors = _getThemeColors(context, _ToastType.warning);
     _show(context, message: message, icon: Icons.warning_amber_outlined, colors: colors, duration: const Duration(seconds: 4), action: action);
   }

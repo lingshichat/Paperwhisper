@@ -228,6 +228,44 @@ void main() {
       expect(provider.trustSnapshot.totalPendingCount, 0);
       expect(provider.trustSnapshot.lastSuccessfulSyncPlatform, 's3');
     });
+
+    test('remote missing during S3 archive delete does not fail sync', () async {
+      const filename = '2026-03-12_deleted.txt';
+      final diaryService = FakeDiaryService(tempDir);
+      await diaryService.init();
+      diaryService.manifestService.updateItem(
+        filename,
+        isDeleted: true,
+        timestamp: 99887766,
+      );
+
+      final diaryProvider = DiaryProvider(diaryService, <DiaryEntry>[]);
+      final provider = SyncProvider(
+        webDavService: FakeWebDavSyncService(),
+        s3Service: FakeS3SyncService(),
+        momentService: FakeMomentService(tempDir),
+        secretStore: SyncSecretStore.fake(),
+        initializeNotifications: false,
+      );
+      provider.updateDiaryProvider(diaryProvider);
+
+      await provider.saveConfig(
+        SyncConfig(
+          enabled: true,
+          autoSync: true,
+          syncType: SyncType.s3,
+          s3EndPoint: 's3.example.com',
+          s3AccessKey: 'ak',
+          s3SecretKey: 'sk',
+          s3BucketName: 'bucket-a',
+        ),
+      );
+
+      await provider.sync();
+
+      expect(provider.trustSnapshot.state, SyncTrustState.syncedSuccessfully);
+      expect(provider.trustSnapshot.totalPendingCount, 0);
+    });
   });
 }
 

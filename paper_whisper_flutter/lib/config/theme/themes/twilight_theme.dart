@@ -333,6 +333,8 @@ final twilightTheme = PaperWhisperTheme(
     appBarTextColor: _textPrimary,
     drawerScrimColor: Colors.black54,
     appBarBg: const Color(0xFF352044).withValues(alpha: 0.8),
+    emptyStateIconColor: _accentRed.withValues(alpha: 0.68),
+    emptyStateTextColor: _textPrimary.withValues(alpha: 0.92),
   ),
 
   // --- Search ---

@@ -309,6 +309,8 @@ final amberLensTheme = PaperWhisperTheme(
     appBarTextColor: Colors.white,
     drawerScrimColor: Colors.black54,
     appBarBg: const Color(0xFF1E1E1E).withOpacity(0.5),
+    emptyStateIconColor: _amberTextSecondary.withOpacity(0.72),
+    emptyStateTextColor: _amberTextSecondary,
   ),
   search: const SearchThemeData(),
   monthDivider: const MonthDividerThemeData(),

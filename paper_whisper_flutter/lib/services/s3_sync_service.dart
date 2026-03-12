@@ -288,10 +288,11 @@ class S3SyncService implements CloudStorageService {
      if (_client == null || _bucketName == null) return;
      final srcKey = _normalizeKey(oldPath);
      final destKey = _normalizeKey(newPath);
+     final copySource = path.url.join(_bucketName!, srcKey);
      
      try {
        // Copy
-       await _client!.copyObject(_bucketName!, destKey, path.join(_bucketName!, srcKey));
+       await _client!.copyObject(_bucketName!, destKey, copySource);
        // Delete old
        await _client!.removeObject(_bucketName!, srcKey);
        debugPrint('S3 Moved: $srcKey -> $destKey');
