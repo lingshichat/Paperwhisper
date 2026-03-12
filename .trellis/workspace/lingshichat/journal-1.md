@@ -191,3 +191,63 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 4: 关于页面与应用内更新流程完成记录
+
+**Date**: 2026-03-12
+**Task**: 关于页面与应用内更新流程完成记录
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+## Summary
+
+记录 2026-03-11 完成并已提交的两个 P2 任务：关于纸语页面、应用内下载更新。
+
+## Main Changes
+
+| 任务 | 说明 |
+|------|------|
+| 关于纸语页面 | 新增 `about_page.dart`，从设置页接入“关于纸语PaperWhisper”入口，展示动态版本、官网/GitHub/小红书链接与 MIT License，并保持信纸风格与拟物化装饰。 |
+| 应用内下载更新 | 将更新主路径改为应用内下载，补齐下载进度、取消、重试、安装结果提示与浏览器回退；同时收紧 `UpdateService` 与 `UpdateDialog` 的下载/安装契约。 |
+
+## Updated Files
+
+- `paper_whisper_flutter/lib/pages/about_page.dart`
+- `paper_whisper_flutter/lib/pages/settings_page.dart`
+- `paper_whisper_flutter/lib/services/update_service.dart`
+- `paper_whisper_flutter/lib/widgets/update_dialog.dart`
+- `paper_whisper_flutter/pubspec.yaml`
+- `paper_whisper_flutter/android/app/src/main/AndroidManifest.xml`
+
+## Testing
+
+- 人工已完成测试并提交代码
+- 本次记录阶段已将 `03-11-about-page` 与 `03-11-in-app-download` 归档
+
+## Status
+
+[OK] **Completed**
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `2bfc701` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
