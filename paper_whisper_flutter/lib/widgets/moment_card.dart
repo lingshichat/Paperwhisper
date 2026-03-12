@@ -191,7 +191,7 @@ class _MomentCardState extends State<MomentCard> {
             title: '删除随心记',
             headerIcon: Icons.delete_forever,
             content: const Text(
-              '确定要删除这条随心记吗？\n删除后将无法恢复。',
+              '确定要删除这条随心记吗？\n内容会先移入回收站，之后仍可恢复。',
               textAlign: TextAlign.center,
             ),
             actions: [
@@ -201,7 +201,7 @@ class _MomentCardState extends State<MomentCard> {
                 onPressed: () => Navigator.pop(ctx),
               ),
               SkeuomorphicDialogButton(
-                label: '删除',
+                label: '移入回收站',
                 isPrimary: true,
                 onPressed: () {
                   Navigator.pop(ctx);

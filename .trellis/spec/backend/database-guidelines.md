@@ -138,6 +138,62 @@ Future<void> _migrateFromPrivateToPublic(Directory publicDir) async {
 
 ---
 
+## Sync Cache Contract
+
+`SyncProvider` persists sync baselines in `SharedPreferences`, but these keys must be **scoped by remote target identity**, not shared globally across all sync backends.
+
+### Files / Entry Points
+
+- `paper_whisper_flutter/lib/providers/sync_provider.dart`
+- `paper_whisper_flutter/lib/models/sync_trust_snapshot.dart`
+
+### Required persisted fields
+
+`sync_trust_snapshot` payload must preserve:
+
+- `state`
+- `pendingDiaryCount`
+- `pendingMomentCount`
+- `pendingImageCount`
+- `pendingAudioCount`
+- `lastSuccessfulSyncAt`
+- `lastSuccessfulSyncPlatform`
+- `failureReason`
+- `configurationInvalid`
+
+### Required scope keys
+
+For each remote target, derive a scope id from the active config:
+
+- WebDAV: `webdav|serverUrl|username`
+- S3: `s3|endPoint|bucketName|accessKey|region`
+
+Then namespace the local sync baseline keys:
+
+- `last_known_remote_manifest_<scopeId>`
+- `last_known_moments_manifest_<scopeId>`
+- `last_known_remote_moment_images_<scopeId>`
+- `last_known_remote_moment_audio_<scopeId>`
+- `last_sync_time_scope_<scopeId>`
+
+### Validation / Error Matrix
+
+| Case | Expected behavior |
+|------|-------------------|
+| Switch from S3 to WebDAV with no WebDAV baseline | Pending count is recalculated against WebDAV scope only |
+| Switch back to previously synced S3 target | Previous S3 scoped baseline is restored; do not show false pending items |
+| Global `last_sync_time` exists from old app version | Migrate once into current scoped key; keep `sync_trust_snapshot.lastSuccessfulSyncAt` for history display |
+| Connection fails with auth/config error | Keep scoped baseline, set trust state to `needsAttention` |
+| Connection fails with transient network error | Keep scoped baseline, set trust state to `syncFailed` |
+
+### Good / Base / Bad Cases
+
+- Good: User syncs to S3 successfully, switches to WebDAV, then switches back to the same S3 bucket and still sees `Synced Successfully`
+- Base: User has never synced to the current target before, so switching targets shows pending local work until first success
+- Bad: A shared global manifest key makes WebDAV appear up to date because S3 synced earlier, or makes S3 appear pending because WebDAV never synced
+
+---
+
 ## Common Mistakes
 
 1. **Not handling permission denied on Android** — File I/O must be wrapped in permission checks
@@ -145,3 +201,4 @@ Future<void> _migrateFromPrivateToPublic(Directory publicDir) async {
 3. **Not normalizing line endings** — Use `.replaceAll('\r\n', '\n')` when reading/writing
 4. **Losing data during migration** — Always copy first, verify, then mark migrated
 5. **Reading all files synchronously** — Use async I/O for large directories
+6. **Using one shared sync baseline across WebDAV and S3** — Always scope sync caches by remote target identity

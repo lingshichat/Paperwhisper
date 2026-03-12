@@ -6,6 +6,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../config/app_theme.dart';
+import '../models/sync_trust_snapshot.dart';
 import '../models/update_info.dart';
 import '../providers/settings_provider.dart';
 import '../providers/sync_provider.dart';
@@ -990,15 +991,36 @@ class _SettingsPageState extends State<SettingsPage>
   }
 
   String _getSyncStatusText(BuildContext context) {
-    // 监听 SyncProvider 状态
     final syncProvider = Provider.of<SyncProvider>(context);
-    if (!syncProvider.isConfigured) return '未配置';
-    if (syncProvider.status == SyncStatus.syncing) return '同步中...';
-    if (syncProvider.status == SyncStatus.failed) return '同步失败';
-    if (syncProvider.lastSyncTime != null) {
-      return '上次同步: ${_formatTime(syncProvider.lastSyncTime!)}';
+    final snapshot = syncProvider.trustSnapshot;
+
+    if (snapshot.state == SyncTrustState.notEnabled) return '未启用';
+    if (snapshot.state == SyncTrustState.syncing) return '同步中...';
+    if (snapshot.state == SyncTrustState.localChangesPending) {
+      return '尚有 ${snapshot.totalPendingCount} 项待同步';
     }
-    return '已开启';
+    if (snapshot.state == SyncTrustState.syncFailed) {
+      return snapshot.failureReason ?? '同步失败，内容仍保留在本地';
+    }
+    if (snapshot.state == SyncTrustState.needsAttention) {
+      return snapshot.failureReason ?? '需要检查同步配置';
+    }
+    if (snapshot.lastSuccessfulSyncAt != null) {
+      final platform = _formatSyncPlatform(snapshot.lastSuccessfulSyncPlatform);
+      return '最近一次成功同步：${_formatTime(snapshot.lastSuccessfulSyncAt!)}${platform == null ? '' : '（$platform）'}';
+    }
+    return '已启用';
+  }
+
+  String? _formatSyncPlatform(String? platform) {
+    switch (platform) {
+      case 'webdav':
+        return 'WebDAV';
+      case 's3':
+        return 'S3';
+      default:
+        return null;
+    }
   }
 
   String _formatTime(DateTime time) {

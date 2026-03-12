@@ -15,8 +15,12 @@ class S3SyncService implements CloudStorageService {
   String? _secretKey;
   String? _bucketName;
   String? _region;
+  String? _lastConnectionError;
 
   bool get isConnected => _client != null;
+
+  @override
+  String? get lastConnectionError => _lastConnectionError;
 
   void initConfig({
      required String endPoint,
@@ -35,6 +39,7 @@ class S3SyncService implements CloudStorageService {
   @override
   Future<bool> connect() async {
     if (_endPoint == null || _accessKey == null || _secretKey == null || _bucketName == null) {
+      _lastConnectionError = 'Missing credentials';
       return false;
     }
     
@@ -68,8 +73,10 @@ class S3SyncService implements CloudStorageService {
         region: _region,
       );
       
+      _lastConnectionError = null;
       return true;
     } catch (e) {
+      _lastConnectionError = e.toString();
       debugPrint('S3 init failed: $e');
       _client = null;
       return false;
@@ -82,6 +89,7 @@ class S3SyncService implements CloudStorageService {
     try {
       final exists = await _client!.bucketExists(_bucketName!);
       if (!exists) {
+        _lastConnectionError = 'Bucket does not exist';
         debugPrint('S3 Bucket $_bucketName does not exist');
         return false;
       }
@@ -89,9 +97,11 @@ class S3SyncService implements CloudStorageService {
       // maxKeys argument might vary by version, usually supported in listObjectsV2 or similar
       // Minio dart listObjects returns Stream<ListObjectsResult>
       await _client!.listObjects(_bucketName!).take(1).toList();
+      _lastConnectionError = null;
       debugPrint('S3 Connected to $_bucketName');
       return true;
     } catch (e) {
+      _lastConnectionError = e.toString();
       debugPrint('S3 test connection failed: $e');
       return false;
     }

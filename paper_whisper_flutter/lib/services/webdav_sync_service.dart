@@ -12,6 +12,7 @@ class WebDavSyncService implements CloudStorageService {
   String? _serverUrl;
   String? _username;
   String? _password;
+  String? _lastConnectionError;
 
   // 基础路径常量
   static const String rootPath = '/PaperWhisper/';
@@ -23,6 +24,9 @@ class WebDavSyncService implements CloudStorageService {
 
   bool get isConnected => _client != null;
 
+  @override
+  String? get lastConnectionError => _lastConnectionError;
+
   void initConfig(String serverUrl, String username, String password) {
       _serverUrl = serverUrl;
       _username = username;
@@ -32,6 +36,7 @@ class WebDavSyncService implements CloudStorageService {
   @override
   Future<bool> connect() async {
     if (_serverUrl == null || _username == null || _password == null) {
+      _lastConnectionError = 'Missing credentials';
       return false;
     }
     try {
@@ -54,9 +59,11 @@ class WebDavSyncService implements CloudStorageService {
 
       // 简单的 Ping 测试
       await _client!.ping();
+      _lastConnectionError = null;
       debugPrint('WebDAV connected to $url');
       return true;
     } catch (e) {
+      _lastConnectionError = e.toString();
       debugPrint('WebDAV connection failed: $e');
       _client = null;
       return false;
@@ -120,8 +127,10 @@ class WebDavSyncService implements CloudStorageService {
       await _client!.ping();
       // 预先创建常用目录
       await ensureDirectoryExists(diaryBasePath);
+      _lastConnectionError = null;
       return true;
     } catch (e) {
+      _lastConnectionError = e.toString();
       debugPrint('WebDAV test connection failed: $e');
       return false;
     }

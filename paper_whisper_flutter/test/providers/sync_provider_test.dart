@@ -1,0 +1,538 @@
+import 'dart:io';
+
+import 'package:flutter/widgets.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:path/path.dart' as path;
+import 'package:paper_whisper_flutter/models/diary_entry.dart';
+import 'package:paper_whisper_flutter/models/sync_config.dart';
+import 'package:paper_whisper_flutter/models/sync_trust_snapshot.dart';
+import 'package:paper_whisper_flutter/providers/diary_provider.dart';
+import 'package:paper_whisper_flutter/providers/sync_provider.dart';
+import 'package:paper_whisper_flutter/services/cloud_storage_service.dart';
+import 'package:paper_whisper_flutter/services/diary_service.dart';
+import 'package:paper_whisper_flutter/services/manifest_service.dart';
+import 'package:paper_whisper_flutter/services/moment_service.dart';
+import 'package:paper_whisper_flutter/services/s3_sync_service.dart';
+import 'package:paper_whisper_flutter/services/sync_secret_store.dart';
+import 'package:paper_whisper_flutter/services/trash_service.dart';
+import 'package:paper_whisper_flutter/services/webdav_sync_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  group('SyncProvider', () {
+    late Directory tempDir;
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      tempDir = await Directory.systemTemp.createTemp('sync_provider_test');
+    });
+
+    tearDown(() async {
+      if (await tempDir.exists()) {
+        await tempDir.delete(recursive: true);
+      }
+    });
+
+    test('requestAutoSync returns early when auto sync is disabled', () async {
+      final provider = TestableSyncProvider(
+        webDavService: FakeWebDavSyncService(),
+        momentService: FakeMomentService(tempDir),
+        secretStore: SyncSecretStore.fake(),
+        initializeNotifications: false,
+      );
+
+      await provider.saveConfig(
+        SyncConfig(
+          enabled: true,
+          autoSync: false,
+          serverUrl: 'https://dav.example.com/',
+          username: 'demo',
+          password: 'secret',
+        ),
+      );
+
+      await provider.requestAutoSync(fromLifecycle: true);
+
+      expect(provider.syncCallCount, 0);
+    });
+
+    test(
+      'partial upload failure leaves sync in failed state with pending items',
+      () async {
+        const filename = '2026-03-12_a.txt';
+        final diaryService = FakeDiaryService(tempDir);
+        await diaryService.init();
+        final diaryFile = File(path.join(diaryService.dataDir!.path, filename));
+        await diaryFile.writeAsString(
+          DiaryEntry(
+            filename: filename,
+            dateString: '2026-03-12',
+            title: '测试日记',
+            content: 'pending content',
+          ).toFileContent(),
+        );
+        diaryService.manifestService.updateItem(
+          filename,
+          isDeleted: false,
+          timestamp: 123456789,
+        );
+
+        final diaryProvider = DiaryProvider(diaryService, <DiaryEntry>[]);
+        final provider = SyncProvider(
+          webDavService: FakeWebDavSyncService(failUploadFor: filename),
+          momentService: FakeMomentService(tempDir),
+          secretStore: SyncSecretStore.fake(),
+          initializeNotifications: false,
+        );
+        provider.updateDiaryProvider(diaryProvider);
+
+        await provider.saveConfig(
+          SyncConfig(
+            enabled: true,
+            autoSync: true,
+            serverUrl: 'https://dav.example.com/',
+            username: 'demo',
+            password: 'secret',
+          ),
+        );
+
+        await provider.sync();
+
+        expect(provider.trustSnapshot.state, SyncTrustState.syncFailed);
+        expect(provider.trustSnapshot.totalPendingCount, greaterThan(0));
+        expect(provider.lastSyncTime, isNull);
+      },
+    );
+
+    test('connect failure from network marks sync as failed', () async {
+      final provider = SyncProvider(
+        webDavService: FakeWebDavSyncService(
+          connectResult: false,
+          connectionError: 'SocketException: Failed host lookup',
+        ),
+        momentService: FakeMomentService(tempDir),
+        secretStore: SyncSecretStore.fake(),
+        initializeNotifications: false,
+      );
+
+      await provider.saveConfig(
+        SyncConfig(
+          enabled: true,
+          autoSync: true,
+          serverUrl: 'https://dav.example.com/',
+          username: 'demo',
+          password: 'secret',
+        ),
+      );
+
+      final connected = await provider.connect();
+
+      expect(connected, isFalse);
+      expect(provider.trustSnapshot.state, SyncTrustState.syncFailed);
+      expect(provider.lastError, '网络异常，请稍后重试');
+    });
+
+    test('connect failure from auth marks sync as needing attention', () async {
+      final provider = SyncProvider(
+        webDavService: FakeWebDavSyncService(
+          connectResult: false,
+          connectionError: '401 Unauthorized',
+        ),
+        momentService: FakeMomentService(tempDir),
+        secretStore: SyncSecretStore.fake(),
+        initializeNotifications: false,
+      );
+
+      await provider.saveConfig(
+        SyncConfig(
+          enabled: true,
+          autoSync: true,
+          serverUrl: 'https://dav.example.com/',
+          username: 'demo',
+          password: 'secret',
+        ),
+      );
+
+      final connected = await provider.connect();
+
+      expect(connected, isFalse);
+      expect(provider.trustSnapshot.state, SyncTrustState.needsAttention);
+      expect(provider.lastError, '配置异常，请检查账号或服务器地址');
+    });
+
+    test('switching back to a previously synced platform restores its baseline', () async {
+      const filename = '2026-03-12_scope.txt';
+      final diaryService = FakeDiaryService(tempDir);
+      await diaryService.init();
+      final diaryFile = File(path.join(diaryService.dataDir!.path, filename));
+      await diaryFile.writeAsString(
+        DiaryEntry(
+          filename: filename,
+          dateString: '2026-03-12',
+          title: '平台切换测试',
+          content: 'same content',
+        ).toFileContent(),
+      );
+      diaryService.manifestService.updateItem(
+        filename,
+        isDeleted: false,
+        timestamp: 22334455,
+      );
+
+      final diaryProvider = DiaryProvider(diaryService, <DiaryEntry>[]);
+      final provider = SyncProvider(
+        webDavService: FakeWebDavSyncService(),
+        s3Service: FakeS3SyncService(),
+        momentService: FakeMomentService(tempDir),
+        secretStore: SyncSecretStore.fake(),
+        initializeNotifications: false,
+      );
+      provider.updateDiaryProvider(diaryProvider);
+
+      final s3Config = SyncConfig(
+        enabled: true,
+        autoSync: true,
+        syncType: SyncType.s3,
+        s3EndPoint: 's3.example.com',
+        s3AccessKey: 'ak',
+        s3SecretKey: 'sk',
+        s3BucketName: 'bucket-a',
+      );
+      final webDavConfig = SyncConfig(
+        enabled: true,
+        autoSync: true,
+        syncType: SyncType.webdav,
+        serverUrl: 'https://dav.example.com/',
+        username: 'demo',
+        password: 'secret',
+      );
+
+      await provider.saveConfig(s3Config);
+      await provider.sync();
+
+      expect(provider.trustSnapshot.state, SyncTrustState.syncedSuccessfully);
+      expect(provider.trustSnapshot.totalPendingCount, 0);
+      expect(provider.trustSnapshot.lastSuccessfulSyncPlatform, 's3');
+
+      await provider.saveConfig(webDavConfig);
+
+      expect(provider.trustSnapshot.state, SyncTrustState.localChangesPending);
+      expect(provider.trustSnapshot.totalPendingCount, greaterThan(0));
+      expect(provider.trustSnapshot.lastSuccessfulSyncPlatform, 's3');
+
+      await provider.saveConfig(s3Config);
+
+      expect(provider.trustSnapshot.state, SyncTrustState.syncedSuccessfully);
+      expect(provider.trustSnapshot.totalPendingCount, 0);
+      expect(provider.trustSnapshot.lastSuccessfulSyncPlatform, 's3');
+    });
+  });
+}
+
+class TestableSyncProvider extends SyncProvider {
+  int syncCallCount = 0;
+
+  TestableSyncProvider({
+    super.webDavService,
+    super.momentService,
+    super.secretStore,
+    super.initializeNotifications,
+  });
+
+  @override
+  Future<void> sync({bool isAuto = false, BuildContext? context}) async {
+    syncCallCount++;
+  }
+}
+
+class FakeWebDavSyncService extends WebDavSyncService {
+  FakeWebDavSyncService({
+    this.failUploadFor,
+    this.connectResult = true,
+    this.testConnectionResult = true,
+    this.connectionError,
+  });
+
+  final String? failUploadFor;
+  final bool connectResult;
+  final bool testConnectionResult;
+  final String? connectionError;
+  final Map<String, String> remoteFiles = <String, String>{};
+  bool _connected = false;
+
+  @override
+  bool get isConnected => _connected;
+
+  @override
+  void initConfig(String serverUrl, String username, String password) {}
+
+  @override
+  Future<bool> connect() async {
+    _connected = connectResult;
+    return connectResult;
+  }
+
+  @override
+  Future<bool> testConnection() async => testConnectionResult;
+
+  @override
+  String? get lastConnectionError => connectionError;
+
+  @override
+  Future<List<RemoteFile>> listFiles(String remotePath) async => <RemoteFile>[];
+
+  @override
+  Future<void> uploadFile(
+    String localPath,
+    String remotePath, {
+    Function(int sent, int total)? onProgress,
+  }) async {
+    if (failUploadFor != null && remotePath.endsWith(failUploadFor!)) {
+      throw Exception('Network failure');
+    }
+    remoteFiles[remotePath] = await File(localPath).readAsString();
+    onProgress?.call(1, 1);
+  }
+
+  @override
+  Future<void> downloadFile(
+    String remotePath,
+    String localPath, {
+    Function(int received, int total)? onProgress,
+  }) async {
+    final content = remoteFiles[remotePath];
+    if (content == null) {
+      throw Exception('404 Not Found');
+    }
+    final file = File(localPath);
+    await file.parent.create(recursive: true);
+    await file.writeAsString(content);
+    onProgress?.call(1, 1);
+  }
+
+  @override
+  Future<void> deleteFile(String remotePath) async {
+    remoteFiles.remove(remotePath);
+  }
+
+  @override
+  Future<void> moveFile(String oldPath, String newPath) async {
+    final content = remoteFiles.remove(oldPath);
+    if (content == null) {
+      throw Exception('404 Not Found');
+    }
+    remoteFiles[newPath] = content;
+  }
+
+  @override
+  Future<String?> readRemoteFile(String remotePath) async =>
+      remoteFiles[remotePath];
+
+  @override
+  Future<void> writeRemoteFile(String remotePath, String content) async {
+    remoteFiles[remotePath] = content;
+  }
+
+  @override
+  Future<void> ensureDirectoryExists(String remotePath) async {}
+}
+
+class FakeDiaryService extends DiaryService {
+  FakeDiaryService(this.rootDir);
+
+  final Directory rootDir;
+  final ManifestService _manifestService = ManifestService();
+  final TrashService _trashService = TrashService();
+  Directory? _dataDir;
+  bool _initialized = false;
+
+  @override
+  Directory? get dataDir => _dataDir;
+
+  @override
+  String get currentDataPath => _dataDir?.path ?? 'Unknown';
+
+  @override
+  ManifestService get manifestService => _manifestService;
+
+  @override
+  TrashService get trashService => _trashService;
+
+  @override
+  void reset() {
+    _initialized = false;
+    _dataDir = null;
+  }
+
+  @override
+  Future<void> init() async {
+    if (_initialized) return;
+
+    _dataDir = Directory(path.join(rootDir.path, 'diary_data'));
+    await _dataDir!.create(recursive: true);
+    await _manifestService.init(_dataDir!);
+    await _trashService.init(_dataDir!);
+    _initialized = true;
+  }
+
+  @override
+  Future<List<DiaryEntry>> getEntries() async => <DiaryEntry>[];
+
+  @override
+  Future<void> saveCache(List<DiaryEntry> entries) async {}
+
+  @override
+  Future<List<DiaryEntry>?> loadCache() async => null;
+}
+
+class FakeS3SyncService extends S3SyncService {
+  FakeS3SyncService({
+    this.failUploadFor,
+    this.connectResult = true,
+    this.testConnectionResult = true,
+    this.connectionError,
+  });
+
+  final String? failUploadFor;
+  final bool connectResult;
+  final bool testConnectionResult;
+  final String? connectionError;
+  final Map<String, String> remoteFiles = <String, String>{};
+  bool _connected = false;
+
+  @override
+  bool get isConnected => _connected;
+
+  @override
+  String? get lastConnectionError => connectionError;
+
+  @override
+  void initConfig({
+    required String endPoint,
+    required String accessKey,
+    required String secretKey,
+    required String bucketName,
+    String? region,
+  }) {}
+
+  @override
+  Future<bool> connect() async {
+    _connected = connectResult;
+    return connectResult;
+  }
+
+  @override
+  Future<bool> testConnection() async => testConnectionResult;
+
+  @override
+  Future<List<RemoteFile>> listFiles(String remotePath) async => <RemoteFile>[];
+
+  @override
+  Future<void> uploadFile(
+    String localPath,
+    String remotePath, {
+    Function(int sent, int total)? onProgress,
+  }) async {
+    if (failUploadFor != null && remotePath.endsWith(failUploadFor!)) {
+      throw Exception('Network failure');
+    }
+    remoteFiles[remotePath] = await File(localPath).readAsString();
+    onProgress?.call(1, 1);
+  }
+
+  @override
+  Future<void> downloadFile(
+    String remotePath,
+    String localPath, {
+    Function(int received, int total)? onProgress,
+  }) async {
+    final content = remoteFiles[remotePath];
+    if (content == null) {
+      throw Exception('404 Not Found');
+    }
+    final file = File(localPath);
+    await file.parent.create(recursive: true);
+    await file.writeAsString(content);
+    onProgress?.call(1, 1);
+  }
+
+  @override
+  Future<void> deleteFile(String remotePath) async {
+    remoteFiles.remove(remotePath);
+  }
+
+  @override
+  Future<void> moveFile(String oldPath, String newPath) async {
+    final content = remoteFiles.remove(oldPath);
+    if (content == null) {
+      throw Exception('404 Not Found');
+    }
+    remoteFiles[newPath] = content;
+  }
+
+  @override
+  Future<String?> readRemoteFile(String remotePath) async =>
+      remoteFiles[remotePath];
+
+  @override
+  Future<void> writeRemoteFile(String remotePath, String content) async {
+    remoteFiles[remotePath] = content;
+  }
+
+  @override
+  Future<void> ensureDirectoryExists(String remotePath) async {}
+}
+
+class FakeMomentService extends MomentService {
+  FakeMomentService(this.rootDir);
+
+  final Directory rootDir;
+  final ManifestService _manifestService = ManifestService();
+  Directory? _dataDir;
+  Directory? _imagesDir;
+  Directory? _audioDir;
+  bool _initialized = false;
+
+  @override
+  Directory? get dataDir => _dataDir;
+
+  @override
+  Directory? get imagesDir => _imagesDir;
+
+  @override
+  Directory? get audioDir => _audioDir;
+
+  @override
+  ManifestService get manifestService => _manifestService;
+
+  @override
+  void reset() {
+    _initialized = false;
+    _dataDir = null;
+    _imagesDir = null;
+    _audioDir = null;
+  }
+
+  @override
+  Future<void> init() async {
+    if (_initialized) return;
+
+    _dataDir = Directory(path.join(rootDir.path, 'moments_data'));
+    _imagesDir = Directory(path.join(_dataDir!.path, 'images'));
+    _audioDir = Directory(path.join(_dataDir!.path, 'audio'));
+
+    await _dataDir!.create(recursive: true);
+    await _imagesDir!.create(recursive: true);
+    await _audioDir!.create(recursive: true);
+    await _manifestService.init(
+      _dataDir!,
+      manifestFileName: 'local_moments_manifest.json',
+    );
+    _initialized = true;
+  }
+
+  @override
+  Future<Set<String>> getAllReferencedImages() async => <String>{};
+}

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -15,7 +16,6 @@ import '../providers/sync_provider.dart'; // Added
 import '../config/app_theme.dart'; // Added
 import '../widgets/skeuomorphic_toast.dart'; // Added
 import '../widgets/skeuomorphic_dialog.dart'; // Added
-
 
 import '../providers/diary_provider.dart'; // Added
 import '../widgets/skeuomorphic_search_bar.dart'; // Added
@@ -41,20 +41,20 @@ class _MomentsPageState extends State<MomentsPage> {
 
   late PageController _pageController;
   late FixedExtentScrollController _rulerController;
-  
-  final int _dayRange = 3650; 
+
+  final int _dayRange = 3650;
   late DateTime _startDate;
-  
+
   // Flags to prevent circular sync
   bool _isRulerActive = false;
   bool _isPageActive = false;
 
   // Search State
-  bool _isSearching = false; 
-  
+  bool _isSearching = false;
+
   // Focus Management
   final FocusNode _inputFocusNode = FocusNode();
-  
+
   // Dynamic Input Height
   double _inputHeight = 80.0;
 
@@ -67,10 +67,10 @@ class _MomentsPageState extends State<MomentsPage> {
     _initDates();
     _initControllers();
     _loadData();
-    
+
     // Listen to focus changes to rebuild UI (toggle dismiss layer)
     _inputFocusNode.addListener(() {
-        if (mounted) setState(() {});
+      if (mounted) setState(() {});
     });
 
     // Check for updates once
@@ -104,20 +104,22 @@ class _MomentsPageState extends State<MomentsPage> {
       debugPrint('自动更新检查失败: $e');
     }
   }
-  
+
   void _initDates() {
     // Same normalization logic as Ruler
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     _startDate = today.subtract(const Duration(days: 365 * 5));
-    
+
     // Initial Index
     final selectedNormalized = DateTime(
-      _selectedDate.year, _selectedDate.month, _selectedDate.day
+      _selectedDate.year,
+      _selectedDate.month,
+      _selectedDate.day,
     );
     int initialIndex = selectedNormalized.difference(_startDate).inDays;
     if (initialIndex < 0) initialIndex = 0;
-    
+
     _pageController = PageController(initialPage: initialIndex);
     _rulerController = FixedExtentScrollController(initialItem: initialIndex);
   }
@@ -129,10 +131,10 @@ class _MomentsPageState extends State<MomentsPage> {
     // Controller listener doesn't tell us source.
     // RulerDatePicker exposes controller. We need to wrap RulerDatePicker in NotificationListener
     // to detect if user is touching it.
-    
+
     // Actually simpler: In build method, wrap RulerDatePicker with NotificationListener.
   }
-  
+
   @override
   void dispose() {
     _pageController.dispose();
@@ -144,11 +146,11 @@ class _MomentsPageState extends State<MomentsPage> {
   // Optimized helper
   List<Moment> _getMomentsForDate(DateTime date) {
     return _allMoments.where((m) {
-      return m.createdAt.year == date.year &&
-             m.createdAt.month == date.month &&
-             m.createdAt.day == date.day;
-    }).toList()
-    ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+        return m.createdAt.year == date.year &&
+            m.createdAt.month == date.month &&
+            m.createdAt.day == date.day;
+      }).toList()
+      ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
   }
 
   // 计算指定日期随心记中的图片总数
@@ -159,27 +161,38 @@ class _MomentsPageState extends State<MomentsPage> {
 
   void _onDateChanged(DateTime date, {bool animate = true}) {
     if (_isSameDay(date, _selectedDate)) return;
-    
+
     setState(() {
       _selectedDate = date;
     });
-    
+
     // If caused by explicit selection (e.g. tap on ruler item not implemented yet but if any), sync page
     if (animate) {
       int index = date.difference(_startDate).inDays;
-      if (_pageController.hasClients && _pageController.page?.round() != index) {
-        _pageController.animateToPage(index, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+      if (_pageController.hasClients &&
+          _pageController.page?.round() != index) {
+        _pageController.animateToPage(
+          index,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
       }
       // Ruler auto-syncs via page listener? No, need to sync ruler too if page doesn't move ruler during animation?
       // Page animation will trigger scroll update, which syncs ruler. So just moving page is enough.
     }
   }
-  
+
   bool _isSameDay(DateTime a, DateTime b) {
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
-  Future<void> _handleSend(String content, List<XFile> images, {String? audioPath, String? audioTitle, int? audioDuration}) async {
+  Future<void> _handleSend(
+    String content,
+    List<XFile> images, {
+    String? audioPath,
+    String? audioTitle,
+    int? audioDuration,
+  }) async {
     // 会员 / 试用：免费用户当日限 3 条
     final pay = Provider.of<PaymentService>(context, listen: false);
     if (!pay.canUseProFeatures) {
@@ -188,18 +201,29 @@ class _MomentsPageState extends State<MomentsPage> {
         if (!mounted) return;
         final go = await showDialog<bool>(
           context: context,
-          builder: (ctx) => SkeuomorphicDialog(
-            title: '今日额度已用完',
-            headerIcon: Icons.lock_outline,
-            content: const Text('免费版每日 3 条随心记。赞助后解锁无限创作、WebDAV 同步与更多能力。'),
-            actions: [
-              SkeuomorphicDialogButton(label: '取消', isPrimary: false, onPressed: () => Navigator.pop(ctx, false)),
-              SkeuomorphicDialogButton(label: '去赞助', onPressed: () => Navigator.pop(ctx, true)),
-            ],
-          ),
+          builder:
+              (ctx) => SkeuomorphicDialog(
+                title: '今日额度已用完',
+                headerIcon: Icons.lock_outline,
+                content: const Text('免费版每日 3 条随心记。赞助后解锁无限创作、WebDAV 同步与更多能力。'),
+                actions: [
+                  SkeuomorphicDialogButton(
+                    label: '取消',
+                    isPrimary: false,
+                    onPressed: () => Navigator.pop(ctx, false),
+                  ),
+                  SkeuomorphicDialogButton(
+                    label: '去赞助',
+                    onPressed: () => Navigator.pop(ctx, true),
+                  ),
+                ],
+              ),
         );
         if (go == true && mounted) {
-          Navigator.push(context, SlidePageRoute(page: const PremiumMembershipPage()));
+          Navigator.push(
+            context,
+            SlidePageRoute(page: const PremiumMembershipPage()),
+          );
         }
         return;
       }
@@ -211,7 +235,7 @@ class _MomentsPageState extends State<MomentsPage> {
       String path = await _momentService.saveImage(File(img.path));
       savedPaths.add(path);
     }
-    
+
     // 2. Save Audio
     String? savedAudioPath;
     if (audioPath != null) {
@@ -221,7 +245,7 @@ class _MomentsPageState extends State<MomentsPage> {
         debugPrint("Error saving audio: $e");
       }
     }
-    
+
     // 3. Create Moment
     // ...
 
@@ -238,33 +262,39 @@ class _MomentsPageState extends State<MomentsPage> {
     // Since Moment.create doesn't support custom date in my previous impl, check model.
     // If model has only 'create' factory, I might need to edit it manually or just let it be Now.
     // Let's stick to "Now" for simplicity, or if Moment model allows, set createdAt.
-    // Checking previous context... Moment model has createdAt final. 
-    // I can't easily change it without refactoring Moment. 
-    // But since it's "Suixinji" (Spontaneous), "Now" makes sense. 
-    // If user is viewing yesterday and types, does it go to yesterday? 
+    // Checking previous context... Moment model has createdAt final.
+    // I can't easily change it without refactoring Moment.
+    // But since it's "Suixinji" (Spontaneous), "Now" makes sense.
+    // If user is viewing yesterday and types, does it go to yesterday?
     // Flomo usually acts as Inbox, always Now.
     // BUT user wants typical journal backdating often.
     // Let's assume "Now" for this iteration to match Flomo behavior unless specified.
-    
+
     await _momentService.saveMoment(newMoment);
     await _loadData(); // visual refresh
-    
+
     if (mounted) {
-       final syncProvider = context.read<SyncProvider>();
-       if (syncProvider.isConfigured) {
-           SkeuomorphicToast.info(context, '记录已保存，准备同步...');
-           syncProvider.checkNotificationPermission(context).then((_) {
-              if (mounted) syncProvider.requestAutoSync(force: true, context: context); // Force immediate sync
-           });
-       } else {
-           SkeuomorphicToast.success(context, '记录已保存');
-       }
+      final syncProvider = context.read<SyncProvider>();
+      await syncProvider.refreshTrustSnapshot();
+      final pendingCount = syncProvider.trustSnapshot.totalPendingCount;
+
+      if (syncProvider.config.enabled &&
+          syncProvider.config.autoSync &&
+          syncProvider.isConfigured) {
+        SkeuomorphicToast.info(context, '记录已保存，准备同步...');
+        final granted = await syncProvider.checkNotificationPermission(context);
+        if (mounted && granted) {
+          unawaited(syncProvider.requestAutoSync(context: context));
+        }
+      } else if (syncProvider.config.enabled && pendingCount > 0) {
+        SkeuomorphicToast.info(context, '已保存，尚有 $pendingCount 项待同步');
+      } else {
+        SkeuomorphicToast.success(context, '记录已保存');
+      }
     }
   }
 
   Future<void> _handleAggregation() async {
-
-
     // Show Dialog
     String title = "今日份的日记";
     String inputVal = "";
@@ -286,74 +316,94 @@ class _MomentsPageState extends State<MomentsPage> {
           title: '生成长文日记',
           headerIcon: Icons.auto_awesome, // Magic icon
           content: Column(
-             mainAxisSize: MainAxisSize.min,
-             crossAxisAlignment: CrossAxisAlignment.start,
-             children: [
-               Text('将今天的记录汇聚成篇，存入专注书写模块。', style: GoogleFonts.notoSerifSc(fontSize: 14, color: descColor)),
-               const SizedBox(height: 20),
-               
-               // Skeuomorphic Input Field (Simple version)
-               Container(
-                 decoration: BoxDecoration(
-                   color: inputBg,
-                   border: Border(bottom: BorderSide(color: inputBorder, width: 2)),
-                 ),
-                 child: TextField(
-                    autofocus: true,
-                    decoration: InputDecoration(
-                      labelText: '为日记起个名字',
-                      hintText: '默认: 今日份的日记',
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                      labelStyle: GoogleFonts.notoSerifSc(color: hintColor),
-                      hintStyle: GoogleFonts.notoSerifSc(color: hintColor.withOpacity(0.5)),
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '将今天的记录汇聚成篇，存入专注书写模块。',
+                style: GoogleFonts.notoSerifSc(fontSize: 14, color: descColor),
+              ),
+              const SizedBox(height: 20),
+
+              // Skeuomorphic Input Field (Simple version)
+              Container(
+                decoration: BoxDecoration(
+                  color: inputBg,
+                  border: Border(
+                    bottom: BorderSide(color: inputBorder, width: 2),
+                  ),
+                ),
+                child: TextField(
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    labelText: '为日记起个名字',
+                    hintText: '默认: 今日份的日记',
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 8,
                     ),
-                    style: GoogleFonts.notoSerifSc(color: textColor),
-                    onChanged: (v) => inputVal = v,
-                 ),
-               )
-             ],
+                    labelStyle: GoogleFonts.notoSerifSc(color: hintColor),
+                    hintStyle: GoogleFonts.notoSerifSc(
+                      color: hintColor.withOpacity(0.5),
+                    ),
+                  ),
+                  style: GoogleFonts.notoSerifSc(color: textColor),
+                  onChanged: (v) => inputVal = v,
+                ),
+              ),
+            ],
           ),
           actions: [
             SkeuomorphicDialogButton(
-               label: '取消', 
-               isPrimary: false,
-               onPressed: () => Navigator.pop(ctx)
+              label: '取消',
+              isPrimary: false,
+              onPressed: () => Navigator.pop(ctx),
             ),
             SkeuomorphicDialogButton(
-               label: '生成', 
-               isPrimary: true,
-               onPressed: () => Navigator.pop(ctx, inputVal.isEmpty ? title : inputVal)
+              label: '生成',
+              isPrimary: true,
+              onPressed:
+                  () => Navigator.pop(ctx, inputVal.isEmpty ? title : inputVal),
             ),
           ],
         );
-      }
+      },
     );
 
     if (result != null) {
       try {
-        await _momentService.exportDailySummary(_selectedDate, customTitle: result);
-        
+        await _momentService.exportDailySummary(
+          _selectedDate,
+          customTitle: result,
+        );
+
         if (!mounted) return;
-        
+
         final syncProvider = context.read<SyncProvider>();
-        if (syncProvider.isConfigured) {
-            syncProvider.requestAutoSync(context: context);
+        await syncProvider.refreshTrustSnapshot();
+        if (syncProvider.config.autoSync && syncProvider.isConfigured) {
+          final granted = await syncProvider.checkNotificationPermission(
+            context,
+          );
+          if (mounted && granted) {
+            unawaited(syncProvider.requestAutoSync(context: context));
+          }
         }
 
         SkeuomorphicToast.success(context, '生成成功，正在跳转...');
-        
+
         // Auto navigate to Writer
         Navigator.of(context).pushReplacement(
-           PageRouteBuilder(
-             pageBuilder: (_,__,___) => const DiaryListPage(),
-             transitionDuration: const Duration(milliseconds: 500),
-             transitionsBuilder: (_, a, __, c) => FadeTransition(opacity: a, child: c)
-           ) 
+          PageRouteBuilder(
+            pageBuilder: (_, __, ___) => const DiaryListPage(),
+            transitionDuration: const Duration(milliseconds: 500),
+            transitionsBuilder:
+                (_, a, __, c) => FadeTransition(opacity: a, child: c),
+          ),
         );
-        
       } catch (e) {
-         if (mounted) SkeuomorphicToast.error(context, '生成失败: $e');
+        if (mounted) SkeuomorphicToast.error(context, '生成失败: $e');
       }
     }
   }
@@ -391,7 +441,7 @@ class _MomentsPageState extends State<MomentsPage> {
     final Color? rulerIndicatorColor = tc['rulerIndicatorColor'];
     final Color? rulerShadowColor = tc['rulerShadowColor'];
     final Color? rulerBorderColor = tc['rulerBorderColor'];
-    
+
     // Search Integration
     final diaryProvider = Provider.of<DiaryProvider>(context);
     final String searchQuery = diaryProvider.momentsSearchQuery;
@@ -400,360 +450,413 @@ class _MomentsPageState extends State<MomentsPage> {
     // Filter Logic if searching
     if (isSearchActive) {
       // Filter _allMoments
-      _filteredMoments = _allMoments.where((m) {
-        // Basic match: content or plain text
-        // Moment has content string.
-        return m.content.contains(searchQuery);
-      }).toList();
+      _filteredMoments =
+          _allMoments.where((m) {
+            // Basic match: content or plain text
+            // Moment has content string.
+            return m.content.contains(searchQuery);
+          }).toList();
       // Sort by latest first for search
-      _filteredMoments.sort((a,b) => b.createdAt.compareTo(a.createdAt));
+      _filteredMoments.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     }
-    
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final bool isDesktop = constraints.maxWidth > 800;
-        final canUse = Provider.of<PaymentService>(context, listen: true).canUseProFeatures;
-        final showLimitBanner = !canUse && _getMomentsForDate(DateTime.now()).length >= 3;
-        debugPrint("LayoutBuilder Constraints: ${constraints.maxWidth} (isDesktop: $isDesktop)");
-        
+        final canUse =
+            Provider.of<PaymentService>(
+              context,
+              listen: true,
+            ).canUseProFeatures;
+        final showLimitBanner =
+            !canUse && _getMomentsForDate(DateTime.now()).length >= 3;
+        debugPrint(
+          "LayoutBuilder Constraints: ${constraints.maxWidth} (isDesktop: $isDesktop)",
+        );
+
         // 简化 content 结构：直接使用 SafeArea + Column，避免嵌套 Stack 导致的渲染问题
         final Widget content = SafeArea(
-          top: !isDesktop, 
-          bottom: isDesktop, 
+          top: !isDesktop,
+          bottom: isDesktop,
           child: Column(
             children: [
-                // On Desktop, we need a Header (replacement for AppBar)
-                if (isDesktop) 
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                       _buildDesktopHeader(appBarTextColor, appBarIconColor),
-                       // 恢复尺子
-                       SizedBox(
-                         height: 85,
-                         child: NotificationListener<ScrollNotification>(
-                            onNotification: (notification) {
-                               if (notification is ScrollUpdateNotification) {
-                                  // 仅处理尺子自身的滚动，不与列表联动(因为列表是全量的)
-                                  // 这里主要依靠 RulerDatePicker 内部或者 controller 变动来触发 _onDateChanged
-                                  // 但原逻辑是靠 PageView 驱动 Ruler，或 Ruler 驱动 PageView
-                                  // 这里我们让 Ruler 独立工作，只改变 _selectedDate
-                                  return false;
-                               }
-                               return false;
-                            },
-                            child: RulerDatePicker(
-                              selectedDate: _selectedDate, 
-                              onDateChanged: (d) => _onDateChanged(d, animate: false), // 不驱动 PageView
-                              controller: _rulerController,
-                              accentColor: rulerAccent,
-                              backgroundColor: rulerBg,
-                              textColor: rulerTextColor,
-                              inactiveTextColor: rulerInactiveTextColor,
-                              subTextColor: rulerSubTextColor,
-                              inactiveSubTextColor: rulerInactiveSubTextColor,
-                              indicatorColor: rulerIndicatorColor,
-                              shadowColor: rulerShadowColor,
-                              borderColor: rulerBorderColor,
-                            ),
-                         ),
-                       ),
-                    ],
-                  ),
-                  
-                // If searching, show result list. Else show regular layout.
-                if (isSearchActive) 
-                   Expanded(child: _buildSearchResults(theme, textColor: rulerTextColor))
-                else if (isDesktop)
-                   // Desktop Waterfall Layout
-                   Expanded(
-                     child: Stack(
-                       children: [
-                         // Grid - 联动尺子日期
-                         _buildDesktopWaterfall(context, _getMomentsForDate(_selectedDate)),
-                         
-                         // Floating Input (Bottom Center) - 拟物化悬浮岛设计
-                         Align(
-                           alignment: Alignment.bottomCenter,
-                           child: Padding(
-                             padding: const EdgeInsets.only(bottom: 30),
-                             child: Column(
-                               mainAxisSize: MainAxisSize.min,
-                               children: [
-                                 if (showLimitBanner) _buildLimitBanner(context),
-                                 Container(
-                                   width: 600,
-                                   decoration: BoxDecoration(
-                                     borderRadius: BorderRadius.circular(24),
-                                     boxShadow: [
-                                       BoxShadow(
-                                         color: Colors.black.withOpacity(0.2), // Deep shadow
-                                         blurRadius: 15,
-                                         offset: const Offset(0, 8),
-                                       ),
-                                       BoxShadow(
-                                         color: Colors.black.withOpacity(0.1), // Ambient shadow
-                                         blurRadius: 5,
-                                         offset: const Offset(0, 0),
-                                       ),
-                                     ],
-                                   ),
-                                   child: ClipRRect(
-                                     borderRadius: BorderRadius.circular(24), // Rounded corners for the widget
-                                     child: MomentInputWidget(onSend: _handleSend),
-                                   ),
-                                 ),
-                               ],
-                             ),
-                           ),
-                         )
-                       ],
-                     )
-                   )
-                else ...[
-                  // Mobile Layout (Ruler + List)
-                  // Ruler with Sync Listener
-                  NotificationListener<ScrollNotification>(
-                    onNotification: (notification) {
-                       if (notification.depth == 0 && notification is ScrollUpdateNotification) {
-                         if (_isPageActive) return false;
-                         _isRulerActive = true;
-                         
-                         if (_pageController.hasClients && _rulerController.hasClients) {
-                           double rulerOffset = _rulerController.offset;
-                           double page = rulerOffset / 70.0;
-                           double pageWidth = _pageController.position.viewportDimension;
-                           _pageController.jumpTo(page * pageWidth);
-                         }
-                       } else if (notification is ScrollEndNotification) {
-                         _isRulerActive = false;
-                       }
-                       return false;
-                    },
-                    child: RulerDatePicker(
-                      selectedDate: _selectedDate, 
-                      onDateChanged: (d) => _onDateChanged(d),
-                      controller: _rulerController,
-                      accentColor: rulerAccent,
-                      backgroundColor: rulerBg,
-                      textColor: rulerTextColor,
-                      inactiveTextColor: rulerInactiveTextColor,
-                      subTextColor: rulerSubTextColor,
-                      inactiveSubTextColor: rulerInactiveSubTextColor,
-                      indicatorColor: rulerIndicatorColor,
-                      shadowColor: rulerShadowColor,
-                      borderColor: rulerBorderColor,
-                    ),
-                  ),
-                  
-                  // List (PageView)
-                  Expanded(
-                    child: NotificationListener<ScrollNotification>(
-                      onNotification: (notification) {
-                        if (notification.depth == 0 && notification is ScrollUpdateNotification) {
-                          if (_isRulerActive) return false;
-                          _isPageActive = true;
-                          
-                          if (_pageController.hasClients && _rulerController.hasClients) {
-                            double page = _pageController.page ?? 0;
-                            double rulerOffset = page * 70.0; 
-                            _rulerController.jumpTo(rulerOffset);
+              // On Desktop, we need a Header (replacement for AppBar)
+              if (isDesktop)
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildDesktopHeader(appBarTextColor, appBarIconColor),
+                    // 恢复尺子
+                    SizedBox(
+                      height: 85,
+                      child: NotificationListener<ScrollNotification>(
+                        onNotification: (notification) {
+                          if (notification is ScrollUpdateNotification) {
+                            // 仅处理尺子自身的滚动，不与列表联动(因为列表是全量的)
+                            // 这里主要依靠 RulerDatePicker 内部或者 controller 变动来触发 _onDateChanged
+                            // 但原逻辑是靠 PageView 驱动 Ruler，或 Ruler 驱动 PageView
+                            // 这里我们让 Ruler 独立工作，只改变 _selectedDate
+                            return false;
                           }
-                        } else if (notification is ScrollEndNotification) {
-                           _isPageActive = false;
-                           if (!_isRulerActive && _pageController.hasClients) {
-                               int pageIndex = _pageController.page?.round() ?? 0;
-                               DateTime targetDate = _startDate.add(Duration(days: pageIndex));
-                               if (!_isSameDay(targetDate, _selectedDate)) {
-                                  _onDateChanged(targetDate, animate: false);
-                               }
-                           }
-                        }
-                        return false;
-                      },
-                      child: PageView.builder(
-                        controller: _pageController,
-                        itemCount: _dayRange, 
-                        physics: const BouncingScrollPhysics(),
-                        onPageChanged: (index) {
-                           // Optional: Could trigger haptic feedback here
+                          return false;
                         },
-                        itemBuilder: (context, index) {
-                           DateTime date = _startDate.add(Duration(days: index));
-                           List<Moment> moments = _getMomentsForDate(date);
-                           
-                            if (moments.isEmpty) {
-                              return _buildEmptyStateForDate(date);
-                            }
-                            
-                            return ListView.builder(
-                                padding: EdgeInsets.only(top: 20, bottom: _inputHeight + 20), 
-                                itemCount: moments.length,
-                                itemBuilder: (context, i) {
-                                   return MomentCard(
-                                     moment: moments[i],
-                                     baseDir: _baseDir,
-                                     onDelete: () async {
-                                        await _momentService.deleteMoment(moments[i].uuid);
-                                        // Refresh
-                                        await _loadData();
-                                        if (mounted) {
-                                           SkeuomorphicToast.success(context, '随心记已删除');
-                                        }
-                                     },
-                                   );
-                                },
-                              );
-                        },
+                        child: RulerDatePicker(
+                          selectedDate: _selectedDate,
+                          onDateChanged:
+                              (d) => _onDateChanged(
+                                d,
+                                animate: false,
+                              ), // 不驱动 PageView
+                          controller: _rulerController,
+                          accentColor: rulerAccent,
+                          backgroundColor: rulerBg,
+                          textColor: rulerTextColor,
+                          inactiveTextColor: rulerInactiveTextColor,
+                          subTextColor: rulerSubTextColor,
+                          inactiveSubTextColor: rulerInactiveSubTextColor,
+                          indicatorColor: rulerIndicatorColor,
+                          shadowColor: rulerShadowColor,
+                          borderColor: rulerBorderColor,
+                        ),
                       ),
                     ),
+                  ],
+                ),
+
+              // If searching, show result list. Else show regular layout.
+              if (isSearchActive)
+                Expanded(
+                  child: _buildSearchResults(theme, textColor: rulerTextColor),
+                )
+              else if (isDesktop)
+                // Desktop Waterfall Layout
+                Expanded(
+                  child: Stack(
+                    children: [
+                      // Grid - 联动尺子日期
+                      _buildDesktopWaterfall(
+                        context,
+                        _getMomentsForDate(_selectedDate),
+                      ),
+
+                      // Floating Input (Bottom Center) - 拟物化悬浮岛设计
+                      Align(
+                        alignment: Alignment.bottomCenter,
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 30),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (showLimitBanner) _buildLimitBanner(context),
+                              Container(
+                                width: 600,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(24),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(
+                                        0.2,
+                                      ), // Deep shadow
+                                      blurRadius: 15,
+                                      offset: const Offset(0, 8),
+                                    ),
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(
+                                        0.1,
+                                      ), // Ambient shadow
+                                      blurRadius: 5,
+                                      offset: const Offset(0, 0),
+                                    ),
+                                  ],
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(
+                                    24,
+                                  ), // Rounded corners for the widget
+                                  child: MomentInputWidget(onSend: _handleSend),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                )
+              else ...[
+                // Mobile Layout (Ruler + List)
+                // Ruler with Sync Listener
+                NotificationListener<ScrollNotification>(
+                  onNotification: (notification) {
+                    if (notification.depth == 0 &&
+                        notification is ScrollUpdateNotification) {
+                      if (_isPageActive) return false;
+                      _isRulerActive = true;
+
+                      if (_pageController.hasClients &&
+                          _rulerController.hasClients) {
+                        double rulerOffset = _rulerController.offset;
+                        double page = rulerOffset / 70.0;
+                        double pageWidth =
+                            _pageController.position.viewportDimension;
+                        _pageController.jumpTo(page * pageWidth);
+                      }
+                    } else if (notification is ScrollEndNotification) {
+                      _isRulerActive = false;
+                    }
+                    return false;
+                  },
+                  child: RulerDatePicker(
+                    selectedDate: _selectedDate,
+                    onDateChanged: (d) => _onDateChanged(d),
+                    controller: _rulerController,
+                    accentColor: rulerAccent,
+                    backgroundColor: rulerBg,
+                    textColor: rulerTextColor,
+                    inactiveTextColor: rulerInactiveTextColor,
+                    subTextColor: rulerSubTextColor,
+                    inactiveSubTextColor: rulerInactiveSubTextColor,
+                    indicatorColor: rulerIndicatorColor,
+                    shadowColor: rulerShadowColor,
+                    borderColor: rulerBorderColor,
+                  ),
+                ),
+
+                // List (PageView)
+                Expanded(
+                  child: NotificationListener<ScrollNotification>(
+                    onNotification: (notification) {
+                      if (notification.depth == 0 &&
+                          notification is ScrollUpdateNotification) {
+                        if (_isRulerActive) return false;
+                        _isPageActive = true;
+
+                        if (_pageController.hasClients &&
+                            _rulerController.hasClients) {
+                          double page = _pageController.page ?? 0;
+                          double rulerOffset = page * 70.0;
+                          _rulerController.jumpTo(rulerOffset);
+                        }
+                      } else if (notification is ScrollEndNotification) {
+                        _isPageActive = false;
+                        if (!_isRulerActive && _pageController.hasClients) {
+                          int pageIndex = _pageController.page?.round() ?? 0;
+                          DateTime targetDate = _startDate.add(
+                            Duration(days: pageIndex),
+                          );
+                          if (!_isSameDay(targetDate, _selectedDate)) {
+                            _onDateChanged(targetDate, animate: false);
+                          }
+                        }
+                      }
+                      return false;
+                    },
+                    child: PageView.builder(
+                      controller: _pageController,
+                      itemCount: _dayRange,
+                      physics: const BouncingScrollPhysics(),
+                      onPageChanged: (index) {
+                        // Optional: Could trigger haptic feedback here
+                      },
+                      itemBuilder: (context, index) {
+                        DateTime date = _startDate.add(Duration(days: index));
+                        List<Moment> moments = _getMomentsForDate(date);
+
+                        if (moments.isEmpty) {
+                          return _buildEmptyStateForDate(date);
+                        }
+
+                        return ListView.builder(
+                          padding: EdgeInsets.only(
+                            top: 20,
+                            bottom: _inputHeight + 20,
+                          ),
+                          itemCount: moments.length,
+                          itemBuilder: (context, i) {
+                            return MomentCard(
+                              moment: moments[i],
+                              baseDir: _baseDir,
+                              onDelete: () async {
+                                await _momentService.deleteMoment(
+                                  moments[i].uuid,
+                                );
+                                // Refresh
+                                await _loadData();
+                                final syncProvider =
+                                    context.read<SyncProvider>();
+                                await syncProvider.refreshTrustSnapshot();
+                                if (mounted) {
+                                  SkeuomorphicToast.success(context, '已移入回收站');
+                                }
+                              },
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         );
 
         if (isDesktop) {
           return Scaffold(
-             backgroundColor: Colors.transparent, 
-             body: Stack(
-               children: [
-                 // 1. Background
-                 Container(decoration: AppTheme.getBackground(theme)),
-                 
-                 // 2. Visual Effects
-                 ...AppTheme.getBackgroundOverlays(theme),
-                 
-                 // 3. Main Layout
-                 Row(
-                   children: [
-                      const SizedBox(width: 300, child: SidebarWidget()),
-                      Expanded(child: content),
-                   ],
-                 )
-               ],
-             ),
-           );
+            backgroundColor: Colors.transparent,
+            body: Stack(
+              children: [
+                // 1. Background
+                Container(decoration: AppTheme.getBackground(theme)),
+
+                // 2. Visual Effects
+                ...AppTheme.getBackgroundOverlays(theme),
+
+                // 3. Main Layout
+                Row(
+                  children: [
+                    const SizedBox(width: 300, child: SidebarWidget()),
+                    Expanded(child: content),
+                  ],
+                ),
+              ],
+            ),
+          );
         }
 
         // Mobile Header Logic
         Widget headerTitle;
         if (_isSearching) {
-           headerTitle = SkeuomorphicSearchBar(
-             value: searchQuery,
-             onChanged: (val) => diaryProvider.setMomentsSearchQuery(val),
-             autoFocus: true,
-           );
+          headerTitle = SkeuomorphicSearchBar(
+            value: searchQuery,
+            onChanged: (val) => diaryProvider.setMomentsSearchQuery(val),
+            autoFocus: true,
+          );
         } else {
-           final imageCount = _getImageCountForDate(_selectedDate);
-           headerTitle = Column(
-               children: [
+          final imageCount = _getImageCountForDate(_selectedDate);
+          headerTitle = Column(
+            children: [
+              Text(
+                "${_selectedDate.year}年${_selectedDate.month}月",
+                style: GoogleFonts.notoSerifSc(
+                  color: appBarTextColor.withOpacity(0.8),
+                  fontSize: 13,
+                ),
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
                   Text(
-                    "${_selectedDate.year}年${_selectedDate.month}月",
-                    style: GoogleFonts.notoSerifSc(color: appBarTextColor.withOpacity(0.8), fontSize: 13),
+                    "随心记",
+                    style: GoogleFonts.notoSerifSc(
+                      color: appBarTextColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
                   ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        "随心记",
-                        style: GoogleFonts.notoSerifSc(color: appBarTextColor, fontWeight: FontWeight.bold, fontSize: 16),
+                  if (imageCount > 0) ...[
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
                       ),
-                      if (imageCount > 0) ...[
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: appBarIconColor.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(10),
+                      decoration: BoxDecoration(
+                        color: appBarIconColor.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.image, size: 10, color: appBarIconColor),
+                          const SizedBox(width: 2),
+                          Text(
+                            '$imageCount',
+                            style: GoogleFonts.notoSerifSc(
+                              color: appBarIconColor,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.image, size: 10, color: appBarIconColor),
-                              const SizedBox(width: 2),
-                              Text(
-                                '$imageCount',
-                                style: GoogleFonts.notoSerifSc(
-                                  color: appBarIconColor,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-               ],
-            );
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ],
+          );
         }
 
         return Scaffold(
-          extendBodyBehindAppBar: true, 
+          extendBodyBehindAppBar: true,
           backgroundColor: Colors.transparent,
           resizeToAvoidBottomInset: false,
           drawerScrimColor: tc['drawerScrimColor'], // 统一遮罩逻辑
           drawer: const Drawer(
-             width: 300,
-             elevation: 0,
-             backgroundColor: Colors.transparent,
-             child: SidebarWidget(),
+            width: 300,
+            elevation: 0,
+            backgroundColor: Colors.transparent,
+            child: SidebarWidget(),
           ),
           appBar: AppBar(
-            backgroundColor: tc['appBarBg'], 
+            backgroundColor: tc['appBarBg'],
             elevation: 0,
             leading: Builder(
               builder: (context) {
-                 if (_isSearching) {
-                   return IconButton(
-                     icon: Icon(Icons.arrow_back, color: appBarIconColor),
-                     onPressed: () {
-                        setState(() { _isSearching = false; });
-                        diaryProvider.setSearchQuery('');
-                     }
-                   );
-                 }
-                 return IconButton(
-                    icon: Icon(Icons.menu, color: appBarIconColor),
-                    onPressed: () => Scaffold.of(context).openDrawer(),
-                 );
-              }
+                if (_isSearching) {
+                  return IconButton(
+                    icon: Icon(Icons.arrow_back, color: appBarIconColor),
+                    onPressed: () {
+                      setState(() {
+                        _isSearching = false;
+                      });
+                      diaryProvider.setSearchQuery('');
+                    },
+                  );
+                }
+                return IconButton(
+                  icon: Icon(Icons.menu, color: appBarIconColor),
+                  onPressed: () => Scaffold.of(context).openDrawer(),
+                );
+              },
             ),
             title: AnimatedSwitcher(
-               duration: const Duration(milliseconds: 300),
-               child: headerTitle,
+              duration: const Duration(milliseconds: 300),
+              child: headerTitle,
             ),
             centerTitle: true,
             actions: [
-               if (!_isSearching)
-                 IconButton(
-                    icon: Icon(Icons.search, color: appBarIconColor),
-                    onPressed: () => setState(() => _isSearching = true),
-                 ),
-               
-               if (!_isSearching)
-                 IconButton(
-                   key: const ValueKey('mobile_generate_btn'),
-                   icon: Icon(Icons.description_outlined, color: appBarIconColor),
-                   tooltip: '生成今日日记',
-                   onPressed: _handleAggregation,
-                 )
+              if (!_isSearching)
+                IconButton(
+                  icon: Icon(Icons.search, color: appBarIconColor),
+                  onPressed: () => setState(() => _isSearching = true),
+                ),
+
+              if (!_isSearching)
+                IconButton(
+                  key: const ValueKey('mobile_generate_btn'),
+                  icon: Icon(
+                    Icons.description_outlined,
+                    color: appBarIconColor,
+                  ),
+                  tooltip: '生成今日日记',
+                  onPressed: _handleAggregation,
+                ),
             ],
           ),
           body: Builder(
             builder: (bodyContext) {
               final bottomInset = MediaQuery.of(bodyContext).viewInsets.bottom;
               final isKeyboardOpen = bottomInset > 0;
-              
+
               return Stack(
                 children: [
                   // 0. Background
                   Positioned.fill(
-                    child: Container(decoration: AppTheme.getBackground(theme))
+                    child: Container(decoration: AppTheme.getBackground(theme)),
                   ),
-                  
+
                   // 0.5. Visual Effects
                   ...AppTheme.getBackgroundOverlays(theme),
 
@@ -765,22 +868,22 @@ class _MomentsPageState extends State<MomentsPage> {
                     top: 0,
                     left: 0,
                     right: 0,
-                    bottom: isKeyboardOpen ? bottomInset : 0, 
-                    child: content
+                    bottom: isKeyboardOpen ? bottomInset : 0,
+                    child: content,
                   ),
-                  
+
                   // 2. Dismiss Layer
                   if (isKeyboardOpen || _inputFocusNode.hasFocus)
                     Positioned.fill(
                       child: GestureDetector(
-                        behavior: HitTestBehavior.opaque, 
+                        behavior: HitTestBehavior.opaque,
                         onTap: () {
-                          _inputFocusNode.unfocus(); 
+                          _inputFocusNode.unfocus();
                         },
                         child: Container(color: Colors.transparent),
                       ),
                     ),
-                  
+
                   // 3. Input Widget
                   // Use AnimatedPositioned to smooth out the jump if ViewInsets updates late
                   if (!isSearchActive)
@@ -795,25 +898,28 @@ class _MomentsPageState extends State<MomentsPage> {
                         children: [
                           if (showLimitBanner) _buildLimitBanner(bodyContext),
                           MomentInputWidget(
-                              onSend: _handleSend, 
-                              focusNode: _inputFocusNode,
-                              onHeightChanged: (h) {
-                                 if ((_inputHeight - h).abs() > 1) { // Debounce/Throttling check
-                                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                                       if (mounted) setState(() => _inputHeight = h);
-                                    });
-                                 }
-                              },
+                            onSend: _handleSend,
+                            focusNode: _inputFocusNode,
+                            onHeightChanged: (h) {
+                              if ((_inputHeight - h).abs() > 1) {
+                                // Debounce/Throttling check
+                                WidgetsBinding.instance.addPostFrameCallback((
+                                  _,
+                                ) {
+                                  if (mounted) setState(() => _inputHeight = h);
+                                });
+                              }
+                            },
                           ),
                         ],
                       ),
                     ),
                 ],
               );
-            }
+            },
           ),
         );
-      }
+      },
     );
   }
 
@@ -837,10 +943,21 @@ class _MomentsPageState extends State<MomentsPage> {
             ),
           ),
           GestureDetector(
-            onTap: () => Navigator.push(context, SlidePageRoute(page: const PremiumMembershipPage())),
+            onTap:
+                () => Navigator.push(
+                  context,
+                  SlidePageRoute(page: const PremiumMembershipPage()),
+                ),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: Text('去赞助', style: GoogleFonts.notoSerifSc(color: const Color(0xFFFFE0B2), fontWeight: FontWeight.bold, fontSize: 13)),
+              child: Text(
+                '去赞助',
+                style: GoogleFonts.notoSerifSc(
+                  color: const Color(0xFFFFE0B2),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
+              ),
             ),
           ),
         ],
@@ -852,113 +969,133 @@ class _MomentsPageState extends State<MomentsPage> {
     // 使用透明容器，确保背景可以穿透显示
     return Container(
       color: Colors.transparent, // 透明背景
-      child: _filteredMoments.isEmpty
-        ? Center(
-            child: Opacity(
-              opacity: 0.7,
-              child: Text(
-                '没有找到相关记忆...',
-                style: GoogleFonts.notoSerifSc(
-                  color: textColor?.withOpacity(0.7) ?? Colors.white70,
-                  fontSize: 16
-                )
+      child:
+          _filteredMoments.isEmpty
+              ? Center(
+                child: Opacity(
+                  opacity: 0.7,
+                  child: Text(
+                    '没有找到相关记忆...',
+                    style: GoogleFonts.notoSerifSc(
+                      color: textColor?.withOpacity(0.7) ?? Colors.white70,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              )
+              : ListView.builder(
+                padding: EdgeInsets.only(top: 20, bottom: _inputHeight + 20),
+                itemCount: _filteredMoments.length,
+                itemBuilder: (context, i) {
+                  return MomentCard(
+                    moment: _filteredMoments[i],
+                    baseDir: _baseDir,
+                    onDelete: () async {
+                      await _momentService.deleteMoment(
+                        _filteredMoments[i].uuid,
+                      );
+                      await _loadData();
+                      final syncProvider = context.read<SyncProvider>();
+                      await syncProvider.refreshTrustSnapshot();
+                    },
+                  );
+                },
               ),
-            )
-          )
-        : ListView.builder(
-            padding: EdgeInsets.only(top: 20, bottom: _inputHeight + 20),
-            itemCount: _filteredMoments.length,
-            itemBuilder: (context, i) {
-               return MomentCard(
-                 moment: _filteredMoments[i],
-                 baseDir: _baseDir,
-                 onDelete: () async {
-                    await _momentService.deleteMoment(_filteredMoments[i].uuid);
-                    await _loadData();
-                 },
-               );
-            },
-          ),
     );
   }
 
   Widget _buildDesktopHeader(Color textColor, Color iconColor) {
     return Container(
-       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-       decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.05), // Subtle bg for header
-          border: Border(bottom: BorderSide(color: Colors.white.withOpacity(0.1))),
-       ),
-       child: Row(
-         children: [
-           // Leading (empty or back?) - No drawer icon needed
-           const SizedBox(width: 48), // Spacer to center title if needed, or just let it adjust
-           
-           Expanded(
-             child: Column(
-                children: [
-                   Text(
-                     "${_selectedDate.year}年${_selectedDate.month}月",
-                     style: GoogleFonts.notoSerifSc(color: textColor.withOpacity(0.8), fontSize: 13),
-                   ),
-                   Builder(
-                     builder: (context) {
-                       final imageCount = _getImageCountForDate(_selectedDate);
-                       return Row(
-                         mainAxisSize: MainAxisSize.min,
-                         mainAxisAlignment: MainAxisAlignment.center,
-                         children: [
-                           Text(
-                             "随心记",
-                             style: GoogleFonts.notoSerifSc(color: textColor, fontWeight: FontWeight.bold, fontSize: 16),
-                           ),
-                           if (imageCount > 0) ...[
-                             const SizedBox(width: 6),
-                             Container(
-                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                               decoration: BoxDecoration(
-                                 color: iconColor.withOpacity(0.2),
-                                 borderRadius: BorderRadius.circular(10),
-                               ),
-                               child: Row(
-                                 mainAxisSize: MainAxisSize.min,
-                                 children: [
-                                   Icon(Icons.image, size: 10, color: iconColor),
-                                   const SizedBox(width: 2),
-                                   Text(
-                                     '$imageCount',
-                                     style: GoogleFonts.notoSerifSc(
-                                       color: iconColor,
-                                       fontSize: 10,
-                                       fontWeight: FontWeight.w600,
-                                     ),
-                                   ),
-                                 ],
-                               ),
-                             ),
-                           ],
-                         ],
-                       );
-                     },
-                   ),
-                ],
-             ),
-           ),
-           
-           IconButton(
-             key: const ValueKey('desktop_generate_btn'),
-             icon: Icon(Icons.description_outlined, color: iconColor),
-             tooltip: '生成今日日记',
-             onPressed: _handleAggregation,
-           )
-         ],
-       ),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05), // Subtle bg for header
+        border: Border(
+          bottom: BorderSide(color: Colors.white.withOpacity(0.1)),
+        ),
+      ),
+      child: Row(
+        children: [
+          // Leading (empty or back?) - No drawer icon needed
+          const SizedBox(
+            width: 48,
+          ), // Spacer to center title if needed, or just let it adjust
+
+          Expanded(
+            child: Column(
+              children: [
+                Text(
+                  "${_selectedDate.year}年${_selectedDate.month}月",
+                  style: GoogleFonts.notoSerifSc(
+                    color: textColor.withOpacity(0.8),
+                    fontSize: 13,
+                  ),
+                ),
+                Builder(
+                  builder: (context) {
+                    final imageCount = _getImageCountForDate(_selectedDate);
+                    return Row(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          "随心记",
+                          style: GoogleFonts.notoSerifSc(
+                            color: textColor,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        if (imageCount > 0) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: iconColor.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.image, size: 10, color: iconColor),
+                                const SizedBox(width: 2),
+                                Text(
+                                  '$imageCount',
+                                  style: GoogleFonts.notoSerifSc(
+                                    color: iconColor,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+
+          IconButton(
+            key: const ValueKey('desktop_generate_btn'),
+            icon: Icon(Icons.description_outlined, color: iconColor),
+            tooltip: '生成今日日记',
+            onPressed: _handleAggregation,
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildEmptyStateForDate(DateTime date) {
     bool isToday = _isSameDay(date, DateTime.now());
-    final theme = Provider.of<SettingsProvider>(context, listen: false).currentTheme;
+    final theme =
+        Provider.of<SettingsProvider>(context, listen: false).currentTheme;
 
     // 简洁拟物化配置 - 仅颜色适配，统一由 AppTheme 管理
     final Color iconColor = AppTheme.getAccentColor(theme);
@@ -1003,7 +1140,8 @@ class _MomentsPageState extends State<MomentsPage> {
         final width = constraints.maxWidth;
         // Logic from DiaryListPage
         int columnCount = 1;
-        if (width > 1200) { // Slightly wider for moments card
+        if (width > 1200) {
+          // Slightly wider for moments card
           columnCount = 3;
         } else if (width > 750) {
           columnCount = 2;
@@ -1016,30 +1154,42 @@ class _MomentsPageState extends State<MomentsPage> {
         }
 
         return SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(40, 20, 40, 100), // Bottom padding for input widget
+          padding: const EdgeInsets.fromLTRB(
+            40,
+            20,
+            40,
+            100,
+          ), // Bottom padding for input widget
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               for (int i = 0; i < columnCount; i++)
                 Expanded(
                   child: Padding(
-                    padding: i < columnCount - 1 
-                        ? const EdgeInsets.only(right: 24) 
-                        : EdgeInsets.zero,
+                    padding:
+                        i < columnCount - 1
+                            ? const EdgeInsets.only(right: 24)
+                            : EdgeInsets.zero,
                     child: Column(
-                      children: columns[i].map((moment) {
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 24),
-                          child: MomentCard(
-                             moment: moment,
-                             baseDir: _baseDir,
-                             onDelete: () async {
-                                await _momentService.deleteMoment(moment.uuid);
-                                await _loadData();
-                             },
-                           ),
-                        );
-                      }).toList(),
+                      children:
+                          columns[i].map((moment) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 24),
+                              child: MomentCard(
+                                moment: moment,
+                                baseDir: _baseDir,
+                                onDelete: () async {
+                                  await _momentService.deleteMoment(
+                                    moment.uuid,
+                                  );
+                                  await _loadData();
+                                  final syncProvider =
+                                      context.read<SyncProvider>();
+                                  await syncProvider.refreshTrustSnapshot();
+                                },
+                              ),
+                            );
+                          }).toList(),
                     ),
                   ),
                 ),

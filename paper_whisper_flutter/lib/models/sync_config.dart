@@ -21,17 +21,31 @@ class SyncConfig {
 
   static const String defaultServerUrl = 'https://dav.jianguoyun.com/dav/';
 
+  bool get hasWebDavCredentials =>
+      serverUrl.trim().isNotEmpty &&
+      username.trim().isNotEmpty &&
+      password.trim().isNotEmpty;
+
+  bool get hasS3Credentials =>
+      s3EndPoint.trim().isNotEmpty &&
+      s3AccessKey.trim().isNotEmpty &&
+      s3SecretKey.trim().isNotEmpty &&
+      s3BucketName.trim().isNotEmpty;
+
+  bool get hasRequiredCredentials =>
+      syncType == SyncType.webdav ? hasWebDavCredentials : hasS3Credentials;
+
   SyncConfig({
     this.autoSync = false,
     this.enabled = false,
     this.compressImages = true,
     this.syncType = SyncType.webdav,
-    
+
     // WebDAV defaults
     this.serverUrl = defaultServerUrl,
     this.username = '',
     this.password = '',
-    
+
     // S3 defaults
     this.s3EndPoint = '',
     this.s3AccessKey = '',
@@ -78,10 +92,8 @@ class SyncConfig {
       'syncType': syncType.index,
       'serverUrl': serverUrl,
       'username': username,
-      'password': password,
       's3EndPoint': s3EndPoint,
       's3AccessKey': s3AccessKey,
-      's3SecretKey': s3SecretKey,
       's3BucketName': s3BucketName,
       's3Region': s3Region,
     };

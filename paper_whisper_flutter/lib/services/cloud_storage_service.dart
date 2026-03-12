@@ -3,6 +3,7 @@ import 'dart:async';
 
 abstract class CloudStorageService {
   bool get isConnected;
+  String? get lastConnectionError;
   
   /// 连接/初始化服务
   Future<bool> connect();

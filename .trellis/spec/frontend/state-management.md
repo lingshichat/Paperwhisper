@@ -118,6 +118,37 @@ Example flow:
 
 ---
 
+## Sync Trust Snapshot Contract
+
+`SyncProvider` is the only UI-facing source of truth for sync state. UI code must not infer sync safety from `SyncConfig.enabled` or from toasts alone.
+
+### Required read model
+
+Screens such as `SettingsPage` and `SyncSettingsPage` should render from `provider.trustSnapshot`, especially:
+
+- `state`
+- `totalPendingCount`
+- `lastSuccessfulSyncAt`
+- `lastSuccessfulSyncPlatform`
+- `failureReason`
+- `configurationInvalid`
+
+### UI rules
+
+- `Testing connection` may save config and validate connectivity, but must not trigger a real sync run
+- `Sync now` is the only settings-page action that should start a real sync
+- When current target has pending work, show pending counts for the **current scoped target**
+- When current target is clean, show the last success time and platform, for example `最近一次成功同步：2026-03-12 09:30（S3）`
+- `notEnabled` must remain a reachable UI state; users need a real way to disable sync again
+
+### Good / Base / Bad Cases
+
+- Good: After switching back to a previously synced S3 target, UI returns to `Synced Successfully` with the S3 badge in the success line
+- Base: A brand new WebDAV target shows `Local Changes Pending` until its first successful sync
+- Bad: UI says `尚有内容待同步` only because the user switched away from and back to a different provider that already had its own clean baseline
+
+---
+
 ## Common Mistakes
 
 1. **Using `context.watch` when no rebuild is needed** — Use `context.read` for fire-and-forget calls
