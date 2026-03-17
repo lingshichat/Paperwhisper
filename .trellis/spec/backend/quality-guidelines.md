@@ -101,6 +101,15 @@ if (Platform.isAndroid) {
 
 ---
 
+## Real Code Examples
+
+- [`diary_service.dart`](../../paper_whisper_flutter/lib/services/diary_service.dart) — uses async file I/O, `create(recursive: true)`, and platform-specific path selection with Android fallback behavior
+- [`trash_service.dart`](../../paper_whisper_flutter/lib/services/trash_service.dart) — implements soft delete instead of direct deletion and preserves a recovery path for failed moves
+- [`auth_service.dart`](../../paper_whisper_flutter/lib/services/auth_service.dart) — hashes PIN values with SHA-256 before persisting them in `SharedPreferences`
+- [`moment_service.dart`](../../paper_whisper_flutter/lib/services/moment_service.dart) — keeps image/audio side effects behind one service boundary and normalizes related-file handling per moment
+
+---
+
 ## Testing Requirements
 
 - Services should be testable via their `init()` / `reset()` pattern

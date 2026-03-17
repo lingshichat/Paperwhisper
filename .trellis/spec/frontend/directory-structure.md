@@ -17,14 +17,18 @@ paper_whisper_flutter/
 ├── lib/
 │   ├── main.dart               # App entry: init services, MultiProvider, MyApp
 │   ├── config/
-│   │   └── app_theme.dart      # Centralized theme system (~4000 lines)
+│   │   ├── app_theme.dart      # AppTheme facade used by UI/widgets
+│   │   └── theme/
+│   │       ├── theme_registry.dart
+│   │       ├── components/     # Typed component theme data objects
+│   │       └── themes/         # Per-theme palettes/tokens
 │   ├── models/                 # Plain Dart data classes
 │   │   ├── diary_entry.dart    # DiaryEntry (file-based serialization)
 │   │   ├── moment.dart         # Moment (JSON serialization)
 │   │   ├── sync_config.dart    # WebDAV / S3 sync configuration
 │   │   ├── sync_manifest.dart  # Sync state tracking
 │   │   └── update_info.dart    # App update metadata
-│   ├── pages/                  # Full-screen page widgets (16 files)
+│   ├── pages/                  # Full-screen page widgets (17 files)
 │   │   ├── diary_list_page.dart
 │   │   ├── moments_page.dart
 │   │   ├── editor_page.dart
@@ -67,7 +71,7 @@ paper_whisper_flutter/
 3. **Data models** go in `models/` — plain Dart classes with `toJson()`/`fromJson()`
 4. **State management** goes in `providers/` — only if global state is needed
 5. **Business logic / I/O** goes in `services/` — singleton pattern via factory constructor
-6. **Theme configuration** stays in `config/app_theme.dart` — static methods returning theme maps
+6. **Theme configuration** stays in `config/` — typed theme data under `config/theme/components/`, public accessors in `config/app_theme.dart`
 
 ### When things grow large:
 - Split page logic into helper widgets or `*_methods.dart` partial files
@@ -94,3 +98,11 @@ paper_whisper_flutter/
 - **Well-organized service**: [`diary_service.dart`](../../paper_whisper_flutter/lib/services/diary_service.dart) — clean singleton, init/reset pattern, clear CRUD methods
 - **Well-organized widget**: [`skeuomorphic_container.dart`](../../paper_whisper_flutter/lib/widgets/skeuomorphic_container.dart) — named factory constructors for variants (`.paper()`, `.inset()`)
 - **Well-organized model**: [`moment.dart`](../../paper_whisper_flutter/lib/models/moment.dart) — immutable fields, factory constructors for creation and deserialization
+
+---
+
+## Common Anti-patterns
+
+1. **把文件/网络逻辑塞进页面或小组件** — UI 留在 `pages/` / `widgets/`，I/O 和平台差异都应下沉到 `services/`
+2. **在页面里新增一套散装主题常量** — 新主题字段先进入 `config/theme/components/`，再通过 `AppTheme.getXxxTheme()` 暴露给 UI
+3. **为了局部状态新增 Provider** — 输入框、展开折叠、动画控制器这类短生命周期状态应继续留在 `StatefulWidget`

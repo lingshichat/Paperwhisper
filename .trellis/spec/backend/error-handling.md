@@ -80,6 +80,15 @@ HitokotoService().fetchHitokoto(); // Fire and forget, 不 await
 
 ---
 
+## Real Code Examples
+
+- [`main.dart`](../../paper_whisper_flutter/lib/main.dart) — wires `FlutterError.onError` and `PlatformDispatcher.instance.onError` into `AnalyticsService().trackEvent('app_crash', ...)` while still preventing hard crashes where possible
+- [`diary_service.dart`](../../paper_whisper_flutter/lib/services/diary_service.dart) — catches per-file read failures during `getEntries()`, logs them, and continues returning the remaining valid entries
+- [`trash_service.dart`](../../paper_whisper_flutter/lib/services/trash_service.dart) — first tries `rename`, then degrades to copy-delete, and only rethrows when both recovery paths fail
+- [`update_service.dart`](../../paper_whisper_flutter/lib/services/update_service.dart) — treats `404` as “no version file”, wraps version parsing in fallback logic, and returns `null` for recoverable local metadata failures
+
+---
+
 ## Error Propagation Rules
 
 | Layer | Strategy |

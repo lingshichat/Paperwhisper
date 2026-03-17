@@ -61,6 +61,15 @@ analytics.init().then((_) {
 
 ---
 
+## Real Code Examples
+
+- [`main.dart`](../../paper_whisper_flutter/lib/main.dart) — sends `app_launch` and `app_crash` analytics without blocking startup, and keeps crash metadata limited to error/stack/fatal
+- [`analytics_service.dart`](../../paper_whisper_flutter/lib/services/analytics_service.dart) — uses `debugPrint()` for init/send diagnostics and keeps the production telemetry path inside one service
+- [`storage_service.dart`](../../paper_whisper_flutter/lib/services/storage_service.dart) — logs cache cleanup progress and failures with operational messages, not user content
+- [`webdav_sync_service.dart`](../../paper_whisper_flutter/lib/services/webdav_sync_service.dart) — logs connection/upload/download lifecycle events per remote path so sync issues can be diagnosed without exposing diary text
+
+---
+
 ## What to Log / Track
 
 ### ✅ Track these events:

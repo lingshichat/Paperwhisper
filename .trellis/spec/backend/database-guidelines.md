@@ -59,21 +59,22 @@ Each moment is a JSON file stored as `{uuid}.json`:
 
 ## Storage Locations
 
-| Platform | Base path | Method |
-|----------|-----------|--------|
-| Android | `/storage/emulated/0/Documents/PaperWhisper/` | Public documents (survives uninstall) |
-| Windows | `{Documents}/PaperWhisper/` | Standard documents folder |
+| Platform | Primary path | Fallback / legacy path |
+|----------|--------------|------------------------|
+| Android | `/storage/emulated/0/Documents/PaperWhisper/` | App-private documents / external app dir when permission is unavailable |
+| Windows | `{Documents}/PaperWhisper/` | Portable / legacy sibling directories such as `diary_data` or `moments_data` next to the executable |
 
-Sub-directories:
+Actual sub-directories in current code:
 ```
 PaperWhisper/
-├── diary/              # Diary .txt files
-├── moments/
-│   ├── data/           # Moment .json files
-│   ├── images/         # Moment images
-│   └── audio/          # Moment audio recordings
-├── cache/              # JSON cache for fast startup
-└── book_metadata.json  # Book title/subtitle/cover per year
+├── diary_data/
+│   ├── *.txt              # Diary entries
+│   ├── diary_cache.json   # Derived startup cache
+│   └── book_metadata.json # Book title/subtitle/cover per year
+└── moments_data/
+    ├── *.json             # Moment payloads
+    ├── images/            # Moment images
+    └── audio/             # Moment audio recordings
 ```
 
 ---
@@ -191,6 +192,15 @@ Then namespace the local sync baseline keys:
 - Good: User syncs to S3 successfully, switches to WebDAV, then switches back to the same S3 bucket and still sees `Synced Successfully`
 - Base: User has never synced to the current target before, so switching targets shows pending local work until first success
 - Bad: A shared global manifest key makes WebDAV appear up to date because S3 synced earlier, or makes S3 appear pending because WebDAV never synced
+
+---
+
+## Real Code Examples
+
+- [`diary_service.dart`](../../paper_whisper_flutter/lib/services/diary_service.dart) — resolves `diary_data`, parses `*.txt` files with `DiaryEntry.fromFileContent(...)`, and persists `diary_cache.json`
+- [`moment_service.dart`](../../paper_whisper_flutter/lib/services/moment_service.dart) — resolves `moments_data`, keeps JSON payloads at the root, and manages sibling `images/` + `audio/` folders
+- [`trash_service.dart`](../../paper_whisper_flutter/lib/services/trash_service.dart) — records soft-delete metadata as JSON and falls back from rename to copy-delete when moving files across boundaries
+- [`sync_provider.dart`](../../paper_whisper_flutter/lib/providers/sync_provider.dart) — stores scoped manifests and `sync_trust_snapshot` payloads in `SharedPreferences` rather than a shared global key
 
 ---
 

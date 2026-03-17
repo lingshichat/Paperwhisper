@@ -22,14 +22,18 @@ PaperWhisper uses Dart's strong type system with null safety enabled (`sdk: ^3.7
 | `SyncManifest` | JSON | File system manifest |
 | `UpdateInfo` | JSON | Remote API |
 
-### Theme data uses `Map<String, dynamic>`:
+### Theme data is in a transition state:
 
-`AppTheme` methods return untyped maps:
+Typed source-of-truth lives under `config/theme/components/`, but most UI code still consumes `Map<String, dynamic>` returned by `AppTheme`:
 ```dart
-static Map<String, dynamic> getDiaryCardTheme(String theme) => { ... };
+static Map<String, dynamic> getDiaryCardTheme(String theme) =>
+    ThemeRegistry.get(theme).diaryCard.toMap();
 ```
 
-> **Known tech debt**: Theme data should be typed with dedicated classes, but currently uses `Map<String, dynamic>`.
+Rules for new theme fields:
+- Add the strongly-typed property to the relevant `*ThemeData` class first
+- Expose it through `.toMap()` only as a compatibility layer for existing widgets
+- Prefer migrating new widgets toward typed theme objects when practical
 
 ---
 
@@ -134,6 +138,15 @@ final int? audioDuration;   // 录音时长 (可能没有)
 // Deserialize:
 createdAt: DateTime.parse(json['createdAt'] as String),
 ```
+
+---
+
+## Real Code Examples
+
+- [`moment.dart`](../../paper_whisper_flutter/lib/models/moment.dart) — immutable fields, `Moment.create(...)`, typed JSON casts, and ISO-8601 serialization
+- [`diary_entry.dart`](../../paper_whisper_flutter/lib/models/diary_entry.dart) — custom text parser with fallback defaults for title/date/weather/mood and a separate `fromJson(...)` cache path
+- [`sync_trust_snapshot.dart`](../../paper_whisper_flutter/lib/models/sync_trust_snapshot.dart) — enum-backed UI contract with `copyWith`, derived getters, and safe fallback parsing for persisted state names
+- [`moment_input_theme_data.dart`](../../paper_whisper_flutter/lib/config/theme/components/moment_input_theme_data.dart) — typed theme DTO that bridges into the legacy `Map<String, dynamic>` access pattern
 
 ---
 

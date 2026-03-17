@@ -136,6 +136,15 @@ final results = await Future.wait([...]);
 
 ---
 
+## Real Code Examples
+
+- [`main.dart`](../../paper_whisper_flutter/lib/main.dart) — parallelizes startup with `Future.wait(...)`, installs crash reporting hooks, and keeps non-critical preload work behind timeouts / fire-and-forget calls
+- [`moment_input_widget.dart`](../../paper_whisper_flutter/lib/widgets/moment_input_widget.dart) — disposes every controller/player/timer it owns and pulls all major colors/shadows from `AppTheme.getMomentInputTheme(...)`
+- [`settings_page.dart`](../../paper_whisper_flutter/lib/pages/settings_page.dart) — renders from `themeConfig` maps instead of hardcoded theme booleans and scopes membership UI rebuilds with `Consumer`
+- [`sync_settings_page.dart`](../../paper_whisper_flutter/lib/pages/sync_settings_page.dart) — combines `AppTheme.getSettingsTheme(...)` and `AppTheme.getSyncSettingsTheme(...)` instead of inlining sync-page colors in widget code
+
+---
+
 ## Testing Requirements
 
 - Run `flutter analyze` before committing — must pass with zero errors

@@ -118,6 +118,15 @@ Example flow:
 
 ---
 
+## Real Code Examples
+
+- [`main.dart`](../../paper_whisper_flutter/lib/main.dart) — root `MultiProvider` wiring for `SettingsProvider`, `DiaryProvider`, `SyncProvider`, and `PaymentService`
+- [`editor_page.dart`](../../paper_whisper_flutter/lib/pages/editor_page.dart) — uses `context.read<SyncProvider>()` for save-triggered side effects without subscribing the whole page to sync rebuilds
+- [`settings_page.dart`](../../paper_whisper_flutter/lib/pages/settings_page.dart) — scopes premium badge rebuilds with `Consumer<PaymentService>` instead of rebuilding the whole settings screen
+- [`sidebar_widget.dart`](../../paper_whisper_flutter/lib/widgets/sidebar_widget.dart) — uses `context.watch<DiaryProvider>()` where the widget really needs reactive diary data
+
+---
+
 ## Sync Trust Snapshot Contract
 
 `SyncProvider` is the only UI-facing source of truth for sync state. UI code must not infer sync safety from `SyncConfig.enabled` or from toasts alone.

@@ -69,6 +69,14 @@ lib/services/
 
 ---
 
+## Real Code Examples
+
+- [`diary_service.dart`](../../paper_whisper_flutter/lib/services/diary_service.dart) — owns diary file-system CRUD and composes `ManifestService` + `TrashService` instead of letting UI code touch files directly
+- [`webdav_sync_service.dart`](../../paper_whisper_flutter/lib/services/webdav_sync_service.dart) — keeps WebDAV-specific path creation, upload/download, and remote mutations inside one transport-focused service
+- [`analytics_service.dart`](../../paper_whisper_flutter/lib/services/analytics_service.dart) — encapsulates device metadata, event payload assembly, and network delivery away from pages/providers
+
+---
+
 ## Singleton Pattern
 
 All services follow this pattern:
@@ -91,3 +99,11 @@ class DiaryService {
   void reset() { ... }
 }
 ```
+
+---
+
+## Common Anti-patterns
+
+1. **在 Page / Widget 中直接写文件或发网络请求** — 页面应调用 Provider / Service；I/O 和协议细节必须留在 `lib/services/`
+2. **一个同步后端拆散到多个 UI 文件里** — WebDAV/S3 这种边界能力应各自收敛到独立 service，不要把上传、下载、删除逻辑散落在按钮回调里
+3. **绕过协作 service** — 例如日记删除必须经过 `TrashService` 和 `ManifestService`，不要让调用方直接 `File.delete()`

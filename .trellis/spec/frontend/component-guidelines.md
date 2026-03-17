@@ -109,6 +109,15 @@ Global default transition is `_SkeuomorphicPageTransitionsBuilder` in `app_theme
 
 ---
 
+## Real Code Examples
+
+- [`skeuomorphic_container.dart`](../../paper_whisper_flutter/lib/widgets/skeuomorphic_container.dart) — base tactile primitive with named constructors like `.paper()` and `.inset()`
+- [`moment_input_widget.dart`](../../paper_whisper_flutter/lib/widgets/moment_input_widget.dart) — reads `AppTheme.getMomentInputTheme(...)` and applies shadows, rounded surfaces, and themed icon colors instead of Material defaults
+- [`update_dialog.dart`](../../paper_whisper_flutter/lib/widgets/update_dialog.dart) — custom stateful dialog with mounted guards, download state machine, and bespoke skeuomorphic presentation
+- [`book_flip_page_route.dart`](../../paper_whisper_flutter/lib/widgets/book_flip_page_route.dart) — custom page transition that reinforces the physical-book interaction model
+
+---
+
 ## Common Mistakes
 
 1. **Using `Theme.of(context)` Material colors directly** — Always go through `AppTheme.getXxxTheme()` methods instead
