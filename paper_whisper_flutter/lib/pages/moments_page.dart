@@ -34,8 +34,13 @@ class MomentsPage extends StatefulWidget {
 
 class _MomentsPageState extends State<MomentsPage> {
   final MomentService _momentService = MomentService();
-  List<Moment> _allMoments = []; // Cache all
-  List<Moment> _filteredMoments = [];
+  List<Moment> _latestMoments = [];
+  Map<String, List<Moment>> _momentsByDay = {};
+  Map<String, int> _imageCountByDay = {};
+  String _cachedSearchQuery = '';
+  int _momentsRevision = 0;
+  int _cachedSearchRevision = -1;
+  List<Moment> _cachedFilteredMoments = const [];
   Directory? _baseDir;
   DateTime _selectedDate = DateTime.now();
 
@@ -143,20 +148,57 @@ class _MomentsPageState extends State<MomentsPage> {
     super.dispose();
   }
 
-  // Optimized helper
+  String _dayKey(DateTime date) => '${date.year}-${date.month}-${date.day}';
+
+  _MomentLookupCache _buildMomentLookupCache(List<Moment> moments) {
+    final latestMoments = List<Moment>.from(moments)
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final momentsByDay = <String, List<Moment>>{};
+    final imageCountByDay = <String, int>{};
+
+    for (final moment in moments) {
+      final key = _dayKey(moment.createdAt);
+      momentsByDay.putIfAbsent(key, () => <Moment>[]).add(moment);
+      imageCountByDay[key] = (imageCountByDay[key] ?? 0) + moment.images.length;
+    }
+
+    for (final dailyMoments in momentsByDay.values) {
+      dailyMoments.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    }
+
+    return _MomentLookupCache(
+      latestMoments: latestMoments,
+      momentsByDay: momentsByDay,
+      imageCountByDay: imageCountByDay,
+    );
+  }
+
   List<Moment> _getMomentsForDate(DateTime date) {
-    return _allMoments.where((m) {
-        return m.createdAt.year == date.year &&
-            m.createdAt.month == date.month &&
-            m.createdAt.day == date.day;
-      }).toList()
-      ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    return _momentsByDay[_dayKey(date)] ?? const [];
   }
 
   // 计算指定日期随心记中的图片总数
   int _getImageCountForDate(DateTime date) {
-    final moments = _getMomentsForDate(date);
-    return moments.fold<int>(0, (sum, m) => sum + m.images.length);
+    return _imageCountByDay[_dayKey(date)] ?? 0;
+  }
+
+  List<Moment> _getFilteredMoments(String query) {
+    if (query.isEmpty) return const [];
+
+    if (_cachedSearchQuery == query &&
+        _cachedSearchRevision == _momentsRevision) {
+      return _cachedFilteredMoments;
+    }
+
+    final filteredMoments =
+        _latestMoments
+            .where((moment) => moment.content.contains(query))
+            .toList(growable: false);
+
+    _cachedSearchQuery = query;
+    _cachedSearchRevision = _momentsRevision;
+    _cachedFilteredMoments = filteredMoments;
+    return filteredMoments;
   }
 
   void _onDateChanged(DateTime date, {bool animate = true}) {
@@ -411,9 +453,14 @@ class _MomentsPageState extends State<MomentsPage> {
   Future<void> _loadData() async {
     await _momentService.init();
     final moments = await _momentService.getMoments();
+    final lookupCache = _buildMomentLookupCache(moments);
     if (mounted) {
       setState(() {
-        _allMoments = moments;
+        _latestMoments = lookupCache.latestMoments;
+        _momentsByDay = lookupCache.momentsByDay;
+        _imageCountByDay = lookupCache.imageCountByDay;
+        _momentsRevision++;
+        _cachedSearchRevision = -1;
         _baseDir = _momentService.dataDir;
       });
     }
@@ -462,36 +509,21 @@ class _MomentsPageState extends State<MomentsPage> {
     final Color? rulerBorderColor = tc['rulerBorderColor'];
 
     // Search Integration
-    final diaryProvider = Provider.of<DiaryProvider>(context);
-    final String searchQuery = diaryProvider.momentsSearchQuery;
+    final String searchQuery = context.select<DiaryProvider, String>(
+      (provider) => provider.momentsSearchQuery,
+    );
     final bool isSearchActive = searchQuery.isNotEmpty;
-
-    // Filter Logic if searching
-    if (isSearchActive) {
-      // Filter _allMoments
-      _filteredMoments =
-          _allMoments.where((m) {
-            // Basic match: content or plain text
-            // Moment has content string.
-            return m.content.contains(searchQuery);
-          }).toList();
-      // Sort by latest first for search
-      _filteredMoments.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    }
+    final List<Moment> filteredMoments =
+        isSearchActive ? _getFilteredMoments(searchQuery) : const [];
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final bool isDesktop = constraints.maxWidth > 800;
-        final canUse =
-            Provider.of<PaymentService>(
-              context,
-              listen: true,
-            ).canUseProFeatures;
+        final canUse = context.select<PaymentService, bool>(
+          (payment) => payment.canUseProFeatures,
+        );
         final showLimitBanner =
             !canUse && _getMomentsForDate(DateTime.now()).length >= 3;
-        debugPrint(
-          "LayoutBuilder Constraints: ${constraints.maxWidth} (isDesktop: $isDesktop)",
-        );
 
         // 简化 content 结构：直接使用 SafeArea + Column，避免嵌套 Stack 导致的渲染问题
         final Widget content = SafeArea(
@@ -545,7 +577,10 @@ class _MomentsPageState extends State<MomentsPage> {
               // If searching, show result list. Else show regular layout.
               if (isSearchActive)
                 Expanded(
-                  child: _buildSearchResults(theme, textColor: rulerTextColor),
+                  child: _buildSearchResults(
+                    filteredMoments,
+                    textColor: rulerTextColor,
+                  ),
                 )
               else if (isDesktop)
                 // Desktop Waterfall Layout
@@ -727,7 +762,10 @@ class _MomentsPageState extends State<MomentsPage> {
                 // 3. Main Layout
                 Row(
                   children: [
-                    const SizedBox(width: 300, child: SidebarWidget()),
+                    const SizedBox(
+                      width: 300,
+                      child: SidebarWidget(activeSection: SidebarSection.moments),
+                    ),
                     Expanded(child: content),
                   ],
                 ),
@@ -741,7 +779,8 @@ class _MomentsPageState extends State<MomentsPage> {
         if (_isSearching) {
           headerTitle = SkeuomorphicSearchBar(
             value: searchQuery,
-            onChanged: (val) => diaryProvider.setMomentsSearchQuery(val),
+            onChanged:
+                (val) => context.read<DiaryProvider>().setMomentsSearchQuery(val),
             autoFocus: true,
           );
         } else {
@@ -809,7 +848,7 @@ class _MomentsPageState extends State<MomentsPage> {
             width: 300,
             elevation: 0,
             backgroundColor: Colors.transparent,
-            child: SidebarWidget(),
+            child: SidebarWidget(activeSection: SidebarSection.moments),
           ),
           appBar: AppBar(
             backgroundColor: tc['appBarBg'],
@@ -829,7 +868,7 @@ class _MomentsPageState extends State<MomentsPage> {
                       setState(() {
                         _isSearching = false;
                       });
-                      diaryProvider.setSearchQuery('');
+                      context.read<DiaryProvider>().setMomentsSearchQuery('');
                     },
                   );
                 }
@@ -983,12 +1022,12 @@ class _MomentsPageState extends State<MomentsPage> {
     );
   }
 
-  Widget _buildSearchResults(String theme, {Color? textColor}) {
+  Widget _buildSearchResults(List<Moment> filteredMoments, {Color? textColor}) {
     // 使用透明容器，确保背景可以穿透显示
     return Container(
       color: Colors.transparent, // 透明背景
       child:
-          _filteredMoments.isEmpty
+          filteredMoments.isEmpty
               ? Center(
                 child: Opacity(
                   opacity: 0.7,
@@ -1003,13 +1042,13 @@ class _MomentsPageState extends State<MomentsPage> {
               )
               : ListView.builder(
                 padding: EdgeInsets.only(top: 20, bottom: _inputHeight + 20),
-                itemCount: _filteredMoments.length,
+                itemCount: filteredMoments.length,
                 itemBuilder: (context, i) {
                   return MomentCard(
-                    moment: _filteredMoments[i],
+                    moment: filteredMoments[i],
                     baseDir: _baseDir,
                     onDelete: () async {
-                      await _handleMomentDeleted(_filteredMoments[i].uuid);
+                      await _handleMomentDeleted(filteredMoments[i].uuid);
                     },
                   );
                 },
@@ -1205,4 +1244,16 @@ class _MomentsPageState extends State<MomentsPage> {
       },
     );
   }
+}
+
+class _MomentLookupCache {
+  final List<Moment> latestMoments;
+  final Map<String, List<Moment>> momentsByDay;
+  final Map<String, int> imageCountByDay;
+
+  const _MomentLookupCache({
+    required this.latestMoments,
+    required this.momentsByDay,
+    required this.imageCountByDay,
+  });
 }

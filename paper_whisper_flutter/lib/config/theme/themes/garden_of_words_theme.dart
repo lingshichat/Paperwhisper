@@ -126,6 +126,9 @@ final gardenOfWordsTheme = PaperWhisperTheme(
     textColor: const Color(0xFFB0BEC5),
     activeTextColor: _accent,
     subTextColor: const Color(0xFF78909C),
+    hitokotoBackgroundColor: const Color(0xFF263238).withValues(alpha: 0.4),
+    hitokotoBorderColor: Colors.white.withValues(alpha: 0.05),
+    dividerColor: Colors.white.withValues(alpha: 0.1),
     pillColor: Colors.white.withOpacity(0.05),
     pillShadows: [
       BoxShadow(

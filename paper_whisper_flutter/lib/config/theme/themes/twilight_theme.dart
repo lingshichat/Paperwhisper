@@ -128,6 +128,9 @@ final twilightTheme = PaperWhisperTheme(
     textColor: _textSecondary,
     activeTextColor: _accentRed,
     subTextColor: const Color(0xFF8D6E63),
+    hitokotoBackgroundColor: const Color(0xFF352044).withValues(alpha: 0.4),
+    hitokotoBorderColor: Colors.white10,
+    dividerColor: Colors.white10,
     pillColor: _surface.withOpacity(0.6),
     pillShadows: [
       BoxShadow(

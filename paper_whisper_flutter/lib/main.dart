@@ -74,8 +74,8 @@ void main() async {
   await TrialService().init(prefs);
   await PaymentService().init(prefs); // Init Payment Service
   
-  // 确定启动页
-  final String startupPage = prefs.getString('startup_page') ?? 'writer';
+  // 启动前同步读取设置，避免首帧先按默认配置构建再整树重建
+  final settingsBootstrapData = SettingsBootstrapData.fromPreferences(prefs);
   
   // 检查锁状态
   AuthService().lockApp();
@@ -87,7 +87,9 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => SettingsProvider()),
+        ChangeNotifierProvider(
+          create: (_) => SettingsProvider(bootstrapData: settingsBootstrapData),
+        ),
         ChangeNotifierProvider(create: (_) => DiaryProvider(diaryService, initialEntries)),
         ChangeNotifierProxyProvider<DiaryProvider, SyncProvider>(
           create: (_) => SyncProvider(),
@@ -97,7 +99,7 @@ void main() async {
       ],
       child: MyApp(
         showIntro: showIntro, 
-        startupPage: startupPage,
+        startupPage: settingsBootstrapData.startupPage,
         isLocked: isLocked,
       ),
     ),
@@ -211,7 +213,10 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
              Locale('zh', 'CN'),
              Locale('en', 'US'),
           ],
-          home: SplashPage(showIntro: widget.showIntro),
+          home: SplashPage(
+            showIntro: widget.showIntro,
+            startupPage: widget.startupPage,
+          ),
           scrollBehavior: AppScrollBehavior(),
         );
       },

@@ -111,6 +111,9 @@ final midnightTheme = PaperWhisperTheme(
     textColor: const Color(0xFFc9d1d9),
     activeTextColor: const Color(0xFF7986cb),
     subTextColor: const Color(0xFF8b949e),
+    hitokotoBackgroundColor: Colors.black26,
+    hitokotoBorderColor: Colors.white10,
+    dividerColor: Colors.white10,
     pillColor: const Color(0xFF161b22),
     pillShadows: [
       BoxShadow(

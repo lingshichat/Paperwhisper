@@ -1,23 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import '../services/hitokoto_service.dart';
+import '../config/app_theme.dart';
 import '../services/update_service.dart';
 import '../widgets/update_dialog.dart';
 import 'diary_list_page.dart';
 import 'intro_page.dart';
 import 'moments_page.dart';
-import '../providers/settings_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../providers/settings_provider.dart';
 import '../widgets/privacy_agreement_dialog.dart';
 import '../services/auth_service.dart';
 import '../widgets/lock_screen.dart';
 
-/// 启动屏：等待数据预加载完成后再导航到主页/引导页
-/// 同时预热字体、shader 和网络请求，避免首次交互卡顿
+/// 启动屏：等待必要检查后再导航到目标页
+/// 尽量保持首屏轻量，减少冷启动额外抖动
 class SplashPage extends StatefulWidget {
   final bool showIntro;
-  const SplashPage({super.key, required this.showIntro});
+  final String startupPage;
+
+  const SplashPage({
+    super.key,
+    required this.showIntro,
+    required this.startupPage,
+  });
 
   @override
   State<SplashPage> createState() => _SplashPageState();
@@ -64,19 +70,13 @@ class _SplashPageState extends State<SplashPage> {
 
     if (!mounted) return;
 
-    // 1. 触发预热 (不等待)
-    _preloadHitokoto();
-    
-    // 2. 导航到目标页面
-    
-    // Determine target page based on settings
-    final settings = context.read<SettingsProvider>();
+    // 1. 导航到目标页面
     Widget targetPage;
     
     if (widget.showIntro) {
       targetPage = const IntroPage();
     } else {
-      switch (settings.startupPage) {
+      switch (widget.startupPage) {
         case 'moments':
           targetPage = const MomentsPage();
           break;
@@ -140,13 +140,6 @@ class _SplashPageState extends State<SplashPage> {
     );
   }
 
-  Future<void> _preloadHitokoto() async {
-    try {
-      // 预热一言请求 (Fire and forget)
-      HitokotoService().fetchHitokoto();
-    } catch (_) {}
-  }
-
   /// 导航完成后延迟检测更新
   Future<void> _checkForUpdateAfterNavigation() async {
     // 等待页面动画完成
@@ -180,9 +173,13 @@ class _SplashPageState extends State<SplashPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = context.select<SettingsProvider, String>(
+      (provider) => provider.currentTheme,
+    );
+
     // 仅显示背景色，根据主题适配，避免颜色跳变
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: AppTheme.getThemeData(theme).scaffoldBackgroundColor,
       body: const SizedBox.shrink(), // 不显示任何 Logo 或加载圈
     );
   }

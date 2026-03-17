@@ -121,6 +121,9 @@ final afterRainTheme = PaperWhisperTheme(
     textColor: _textSecondary,
     activeTextColor: _accentBlue,
     subTextColor: const Color(0xFF78909C),
+    hitokotoBackgroundColor: Colors.white.withValues(alpha: 0.4),
+    hitokotoBorderColor: Colors.white10,
+    dividerColor: Colors.white10,
     pillColor: _surface.withOpacity(0.5),
     pillShadows: [
       const BoxShadow(

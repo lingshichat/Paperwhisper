@@ -72,7 +72,9 @@ class _DiaryListPageState extends State<DiaryListPage> with WidgetsBindingObserv
     _checkAndShowAnnouncement();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkRemoteUpdate();
-      Provider.of<DiaryProvider>(context, listen: false).loadEntries().then((_) {
+      context.read<DiaryProvider>().ensureEntriesLoaded().then((_) {
+        if (!mounted) return;
+
         if (widget.initialYear != null && widget.initialMonth != null) {
           _scrollToMonth(widget.initialYear!, widget.initialMonth!);
         } else if (widget.initialYear != null) {
@@ -600,7 +602,7 @@ class _DiaryListPageState extends State<DiaryListPage> with WidgetsBindingObserv
                     children: [
                        const SizedBox(
                          width: 300, 
-                         child: SidebarWidget(),
+                         child: SidebarWidget(activeSection: SidebarSection.writer),
                        ),
                        Expanded(
                          child: contentArea,
@@ -621,7 +623,7 @@ class _DiaryListPageState extends State<DiaryListPage> with WidgetsBindingObserv
               width: 300,
               elevation: 0,
               backgroundColor: Colors.transparent,
-              child: SidebarWidget(),
+              child: SidebarWidget(activeSection: SidebarSection.writer),
             ),
             // Mobile Body
             body: Stack(
@@ -691,7 +693,7 @@ class _DiaryListPageState extends State<DiaryListPage> with WidgetsBindingObserv
 
     // 布局缓存检测：仅当数据、视口宽度或主题变化时才重新计算
     // 加入 provider.lastUpdateTick 确保日记内容修改后（即使长度不变）也能触发刷新
-    final cacheKey = '${rawFlatEntries.length}_${availableWidth.toInt()}_${theme}_${diaryProvider.lastUpdateTick}';
+    final cacheKey = '${rawFlatEntries.length}_${availableWidth.toInt()}_${theme}_${diaryProvider.lastUpdateTick}_${diaryProvider.diarySearchQuery}';
     if (_lastLayoutCacheKey != cacheKey) {
       _generateResponsiveLayout(rawFlatEntries, availableWidth, theme, diaryProvider);
       _lastLayoutCacheKey = cacheKey;
@@ -841,7 +843,7 @@ class _DiaryListPageState extends State<DiaryListPage> with WidgetsBindingObserv
                     physics: const AlwaysScrollableScrollPhysics(),
                     child: SizedBox(
                       height: MediaQuery.of(context).size.height * 0.5,
-                      child: _buildEmptyState(theme),
+                      child: _buildEmptyState(theme, diaryProvider.diarySearchQuery),
                     ),
                   )
                 : Padding(
@@ -860,11 +862,7 @@ class _DiaryListPageState extends State<DiaryListPage> with WidgetsBindingObserv
     );
   }
 
-  Widget _buildEmptyState(String theme) {
-    // Need access to provider here. Since it's inside class method, we can use Provider.of or pass it.
-    // Provider.of is safe here as this is called during build.
-    final query = Provider.of<DiaryProvider>(context).diarySearchQuery;
-    
+  Widget _buildEmptyState(String theme, String query) {
     if (query.isNotEmpty) {
       // 搜索无结果状态
       final Color emptyTextColor = AppTheme.getTextColor(theme).withOpacity(0.7);
@@ -959,11 +957,16 @@ class _DiaryListPageState extends State<DiaryListPage> with WidgetsBindingObserv
     _itemYearMap = [];
     
     double contentWidth = width;
-    if (width > 800) contentWidth -= 300;
+    if (width > 800) {
+      contentWidth -= 300;
+    }
     
     int columnCount = 1;
-    if (contentWidth > 1100) columnCount = 3;
-    else if (contentWidth > 700) columnCount = 2;
+    if (contentWidth > 1100) {
+      columnCount = 3;
+    } else if (contentWidth > 700) {
+      columnCount = 2;
+    }
     
     List<DiaryEntry> buffer = [];
 

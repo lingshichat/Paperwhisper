@@ -108,6 +108,9 @@ final vintageTheme = PaperWhisperTheme(
     textColor: const Color(0xFFD7CCC8),
     activeTextColor: const Color(0xFFFF5252),
     subTextColor: const Color(0xFFA1887F),
+    hitokotoBackgroundColor: Colors.black26,
+    hitokotoBorderColor: Colors.white10,
+    dividerColor: Colors.white10,
     pillColor: const Color(0xFF2D1E1B),
     pillShadows: [
       BoxShadow(color: Colors.white10, offset: Offset(0, 1), blurRadius: 0),

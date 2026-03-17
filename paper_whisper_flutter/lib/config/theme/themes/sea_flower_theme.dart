@@ -113,6 +113,9 @@ final seaFlowerTheme = PaperWhisperTheme(
     textColor: const Color(0xFF880E4F),
     activeTextColor: const Color(0xFFD81B60),
     subTextColor: const Color(0xFFBC477B),
+    hitokotoBackgroundColor: Colors.white.withValues(alpha: 0.4),
+    hitokotoBorderColor: Colors.white10,
+    dividerColor: Colors.black12,
     pillColor: Colors.white,
     pillShadows: [
       BoxShadow(

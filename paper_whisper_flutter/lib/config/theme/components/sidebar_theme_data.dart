@@ -6,6 +6,9 @@ class SidebarThemeData {
   final Color textColor;
   final Color activeTextColor;
   final Color subTextColor;
+  final Color hitokotoBackgroundColor;
+  final Color hitokotoBorderColor;
+  final Color dividerColor;
   final Color pillColor;
   final List<BoxShadow> pillShadows;
   final Border? pillBorder;
@@ -17,6 +20,9 @@ class SidebarThemeData {
     required this.textColor,
     required this.activeTextColor,
     required this.subTextColor,
+    required this.hitokotoBackgroundColor,
+    required this.hitokotoBorderColor,
+    required this.dividerColor,
     required this.pillColor,
     required this.pillShadows,
     this.pillBorder,
@@ -29,6 +35,9 @@ class SidebarThemeData {
     'textColor': textColor,
     'activeTextColor': activeTextColor,
     'subTextColor': subTextColor,
+    'hitokotoBackgroundColor': hitokotoBackgroundColor,
+    'hitokotoBorderColor': hitokotoBorderColor,
+    'dividerColor': dividerColor,
     'pillColor': pillColor,
     'pillShadows': pillShadows,
     'pillBorder': pillBorder,

@@ -10,13 +10,14 @@ class DiaryProvider with ChangeNotifier {
   final DiaryService _service;
   List<DiaryEntry> _entries = [];
   bool _isLoading = false;
+  Future<void>? _loadEntriesFuture;
   int _lastUpdateTick = 0; // Data versioning for UI cache invalidation
   String _debugPath = '';
 
   // New: Flattened List Support
-  List<dynamic> _flatEntries = [];
+  final List<dynamic> _flatEntries = [];
   // Key: "yyyy_M" (e.g. "2026_1"), Value: index in _flatEntries
-  Map<String, int> _monthIndexMap = {}; 
+  final Map<String, int> _monthIndexMap = {};
 
 
   String _diarySearchQuery = '';
@@ -50,11 +51,13 @@ class DiaryProvider with ChangeNotifier {
   }
 
   void setDiarySearchQuery(String query) {
+    if (_diarySearchQuery == query) return;
     _diarySearchQuery = query;
     notifyListeners();
   }
 
   void setMomentsSearchQuery(String query) {
+    if (_momentsSearchQuery == query) return;
     _momentsSearchQuery = query;
     notifyListeners();
   }
@@ -64,7 +67,38 @@ class DiaryProvider with ChangeNotifier {
     setDiarySearchQuery(query);
   }
 
-  Future<void> loadEntries({bool silent = false}) async {
+  Future<void> ensureEntriesLoaded() {
+    if (_entries.isNotEmpty) {
+      return Future.value();
+    }
+
+    final ongoingLoad = _loadEntriesFuture;
+    if (ongoingLoad != null) {
+      return ongoingLoad;
+    }
+
+    return loadEntries();
+  }
+
+  Future<void> loadEntries({bool silent = false}) {
+    final ongoingLoad = _loadEntriesFuture;
+    if (ongoingLoad != null) {
+      return ongoingLoad;
+    }
+
+    final future = _loadEntriesInternal(silent: silent);
+    _loadEntriesFuture = future;
+    future.whenComplete(() {
+      if (identical(_loadEntriesFuture, future)) {
+        _loadEntriesFuture = null;
+      }
+    });
+    return future;
+  }
+
+  Future<void> _loadEntriesInternal({bool silent = false}) async {
+    bool hasShownCachedEntries = false;
+
     if (!silent) {
       _isLoading = true;
       notifyListeners(); 
@@ -80,12 +114,8 @@ class DiaryProvider with ChangeNotifier {
         if (cachedEntries != null && cachedEntries.isNotEmpty) {
           _entries = cachedEntries;
           _buildFlatList();
-          notifyListeners(); 
-          // Keep isLoading false to show content while loading files in background?
-          // Strategy: If we show cache, we are "loaded".
-          // But 'silent' is false here, so we are in standard load.
-          // Let's set isLoading = false so user sees content.
           _isLoading = false; 
+          hasShownCachedEntries = true;
           notifyListeners();
         }
       }
@@ -106,7 +136,7 @@ class DiaryProvider with ChangeNotifier {
       // 3. 更新内存 (Diff check could be optimized, but for now just replace)
       _entries = fileEntries;
       _buildFlatList();
-      await _loadBookMetadata(); 
+      await _loadBookMetadata(notify: false); 
       
       // 4. 更新缓存文件
       await _service.saveCache(_entries);
@@ -115,11 +145,12 @@ class DiaryProvider with ChangeNotifier {
       debugPrint("Error loading entries: $e");
     } finally {
       _lastUpdateTick++; // Increment version after any data change
-      if (!silent) {
-         _isLoading = false;
-         notifyListeners();
-      } else {
-         notifyListeners();
+      _isLoading = false;
+
+      if (silent || hasShownCachedEntries) {
+        notifyListeners();
+      } else if (!silent) {
+        notifyListeners();
       }
     }
   }
@@ -163,29 +194,29 @@ class DiaryProvider with ChangeNotifier {
 
   Future<void> saveEntry(DiaryEntry entry) async {
     await _service.saveEntry(entry);
-    await loadEntries(); // 重新加载以更新列表
+    await loadEntries(silent: true); // 静默刷新，避免保存后整页闪烁
   }
 
   Future<void> deleteEntry(String filename) async {
     await _service.deleteEntry(filename);
-    await loadEntries();
+    await loadEntries(silent: true);
   }
 
   // --- Book Shelf Logic ---
 
   // Custom book metadata: Year -> Value
-  Map<int, String> _bookTitles = {};
-  Map<int, String> _bookSubtitles = {};
-  Map<int, String> _bookCoverPaths = {};
+  final Map<int, String> _bookTitles = {};
+  final Map<int, String> _bookSubtitles = {};
+  final Map<int, String> _bookCoverPaths = {};
 
   // Custom month metadata: "Year_Month" -> Title
-  Map<String, String> _monthTitles = {};
+  final Map<String, String> _monthTitles = {};
 
   Map<int, String> get bookTitles => _bookTitles; // Keep for backward compatibility if needed, but prefer getters below
 
   // --- Persistent Metadata Logic (JSON + Sync) ---
 
-  Future<void> _loadBookMetadata() async {
+  Future<void> _loadBookMetadata({bool notify = true}) async {
     try {
       // 1. Ensure Service Init
       await _service.init();
@@ -225,7 +256,9 @@ class DiaryProvider with ChangeNotifier {
             });
           }
           
-          notifyListeners();
+          if (notify) {
+            notifyListeners();
+          }
           return; // Successfully loaded from JSON, skip SharedPreferences fallback
         } catch (e) {
           debugPrint("Error parsing book_metadata.json: $e");
@@ -233,14 +266,14 @@ class DiaryProvider with ChangeNotifier {
       }
 
       // 2. Fallback to SharedPreferences (Migration or Legacy)
-      await _loadBookTitlesLegacy(); 
+      await _loadBookTitlesLegacy(notify: notify); 
       
     } catch (e) {
        debugPrint("Error loading book metadata: $e");
     }
   }
 
-  Future<void> _loadBookTitlesLegacy() async {
+  Future<void> _loadBookTitlesLegacy({bool notify = true}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final keys = prefs.getKeys();
@@ -268,11 +301,13 @@ class DiaryProvider with ChangeNotifier {
            if (parts.length == 4) {
              final yearStr = parts[2];
              final monthStr = parts[3];
-             _monthTitles['${yearStr}_${monthStr}'] = prefs.getString(key) ?? '';
+              _monthTitles['${yearStr}_$monthStr'] = prefs.getString(key) ?? '';
            }
         }
       }
-      notifyListeners();
+      if (notify) {
+        notifyListeners();
+      }
     } catch (e) {
       debugPrint("Error loading legacy book meta: $e");
     }

@@ -15,21 +15,48 @@ import '../widgets/paper_fold_page_route.dart';
 import '../widgets/skeuomorphic_search_bar.dart';
 import '../providers/diary_provider.dart';
 
+enum SidebarSection { writer, moments, statistics, none }
+
 class SidebarWidget extends StatefulWidget {
-  const SidebarWidget({super.key});
+  final SidebarSection activeSection;
+
+  const SidebarWidget({
+    super.key,
+    this.activeSection = SidebarSection.none,
+  });
 
   @override
   State<SidebarWidget> createState() => _SidebarWidgetState();
 }
 
 class _SidebarWidgetState extends State<SidebarWidget> {
+  static bool _hasPrimedFirstSidebarFrame = false;
+
   HitokotoLine? _hitokoto;
   final HitokotoService _hitokotoService = HitokotoService();
+  late bool _enableBackdropBlur;
 
   @override
   void initState() {
     super.initState();
-    _fetchHitokoto();
+    _enableBackdropBlur = _hasPrimedFirstSidebarFrame;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scheduleNonCriticalEffects();
+    });
+  }
+
+  Future<void> _scheduleNonCriticalEffects() async {
+    if (!_hasPrimedFirstSidebarFrame) {
+      await Future<void>.delayed(const Duration(milliseconds: 180));
+      if (!mounted) return;
+
+      setState(() {
+        _enableBackdropBlur = true;
+      });
+      _hasPrimedFirstSidebarFrame = true;
+    }
+
+    await _fetchHitokoto();
   }
 
   Future<void> _fetchHitokoto() async {
@@ -43,16 +70,20 @@ class _SidebarWidgetState extends State<SidebarWidget> {
 
   @override
   Widget build(BuildContext context) {
-    bool isWriter = context.findAncestorWidgetOfExactType<DiaryListPage>() != null;
-    bool isMoments = context.findAncestorWidgetOfExactType<MomentsPage>() != null;
-    bool isStatistics = context.findAncestorWidgetOfExactType<StatisticsPage>() != null;
+    final bool isWriter = widget.activeSection == SidebarSection.writer;
+    final bool isMoments = widget.activeSection == SidebarSection.moments;
+    final bool isStatistics = widget.activeSection == SidebarSection.statistics;
+    final bool isInDrawer = context.findAncestorWidgetOfExactType<Drawer>() != null;
+    final bool isDesktop = MediaQuery.of(context).size.width > 800;
     
     int activeIndex = -1;
     if (isWriter) activeIndex = 0;
     if (isMoments) activeIndex = 1;
     if (isStatistics) activeIndex = 2;
 
-    final theme = Provider.of<SettingsProvider>(context).currentTheme;
+    final theme = context.select<SettingsProvider, String>(
+      (provider) => provider.currentTheme,
+    );
     
     // Theme Configs
     final config = AppTheme.getSidebarTheme(theme);
@@ -60,14 +91,24 @@ class _SidebarWidgetState extends State<SidebarWidget> {
     Color textColor = config['textColor'];
     Color activeTextColor = config['activeTextColor'];
     Color subTextColor = config['subTextColor'];
+    Color hitokotoBackgroundColor = config['hitokotoBackgroundColor'];
+    Color hitokotoBorderColor = config['hitokotoBorderColor'];
+    Color dividerColor = config['dividerColor'];
     Color pillColor = config['pillColor'];
     List<BoxShadow> pillShadows = config['pillShadows'];
     BoxBorder? pillBorder = config['pillBorder'];
 
-    Widget sidebarContent = Container(
-      width: 280, 
-      decoration: bgDecor,
-      child: SafeArea(
+    final bool prefersBlur =
+        theme == AppTheme.themeSeaFlower ||
+        theme == AppTheme.themeAfterRain ||
+        theme == AppTheme.themeTwilight ||
+        theme == AppTheme.themeGardenOfWords;
+
+    Widget sidebarContent = RepaintBoundary(
+      child: Container(
+        width: 280,
+        decoration: bgDecor,
+        child: SafeArea(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -84,7 +125,7 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                          fontSize: 28,
                          fontWeight: FontWeight.bold,
                          shadows: [
-                           Shadow(color: Colors.black.withOpacity(0.3), offset: const Offset(0, 2), blurRadius: 4)
+                           Shadow(color: Colors.black.withValues(alpha: 0.3), offset: const Offset(0, 2), blurRadius: 4)
                          ]
                        ),
                      ),
@@ -103,41 +144,37 @@ class _SidebarWidgetState extends State<SidebarWidget> {
 
                // Search Bar (Desktop Only - 通过屏幕宽度检测)
                // 使用 MediaQuery 检测是否是桌面端，比 Drawer ancestor 更可靠
-               Builder(
-                 builder: (context) {
-                   // 桌面端判断：屏幕宽度 > 800
-                   final isDesktop = MediaQuery.of(context).size.width > 800;
-                   if (!isDesktop) return const SizedBox.shrink();
-                   
-                   try {
-                     // 使用 watch 以响应外部清空搜索的操作
-                     final diaryProvider = context.watch<DiaryProvider>();
-                     // Determine context
-                     final bool isMomentsContext = context.findAncestorWidgetOfExactType<MomentsPage>() != null;
-                     
-                     return Padding(
-                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-                       child: SkeuomorphicSearchBar(
-                         value: isMomentsContext 
-                             ? diaryProvider.momentsSearchQuery 
-                             : diaryProvider.diarySearchQuery,
+               if (isDesktop)
+                 Padding(
+                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                   child: Builder(
+                     builder: (context) {
+                       final searchValue =
+                           isMoments
+                               ? context.select<DiaryProvider, String>(
+                                 (provider) => provider.momentsSearchQuery,
+                               )
+                               : context.select<DiaryProvider, String>(
+                                 (provider) => provider.diarySearchQuery,
+                               );
+                       final diaryProvider = context.read<DiaryProvider>();
+
+                       return SkeuomorphicSearchBar(
+                         value: searchValue,
                          onChanged: (val) {
-                           if (isMomentsContext) {
+                           if (isMoments) {
                              diaryProvider.setMomentsSearchQuery(val);
                            } else {
                              diaryProvider.setDiarySearchQuery(val);
                            }
                          },
-                       ),
-                     );
-                   } catch (e) {
-                     return const SizedBox.shrink();
-                   }
-                 }
-               ),
+                       );
+                     },
+                   ),
+                 ),
                
                // Write Button (Only for Desktop/Non-Drawer)
-               if (context.findAncestorWidgetOfExactType<Drawer>() == null)
+               if (!isInDrawer)
                  Padding(
                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                    child: Material(
@@ -161,7 +198,7 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                             
                             boxShadow: [
                                config['buttonShadow'] as BoxShadow? ?? BoxShadow(
-                                 color: Colors.black.withOpacity(0.3),
+                                 color: Colors.black.withValues(alpha: 0.3),
                                  offset: const Offset(0, 3), // Bottom shadow
                                  blurRadius: 6,
                                ),
@@ -169,7 +206,7 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                             // Uniform Border to prevent Crash
                             // We use a subtle white stroke to sharpen edges
                             border: Border.all(
-                                color: Colors.white.withOpacity(0.2), 
+                                color: Colors.white.withValues(alpha: 0.2), 
                                 width: 1.0
                             ),
                           ),
@@ -186,7 +223,7 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                                  fontWeight: FontWeight.bold,
                                  letterSpacing: 2, // Wider spacing like reference
                                  shadows: [
-                                   Shadow(color: Colors.black.withOpacity(0.2), offset: const Offset(0, 1), blurRadius: 2)
+                                   Shadow(color: Colors.black.withValues(alpha: 0.2), offset: const Offset(0, 1), blurRadius: 2)
                                  ]
                                ),
                              )
@@ -231,7 +268,7 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                            label: "专注书写", 
                            onTap: () async {
                               final navigator = Navigator.of(context);
-                              if (context.findAncestorWidgetOfExactType<Drawer>() != null) {
+                              if (isInDrawer) {
                                  navigator.pop();
                                  // 等待侧边栏关闭动画，避免路由冲突导致卡死
                                  await Future.delayed(const Duration(milliseconds: 300));
@@ -261,7 +298,7 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                            label: "随心记",
                            onTap: () async {
                               final navigator = Navigator.of(context);
-                              if (context.findAncestorWidgetOfExactType<Drawer>() != null) {
+                              if (isInDrawer) {
                                  navigator.pop();
                                  await Future.delayed(const Duration(milliseconds: 300));
                               }
@@ -289,7 +326,7 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                            label: "数据洞察",
                            onTap: () async {
                               final navigator = Navigator.of(context);
-                              if (context.findAncestorWidgetOfExactType<Drawer>() != null) {
+                              if (isInDrawer) {
                                  navigator.pop();
                                  await Future.delayed(const Duration(milliseconds: 300));
                               }
@@ -320,15 +357,9 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                   padding: const EdgeInsets.all(20),
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   decoration: BoxDecoration(
-                    color: (theme == AppTheme.themeSeaFlower || theme == AppTheme.themeAfterRain) 
-                        ? Colors.white.withOpacity(0.4) 
-                        : (theme == AppTheme.themeGardenOfWords 
-                            ? const Color(0xFF263238).withOpacity(0.4) // Deeper dark for Garden
-                            : (theme == AppTheme.themeTwilight ? const Color(0xFF352044).withOpacity(0.4) : Colors.black26)),
+                    color: hitokotoBackgroundColor,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: theme == AppTheme.themeGardenOfWords ? Colors.white.withOpacity(0.05) : Colors.white10
-                    ),
+                    border: Border.all(color: hitokotoBorderColor),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -349,7 +380,7 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                           child: Text(
                             '—— ${_hitokoto!.from}',
                             style: GoogleFonts.notoSerifSc(
-                              color: subTextColor.withOpacity(0.8), // Adapted
+                              color: subTextColor.withValues(alpha: 0.8), // Adapted
                               fontSize: 11,
                             ),
                           ),
@@ -360,9 +391,7 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                ),
                
                Divider(
-                 color: (theme == AppTheme.themeSeaFlower) 
-                    ? Colors.black12 
-                    : (theme == AppTheme.themeGardenOfWords ? Colors.white.withOpacity(0.1) : Colors.white10), 
+                 color: dividerColor,
                  height: 1
                ),
                
@@ -375,7 +404,7 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                    icon: Icons.settings_outlined, 
                    label: "设置", 
                    onTap: () {
-                      if (context.findAncestorWidgetOfExactType<Drawer>() != null) {
+                      if (isInDrawer) {
                          Navigator.pop(context);
                       }
                       Navigator.push(context, SlidePageRoute(page: const SettingsPage()));
@@ -388,10 +417,11 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                const SizedBox(height: 10),
             ],
           ),
+        ),
       ),
     );
 
-    if (theme == AppTheme.themeSeaFlower || theme == AppTheme.themeAfterRain || theme == AppTheme.themeTwilight || theme == AppTheme.themeGardenOfWords) {
+    if (prefersBlur && _enableBackdropBlur) {
       return ClipRect(
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20), // Increased blur for rain effect
@@ -431,7 +461,7 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                 type: MaterialType.transparency,
                 child: Row(
                   children: [
-                    Icon(icon, color: isActive ? activeColor : textColor.withOpacity(0.7), size: 24),
+                    Icon(icon, color: isActive ? activeColor : textColor.withValues(alpha: 0.7), size: 24),
                     const SizedBox(width: 20),
                     Text(
                       label,

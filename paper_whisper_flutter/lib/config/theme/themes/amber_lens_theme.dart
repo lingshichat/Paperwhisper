@@ -115,6 +115,9 @@ final amberLensTheme = PaperWhisperTheme(
     textColor: const Color(0xFFBDBDBD),
     activeTextColor: const Color(0xFFFF9800),
     subTextColor: const Color(0xFF757575),
+    hitokotoBackgroundColor: Colors.black26,
+    hitokotoBorderColor: Colors.white10,
+    dividerColor: Colors.white10,
     pillColor: const Color(0xFF222222),
     pillShadows: [
       BoxShadow(color: Colors.white10, offset: Offset(0, 1), blurRadius: 0),
