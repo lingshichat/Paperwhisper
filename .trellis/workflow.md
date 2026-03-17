@@ -220,6 +220,7 @@ python3 ./.trellis/scripts/task.py create "<title>" --slug <task-name>
    --> git add <files>
    --> git commit -m "type(scope): description"
        Format: feat/fix/docs/refactor/test/chore
+       Default: human commits; AI may commit only after explicit user authorization
 
 5. Record session (one command)
    --> python3 ./.trellis/scripts/add_session.py --title "Title" --commit "hash"
@@ -352,7 +353,7 @@ python3 ./.trellis/scripts/task.py list-archive    # List archived tasks
 3. **After development complete**:
    - Use `/trellis:finish-work` for completion checklist
    - After fix bug, use `/trellis:break-loop` for deep analysis
-   - Human commits after testing passes
+   - Human commits by default; AI may commit only after explicit user authorization and testing/checks pass
    - Use `add_session.py` to record progress
 
 ### [X] DON'T - Should Not Do
@@ -362,7 +363,7 @@ python3 ./.trellis/scripts/task.py list-archive    # List archived tasks
 3. **Don't** develop multiple unrelated tasks simultaneously
 4. **Don't** commit code with lint/test errors
 5. **Don't** forget to update spec docs after learning something
-6. [!] **Don't** execute `git commit` - AI should not commit code
+6. [!] **Don't** execute `git commit` without explicit user authorization
 
 ---
 

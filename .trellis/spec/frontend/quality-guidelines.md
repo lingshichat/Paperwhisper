@@ -89,7 +89,7 @@ await Future.wait([
 
 ### ❌ 5. Git commit by AI
 
-AI agents should **NOT** execute `git commit`. Only humans commit code.
+AI agents should **NOT** execute `git commit` by default. Only commit after the user explicitly authorizes it and required checks have completed.
 
 ---
 
