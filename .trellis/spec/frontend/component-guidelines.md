@@ -128,3 +128,4 @@ Global default transition is `_SkeuomorphicPageTransitionsBuilder` in `app_theme
 6. **新增页面主题方法后未覆盖所有主题** — `AppTheme.getXxxTheme()` 必须包含全部 7 种主题 case（含 `default` fallback），并在本地切换全部主题验证无视觉断层
 7. **工具栏按钮添加不必要的边框/背景** — 底栏图标按钮应使用 `GestureDetector + Padding + Icon` 的简洁模式，不要用 `Container + Border.all` 包裹，否则违反拟物化简洁风格
 8. **AppTheme 方法中用 boolean 变量 + if-else 判断主题** — 应使用 `switch(theme)` 语句，不要声明 `isMidnight`/`isTwilight` 等布尔变量再用 if-else 链
+9. **滚动页面未固定 AppBar 的 scrolled-under 状态** — 在 `PageView` / `ListView` 等可滚动页面中，如果顶栏颜色需要保持恒定，必须显式设置 `surfaceTintColor`、`scrolledUnderElevation`，必要时通过 `notificationPredicate` 禁用滚动通知驱动的自动变色

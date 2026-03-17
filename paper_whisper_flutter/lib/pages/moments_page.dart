@@ -814,6 +814,12 @@ class _MomentsPageState extends State<MomentsPage> {
           appBar: AppBar(
             backgroundColor: tc['appBarBg'],
             elevation: 0,
+            surfaceTintColor: Colors.transparent,
+            shadowColor: Colors.transparent,
+            scrolledUnderElevation: 0,
+            systemOverlayStyle: AppTheme.getSystemUiOverlayStyle(theme),
+            // 关闭横向滚动触发的 AppBar “scrolled under” 状态，保持首帧与切页后颜色一致
+            notificationPredicate: (_) => false,
             leading: Builder(
               builder: (context) {
                 if (_isSearching) {

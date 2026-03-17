@@ -273,7 +273,8 @@ final vintageTheme = PaperWhisperTheme(
   ),
   bookDirectory: const BookDirectoryThemeData(),
   moments: MomentsThemeData(
-    rulerBg: const Color(0xFF3E2723).withOpacity(0.9),
+    // 恢复复古纸张主题下刻度尺的原始深灰底色
+    rulerBg: const Color(0xFF1E1E1E),
     rulerTextColor: const Color(0xFFD7CCC8),
     rulerInactiveTextColor: const Color(0xFFD7CCC8).withOpacity(0.3),
     rulerSubTextColor: _vintageAccent,
