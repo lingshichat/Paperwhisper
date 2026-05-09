@@ -24,11 +24,11 @@
 
 ```bash
 # Check if already initialized
-python3 ./.trellis/scripts/get_developer.py
+python ./.trellis/scripts/get_developer.py
 
 # If not initialized, run:
-python3 ./.trellis/scripts/init_developer.py <your-name>
-# Example: python3 ./.trellis/scripts/init_developer.py cursor-agent
+python ./.trellis/scripts/init_developer.py <your-name>
+# Example: python ./.trellis/scripts/init_developer.py cursor-agent
 ```
 
 This creates:
@@ -45,11 +45,11 @@ This creates:
 
 ```bash
 # Get full context in one command
-python3 ./.trellis/scripts/get_context.py
+python ./.trellis/scripts/get_context.py
 
 # Or check manually:
-python3 ./.trellis/scripts/get_developer.py      # Your identity
-python3 ./.trellis/scripts/task.py list          # Active tasks
+python ./.trellis/scripts/get_developer.py      # Your identity
+python ./.trellis/scripts/task.py list          # Active tasks
 git status && git log --oneline -10              # Git state
 ```
 
@@ -156,10 +156,10 @@ Use the unified context script:
 
 ```bash
 # Get all context in one command
-python3 ./.trellis/scripts/get_context.py
+python ./.trellis/scripts/get_context.py
 
 # Or get JSON format
-python3 ./.trellis/scripts/get_context.py --json
+python ./.trellis/scripts/get_context.py --json
 ```
 
 ### Step 2: Read Development Guidelines [!] REQUIRED
@@ -192,10 +192,10 @@ Use the task management script:
 
 ```bash
 # List active tasks
-python3 ./.trellis/scripts/task.py list
+python ./.trellis/scripts/task.py list
 
 # Create new task (creates directory with task.json)
-python3 ./.trellis/scripts/task.py create "<title>" --slug <task-name>
+python ./.trellis/scripts/task.py create "<title>" --slug <task-name>
 ```
 
 ---
@@ -206,7 +206,7 @@ python3 ./.trellis/scripts/task.py create "<title>" --slug <task-name>
 
 ```
 1. Create or select task
-   --> python3 ./.trellis/scripts/task.py create "<title>" --slug <name> or list
+   --> python ./.trellis/scripts/task.py create "<title>" --slug <name> or list
 
 2. Write code according to guidelines
    --> Read .trellis/spec/ docs relevant to your task
@@ -223,7 +223,7 @@ python3 ./.trellis/scripts/task.py create "<title>" --slug <task-name>
        Default: human commits; AI may commit only after explicit user authorization
 
 5. Record session (one command)
-   --> python3 ./.trellis/scripts/add_session.py --title "Title" --commit "hash"
+   --> python ./.trellis/scripts/add_session.py --title "Title" --commit "hash"
 ```
 
 ### Code Quality Checklist
@@ -246,7 +246,7 @@ python3 ./.trellis/scripts/task.py create "<title>" --slug <task-name>
 After code is committed, use:
 
 ```bash
-python3 ./.trellis/scripts/add_session.py \
+python ./.trellis/scripts/add_session.py \
   --title "Session Title" \
   --commit "abc1234" \
   --summary "Brief summary"
@@ -328,10 +328,10 @@ tasks/
 
 **Commands**:
 ```bash
-python3 ./.trellis/scripts/task.py create "<title>" [--slug <name>]   # Create task directory
-python3 ./.trellis/scripts/task.py archive <name>  # Archive to archive/{year-month}/
-python3 ./.trellis/scripts/task.py list            # List active tasks
-python3 ./.trellis/scripts/task.py list-archive    # List archived tasks
+python ./.trellis/scripts/task.py create "<title>" [--slug <name>]   # Create task directory
+python ./.trellis/scripts/task.py archive <name>  # Archive to archive/{year-month}/
+python ./.trellis/scripts/task.py list            # List active tasks
+python ./.trellis/scripts/task.py list-archive    # List archived tasks
 ```
 
 ---
@@ -341,7 +341,7 @@ python3 ./.trellis/scripts/task.py list-archive    # List archived tasks
 ### [OK] DO - Should Do
 
 1. **Before session start**:
-   - Run `python3 ./.trellis/scripts/get_context.py` for full context
+   - Run `python ./.trellis/scripts/get_context.py` for full context
    - [!] **MUST read** relevant `.trellis/spec/` docs
 
 2. **During development**:
@@ -390,12 +390,12 @@ git commit -m "type(scope): description"
 
 ```bash
 # Session management
-python3 ./.trellis/scripts/get_context.py    # Get full context
-python3 ./.trellis/scripts/add_session.py    # Record session
+python ./.trellis/scripts/get_context.py    # Get full context
+python ./.trellis/scripts/add_session.py    # Record session
 
 # Task management
-python3 ./.trellis/scripts/task.py list      # List tasks
-python3 ./.trellis/scripts/task.py create "<title>" # Create task
+python ./.trellis/scripts/task.py list      # List tasks
+python ./.trellis/scripts/task.py create "<title>" # Create task
 
 # Slash commands
 /trellis:finish-work          # Pre-commit checklist
@@ -415,3 +415,45 @@ Following this workflow ensures:
 - [OK] Transparent team collaboration
 
 **Core Philosophy**: Read before write, follow standards, record promptly, capture learnings
+
+[workflow-state:no_task]
+No active task. **A Direct answer** — pure Q&A / explanation / lookup / chat; no file writes + one-line answer + repo reads ≤ 2 files → AI judges, no override needed.
+**B Create a task** — any implementation / code change / build / refactor work. Entry sequence: (1) `python ./.trellis/scripts/task.py create "<title>"` to create the task (status=planning, breadcrumb switches to [workflow-state:planning] for brainstorm + jsonl phase guidance) → (2) load `trellis-brainstorm` skill to discuss requirements with the user and iterate on prd.md → (3) once prd is done and jsonl is curated, run `task.py start <task-dir>` to enter [workflow-state:in_progress] for the implementation skeleton. **"It looks small" is NOT grounds for downgrading B to A or C**.
+**C Inline change** (per-turn only, escape hatch for B) — the user's CURRENT message MUST contain one of: "skip trellis" / "no task" / "just do it" / "don't create a task" / "跳过 trellis" / "别走流程" / "小修一下" / "直接改" / "先别建任务" → briefly acknowledge ("ok, skipping trellis flow this turn"), then inline. **Without seeing one of these phrases you must NOT inline on your own**; do not invent an override the user never said.
+[/workflow-state:no_task]
+
+[workflow-state:planning]
+Load the `trellis-brainstorm` skill and iterate on prd.md with the user.
+Phase 1.3 (required, once): before `task.py start`, you MUST curate `implement.jsonl` and `check.jsonl` — list the spec / research files sub-agents need so they get the right context injected. You may skip only if the jsonl already has agent-curated entries (the seed `_example` row alone doesn't count).
+Then run `task.py start <task-dir>` to flip status to in_progress.
+[/workflow-state:planning]
+
+[workflow-state:in_progress]
+**Flow**: trellis-implement → trellis-check → trellis-update-spec → commit (Phase 3.4) → `/trellis:finish-work`.
+**Main-session default (no override)**: dispatch the `trellis-implement` / `trellis-check` sub-agents — the main agent does NOT edit code by default. Phase 3.4 commit (required, once): after trellis-update-spec, or whenever implementation is verifiably complete, the main agent **drives the commit** — state the commit plan in user-facing text, then run `git commit` — BEFORE suggesting `/trellis:finish-work`. `/finish-work` refuses to run on a dirty working tree (paths outside `.trellis/workspace/` and `.trellis/tasks/`).
+**Sub-agent self-exemption**: if you are already running as `trellis-implement`, implement directly from the loaded task context and do NOT spawn another `trellis-implement`; if you are already running as `trellis-check`, review/fix directly and do NOT spawn another `trellis-check`. The default dispatch rule applies to the main session only.
+**Sub-agent dispatch protocol (all platforms, all sub-agents)**: When you spawn `trellis-implement` / `trellis-check` / `trellis-research`, your dispatch prompt **MUST** start with one line: `Active task: <task path from \`task.py current\`>`. No exceptions. On class-2 platforms (codex / copilot / gemini / qoder) the sub-agent depends on this line because there is no hook to inject task context. On class-1 platforms (claude / cursor / opencode / kiro / codebuddy / droid) the line is normally redundant — the hook injects context directly — but it serves as a critical fallback when the hook fails (Windows + Claude Code PreToolUse silent skip, `--continue` resume, fork distribution, hooks disabled, etc.). For `trellis-research`, the line tells the sub-agent which `{task_dir}/research/` to write into.
+**Inline override** (per-turn only, escape hatch for sub-agent dispatch): the user's CURRENT message MUST explicitly contain one of: "do it inline" / "no sub-agent" / "你直接改" / "别派 sub-agent" / "main session 写就行" / "不用 sub-agent". **Without seeing one of these phrases you must NOT inline on your own**; do not invent an override the user never said.
+[/workflow-state:in_progress]
+
+[workflow-state:completed]
+Code committed via Phase 3.4; run `/trellis:finish-work` to wrap up (archive the task + record session).
+If you reach this state with uncommitted code, return to Phase 3.4 first — `/finish-work` refuses to run on a dirty working tree.
+`task.py archive` deletes any runtime session files that still point at the archived task.
+[/workflow-state:completed]
+
+[workflow-state:my-status]
+your per-turn prompt text
+[/workflow-state:my-status]
+
+[workflow-state:planning-inline]
+Load the `trellis-brainstorm` skill and iterate on prd.md with the user.
+Phase 1.3 jsonl curation is **skipped** in inline dispatch mode — the main session loads `trellis-before-dev` directly in Phase 2 and reads spec context itself, so there is no sub-agent to inject jsonl into.
+Then run `task.py start <task-dir>` to flip status to in_progress.
+[/workflow-state:planning-inline]
+
+[workflow-state:in_progress-inline]
+**Flow** (inline mode): main session loads `trellis-before-dev` → main session edits code → main session loads `trellis-check` → run lint / type-check / tests → fix → `trellis-update-spec` → commit (Phase 3.4) → `/trellis:finish-work`.
+**Main-session default (inline dispatch_mode)**: the main agent edits code directly. Do NOT dispatch `trellis-implement` / `trellis-check` sub-agents. Load the `trellis-before-dev` skill before writing code; load the `trellis-check` skill before reporting completion.
+Phase 3.4 commit (required, once): after `trellis-update-spec`, or whenever implementation is verifiably complete, the main agent **drives the commit** — state the commit plan in user-facing text, then run `git commit` — BEFORE suggesting `/trellis:finish-work`. `/finish-work` refuses to run on a dirty working tree (paths outside `.trellis/workspace/` and `.trellis/tasks/`).
+[/workflow-state:in_progress-inline]
