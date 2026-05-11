@@ -11,9 +11,12 @@
 .agents/
 .agent-log
 .session-id
+worktrees/
 
 # Template/runtime metadata
 .template-hashes.json
+.runtime/
+.cache/
 
 # Task directory runtime files
 .plan-log
