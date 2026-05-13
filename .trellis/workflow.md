@@ -251,6 +251,7 @@ When a user request matches one of these intents, load the corresponding skill (
 | User intent | Route |
 |---|---|
 | Wants a new feature / requirement unclear | `trellis-brainstorm` |
+| Wants to pressure-test / challenge / grill a plan, PRD, or technical approach before implementation | `trellis-grill-me` |
 | About to write code / start implementing | Dispatch the `trellis-implement` sub-agent per Phase 2.1 |
 | Finished writing / want to verify | Dispatch the `trellis-check` sub-agent per Phase 2.2 |
 | Stuck / fixed same bug several times | `trellis-break-loop` |
@@ -265,6 +266,7 @@ When a user request matches one of these intents, load the corresponding skill (
 | User intent | Skill |
 |---|---|
 | Wants a new feature / requirement unclear | `trellis-brainstorm` |
+| Wants to pressure-test / challenge / grill a plan, PRD, or technical approach before implementation | `trellis-grill-me` |
 | About to write code / start implementing | `trellis-before-dev` (then implement directly in the main session) |
 | Finished writing / want to verify | `trellis-check` |
 | Stuck / fixed same bug several times | `trellis-break-loop` |
