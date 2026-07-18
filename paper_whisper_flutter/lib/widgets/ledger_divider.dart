@@ -54,7 +54,7 @@ class LedgerDivider extends StatelessWidget {
               color: _getBackgroundColor(),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: color.withOpacity(0.3),
+                color: color.withValues(alpha: 0.3),
                 width: 1,
               ),
             ),
@@ -98,38 +98,38 @@ class LedgerDivider extends StatelessWidget {
   Color _getDividerColor() {
     switch (theme) {
       case AppTheme.themeGardenOfWords:
-        return const Color(0xFF81C784).withOpacity(0.4);
+        return const Color(0xFF81C784).withValues(alpha: 0.4);
       case AppTheme.themeTwilight:
-        return const Color(0xFFFF9A6C).withOpacity(0.4);
+        return const Color(0xFFFF9A6C).withValues(alpha: 0.4);
       case AppTheme.themeAfterRain:
-        return const Color(0xFF4FC3F7).withOpacity(0.4);
+        return const Color(0xFF4FC3F7).withValues(alpha: 0.4);
       case AppTheme.themeSeaFlower:
-        return const Color(0xFFF06292).withOpacity(0.4);
+        return const Color(0xFFF06292).withValues(alpha: 0.4);
       case AppTheme.themeMidnight:
-        return const Color(0xFF7986cb).withOpacity(0.4);
+        return const Color(0xFF7986cb).withValues(alpha: 0.4);
       case AppTheme.themeAmberLens:
-        return const Color(0xFFFF9800).withOpacity(0.4);
+        return const Color(0xFFFF9800).withValues(alpha: 0.4);
       default: // Vintage
-        return const Color(0xFF5D4037).withOpacity(0.3);
+        return const Color(0xFF5D4037).withValues(alpha: 0.3);
     }
   }
 
   Color _getBackgroundColor() {
     switch (theme) {
       case AppTheme.themeGardenOfWords:
-        return const Color(0xFF263238).withOpacity(0.5);
+        return const Color(0xFF263238).withValues(alpha: 0.5);
       case AppTheme.themeTwilight:
-        return const Color(0xFF352044).withOpacity(0.5);
+        return const Color(0xFF352044).withValues(alpha: 0.5);
       case AppTheme.themeAfterRain:
-        return Colors.white.withOpacity(0.5);
+        return Colors.white.withValues(alpha: 0.5);
       case AppTheme.themeSeaFlower:
-        return const Color(0xFFFCE4EC).withOpacity(0.5);
+        return const Color(0xFFFCE4EC).withValues(alpha: 0.5);
       case AppTheme.themeMidnight:
-        return const Color(0xFF161b22).withOpacity(0.5);
+        return const Color(0xFF161b22).withValues(alpha: 0.5);
       case AppTheme.themeAmberLens:
-        return const Color(0xFF2C2C2C).withOpacity(0.5);
+        return const Color(0xFF2C2C2C).withValues(alpha: 0.5);
       default: // Vintage
-        return const Color(0xFFF4ECD8).withOpacity(0.5);
+        return const Color(0xFFF4ECD8).withValues(alpha: 0.5);
     }
   }
 }
@@ -161,8 +161,8 @@ class DecorativeDivider extends StatelessWidget {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        color.withOpacity(0),
-                        color.withOpacity(0.5),
+                        color.withValues(alpha: 0),
+                        color.withValues(alpha: 0.5),
                       ],
                     ),
                   ),
@@ -175,7 +175,7 @@ class DecorativeDivider extends StatelessWidget {
                     Icon(
                       Icons.favorite,
                       size: 8,
-                      color: color.withOpacity(0.6),
+                      color: color.withValues(alpha: 0.6),
                     ),
                     const SizedBox(width: 8),
                     Icon(
@@ -187,7 +187,7 @@ class DecorativeDivider extends StatelessWidget {
                     Icon(
                       Icons.favorite,
                       size: 8,
-                      color: color.withOpacity(0.6),
+                      color: color.withValues(alpha: 0.6),
                     ),
                   ],
                 ),
@@ -198,8 +198,8 @@ class DecorativeDivider extends StatelessWidget {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        color.withOpacity(0.5),
-                        color.withOpacity(0),
+                        color.withValues(alpha: 0.5),
+                        color.withValues(alpha: 0),
                       ],
                     ),
                   ),
@@ -213,7 +213,7 @@ class DecorativeDivider extends StatelessWidget {
               label!,
               style: GoogleFonts.notoSerifSc(
                 fontSize: 12,
-                color: color.withOpacity(0.8),
+                color: color.withValues(alpha: 0.8),
                 fontStyle: FontStyle.italic,
               ),
             ),

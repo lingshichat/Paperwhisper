@@ -263,7 +263,7 @@ class _DiaryListPageState extends State<DiaryListPage> with WidgetsBindingObserv
     showDialog(
       context: context,
       barrierDismissible: !info.isForceUpdate,
-      barrierColor: Colors.black.withOpacity(0.6), // Consistent opacity
+      barrierColor: Colors.black.withValues(alpha: 0.6), // Consistent opacity
       builder: (context) => SkeuomorphicDialog(
         title: isAnnouncement 
             ? (info.title ?? '版本更新 ${info.latestVersion}') 
@@ -865,7 +865,7 @@ class _DiaryListPageState extends State<DiaryListPage> with WidgetsBindingObserv
   Widget _buildEmptyState(String theme, String query) {
     if (query.isNotEmpty) {
       // 搜索无结果状态
-      final Color emptyTextColor = AppTheme.getTextColor(theme).withOpacity(0.7);
+      final Color emptyTextColor = AppTheme.getTextColor(theme).withValues(alpha: 0.7);
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -1040,7 +1040,7 @@ class RuledPaperPainter extends CustomPainter {
     }
     
     final marginPaint = Paint()
-      ..color = Colors.red.withOpacity(0.05)
+      ..color = Colors.red.withValues(alpha: 0.05)
       ..strokeWidth = 1;
     
     canvas.drawLine(Offset(40, 0), Offset(40, size.height), marginPaint);

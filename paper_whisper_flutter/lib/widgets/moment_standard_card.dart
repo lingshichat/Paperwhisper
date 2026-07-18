@@ -102,7 +102,7 @@ class MomentStandardCard extends StatelessWidget {
              padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
              child: Column(
                children: [
-                 Divider(color: Colors.black.withOpacity(0.05), height: 24),
+                 Divider(color: Colors.black.withValues(alpha: 0.05), height: 24),
                  Row(
                    mainAxisAlignment: MainAxisAlignment.center,
                    children: [

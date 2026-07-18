@@ -35,14 +35,14 @@ class WaxSealBadge extends StatelessWidget {
         boxShadow: [
           // 主阴影
           BoxShadow(
-            color: colors.shadow.withOpacity(0.4),
+            color: colors.shadow.withValues(alpha: 0.4),
             blurRadius: 20,
             offset: const Offset(0, 8),
             spreadRadius: -5,
           ),
           // 环境光
           BoxShadow(
-            color: colors.waxColor.withOpacity(0.2),
+            color: colors.waxColor.withValues(alpha: 0.2),
             blurRadius: 30,
             offset: const Offset(0, 0),
             spreadRadius: 5,
@@ -65,7 +65,7 @@ class WaxSealBadge extends StatelessWidget {
               if (icon != null) ...[
                 Icon(
                   icon,
-                  color: colors.textColor.withOpacity(0.9),
+                  color: colors.textColor.withValues(alpha: 0.9),
                   size: size * 0.15,
                 ),
                 SizedBox(height: size * 0.03),
@@ -84,7 +84,7 @@ class WaxSealBadge extends StatelessWidget {
                       height: 1.0,
                       shadows: [
                         Shadow(
-                          color: Colors.black.withOpacity(0.2),
+                          color: Colors.black.withValues(alpha: 0.2),
                           blurRadius: 4,
                           offset: const Offset(0, 2),
                         ),
@@ -98,7 +98,7 @@ class WaxSealBadge extends StatelessWidget {
                       unit,
                       style: GoogleFonts.notoSerifSc(
                         fontSize: size * 0.1,
-                        color: colors.textColor.withOpacity(0.8),
+                        color: colors.textColor.withValues(alpha: 0.8),
                       ),
                     ),
                   ),
@@ -112,14 +112,14 @@ class WaxSealBadge extends StatelessWidget {
                   vertical: size * 0.02,
                 ),
                 decoration: BoxDecoration(
-                  color: colors.textColor.withOpacity(0.15),
+                  color: colors.textColor.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(size * 0.05),
                 ),
                 child: Text(
                   label,
                   style: GoogleFonts.notoSerifSc(
                     fontSize: size * 0.07,
-                    color: colors.textColor.withOpacity(0.9),
+                    color: colors.textColor.withValues(alpha: 0.9),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -218,7 +218,7 @@ class _WaxSealPainter extends CustomPainter {
 
     // 1. 外圈阴影层
     final shadowPaint = Paint()
-      ..color = waxColor.withOpacity(0.3)
+      ..color = waxColor.withValues(alpha: 0.3)
       ..style = PaintingStyle.fill
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 15);
     canvas.drawCircle(center, radius * 0.95, shadowPaint);
@@ -236,14 +236,14 @@ class _WaxSealPainter extends CustomPainter {
 
     // 3. 内圈边框（模拟蜡质厚度）
     final borderPaint = Paint()
-      ..color = waxColor.withOpacity(0.6)
+      ..color = waxColor.withValues(alpha: 0.6)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3;
     canvas.drawCircle(center, radius * 0.85, borderPaint);
 
     // 4. 外圈锯齿（火漆印章纹理）
     final serratedPaint = Paint()
-      ..color = waxColor.withOpacity(0.4)
+      ..color = waxColor.withValues(alpha: 0.4)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
     
@@ -275,8 +275,8 @@ class _WaxSealPainter extends CustomPainter {
         center: const Alignment(-0.4, -0.4),
         radius: 0.5,
         colors: [
-          Colors.white.withOpacity(0.4),
-          Colors.white.withOpacity(0.0),
+          Colors.white.withValues(alpha: 0.4),
+          Colors.white.withValues(alpha: 0.0),
         ],
       ).createShader(Rect.fromCircle(center: center, radius: radius * 0.6))
       ..style = PaintingStyle.fill;
@@ -284,7 +284,7 @@ class _WaxSealPainter extends CustomPainter {
 
     // 6. 纹理噪点（模拟蜡质不完美）
     final noisePaint = Paint()
-      ..color = waxColor.withOpacity(0.2)
+      ..color = waxColor.withValues(alpha: 0.2)
       ..style = PaintingStyle.fill;
     
     final random = math.Random(42);
@@ -303,8 +303,8 @@ class _WaxSealPainter extends CustomPainter {
         center: const Alignment(0, 0.8),
         radius: 0.8,
         colors: [
-          waxColor.withOpacity(0.0),
-          waxColor.withOpacity(0.3),
+          waxColor.withValues(alpha: 0.0),
+          waxColor.withValues(alpha: 0.3),
         ],
       ).createShader(Rect.fromCircle(center: center, radius: radius))
       ..style = PaintingStyle.fill;

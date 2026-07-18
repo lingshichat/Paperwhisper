@@ -229,7 +229,7 @@ class _LockScreenState extends State<LockScreen> with TickerProviderStateMixin {
     final themeConfig = AppTheme.getLockScreenTheme(theme);
     Color overlayColor = themeConfig.isNotEmpty
         ? themeConfig['displayBg'].withValues(alpha: 0.1) // Derive from displayBg or use default
-        : (theme == AppTheme.themeSeaFlower ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.3));
+        : (theme == AppTheme.themeSeaFlower ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.3));
 
     return PopScope(
       canPop: widget.enableBack,
@@ -297,7 +297,7 @@ class _LockScreenState extends State<LockScreen> with TickerProviderStateMixin {
                    top: MediaQuery.of(context).padding.top + 10,
                    left: 10,
                    child: IconButton(
-                     icon: Icon(Icons.close, color: (theme == AppTheme.themeDefault ? const Color(0xFFF4ECD8) : AppTheme.getTextColor(theme)).withOpacity(0.7)),
+                     icon: Icon(Icons.close, color: (theme == AppTheme.themeDefault ? const Color(0xFFF4ECD8) : AppTheme.getTextColor(theme)).withValues(alpha: 0.7)),
                      onPressed: () => Navigator.of(context).pop(),
                    ),
                  ),
@@ -333,7 +333,7 @@ class _LockScreenState extends State<LockScreen> with TickerProviderStateMixin {
             title,
             style: GoogleFonts.notoSerifSc(
               fontSize: 18,
-              color: (theme == AppTheme.themeDefault ? const Color(0xFFF4ECD8) : textColor).withOpacity(0.8),
+              color: (theme == AppTheme.themeDefault ? const Color(0xFFF4ECD8) : textColor).withValues(alpha: 0.8),
               fontWeight: FontWeight.w500,
               letterSpacing: 2,
             ),
@@ -368,7 +368,7 @@ class _LockScreenState extends State<LockScreen> with TickerProviderStateMixin {
             colors: [Color(0xFF8D6E63), Color(0xFF4E342E)],
          ),
          boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.5), offset: const Offset(0, 4), blurRadius: 8)
+            BoxShadow(color: Colors.black.withValues(alpha: 0.5), offset: const Offset(0, 4), blurRadius: 8)
          ]
        ),
        padding: const EdgeInsets.all(4), // Frame width
@@ -414,8 +414,8 @@ class _LockScreenState extends State<LockScreen> with TickerProviderStateMixin {
   Widget _buildDigitalDisplay(String theme) {
     final themeConfig = AppTheme.getLockScreenTheme(theme);
     final accent = themeConfig.isNotEmpty ? themeConfig['accentColor'] : AppTheme.getAccentColor(theme);
-    final bg = themeConfig.isNotEmpty ? themeConfig['displayBg'] : Colors.black.withOpacity(0.3);
-    final border = themeConfig.isNotEmpty ? themeConfig['displayBorder'] : accent.withOpacity(0.2);
+    final bg = themeConfig.isNotEmpty ? themeConfig['displayBg'] : Colors.black.withValues(alpha: 0.3);
+    final border = themeConfig.isNotEmpty ? themeConfig['displayBorder'] : accent.withValues(alpha: 0.2);
 
     return Container(
        width: 200,
@@ -439,11 +439,11 @@ class _LockScreenState extends State<LockScreen> with TickerProviderStateMixin {
                shape: BoxShape.circle,
                color: filled ? accent : Colors.transparent,
                border: Border.all(
-                 color: filled ? accent : accent.withOpacity(0.3),
+                 color: filled ? accent : accent.withValues(alpha: 0.3),
                  width: 1.5
                ),
                boxShadow: filled ? [
-                  BoxShadow(color: accent.withOpacity(0.6), blurRadius: 8, spreadRadius: 1)
+                  BoxShadow(color: accent.withValues(alpha: 0.6), blurRadius: 8, spreadRadius: 1)
                ] : [],
              ),
            );
@@ -457,13 +457,13 @@ class _LockScreenState extends State<LockScreen> with TickerProviderStateMixin {
        width: 200,
        height: 60,
        decoration: BoxDecoration(
-         color: const Color(0xFFF8BBD0).withOpacity(0.2),
+         color: const Color(0xFFF8BBD0).withValues(alpha: 0.2),
          borderRadius: BorderRadius.circular(30),
-         border: Border.all(color: Colors.white.withOpacity(0.4), width: 1),
+         border: Border.all(color: Colors.white.withValues(alpha: 0.4), width: 1),
          gradient: LinearGradient(
            begin: Alignment.topLeft,
            end: Alignment.bottomRight,
-           colors: [const Color(0xFFAD1457).withOpacity(0.05), Colors.white.withOpacity(0.2)]
+           colors: [const Color(0xFFAD1457).withValues(alpha: 0.05), Colors.white.withValues(alpha: 0.2)]
          ),
        ),
        alignment: Alignment.center,
@@ -479,9 +479,9 @@ class _LockScreenState extends State<LockScreen> with TickerProviderStateMixin {
                shape: BoxShape.circle,
                color: filled ? const Color(0xFFEC407A) : const Color(0xFFFCE4EC),
                boxShadow: filled ? [
-                  BoxShadow(color: const Color(0xFFEC407A).withOpacity(0.4), blurRadius: 4, offset: const Offset(1,1))
+                  BoxShadow(color: const Color(0xFFEC407A).withValues(alpha: 0.4), blurRadius: 4, offset: const Offset(1,1))
                ] : [],
-               border: Border.all(color: Colors.white.withOpacity(0.5), width: 1),
+               border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 1),
              ),
            );
          }),
@@ -515,7 +515,7 @@ class _LockScreenState extends State<LockScreen> with TickerProviderStateMixin {
             onTap: _triggerBiometric,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Text('验证身份', style: TextStyle(color: iconColor.withOpacity(0.8), fontSize: 16)),
+              child: Text('验证身份', style: TextStyle(color: iconColor.withValues(alpha: 0.8), fontSize: 16)),
             ),
           ),
           const SizedBox(height: 48), // Increased spacing
@@ -531,8 +531,8 @@ class _LockScreenState extends State<LockScreen> with TickerProviderStateMixin {
                 '使用密码',
                 style: TextStyle(
                   color: theme == AppTheme.themeDefault
-                    ? const Color(0xFFF4ECD8).withOpacity(0.9)
-                    : AppTheme.getTextColor(theme).withOpacity(0.8),
+                    ? const Color(0xFFF4ECD8).withValues(alpha: 0.9)
+                    : AppTheme.getTextColor(theme).withValues(alpha: 0.8),
                   fontSize: 16,
                 ),
               ),
@@ -605,7 +605,7 @@ class _LockScreenState extends State<LockScreen> with TickerProviderStateMixin {
         width: 72, 
         height: 72,
         child: enabled && onTap != null ? IconButton(
-          icon: Icon(icon, color: (theme == AppTheme.themeDefault ? const Color(0xFFF4ECD8) : AppTheme.getTextColor(theme)).withOpacity(0.6)),
+          icon: Icon(icon, color: (theme == AppTheme.themeDefault ? const Color(0xFFF4ECD8) : AppTheme.getTextColor(theme)).withValues(alpha: 0.6)),
           onPressed: () {
              HapticFeedback.lightImpact();
              onTap();
@@ -680,10 +680,10 @@ class _SkeuomorphicKeyState extends State<SkeuomorphicKey> {
             ],
           ),
           boxShadow: _isPressed 
-            ? [BoxShadow(color: Colors.black.withOpacity(0.5), offset: const Offset(0, 1), blurRadius: 1)]
+            ? [BoxShadow(color: Colors.black.withValues(alpha: 0.5), offset: const Offset(0, 1), blurRadius: 1)]
             : [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.6), 
+                  color: Colors.black.withValues(alpha: 0.6), 
                   offset: const Offset(0, 4), 
                   blurRadius: 5
                 )
@@ -703,7 +703,7 @@ class _SkeuomorphicKeyState extends State<SkeuomorphicKey> {
               stops: const [0.0, 1.0],
             ),
             border: Border.all(
-              color: Colors.white.withOpacity(0.05),
+              color: Colors.white.withValues(alpha: 0.05),
               width: 1,
             )
           ),
@@ -731,15 +731,15 @@ class _SkeuomorphicKeyState extends State<SkeuomorphicKey> {
         
     final keyBg = themeConfig.isNotEmpty
         ? themeConfig['keyBg']
-        : Colors.white.withOpacity(0.05);
+        : Colors.white.withValues(alpha: 0.05);
         
     final keyBorder = themeConfig.isNotEmpty
         ? themeConfig['keyBorder']
-        : Colors.white.withOpacity(0.15);
+        : Colors.white.withValues(alpha: 0.15);
         
     final keyText = themeConfig.isNotEmpty
         ? themeConfig['keyText']
-        : Colors.white.withOpacity(0.9);
+        : Colors.white.withValues(alpha: 0.9);
 
     return GestureDetector(
       onTapDown: _handleTapDown,
@@ -752,16 +752,16 @@ class _SkeuomorphicKeyState extends State<SkeuomorphicKey> {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: _isPressed
-             ? accentColor.withOpacity(0.2)
+             ? accentColor.withValues(alpha: 0.2)
              : keyBg,
           border: Border.all(
             color: _isPressed
-               ? accentColor.withOpacity(0.5)
+               ? accentColor.withValues(alpha: 0.5)
                : keyBorder,
             width: 1.5,
           ),
           boxShadow: _isPressed
-            ? [BoxShadow(color: accentColor.withOpacity(0.3), blurRadius: 10, spreadRadius: 0)]
+            ? [BoxShadow(color: accentColor.withValues(alpha: 0.3), blurRadius: 10, spreadRadius: 0)]
             : [],
         ),
         alignment: Alignment.center,
@@ -794,13 +794,13 @@ class _SkeuomorphicKeyState extends State<SkeuomorphicKey> {
              ? LinearGradient( 
                  begin: Alignment.topLeft,
                  end: Alignment.bottomRight,
-                 colors: [const Color(0xFFF48FB1).withOpacity(0.1), Colors.white]
+                 colors: [const Color(0xFFF48FB1).withValues(alpha: 0.1), Colors.white]
                )
              : null,
           boxShadow: _isPressed 
             ? [] 
             : [ 
-                 BoxShadow(color: const Color(0xFFF48FB1).withOpacity(0.4), offset: const Offset(4, 4), blurRadius: 10),
+                 BoxShadow(color: const Color(0xFFF48FB1).withValues(alpha: 0.4), offset: const Offset(4, 4), blurRadius: 10),
                  const BoxShadow(color: Colors.white, offset: Offset(-4, -4), blurRadius: 10),
               ],
         ),

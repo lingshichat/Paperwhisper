@@ -42,13 +42,13 @@ class VintageBarChart extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
+                    color: Colors.black.withValues(alpha: 0.2),
                     blurRadius: 15,
                     offset: const Offset(0, 5),
                   ),
                   // 内阴影效果
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha: 0.1),
                     blurRadius: 10,
                     offset: const Offset(0, 3),
                     spreadRadius: -2,
@@ -104,11 +104,11 @@ class VintageBarChart extends StatelessWidget {
                                     vertical: 2,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.9),
+                                    color: Colors.white.withValues(alpha: 0.9),
                                     borderRadius: BorderRadius.circular(4),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Colors.black.withOpacity(0.1),
+                                        color: Colors.black.withValues(alpha: 0.1),
                                         blurRadius: 2,
                                         offset: const Offset(0, 1),
                                       ),
@@ -158,14 +158,14 @@ class VintageBarChart extends StatelessWidget {
             Icon(
               Icons.note_alt_outlined,
               size: 48,
-              color: Colors.white.withOpacity(0.5),
+              color: Colors.white.withValues(alpha: 0.5),
             ),
             const SizedBox(height: 12),
             Text(
               '暂无写作数据',
               style: GoogleFonts.notoSerifSc(
                 fontSize: 14,
-                color: Colors.white.withOpacity(0.7),
+                color: Colors.white.withValues(alpha: 0.7),
               ),
             ),
             const SizedBox(height: 4),
@@ -173,7 +173,7 @@ class VintageBarChart extends StatelessWidget {
               '开始写日记来填充这片便签墙吧',
               style: GoogleFonts.notoSerifSc(
                 fontSize: 12,
-                color: Colors.white.withOpacity(0.5),
+                color: Colors.white.withValues(alpha: 0.5),
               ),
             ),
           ],
@@ -339,26 +339,26 @@ class _StickyNote extends StatelessWidget {
               end: Alignment.bottomCenter,
               colors: [
                 noteColor,
-                noteColor.withOpacity(0.9),
+                noteColor.withValues(alpha: 0.9),
               ],
             ),
             borderRadius: BorderRadius.circular(2),
             boxShadow: [
               // 便签投影
               BoxShadow(
-                color: Colors.black.withOpacity(0.15),
+                color: Colors.black.withValues(alpha: 0.15),
                 blurRadius: 4,
                 offset: const Offset(0, 3),
               ),
               // 边缘高光
               BoxShadow(
-                color: Colors.white.withOpacity(0.3),
+                color: Colors.white.withValues(alpha: 0.3),
                 blurRadius: 1,
                 offset: const Offset(0, -1),
               ),
             ],
             border: Border.all(
-              color: Colors.white.withOpacity(0.3),
+              color: Colors.white.withValues(alpha: 0.3),
               width: 0.5,
             ),
           ),
@@ -372,8 +372,8 @@ class _StickyNote extends StatelessWidget {
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
-                            Colors.white.withOpacity(0.4),
-                            Colors.white.withOpacity(0.2),
+                            Colors.white.withValues(alpha: 0.4),
+                            Colors.white.withValues(alpha: 0.2),
                           ],
                         ),
                         borderRadius: BorderRadius.circular(1),
@@ -389,7 +389,7 @@ class _StickyNote extends StatelessWidget {
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: colors.accentColor.withOpacity(0.5),
+                              color: colors.accentColor.withValues(alpha: 0.5),
                               blurRadius: 4,
                             ),
                           ],
@@ -418,7 +418,7 @@ class _CorkTexturePainter extends CustomPainter {
       final opacity = random.nextDouble() * 0.1 + 0.05;
 
       final paint = Paint()
-        ..color = Colors.black.withOpacity(opacity)
+        ..color = Colors.black.withValues(alpha: opacity)
         ..style = PaintingStyle.fill;
 
       canvas.drawCircle(Offset(x, y), radius, paint);
@@ -432,7 +432,7 @@ class _CorkTexturePainter extends CustomPainter {
       final height = random.nextDouble() * 0.5 + 0.2;
 
       final paint = Paint()
-        ..color = Colors.brown.withOpacity(0.05)
+        ..color = Colors.brown.withValues(alpha: 0.05)
         ..style = PaintingStyle.fill;
 
       canvas.drawRect(

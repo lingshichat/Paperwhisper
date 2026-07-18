@@ -75,7 +75,7 @@ class _PageFlipTransition extends StatelessWidget {
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(shadowOpacity),
+              color: Colors.black.withValues(alpha: shadowOpacity),
               blurRadius: 30,
               spreadRadius: 5,
             ),

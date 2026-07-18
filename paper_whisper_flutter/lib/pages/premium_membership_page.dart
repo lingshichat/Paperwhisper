@@ -90,7 +90,7 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage> {
                   borderRadius: BorderRadius.circular(2),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.4),
+                      color: Colors.black.withValues(alpha: 0.4),
                       blurRadius: 20,
                       offset: const Offset(0, 10),
                       spreadRadius: 2,
@@ -159,7 +159,7 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage> {
                                 borderRadius: BorderRadius.circular(4),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
+                                    color: Colors.black.withValues(alpha: 0.1),
                                     blurRadius: 4,
                                     offset: const Offset(0, 2),
                                   )
@@ -222,7 +222,7 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage> {
                                          "Click here if you supported",
                                          style: GoogleFonts.cinzel(
                                            fontSize: 10,
-                                           color: const Color(0xFFB71C1C).withOpacity(0.6),
+                                           color: const Color(0xFFB71C1C).withValues(alpha: 0.6),
                                          ),
                                        ),
                                      ],
@@ -233,7 +233,7 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage> {
                                    "THANK YOU",
                                    style: GoogleFonts.cinzel(
                                      fontSize: 12,
-                                     color: const Color(0xFF3E2723).withOpacity(0.5),
+                                     color: const Color(0xFF3E2723).withValues(alpha: 0.5),
                                      letterSpacing: 2
                                    ),
                                  )
@@ -253,14 +253,14 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage> {
                                        child: Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                           decoration: BoxDecoration(
-                                            border: Border.all(color: const Color(0xFFB71C1C).withOpacity(0.8), width: 4),
+                                            border: Border.all(color: const Color(0xFFB71C1C).withValues(alpha: 0.8), width: 4),
                                             borderRadius: BorderRadius.circular(8),
                                           ),
                                           child: Text(
                                             'SPONSORED',
                                             style: GoogleFonts.blackOpsOne(
                                               fontSize: 32,
-                                              color: const Color(0xFFB71C1C).withOpacity(0.8),
+                                              color: const Color(0xFFB71C1C).withValues(alpha: 0.8),
                                               letterSpacing: 2,
                                             ),
                                           ),
@@ -372,13 +372,13 @@ class _DonationBottomSheet extends StatelessWidget {
         decoration: BoxDecoration(
           border: Border.all(color: Colors.black12),
           borderRadius: BorderRadius.circular(8),
-          color: Colors.white.withOpacity(0.5),
+          color: Colors.white.withValues(alpha: 0.5),
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
+              decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
               child: Icon(icon, color: color, size: 24),
             ),
             const SizedBox(width: 16),

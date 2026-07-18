@@ -76,14 +76,14 @@ class SkeuomorphicStatCard extends StatelessWidget {
         boxShadow: [
           // 主阴影
           BoxShadow(
-            color: const Color(0xFF3E2723).withOpacity(0.25),
+            color: const Color(0xFF3E2723).withValues(alpha: 0.25),
             blurRadius: 8,
             offset: const Offset(0, 4),
             spreadRadius: -2,
           ),
           // 环境光
           BoxShadow(
-            color: const Color(0xFF3E2723).withOpacity(0.1),
+            color: const Color(0xFF3E2723).withValues(alpha: 0.1),
             blurRadius: 20,
             offset: const Offset(0, 8),
             spreadRadius: -4,
@@ -93,15 +93,15 @@ class SkeuomorphicStatCard extends StatelessWidget {
     } else if (theme == AppTheme.themeGardenOfWords) {
       // Garden: 玻璃拟态
       return BoxDecoration(
-        color: const Color(0xFF263238).withOpacity(0.4),
+        color: const Color(0xFF263238).withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.white.withOpacity(0.15),
+          color: Colors.white.withValues(alpha: 0.15),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withValues(alpha: 0.3),
             blurRadius: 15,
             offset: const Offset(0, 6),
             spreadRadius: -2,
@@ -111,15 +111,15 @@ class SkeuomorphicStatCard extends StatelessWidget {
     } else if (theme == AppTheme.themeAfterRain) {
       // AfterRain: 湿润玻璃
       return BoxDecoration(
-        color: Colors.white.withOpacity(0.7),
+        color: Colors.white.withValues(alpha: 0.7),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.white.withOpacity(0.9),
+          color: Colors.white.withValues(alpha: 0.9),
           width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0288D1).withOpacity(0.15),
+            color: const Color(0xFF0288D1).withValues(alpha: 0.15),
             blurRadius: 20,
             offset: const Offset(0, 8),
             spreadRadius: -4,
@@ -129,15 +129,15 @@ class SkeuomorphicStatCard extends StatelessWidget {
     } else if (theme == AppTheme.themeTwilight) {
       // Twilight: 发光效果
       return BoxDecoration(
-        color: const Color(0xFF352044).withOpacity(0.6),
+        color: const Color(0xFF352044).withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: const Color(0xFFFF9A6C).withOpacity(0.2),
+          color: const Color(0xFFFF9A6C).withValues(alpha: 0.2),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFFF5252).withOpacity(0.15),
+            color: const Color(0xFFFF5252).withValues(alpha: 0.15),
             blurRadius: 20,
             offset: const Offset(0, 0),
             spreadRadius: -2,
@@ -171,30 +171,30 @@ class SkeuomorphicStatCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Colors.white.withOpacity(0.9),
+            Colors.white.withValues(alpha: 0.9),
             const Color(0xFFF4ECD8),
           ],
         ),
         borderRadius: BorderRadius.circular(10),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.15),
+            color: Colors.black.withValues(alpha: 0.15),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
         ],
         border: Border.all(
-          color: accentColor.withOpacity(0.3),
+          color: accentColor.withValues(alpha: 0.3),
           width: 1.5,
         ),
       );
     } else if (theme == AppTheme.themeGardenOfWords) {
       // Garden: 水滴效果
       return BoxDecoration(
-        color: const Color(0xFF81C784).withOpacity(0.2),
+        color: const Color(0xFF81C784).withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: const Color(0xFF81C784).withOpacity(0.4),
+          color: const Color(0xFF81C784).withValues(alpha: 0.4),
           width: 1,
         ),
       );
@@ -205,24 +205,24 @@ class SkeuomorphicStatCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            const Color(0xFF4FC3F7).withOpacity(0.3),
-            const Color(0xFF0288D1).withOpacity(0.1),
+            const Color(0xFF4FC3F7).withValues(alpha: 0.3),
+            const Color(0xFF0288D1).withValues(alpha: 0.1),
           ],
         ),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: const Color(0xFF4FC3F7).withOpacity(0.5),
+          color: const Color(0xFF4FC3F7).withValues(alpha: 0.5),
           width: 1,
         ),
       );
     } else if (theme == AppTheme.themeTwilight) {
       // Twilight: 发光徽章
       return BoxDecoration(
-        color: const Color(0xFFFF5252).withOpacity(0.2),
+        color: const Color(0xFFFF5252).withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFFF5252).withOpacity(0.3),
+            color: const Color(0xFFFF5252).withValues(alpha: 0.3),
             blurRadius: 10,
             spreadRadius: -2,
           ),
@@ -232,7 +232,7 @@ class SkeuomorphicStatCard extends StatelessWidget {
 
     // 默认
     return BoxDecoration(
-      color: accentColor.withOpacity(0.15),
+      color: accentColor.withValues(alpha: 0.15),
       borderRadius: BorderRadius.circular(10),
     );
   }
@@ -287,7 +287,7 @@ class SkeuomorphicScrollBanner extends StatelessWidget {
                         shadows: days > 0
                             ? [
                                 Shadow(
-                                  color: const Color(0xFFFF6B35).withOpacity(0.3),
+                                  color: const Color(0xFFFF6B35).withValues(alpha: 0.3),
                                   blurRadius: 10,
                                   offset: const Offset(0, 2),
                                 ),
@@ -341,12 +341,12 @@ class SkeuomorphicScrollBanner extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: const Color(0xFF5D4037).withOpacity(0.3),
+          color: const Color(0xFF5D4037).withValues(alpha: 0.3),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 15,
             offset: const Offset(0, 6),
             spreadRadius: -2,
@@ -357,8 +357,8 @@ class SkeuomorphicScrollBanner extends StatelessWidget {
 
     // 其他主题使用玻璃效果
     return BoxDecoration(
-      color: themeConfig['cardBackground'].color?.withOpacity(0.8) ??
-          Colors.white.withOpacity(0.1),
+      color: themeConfig['cardBackground'].color?.withValues(alpha: 0.8) ??
+          Colors.white.withValues(alpha: 0.1),
       borderRadius: BorderRadius.circular(16),
       border: themeConfig['cardBorder'],
       boxShadow: [themeConfig['cardShadow']],
@@ -387,7 +387,7 @@ class SkeuomorphicScrollBanner extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.3),
+              color: Colors.black.withValues(alpha: 0.3),
               blurRadius: 4,
               offset: isLeft ? const Offset(-2, 0) : const Offset(2, 0),
             ),
@@ -401,7 +401,7 @@ class SkeuomorphicScrollBanner extends StatelessWidget {
       width: 4,
       height: 60,
       decoration: BoxDecoration(
-        color: themeConfig['accentColor'].withOpacity(0.5),
+        color: themeConfig['accentColor'].withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(2),
       ),
     );

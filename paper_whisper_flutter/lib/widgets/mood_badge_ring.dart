@@ -55,15 +55,15 @@ class MoodBadgeRing extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(
-                color: colors.ringColor.withOpacity(0.3),
+                color: colors.ringColor.withValues(alpha: 0.3),
                 width: 2,
               ),
               gradient: RadialGradient(
                 center: Alignment.center,
                 radius: 0.8,
                 colors: [
-                  colors.centerColor.withOpacity(0.1),
-                  colors.centerColor.withOpacity(0.05),
+                  colors.centerColor.withValues(alpha: 0.1),
+                  colors.centerColor.withValues(alpha: 0.05),
                 ],
               ),
             ),
@@ -81,13 +81,13 @@ class MoodBadgeRing extends StatelessWidget {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: colors.shadowColor.withOpacity(0.2),
+                  color: colors.shadowColor.withValues(alpha: 0.2),
                   blurRadius: 10,
                   spreadRadius: -2,
                 ),
               ],
               border: Border.all(
-                color: colors.ringColor.withOpacity(0.4),
+                color: colors.ringColor.withValues(alpha: 0.4),
                 width: 2,
               ),
             ),
@@ -106,7 +106,7 @@ class MoodBadgeRing extends StatelessWidget {
                   '篇',
                   style: GoogleFonts.notoSerifSc(
                     fontSize: size * 0.06,
-                    color: colors.textColor.withOpacity(0.7),
+                    color: colors.textColor.withValues(alpha: 0.7),
                   ),
                 ),
               ],
@@ -169,7 +169,7 @@ class MoodBadgeRing extends StatelessWidget {
           ringColor: const Color(0xFF4FC3F7),
           centerColor: const Color(0xFF0288D1),
           centerGradient: [
-            Colors.white.withOpacity(0.9),
+            Colors.white.withValues(alpha: 0.9),
             const Color(0xFFF0F8FF),
           ],
           textColor: const Color(0xFF455A64),
@@ -272,19 +272,19 @@ class _MoodBadge extends StatelessWidget {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              color.withOpacity(0.9),
-              color.withOpacity(0.7),
+              color.withValues(alpha: 0.9),
+              color.withValues(alpha: 0.7),
             ],
           ),
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(0.3),
+              color: color.withValues(alpha: 0.3),
               blurRadius: 6,
               offset: const Offset(0, 3),
             ),
           ],
           border: Border.all(
-            color: Colors.white.withOpacity(0.4),
+            color: Colors.white.withValues(alpha: 0.4),
             width: 2,
           ),
         ),
@@ -377,9 +377,9 @@ class MoodBadgeList extends StatelessWidget {
                 height: 40,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: color.withOpacity(0.2),
+                  color: color.withValues(alpha: 0.2),
                   border: Border.all(
-                    color: color.withOpacity(0.5),
+                    color: color.withValues(alpha: 0.5),
                     width: 2,
                   ),
                 ),
@@ -405,7 +405,7 @@ class MoodBadgeList extends StatelessWidget {
                   borderRadius: BorderRadius.circular(4),
                   child: LinearProgressIndicator(
                     value: entry.value / sortedMoods.first.value,
-                    backgroundColor: color.withOpacity(0.1),
+                    backgroundColor: color.withValues(alpha: 0.1),
                     valueColor: AlwaysStoppedAnimation<Color>(color),
                     minHeight: 8,
                   ),
@@ -428,7 +428,7 @@ class MoodBadgeList extends StatelessWidget {
                     '$percentage%',
                     style: GoogleFonts.notoSerifSc(
                       fontSize: 11,
-                      color: _getTextColor().withOpacity(0.6),
+                      color: _getTextColor().withValues(alpha: 0.6),
                     ),
                   ),
                 ],

@@ -19,7 +19,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 1.5.8+18
 
 environment:
-  sdk: ^3.7.0
+  sdk: ^3.10.0
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -37,39 +37,36 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   provider: ^6.1.1
-  google_fonts: ^7.0.0
+  google_fonts: ^8.0.0
   flutter_svg: ^2.0.9
   intl: ^0.20.0
   path: ^1.9.0
   path_provider: ^2.1.2
-  permission_handler: ^11.2.0
+  permission_handler: ^12.0.3
   shared_preferences: ^2.2.2
-  flutter_secure_storage: ^9.2.2
-  flutter_markdown: ^0.6.19
+  flutter_secure_storage: ^10.0.0
+  flutter_markdown_plus: ^1.0.0
   uuid: ^4.3.3
   http: ^1.6.0
   simple_animations: ^5.2.0
   webdav_client: ^1.2.2
-  package_info_plus: ^8.1.3  # 获取当前应用版本
+  package_info_plus: ^10.0.0  # 获取当前应用版本
   url_launcher: ^6.2.6       # 打开外部下载链接
   image_picker: ^1.2.1
-  flutter_local_notifications: ^19.5.0
+  flutter_local_notifications: ^22.0.0
   open_filex: ^4.5.0
   scrollable_positioned_list: ^0.3.8
-  record: ^5.2.0
+  record: ^7.0.0
   audioplayers: ^6.0.0
   local_auth: ^3.0.0
   crypto: ^3.0.7
   lottie: ^3.3.2
   minio: ^3.5.8
   gal: ^2.3.2
-  device_info_plus: ^12.3.0
+  device_info_plus: ^13.0.0
   image: ^4.7.2
-  fl_chart: ^0.70.2
+  fl_chart: ^1.0.0
   dio: ^5.7.0
-
-dependency_overrides:
-  record_linux: ^1.2.0
 
 dev_dependencies:
   flutter_test:
@@ -80,8 +77,8 @@ dev_dependencies:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^5.0.0
-  flutter_launcher_icons: ^0.13.1
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
 
 flutter_launcher_icons:
   android: "launcher_icon"

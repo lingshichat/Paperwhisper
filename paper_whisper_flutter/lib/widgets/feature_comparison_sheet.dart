@@ -28,7 +28,7 @@ class _FeatureComparisonSheetState extends State<FeatureComparisonSheet> {
             borderRadius: BorderRadius.circular(2),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withValues(alpha: 0.1),
                 blurRadius: 3,
                 offset: const Offset(0, 1),
               ),
@@ -38,11 +38,11 @@ class _FeatureComparisonSheetState extends State<FeatureComparisonSheet> {
 
     final headerDecoration = widget.isEmbedded
         ? BoxDecoration(
-             border: Border(bottom: BorderSide(color: _isExpanded ? const Color(0xFF8D6E63).withOpacity(0.3) : Colors.transparent, width: 0.5)),
+             border: Border(bottom: BorderSide(color: _isExpanded ? const Color(0xFF8D6E63).withValues(alpha: 0.3) : Colors.transparent, width: 0.5)),
           )
         : BoxDecoration(
             border: Border(bottom: BorderSide(color: _isExpanded ? const Color(0xFFD7CCC8) : Colors.transparent, width: 0.5)),
-            color: const Color(0xFFFFFDE7).withOpacity(0.3),
+            color: const Color(0xFFFFFDE7).withValues(alpha: 0.3),
           );
 
     return Container(

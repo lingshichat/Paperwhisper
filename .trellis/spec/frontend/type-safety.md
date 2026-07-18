@@ -6,7 +6,7 @@
 
 ## Overview
 
-PaperWhisper uses Dart's strong type system with null safety enabled (`sdk: ^3.7.0`). There is no code generation (no `freezed`, `json_serializable`, or `build_runner`). Types are manually defined in `models/`.
+PaperWhisper uses Dart's strong type system with null safety enabled (`sdk: ^3.10.0`, Flutter 3.44.x stable). There is no code generation (no `freezed`, `json_serializable`, or `build_runner`). Types are manually defined in `models/`.
 
 ---
 

@@ -61,7 +61,7 @@ class BookDirectoryPage extends StatelessWidget {
               Icon(
                 Icons.expand_more,
                 size: 20,
-                color: appBarColor.withOpacity(0.7),
+                color: appBarColor.withValues(alpha: 0.7),
               ),
             ],
           ),
@@ -253,7 +253,7 @@ class BookDirectoryPage extends StatelessWidget {
                decoration: InputDecoration(
                  labelText: '章节标题',
                  hintText: '例如：初夏、启程、邂逅',
-                 labelStyle: TextStyle(color: textColor.withOpacity(0.7)),
+                 labelStyle: TextStyle(color: textColor.withValues(alpha: 0.7)),
                  hintStyle: TextStyle(color: hintColor),
                  enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: borderColor)),
                  focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: focusedBorderColor, width: 2)),

@@ -233,13 +233,13 @@ class _TrashPageState extends State<TrashPage> {
                           Icon(
                             Icons.delete_outline,
                             size: 64,
-                            color: iconColor.withOpacity(0.3),
+                            color: iconColor.withValues(alpha: 0.3),
                           ),
                           const SizedBox(height: 16),
                           Text(
                             '回收站为空',
                             style: GoogleFonts.notoSerifSc(
-                              color: titleColor.withOpacity(0.5),
+                              color: titleColor.withValues(alpha: 0.5),
                             ),
                           ),
                         ],
@@ -303,7 +303,7 @@ class _TrashPageState extends State<TrashPage> {
           children: [
             Icon(
               Icons.menu_book_rounded,
-              color: iconColor.withOpacity(0.7),
+              color: iconColor.withValues(alpha: 0.7),
               size: 28,
             ),
             const SizedBox(width: 16),
@@ -387,7 +387,7 @@ class _TrashPageState extends State<TrashPage> {
           children: [
             Icon(
               Icons.auto_awesome_motion_outlined,
-              color: iconColor.withOpacity(0.7),
+              color: iconColor.withValues(alpha: 0.7),
               size: 28,
             ),
             const SizedBox(width: 16),

@@ -85,7 +85,7 @@ class _SmoothCoverTransition extends StatelessWidget {
               // 添加半透明遮罩，增强层次感
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
+                  color: Colors.black.withValues(alpha: 0.2),
                   blurRadius: 10,
                   spreadRadius: 0,
                 ),

@@ -215,7 +215,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
             Icon(
               Icons.lock_outline,
               size: 64,
-              color: textColor.withOpacity(0.6),
+              color: textColor.withValues(alpha: 0.6),
             ),
             const SizedBox(height: 16),
             Text(
@@ -230,7 +230,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
             Text(
               '赞助后即可多端同步日记与随心记',
               style: GoogleFonts.notoSerifSc(
-                color: textColor.withOpacity(0.7),
+                color: textColor.withValues(alpha: 0.7),
                 fontSize: 14,
               ),
             ),
@@ -451,7 +451,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                               color: tc['switchBgColor'],
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
-                                color: textColor.withOpacity(0.1),
+                                color: textColor.withValues(alpha: 0.1),
                               ),
                             ),
                             padding: const EdgeInsets.all(12),
@@ -459,7 +459,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                               value: _autoSync,
                               onChanged:
                                   (val) => setState(() => _autoSync = val),
-                              activeColor:
+                              activeThumbColor:
                                   themeConfig.isNotEmpty
                                       ? themeConfig['activeSwitchColor']
                                       : tc['accentColor'],
@@ -467,7 +467,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                                   themeConfig.isNotEmpty
                                       ? themeConfig['activeTrackColor']
                                       : (tc['accentColor'] as Color)
-                                          .withOpacity(0.5),
+                                          .withValues(alpha: 0.5),
                               title: Text(
                                 '开启自动同步',
                                 style: GoogleFonts.notoSerifSc(
@@ -481,7 +481,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                                 child: Text(
                                   '开启后会在保存内容、回到前台等时机排队同步。\n关闭后只保留本地更改，等待你手动同步。',
                                   style: GoogleFonts.notoSerifSc(
-                                    color: textColor.withOpacity(0.7),
+                                    color: textColor.withValues(alpha: 0.7),
                                     fontSize: 12,
                                   ),
                                 ),
@@ -499,7 +499,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                               color: tc['switchBgColor'],
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
-                                color: textColor.withOpacity(0.1),
+                                color: textColor.withValues(alpha: 0.1),
                               ),
                             ),
                             padding: const EdgeInsets.all(12),
@@ -508,7 +508,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                               onChanged:
                                   (val) =>
                                       setState(() => _compressImages = val),
-                              activeColor:
+                              activeThumbColor:
                                   themeConfig.isNotEmpty
                                       ? themeConfig['activeSwitchColor']
                                       : tc['accentColor'],
@@ -516,7 +516,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                                   themeConfig.isNotEmpty
                                       ? themeConfig['activeTrackColor']
                                       : (tc['accentColor'] as Color)
-                                          .withOpacity(0.5),
+                                          .withValues(alpha: 0.5),
                               title: Text(
                                 '开启图片压缩',
                                 style: GoogleFonts.notoSerifSc(
@@ -530,7 +530,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                                 child: Text(
                                   '开启后将压缩上传，显著节省云端存储和流量 (推荐)。\n关闭则上传原图，画质更好但耗流量。',
                                   style: GoogleFonts.notoSerifSc(
-                                    color: textColor.withOpacity(0.7),
+                                    color: textColor.withValues(alpha: 0.7),
                                     fontSize: 12,
                                   ),
                                 ),
@@ -588,7 +588,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                                         ? '正在处理...'
                                         : provider.progressMessage,
                                     style: GoogleFonts.notoSerifSc(
-                                      color: textColor.withOpacity(0.9),
+                                      color: textColor.withValues(alpha: 0.9),
                                       fontSize: 14,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -604,7 +604,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                                           provider.totalProgress > 0
                                               ? provider.totalProgress
                                               : null,
-                                      backgroundColor: textColor.withOpacity(
+                                      backgroundColor: textColor.withValues(alpha: 
                                         0.1,
                                       ),
                                       color: tc['accentColor'],
@@ -622,7 +622,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                                         Text(
                                           provider.currentFileSpeed,
                                           style: GoogleFonts.robotoMono(
-                                            color: textColor.withOpacity(0.6),
+                                            color: textColor.withValues(alpha: 0.6),
                                             fontSize: 12,
                                           ),
                                         ),
@@ -630,14 +630,14 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                                           Text(
                                             '  |  ',
                                             style: TextStyle(
-                                              color: textColor.withOpacity(0.3),
+                                              color: textColor.withValues(alpha: 0.3),
                                               fontSize: 12,
                                             ),
                                           ),
                                           Text(
                                             provider.etaMessage,
                                             style: GoogleFonts.notoSerifSc(
-                                              color: textColor.withOpacity(0.7),
+                                              color: textColor.withValues(alpha: 0.7),
                                               fontSize: 12,
                                             ),
                                           ),
@@ -725,10 +725,10 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
       decoration: BoxDecoration(
         color: tc['switchBgColor'],
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: textColor.withOpacity(0.12)),
+        border: Border.all(color: textColor.withValues(alpha: 0.12)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withValues(alpha: 0.06),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -741,7 +741,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
             width: 42,
             height: 42,
             decoration: BoxDecoration(
-              color: (tc['accentColor'] as Color).withOpacity(0.12),
+              color: (tc['accentColor'] as Color).withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: tc['accentColor'], size: 22),
@@ -767,7 +767,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                       child: Text(
                         line,
                         style: GoogleFonts.notoSerifSc(
-                          color: textColor.withOpacity(0.75),
+                          color: textColor.withValues(alpha: 0.75),
                           fontSize: 12,
                           height: 1.5,
                         ),
@@ -810,13 +810,13 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
     FormFieldValidator<String>? validator,
   }) {
     final textColor = tc['textColor'] as Color;
-    final hintColor = textColor.withOpacity(0.5);
+    final hintColor = textColor.withValues(alpha: 0.5);
 
     final borderSide = BorderSide(
       color:
           themeConfig.isNotEmpty
               ? themeConfig['groupDecoration'].border.top.color
-              : textColor.withOpacity(0.2), // Fallback slightly visible border
+              : textColor.withValues(alpha: 0.2), // Fallback slightly visible border
     );
 
     final fillColor =
@@ -830,7 +830,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
         Text(
           label,
           style: GoogleFonts.notoSerifSc(
-            color: textColor.withOpacity(0.8),
+            color: textColor.withValues(alpha: 0.8),
             fontSize: 13,
             fontWeight: FontWeight.w500,
           ),
@@ -843,7 +843,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
             border: Border.fromBorderSide(borderSide),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 2,
                 offset: const Offset(0, 1),
               ),
@@ -859,7 +859,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
               hintStyle: TextStyle(color: hintColor, fontSize: 13),
               prefixIcon: Icon(
                 icon,
-                color: textColor.withOpacity(0.6),
+                color: textColor.withValues(alpha: 0.6),
                 size: 20,
               ),
               border: InputBorder.none,
@@ -924,7 +924,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
             label,
             textAlign: TextAlign.center,
             style: GoogleFonts.notoSerifSc(
-              color: onTap == null ? textColor.withOpacity(0.5) : textColor,
+              color: onTap == null ? textColor.withValues(alpha: 0.5) : textColor,
               fontWeight: FontWeight.bold,
               fontSize: 15,
             ),
@@ -955,7 +955,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
           borderRadius: BorderRadius.circular(22),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(slidingSwitchShadowOpacity),
+              color: Colors.black.withValues(alpha: slidingSwitchShadowOpacity),
               offset: const Offset(0, 1),
               blurRadius: 1,
             ),
@@ -983,7 +983,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                       borderRadius: BorderRadius.circular(18),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(thumbShadowOpacity),
+                          color: Colors.black.withValues(alpha: thumbShadowOpacity),
                           blurRadius: 4,
                           offset: const Offset(0, 2),
                         ),
@@ -1080,7 +1080,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
       decoration: BoxDecoration(
         color: tc['tipsBgColor'],
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: textColor.withOpacity(0.1)),
+        border: Border.all(color: textColor.withValues(alpha: 0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1089,7 +1089,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
             children: [
               Icon(
                 Icons.lightbulb_outline,
-                color: textColor.withOpacity(0.8),
+                color: textColor.withValues(alpha: 0.8),
                 size: 18,
               ),
               const SizedBox(width: 8),
@@ -1103,7 +1103,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
           Text(
             tips,
             style: GoogleFonts.notoSerifSc(
-              color: textColor.withOpacity(0.7),
+              color: textColor.withValues(alpha: 0.7),
               fontSize: 12,
               height: 1.6,
             ),

@@ -34,7 +34,7 @@ class MonthDivider extends StatelessWidget {
           // Left Line
           Expanded(
             child: Divider(
-              color: lineColor.withOpacity(0.5),
+              color: lineColor.withValues(alpha: 0.5),
               thickness: 1,
               indent: 20,
               endIndent: 12, // Space before bubble
@@ -48,7 +48,7 @@ class MonthDivider extends StatelessWidget {
               color: paperColor,
               borderRadius: BorderRadius.circular(20), // Capsule shape
               border: Border.all(
-                color: lineColor.withOpacity(0.6),
+                color: lineColor.withValues(alpha: 0.6),
                 width: 1,
               ),
               boxShadow: shadows,
@@ -62,7 +62,7 @@ class MonthDivider extends StatelessWidget {
                   style: GoogleFonts.merriweather(
                     fontSize: 12,
                     fontWeight: FontWeight.w300,
-                    color: textColor.withOpacity(0.7),
+                    color: textColor.withValues(alpha: 0.7),
                   ),
                 ),
                 Container(
@@ -87,7 +87,7 @@ class MonthDivider extends StatelessWidget {
                     '($month月)',
                     style: GoogleFonts.notoSerifSc(
                       fontSize: 12,
-                      color: textColor.withOpacity(0.6),
+                      color: textColor.withValues(alpha: 0.6),
                     ),
                   ),
                 ]
@@ -98,7 +98,7 @@ class MonthDivider extends StatelessWidget {
           // Right Line
           Expanded(
             child: Divider(
-              color: lineColor.withOpacity(0.5),
+              color: lineColor.withValues(alpha: 0.5),
               thickness: 1,
               indent: 12, // Space after bubble
               endIndent: 20,

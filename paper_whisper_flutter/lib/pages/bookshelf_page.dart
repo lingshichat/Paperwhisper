@@ -222,7 +222,7 @@ class _BookshelfPageState extends State<BookshelfPage> {
                decoration: InputDecoration(
                  labelText: '主标题 (默认为"你的专属故事")',
                  hintText: '例如：我的故事',
-                 labelStyle: TextStyle(color: textColor.withOpacity(0.7)),
+                 labelStyle: TextStyle(color: textColor.withValues(alpha: 0.7)),
                  hintStyle: TextStyle(color: hintColor),
                  enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: borderColor)),
                  focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: focusedBorderColor, width: 2)),
@@ -236,7 +236,7 @@ class _BookshelfPageState extends State<BookshelfPage> {
                decoration: InputDecoration(
                  labelText: '副标题',
                  hintText: '例如：2026年',
-                 labelStyle: TextStyle(color: textColor.withOpacity(0.7)),
+                 labelStyle: TextStyle(color: textColor.withValues(alpha: 0.7)),
                  hintStyle: TextStyle(color: hintColor),
                  enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: borderColor)),
                  focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: focusedBorderColor, width: 2)),

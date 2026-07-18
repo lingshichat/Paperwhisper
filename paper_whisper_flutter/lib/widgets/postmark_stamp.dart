@@ -47,7 +47,7 @@ class _StampPainter extends CustomPainter {
     canvas.drawCircle(center, radius - 2, paint);
     
     final Paint innerPaint = Paint()
-      ..color = color.withOpacity(0.6)
+      ..color = color.withValues(alpha: 0.6)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0;
     canvas.drawCircle(center, radius - 6, innerPaint);
@@ -123,7 +123,7 @@ class _StampPainter extends CustomPainter {
     textPainter.paint(canvas, Offset(center.dx - textPainter.width / 2, center.dy + radius * 0.45));
     
     // 5. Texture
-    final grungePaint = Paint()..color = color.withOpacity(0.4)..strokeWidth=1.0;
+    final grungePaint = Paint()..color = color.withValues(alpha: 0.4)..strokeWidth=1.0;
     final random = math.Random(date.millisecondsSinceEpoch); 
     for (int i = 0; i < 40; i++) {
       double dx = random.nextDouble() * size.width;

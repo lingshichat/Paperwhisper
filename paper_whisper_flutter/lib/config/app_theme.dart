@@ -201,7 +201,7 @@ class AppTheme {
       ),
       textSelectionTheme: TextSelectionThemeData(
         cursorColor: accentColor,
-        selectionColor: accentColor.withOpacity(0.4),
+        selectionColor: accentColor.withValues(alpha: 0.4),
         selectionHandleColor: accentColor,
       ),
       textTheme: GoogleFonts.notoSerifScTextTheme(

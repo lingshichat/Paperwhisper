@@ -283,7 +283,7 @@ class _MomentEditorPageState extends State<MomentEditorPage> {
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: value,
-          hint: Text(hint, style: TextStyle(color: dropdownItemColor.withOpacity(0.6), fontSize: 14)),
+          hint: Text(hint, style: TextStyle(color: dropdownItemColor.withValues(alpha: 0.6), fontSize: 14)),
           icon: Icon(Icons.arrow_drop_down, color: dropdownIconColor),
           dropdownColor: dropdownMenuBg,
           items: items.map((e) => DropdownMenuItem(value: e, child: Text(e, style: TextStyle(fontSize: 20, color: dropdownItemColor)))).toList(),
@@ -301,7 +301,7 @@ class _MomentEditorPageState extends State<MomentEditorPage> {
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: bgColor,
-          border: Border.all(color: iconColor.withOpacity(0.5), style: BorderStyle.none), // Removed dashed border for skeuomorphic feel, just bg
+          border: Border.all(color: iconColor.withValues(alpha: 0.5), style: BorderStyle.none), // Removed dashed border for skeuomorphic feel, just bg
           borderRadius: BorderRadius.circular(8),
         ),
         child: Column(
@@ -310,7 +310,7 @@ class _MomentEditorPageState extends State<MomentEditorPage> {
             Icon(Icons.add_a_photo_outlined, color: iconColor, size: isLarge ? 32 : 24),
             if (isLarge) ...[
               const SizedBox(height: 8),
-              Text("添加图片", style: TextStyle(color: iconColor.withOpacity(0.7)))
+              Text("添加图片", style: TextStyle(color: iconColor.withValues(alpha: 0.7)))
             ]
           ],
         ),

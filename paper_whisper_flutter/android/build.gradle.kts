@@ -16,13 +16,9 @@ subprojects {
     project.layout.buildDirectory.value(newSubprojectBuildDir)
 
     afterEvaluate {
-        if (pluginManager.hasPlugin("com.android.library")) {
-            configure<com.android.build.gradle.LibraryExtension> {
-                compileSdk = 36
-                defaultConfig {
-                    targetSdk = 36
-                }
-            }
+        // AGP 9 public DSL: LibraryExtension no longer exposes targetSdk on libraries.
+        extensions.findByType(com.android.build.api.dsl.LibraryExtension::class.java)?.apply {
+            compileSdk = 36
         }
     }
 }

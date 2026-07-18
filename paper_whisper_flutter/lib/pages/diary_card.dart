@@ -198,8 +198,8 @@ class _DiaryCardState extends State<DiaryCard> {
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOut,
           transform: Matrix4.identity()
-            ..translate(0.0, _isHovering ? (tc['hoverTranslateY'] as double) : 0.0)
-            ..scale(_isHovering ? (tc['hoverScale'] as double) : 1.0),
+            ..translateByDouble(0.0, _isHovering ? (tc['hoverTranslateY'] as double) : 0.0, 0.0, 1.0)
+            ..scaleByDouble(_isHovering ? (tc['hoverScale'] as double) : 1.0, _isHovering ? (tc['hoverScale'] as double) : 1.0, 1.0, 1.0),
           child: Stack(
             children: [
                containerBody,
@@ -220,7 +220,7 @@ class _DiaryCardState extends State<DiaryCard> {
 
                           return Transform(
                              transform: Matrix4.identity()
-                                ..translate(0.0, -10.0 * value) // Float up (allow overshoot here for effect)
+                                ..translateByDouble(0.0, -10.0 * value, 0.0, 1.0) // Float up (allow overshoot here for effect)
                                 ..rotateZ(pi * value), // Rotate 180 deg
                              alignment: Alignment.center,
                              child: Opacity(
@@ -264,7 +264,7 @@ class _DiaryCardState extends State<DiaryCard> {
                              child: Transform(
                                transform: Matrix4.identity()
                                   ..rotateZ(0.35 * value) // ~20 deg
-                                  ..scale(1.0 + 0.15 * value),
+                                  ..scaleByDouble(1.0 + 0.15 * value, 1.0 + 0.15 * value, 1.0, 1.0),
                                alignment: Alignment.center,
                                child: Opacity(
                                  opacity: 0.2 + 0.3 * value,

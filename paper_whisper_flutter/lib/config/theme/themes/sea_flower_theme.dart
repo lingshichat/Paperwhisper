@@ -67,7 +67,7 @@ final seaFlowerTheme = PaperWhisperTheme(
 
   // --- Sidebar Background ---
   sidebarBackground: BoxDecoration(
-    color: Colors.white.withOpacity(0.15),
+    color: Colors.white.withValues(alpha: 0.15),
     border: const Border(
       right: BorderSide(color: Color(0x4DFFFFFF), width: 1),
     ),
@@ -101,7 +101,7 @@ final seaFlowerTheme = PaperWhisperTheme(
   // --- Sidebar ---
   sidebar: SidebarThemeData(
     bgDecoration: BoxDecoration(
-      color: const Color(0xFFFCE4EC).withOpacity(0.6),
+      color: const Color(0xFFFCE4EC).withValues(alpha: 0.6),
       boxShadow: const [
         BoxShadow(
           color: Colors.black12,
@@ -119,7 +119,7 @@ final seaFlowerTheme = PaperWhisperTheme(
     pillColor: Colors.white,
     pillShadows: [
       BoxShadow(
-        color: const Color(0xFFF48FB1).withOpacity(0.3),
+        color: const Color(0xFFF48FB1).withValues(alpha: 0.3),
         blurRadius: 8,
         offset: const Offset(0, 4),
       ),
@@ -128,7 +128,7 @@ final seaFlowerTheme = PaperWhisperTheme(
       colors: [Color(0xFFF06292), Color(0xFFD81B60)],
     ),
     buttonShadow: BoxShadow(
-      color: const Color(0xFFD81B60).withOpacity(0.3),
+      color: const Color(0xFFD81B60).withValues(alpha: 0.3),
       blurRadius: 8,
       offset: const Offset(0, 4),
     ),
@@ -137,21 +137,21 @@ final seaFlowerTheme = PaperWhisperTheme(
   // --- Settings ---
   settings: SettingsThemeData(
     groupDecoration: BoxDecoration(
-      color: Colors.white.withOpacity(0.3),
+      color: Colors.white.withValues(alpha: 0.3),
       borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: Colors.white.withOpacity(0.4)),
+      border: Border.all(color: Colors.white.withValues(alpha: 0.4)),
       boxShadow: [
         BoxShadow(
-          color: const Color(0xFFF48FB1).withOpacity(0.1),
+          color: const Color(0xFFF48FB1).withValues(alpha: 0.1),
           blurRadius: 4,
           offset: const Offset(0, 2),
         ),
       ],
     ),
-    dividerColor: Colors.white.withOpacity(0.3),
+    dividerColor: Colors.white.withValues(alpha: 0.3),
     textColor: const Color(0xFFAD1457),
     activeSwitchColor: const Color(0xFFEC407A),
-    activeTrackColor: const Color(0xFFF48FB1).withOpacity(0.3),
+    activeTrackColor: const Color(0xFFF48FB1).withValues(alpha: 0.3),
     titleColor: const Color(0xFF880E4F),
     titleShadow: const Shadow(
       color: Color.fromRGBO(255, 255, 255, 0.5),
@@ -174,9 +174,9 @@ final seaFlowerTheme = PaperWhisperTheme(
     ],
     sheetBorder: Border.all(color: const Color(0xFFF48FB1), width: 1),
     sheetShowTape: false,
-    sheetInfoBackgroundColor: Colors.white.withOpacity(0.45),
-    sheetInfoBorderColor: const Color(0xFFF8BBD0).withOpacity(0.6),
-    sheetInfoDividerColor: const Color(0xFFF8BBD0).withOpacity(0.5),
+    sheetInfoBackgroundColor: Colors.white.withValues(alpha: 0.45),
+    sheetInfoBorderColor: const Color(0xFFF8BBD0).withValues(alpha: 0.6),
+    sheetInfoDividerColor: const Color(0xFFF8BBD0).withValues(alpha: 0.5),
     optionSelectedBgColor: const Color(0xFFEC407A),
     optionSelectedTextColor: Colors.white,
     optionSelectedShadow: const BoxShadow(
@@ -184,20 +184,20 @@ final seaFlowerTheme = PaperWhisperTheme(
       offset: Offset(0, 4),
       blurRadius: 8,
     ),
-    optionUnselectedBgColor: Colors.white.withOpacity(0.5),
+    optionUnselectedBgColor: Colors.white.withValues(alpha: 0.5),
     optionUnselectedTextColor: const Color(0xFFAD1457),
     optionUnselectedBorder: Border.all(
-      color: const Color(0xFFF48FB1).withOpacity(0.5),
+      color: const Color(0xFFF48FB1).withValues(alpha: 0.5),
     ),
   ),
 
   // --- Editor ---
   editor: EditorThemeData(
-    appBarBg: Colors.white.withOpacity(0.2),
+    appBarBg: Colors.white.withValues(alpha: 0.2),
     iconColor: const Color(0xFF880E4F),
     cursorColor: const Color(0xFFEC407A),
-    lineColor: const Color(0xFFEC407A).withOpacity(0.08),
-    dividerColor: const Color(0xFFEC407A).withOpacity(0.15),
+    lineColor: const Color(0xFFEC407A).withValues(alpha: 0.08),
+    dividerColor: const Color(0xFFEC407A).withValues(alpha: 0.15),
     appBarBorder: Border(
       bottom: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
     ),
@@ -215,7 +215,7 @@ final seaFlowerTheme = PaperWhisperTheme(
 
   // --- Diary Card ---
   diaryCard: DiaryCardThemeData(
-    bgColor: Colors.white.withOpacity(0.35),
+    bgColor: Colors.white.withValues(alpha: 0.35),
     titleColor: const Color(0xFF880E4F),
     contentColor: const Color(0xFFC2185B),
     dateColor: const Color(0xFFAD1457),
@@ -236,7 +236,7 @@ final seaFlowerTheme = PaperWhisperTheme(
         spreadRadius: 4,
       ),
     ],
-    border: Border.all(color: Colors.white.withOpacity(0.5)),
+    border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
     dateWeight: FontWeight.w600,
     glassEffect: true,
     glassColor: Colors.white.withValues(alpha: 0.65),
@@ -306,18 +306,18 @@ final seaFlowerTheme = PaperWhisperTheme(
 
   // --- Moments ---
   moments: MomentsThemeData(
-    rulerBg: Colors.white.withOpacity(0.9),
+    rulerBg: Colors.white.withValues(alpha: 0.9),
     rulerTextColor: const Color(0xFF880E4F),
-    rulerInactiveTextColor: const Color(0xFF880E4F).withOpacity(0.4),
+    rulerInactiveTextColor: const Color(0xFF880E4F).withValues(alpha: 0.4),
     rulerSubTextColor: const Color(0xFF880E4F),
-    rulerInactiveSubTextColor: const Color(0xFF880E4F).withOpacity(0.4),
+    rulerInactiveSubTextColor: const Color(0xFF880E4F).withValues(alpha: 0.4),
     rulerIndicatorColor: const Color(0xFFF50057),
     rulerShadowColor: const Color(0x1F880E4F),
     rulerBorderColor: Colors.transparent,
     appBarIconColor: const Color(0xFFD81B60),
     appBarTextColor: const Color(0xFF880E4F),
     drawerScrimColor: Colors.transparent,
-    appBarBg: const Color(0xFFFCE4EC).withOpacity(0.8),
+    appBarBg: const Color(0xFFFCE4EC).withValues(alpha: 0.8),
     emptyStateIconColor: const Color(0xFFFFFFFF).withValues(alpha: 0.82),
     emptyStateTextColor: const Color(0xFFFFFFFF),
   ),
@@ -339,7 +339,7 @@ final seaFlowerTheme = PaperWhisperTheme(
 
   // --- Mobile Header ---
   mobileHeader: MobileHeaderColorsData(
-    background: const Color(0xFFFFFFFF).withOpacity(0.15),
+    background: const Color(0xFFFFFFFF).withValues(alpha: 0.15),
     border: const Color(0x4DFFFFFF),
     iconColor: const Color(0xFF880E4F),
     titleColor: const Color(0xFF880E4F),
@@ -349,12 +349,12 @@ final seaFlowerTheme = PaperWhisperTheme(
   // --- Dialog Input ---
   dialogInput: DialogInputThemeData(
     textColor: const Color(0xFF880E4F),
-    hintColor: const Color(0xFF880E4F).withOpacity(0.4),
-    borderColor: const Color(0xFF880E4F).withOpacity(0.2),
-    focusedBorderColor: const Color(0xFF880E4F).withOpacity(0.6),
-    iconColor: const Color(0xFF880E4F).withOpacity(0.4),
-    backgroundColor: const Color(0xFFFCE4EC).withOpacity(0.5),
-    descriptionColor: const Color(0xFF880E4F).withOpacity(0.7),
+    hintColor: const Color(0xFF880E4F).withValues(alpha: 0.4),
+    borderColor: const Color(0xFF880E4F).withValues(alpha: 0.2),
+    focusedBorderColor: const Color(0xFF880E4F).withValues(alpha: 0.6),
+    iconColor: const Color(0xFF880E4F).withValues(alpha: 0.4),
+    backgroundColor: const Color(0xFFFCE4EC).withValues(alpha: 0.5),
+    descriptionColor: const Color(0xFF880E4F).withValues(alpha: 0.7),
   ),
 
   // --- Statistics ---
@@ -366,7 +366,7 @@ final seaFlowerTheme = PaperWhisperTheme(
         colors: [Color(0xFFFCE4EC), Color(0xFFF8BBD0)],
       ),
       borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: Colors.white.withOpacity(0.6), width: 1),
+      border: Border.all(color: Colors.white.withValues(alpha: 0.6), width: 1),
     ),
     cardShadow: const BoxShadow(
       color: Color.fromRGBO(240, 98, 146, 0.2),
@@ -374,7 +374,7 @@ final seaFlowerTheme = PaperWhisperTheme(
       offset: Offset(0, 6),
       spreadRadius: -2,
     ),
-    cardBorder: Border.all(color: Colors.white.withOpacity(0.6), width: 1),
+    cardBorder: Border.all(color: Colors.white.withValues(alpha: 0.6), width: 1),
     accentColor: const Color(0xFFF06292),
     textColor: const Color(0xFF880E4F),
     secondaryTextColor: const Color(0xFFC2185B),
@@ -393,14 +393,14 @@ final seaFlowerTheme = PaperWhisperTheme(
     restoreColor: const Color(0xFFE91E63),
     dangerColor: const Color(0xFFC2185B),
     cardTitleColor: const Color(0xFF880E4F),
-    cardDateColor: const Color(0xFF880E4F).withOpacity(0.6),
+    cardDateColor: const Color(0xFF880E4F).withValues(alpha: 0.6),
     cardDecoration: BoxDecoration(
-      color: Colors.white.withOpacity(0.4),
+      color: Colors.white.withValues(alpha: 0.4),
       borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: Colors.white.withOpacity(0.6), width: 1),
+      border: Border.all(color: Colors.white.withValues(alpha: 0.6), width: 1),
       boxShadow: [
         BoxShadow(
-          color: const Color(0xFFF48FB1).withOpacity(0.2),
+          color: const Color(0xFFF48FB1).withValues(alpha: 0.2),
           blurRadius: 8,
           offset: const Offset(0, 2),
         ),
@@ -417,16 +417,16 @@ final seaFlowerTheme = PaperWhisperTheme(
     switchTrackColor: Colors.pink[50]!,
     switchThumbColor: Colors.white,
     switchActiveText: const Color(0xFFAD1457),
-    switchInactiveText: const Color(0xFFAD1457).withOpacity(0.5),
+    switchInactiveText: const Color(0xFFAD1457).withValues(alpha: 0.5),
     primaryGradient: const LinearGradient(
       colors: [Color(0xFFF06292), Color(0xFFAD1457)],
     ),
-    primaryShadowColor: const Color(0xFFAD1457).withOpacity(0.3),
-    secondaryBtnColor: Colors.white.withOpacity(0.5),
+    primaryShadowColor: const Color(0xFFAD1457).withValues(alpha: 0.3),
+    secondaryBtnColor: Colors.white.withValues(alpha: 0.5),
     secondaryBtnTextColor: const Color(0xFF880E4F),
-    secondaryBorderColor: const Color(0xFFAD1457).withOpacity(0.2),
-    tipsBgColor: Colors.white.withOpacity(0.2),
-    switchBgColor: Colors.white.withOpacity(0.4),
+    secondaryBorderColor: const Color(0xFFAD1457).withValues(alpha: 0.2),
+    tipsBgColor: Colors.white.withValues(alpha: 0.2),
+    switchBgColor: Colors.white.withValues(alpha: 0.4),
     slidingSwitchShadowOpacity: 0.05,
     thumbShadowOpacity: 0.1,
   ),
@@ -485,14 +485,14 @@ final seaFlowerTheme = PaperWhisperTheme(
     bgColor: const Color(0xFFF4ECD8),
     appBarTextColor: const Color(0xFF5D4037),
     appBarIconColor: const Color(0xFF5D4037),
-    inputBg: Colors.white.withOpacity(0.5),
+    inputBg: Colors.white.withValues(alpha: 0.5),
     inputTextColor: const Color(0xFF3E2723),
-    hintColor: const Color(0xFF3E2723).withOpacity(0.5),
-    dropdownBg: Colors.white.withOpacity(0.5),
+    hintColor: const Color(0xFF3E2723).withValues(alpha: 0.5),
+    dropdownBg: Colors.white.withValues(alpha: 0.5),
     dropdownIconColor: const Color(0xFF8D6E63),
     dropdownMenuBg: const Color(0xFFF4ECD8),
     dropdownItemColor: const Color(0xFF5D4037),
-    photoEmptyColor: Colors.white.withOpacity(0.3),
+    photoEmptyColor: Colors.white.withValues(alpha: 0.3),
     photoIconColor: const Color(0xFF8D6E63),
   ),
 
@@ -507,7 +507,7 @@ final seaFlowerTheme = PaperWhisperTheme(
   privacyDialog: PrivacyDialogThemeData(
     linkColor: const Color(0xFFAD1457),
     contentTextColor: const Color(0xFFAD1457),
-    disclaimerTextColor: const Color(0xFFAD1457).withOpacity(0.7),
+    disclaimerTextColor: const Color(0xFFAD1457).withValues(alpha: 0.7),
   ),
 
   // --- Paper Sheet ---

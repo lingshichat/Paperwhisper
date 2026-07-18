@@ -221,7 +221,7 @@ class _RulerDatePickerState extends State<RulerDatePicker> {
                decoration: BoxDecoration(
                  color: finalIndicatorColor,
                  borderRadius: BorderRadius.circular(1.5),
-                 boxShadow: [BoxShadow(color: finalIndicatorColor.withOpacity(0.5), blurRadius: 4)]
+                 boxShadow: [BoxShadow(color: finalIndicatorColor.withValues(alpha: 0.5), blurRadius: 4)]
                ),
              ),
           ),

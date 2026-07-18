@@ -77,7 +77,7 @@ class _StatisticsPageState extends State<StatisticsPage>
     final currentTheme = settings.currentTheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.background,
+      backgroundColor: colorScheme.surface,
       body: RefreshIndicator(
         onRefresh: _loadStatistics,
         child: _isLoading
@@ -102,7 +102,7 @@ class _StatisticsPageState extends State<StatisticsPage>
           Text(
             '正在翻开纪念册...',
             style: GoogleFonts.notoSerifSc(
-              color: colorScheme.onSurface.withOpacity(0.6),
+              color: colorScheme.onSurface.withValues(alpha: 0.6),
               fontSize: 14,
             ),
           ),
@@ -192,7 +192,7 @@ class _StatisticsPageState extends State<StatisticsPage>
           '我们已相遇',
           style: GoogleFonts.notoSerifSc(
             fontSize: 15,
-            color: _getTextColor(theme).withOpacity(0.5),
+            color: _getTextColor(theme).withValues(alpha: 0.5),
             letterSpacing: 3,
           ),
         ),
@@ -210,7 +210,7 @@ class _StatisticsPageState extends State<StatisticsPage>
                 height: 1,
                 shadows: [
                   Shadow(
-                    color: _getAccentColor(theme).withOpacity(0.2),
+                    color: _getAccentColor(theme).withValues(alpha: 0.2),
                     blurRadius: 30,
                     offset: const Offset(0, 6),
                   ),
@@ -224,7 +224,7 @@ class _StatisticsPageState extends State<StatisticsPage>
                 '天',
                 style: GoogleFonts.notoSerifSc(
                   fontSize: 22,
-                  color: _getTextColor(theme).withOpacity(0.6),
+                  color: _getTextColor(theme).withValues(alpha: 0.6),
                 ),
               ),
             ),
@@ -236,7 +236,7 @@ class _StatisticsPageState extends State<StatisticsPage>
             '始于 ${_formatDate(_stats.firstRecordDate!)}',
             style: GoogleFonts.notoSerifSc(
               fontSize: 12,
-              color: _getTextColor(theme).withOpacity(0.35),
+              color: _getTextColor(theme).withValues(alpha: 0.35),
               fontStyle: FontStyle.italic,
             ),
           ),
@@ -252,7 +252,7 @@ class _StatisticsPageState extends State<StatisticsPage>
         textAlign: TextAlign.center,
         style: GoogleFonts.notoSerifSc(
           fontSize: 15,
-          color: _getTextColor(theme).withOpacity(0.5),
+          color: _getTextColor(theme).withValues(alpha: 0.5),
           height: 1.8,
           fontStyle: FontStyle.italic,
         ),
@@ -272,7 +272,7 @@ class _StatisticsPageState extends State<StatisticsPage>
                 gradient: LinearGradient(
                   colors: [
                     Colors.transparent,
-                    _getAccentColor(theme).withOpacity(0.3),
+                    _getAccentColor(theme).withValues(alpha: 0.3),
                   ],
                 ),
               ),
@@ -283,7 +283,7 @@ class _StatisticsPageState extends State<StatisticsPage>
             child: Icon(
               Icons.favorite,
               size: 12,
-              color: _getAccentColor(theme).withOpacity(0.4),
+              color: _getAccentColor(theme).withValues(alpha: 0.4),
             ),
           ),
           Expanded(
@@ -292,7 +292,7 @@ class _StatisticsPageState extends State<StatisticsPage>
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    _getAccentColor(theme).withOpacity(0.3),
+                    _getAccentColor(theme).withValues(alpha: 0.3),
                     Colors.transparent,
                   ],
                 ),
@@ -339,7 +339,7 @@ class _StatisticsPageState extends State<StatisticsPage>
       width: 4,
       height: 4,
       decoration: BoxDecoration(
-        color: _getAccentColor(theme).withOpacity(0.3),
+        color: _getAccentColor(theme).withValues(alpha: 0.3),
         shape: BoxShape.circle,
       ),
     );
@@ -361,7 +361,7 @@ class _StatisticsPageState extends State<StatisticsPage>
           Icon(
             icon,
             size: 20,
-            color: accentColor.withOpacity(0.7),
+            color: accentColor.withValues(alpha: 0.7),
           ),
           const SizedBox(height: 6),
           Text(
@@ -377,7 +377,7 @@ class _StatisticsPageState extends State<StatisticsPage>
             label,
             style: GoogleFonts.notoSerifSc(
               fontSize: 12,
-              color: _getTextColor(theme).withOpacity(0.5),
+              color: _getTextColor(theme).withValues(alpha: 0.5),
             ),
           ),
         ],
@@ -397,14 +397,14 @@ class _StatisticsPageState extends State<StatisticsPage>
           Icon(
             Icons.auto_awesome,
             size: 14,
-            color: _getAccentColor(theme).withOpacity(0.5),
+            color: _getAccentColor(theme).withValues(alpha: 0.5),
           ),
           const SizedBox(width: 8),
           Text(
             '本月关键词 · ${keyword['title']}',
             style: GoogleFonts.notoSerifSc(
               fontSize: 13,
-              color: _getTextColor(theme).withOpacity(0.6),
+              color: _getTextColor(theme).withValues(alpha: 0.6),
             ),
           ),
         ],
@@ -512,15 +512,15 @@ class _StatisticsPageState extends State<StatisticsPage>
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            _getAccentColor(theme).withOpacity(0.15),
-            _getAccentColor(theme).withOpacity(0.05),
+            _getAccentColor(theme).withValues(alpha: 0.15),
+            _getAccentColor(theme).withValues(alpha: 0.05),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: _getAccentColor(theme).withOpacity(0.2),
+          color: _getAccentColor(theme).withValues(alpha: 0.2),
           width: 1,
         ),
       ),
@@ -529,7 +529,7 @@ class _StatisticsPageState extends State<StatisticsPage>
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: _getAccentColor(theme).withOpacity(0.2),
+              color: _getAccentColor(theme).withValues(alpha: 0.2),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -547,7 +547,7 @@ class _StatisticsPageState extends State<StatisticsPage>
                   '连续写作',
                   style: GoogleFonts.notoSerifSc(
                     fontSize: 13,
-                    color: _getTextColor(theme).withOpacity(0.6),
+                    color: _getTextColor(theme).withValues(alpha: 0.6),
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -568,7 +568,7 @@ class _StatisticsPageState extends State<StatisticsPage>
                       '天',
                       style: GoogleFonts.notoSerifSc(
                         fontSize: 14,
-                        color: _getTextColor(theme).withOpacity(0.6),
+                        color: _getTextColor(theme).withValues(alpha: 0.6),
                       ),
                     ),
                   ],
@@ -580,7 +580,7 @@ class _StatisticsPageState extends State<StatisticsPage>
             _getStreakMessage(_stats.continuousDays),
             style: GoogleFonts.notoSerifSc(
               fontSize: 12,
-              color: _getTextColor(theme).withOpacity(0.5),
+              color: _getTextColor(theme).withValues(alpha: 0.5),
               fontStyle: FontStyle.italic,
             ),
           ),
@@ -624,14 +624,14 @@ class _StatisticsPageState extends State<StatisticsPage>
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: _getAccentColor(theme).withOpacity(0.1),
+            color: _getAccentColor(theme).withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Text(
             _getMoodMessage(theme),
             style: GoogleFonts.notoSerifSc(
               fontSize: 13,
-              color: _getTextColor(theme).withOpacity(0.7),
+              color: _getTextColor(theme).withValues(alpha: 0.7),
               fontStyle: FontStyle.italic,
             ),
           ),
@@ -641,10 +641,10 @@ class _StatisticsPageState extends State<StatisticsPage>
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: _getCardColor(theme).withOpacity(0.3),
+            color: _getCardColor(theme).withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: _getAccentColor(theme).withOpacity(0.1),
+              color: _getAccentColor(theme).withValues(alpha: 0.1),
               width: 1,
             ),
           ),
@@ -671,13 +671,13 @@ class _StatisticsPageState extends State<StatisticsPage>
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
           color: isSelected
-              ? _getAccentColor(theme).withOpacity(0.2)
+              ? _getAccentColor(theme).withValues(alpha: 0.2)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected
-                ? _getAccentColor(theme).withOpacity(0.5)
-                : _getTextColor(theme).withOpacity(0.2),
+                ? _getAccentColor(theme).withValues(alpha: 0.5)
+                : _getTextColor(theme).withValues(alpha: 0.2),
             width: 1,
           ),
         ),
@@ -687,7 +687,7 @@ class _StatisticsPageState extends State<StatisticsPage>
             fontSize: 11,
             color: isSelected
                 ? _getAccentColor(theme)
-                : _getTextColor(theme).withOpacity(0.5),
+                : _getTextColor(theme).withValues(alpha: 0.5),
           ),
         ),
       ),
@@ -745,10 +745,10 @@ class _StatisticsPageState extends State<StatisticsPage>
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: _getCardColor(theme).withOpacity(0.3),
+        color: _getCardColor(theme).withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: _getAccentColor(theme).withOpacity(0.1),
+          color: _getAccentColor(theme).withValues(alpha: 0.1),
           width: 1,
         ),
       ),
@@ -765,10 +765,10 @@ class _StatisticsPageState extends State<StatisticsPage>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _getCardColor(theme).withOpacity(0.3),
+        color: _getCardColor(theme).withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: _getAccentColor(theme).withOpacity(0.1),
+          color: _getAccentColor(theme).withValues(alpha: 0.1),
           width: 1,
         ),
       ),
@@ -782,7 +782,7 @@ class _StatisticsPageState extends State<StatisticsPage>
           ),
           const SizedBox(height: 10),
           Divider(
-            color: _getAccentColor(theme).withOpacity(0.1),
+            color: _getAccentColor(theme).withValues(alpha: 0.1),
             height: 1,
           ),
           const SizedBox(height: 10),
@@ -794,7 +794,7 @@ class _StatisticsPageState extends State<StatisticsPage>
           ),
           const SizedBox(height: 10),
           Divider(
-            color: _getAccentColor(theme).withOpacity(0.1),
+            color: _getAccentColor(theme).withValues(alpha: 0.1),
             height: 1,
           ),
           const SizedBox(height: 10),
@@ -821,7 +821,7 @@ class _StatisticsPageState extends State<StatisticsPage>
         Icon(
           icon,
           size: 18,
-          color: _getAccentColor(theme).withOpacity(0.7),
+          color: _getAccentColor(theme).withValues(alpha: 0.7),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -829,7 +829,7 @@ class _StatisticsPageState extends State<StatisticsPage>
             label,
             style: GoogleFonts.notoSerifSc(
               fontSize: 14,
-              color: _getTextColor(theme).withOpacity(0.7),
+              color: _getTextColor(theme).withValues(alpha: 0.7),
             ),
           ),
         ),
@@ -861,14 +861,14 @@ class _StatisticsPageState extends State<StatisticsPage>
                         '向左滑动查看详细数据',
                         style: GoogleFonts.notoSerifSc(
                           fontSize: 13,
-                          color: _getTextColor(theme).withOpacity(0.4),
+                          color: _getTextColor(theme).withValues(alpha: 0.4),
                         ),
                       ),
                       const SizedBox(width: 8),
                       Icon(
                         Icons.arrow_forward_ios,
                         size: 12,
-                        color: _getTextColor(theme).withOpacity(0.4),
+                        color: _getTextColor(theme).withValues(alpha: 0.4),
                       ),
                     ],
                   )
@@ -878,14 +878,14 @@ class _StatisticsPageState extends State<StatisticsPage>
                       Icon(
                         Icons.arrow_back_ios,
                         size: 12,
-                        color: _getTextColor(theme).withOpacity(0.4),
+                        color: _getTextColor(theme).withValues(alpha: 0.4),
                       ),
                       const SizedBox(width: 8),
                       Text(
                         '向右滑动返回纪念页',
                         style: GoogleFonts.notoSerifSc(
                           fontSize: 13,
-                          color: _getTextColor(theme).withOpacity(0.4),
+                          color: _getTextColor(theme).withValues(alpha: 0.4),
                         ),
                       ),
                     ],

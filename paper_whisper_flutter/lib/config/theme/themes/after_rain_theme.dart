@@ -69,9 +69,9 @@ final afterRainTheme = PaperWhisperTheme(
 
   // --- Sidebar Background ---
   sidebarBackground: BoxDecoration(
-    color: _surface.withOpacity(0.65),
+    color: _surface.withValues(alpha: 0.65),
     border: Border(
-      right: BorderSide(color: Colors.white.withOpacity(0.4), width: 1),
+      right: BorderSide(color: Colors.white.withValues(alpha: 0.4), width: 1),
     ),
   ),
 
@@ -94,25 +94,25 @@ final afterRainTheme = PaperWhisperTheme(
       stops: [0.1, 0.9],
     ),
     shadow: BoxShadow(
-      color: _accentBlue.withOpacity(0.4),
+      color: _accentBlue.withValues(alpha: 0.4),
       blurRadius: 16,
       offset: const Offset(0, 8),
       spreadRadius: -4,
     ),
     iconColor: Colors.white,
-    border: Border.all(color: Colors.white.withOpacity(0.6), width: 1.5),
+    border: Border.all(color: Colors.white.withValues(alpha: 0.6), width: 1.5),
   ),
 
   // --- Sidebar ---
   sidebar: SidebarThemeData(
     bgDecoration: BoxDecoration(
-      color: _surface.withOpacity(0.65),
+      color: _surface.withValues(alpha: 0.65),
       border: Border(
-        right: BorderSide(color: Colors.white.withOpacity(0.4), width: 1),
+        right: BorderSide(color: Colors.white.withValues(alpha: 0.4), width: 1),
       ),
       boxShadow: [
         BoxShadow(
-          color: _accentBlue.withOpacity(0.05),
+          color: _accentBlue.withValues(alpha: 0.05),
           blurRadius: 20,
           offset: const Offset(2, 0),
         ),
@@ -124,7 +124,7 @@ final afterRainTheme = PaperWhisperTheme(
     hitokotoBackgroundColor: Colors.white.withValues(alpha: 0.4),
     hitokotoBorderColor: Colors.white10,
     dividerColor: Colors.white10,
-    pillColor: _surface.withOpacity(0.5),
+    pillColor: _surface.withValues(alpha: 0.5),
     pillShadows: [
       const BoxShadow(
         color: Colors.white,
@@ -132,17 +132,17 @@ final afterRainTheme = PaperWhisperTheme(
         blurRadius: 2,
       ),
       BoxShadow(
-        color: _accentBlue.withOpacity(0.2),
+        color: _accentBlue.withValues(alpha: 0.2),
         offset: const Offset(1, 1),
         blurRadius: 3,
       ),
     ],
-    pillBorder: Border.all(color: Colors.white.withOpacity(0.3)),
+    pillBorder: Border.all(color: Colors.white.withValues(alpha: 0.3)),
     buttonGradient: const LinearGradient(
       colors: [_primaryLight, _primaryMain],
     ),
     buttonShadow: BoxShadow(
-      color: _primaryMain.withOpacity(0.3),
+      color: _primaryMain.withValues(alpha: 0.3),
       blurRadius: 8,
       offset: const Offset(0, 3),
     ),
@@ -151,24 +151,24 @@ final afterRainTheme = PaperWhisperTheme(
   // --- Settings ---
   settings: SettingsThemeData(
     groupDecoration: BoxDecoration(
-      color: Colors.white.withOpacity(0.5),
+      color: Colors.white.withValues(alpha: 0.5),
       borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: Colors.white.withOpacity(0.6), width: 1.5),
+      border: Border.all(color: Colors.white.withValues(alpha: 0.6), width: 1.5),
       boxShadow: [
         BoxShadow(
-          color: _accentBlue.withOpacity(0.08),
+          color: _accentBlue.withValues(alpha: 0.08),
           blurRadius: 10,
           offset: const Offset(0, 4),
         ),
       ],
     ),
-    dividerColor: _accentBlue.withOpacity(0.1),
+    dividerColor: _accentBlue.withValues(alpha: 0.1),
     textColor: _textSecondary,
     activeSwitchColor: _primaryMain,
-    activeTrackColor: _primaryLight.withOpacity(0.3),
+    activeTrackColor: _primaryLight.withValues(alpha: 0.3),
     titleColor: _textSecondary,
     titleShadow: Shadow(
-      color: Colors.white.withOpacity(0.8),
+      color: Colors.white.withValues(alpha: 0.8),
       offset: const Offset(0, 1),
       blurRadius: 0,
     ),
@@ -176,21 +176,21 @@ final afterRainTheme = PaperWhisperTheme(
     showPetalRain: false,
     showStarrySky: false,
     sheetTextColor: _textSecondary,
-    sheetBackgroundColor: const Color(0xFFF0F8FF).withOpacity(0.95),
+    sheetBackgroundColor: const Color(0xFFF0F8FF).withValues(alpha: 0.95),
     sheetTitleColor: _textSecondary,
-    sheetTapeColor: const Color(0xFFB3E5FC).withOpacity(0.5),
+    sheetTapeColor: const Color(0xFFB3E5FC).withValues(alpha: 0.5),
     sheetShadows: [
       BoxShadow(
-        color: _accentBlue.withOpacity(0.15),
+        color: _accentBlue.withValues(alpha: 0.15),
         blurRadius: 20,
         offset: const Offset(0, -5),
       ),
     ],
     sheetBorder: Border.all(color: Colors.white, width: 1),
     sheetShowTape: false,
-    sheetInfoBackgroundColor: Colors.white.withOpacity(0.85),
+    sheetInfoBackgroundColor: Colors.white.withValues(alpha: 0.85),
     sheetInfoBorderColor: Colors.white,
-    sheetInfoDividerColor: _accentBlue.withOpacity(0.15),
+    sheetInfoDividerColor: _accentBlue.withValues(alpha: 0.15),
     optionSelectedBgColor: _accentBlue,
     optionSelectedTextColor: Colors.white,
     optionSelectedShadow: const BoxShadow(
@@ -198,18 +198,18 @@ final afterRainTheme = PaperWhisperTheme(
       offset: Offset(0, 4),
       blurRadius: 8,
     ),
-    optionUnselectedBgColor: Colors.white.withOpacity(0.6),
+    optionUnselectedBgColor: Colors.white.withValues(alpha: 0.6),
     optionUnselectedTextColor: _textSecondary,
     optionUnselectedBorder: Border.all(color: Colors.white),
   ),
 
   // --- Editor ---
   editor: EditorThemeData(
-    appBarBg: _surface.withOpacity(0.8),
+    appBarBg: _surface.withValues(alpha: 0.8),
     iconColor: _textSecondary,
     cursorColor: _accentBlue,
-    lineColor: _accentBlue.withOpacity(0.1),
-    dividerColor: _accentBlue.withOpacity(0.2),
+    lineColor: _accentBlue.withValues(alpha: 0.1),
+    dividerColor: _accentBlue.withValues(alpha: 0.2),
     applyBlur: false,
     saveButtonBg: const Color(0xFFF7F1E3),
     saveButtonTextColor: const Color(0xFF5D4037),
@@ -224,15 +224,15 @@ final afterRainTheme = PaperWhisperTheme(
 
   // --- Diary Card ---
   diaryCard: DiaryCardThemeData(
-    bgColor: Colors.white.withOpacity(0.7),
+    bgColor: Colors.white.withValues(alpha: 0.7),
     titleColor: _textSecondary,
-    contentColor: _textSecondary.withOpacity(0.9),
+    contentColor: _textSecondary.withValues(alpha: 0.9),
     dateColor: _accentBlue,
     iconColor: _accentBlue,
-    dashedLineColor: _accentBlue.withOpacity(0.2),
+    dashedLineColor: _accentBlue.withValues(alpha: 0.2),
     shadows: [
       BoxShadow(
-        color: _accentBlue.withOpacity(0.08),
+        color: _accentBlue.withValues(alpha: 0.08),
         offset: const Offset(0, 6),
         blurRadius: 15,
         spreadRadius: -2,
@@ -240,7 +240,7 @@ final afterRainTheme = PaperWhisperTheme(
     ],
     hoverShadows: [
       BoxShadow(
-        color: _accentBlue.withOpacity(0.15),
+        color: _accentBlue.withValues(alpha: 0.15),
         offset: const Offset(0, 10),
         blurRadius: 25,
         spreadRadius: -2,
@@ -310,11 +310,11 @@ final afterRainTheme = PaperWhisperTheme(
   // --- Book Directory ---
   bookDirectory: BookDirectoryThemeData(
     inkColor: _textSecondary,
-    paperColor: _surface.withOpacity(0.95),
-    paperBorderColor: Colors.white.withOpacity(0.8),
+    paperColor: _surface.withValues(alpha: 0.95),
+    paperBorderColor: Colors.white.withValues(alpha: 0.8),
     paperShadow: [
       BoxShadow(
-        color: _accentBlue.withOpacity(0.1),
+        color: _accentBlue.withValues(alpha: 0.1),
         blurRadius: 12,
         offset: const Offset(0, 5),
       ),
@@ -323,39 +323,39 @@ final afterRainTheme = PaperWhisperTheme(
 
   // --- Moments ---
   moments: MomentsThemeData(
-    rulerBg: _surface.withOpacity(0.8),
+    rulerBg: _surface.withValues(alpha: 0.8),
     rulerTextColor: _textSecondary,
-    rulerInactiveTextColor: _textSecondary.withOpacity(0.3),
+    rulerInactiveTextColor: _textSecondary.withValues(alpha: 0.3),
     rulerSubTextColor: _accentBlue,
-    rulerInactiveSubTextColor: _accentBlue.withOpacity(0.3),
+    rulerInactiveSubTextColor: _accentBlue.withValues(alpha: 0.3),
     rulerIndicatorColor: _accentBlue,
-    rulerShadowColor: _accentBlue.withOpacity(0.1),
-    rulerBorderColor: Colors.white.withOpacity(0.5),
+    rulerShadowColor: _accentBlue.withValues(alpha: 0.1),
+    rulerBorderColor: Colors.white.withValues(alpha: 0.5),
     appBarIconColor: _textSecondary,
     appBarTextColor: _textSecondary,
     drawerScrimColor: Colors.transparent,
-    appBarBg: const Color(0xFFF0F8FF).withOpacity(0.6),
+    appBarBg: const Color(0xFFF0F8FF).withValues(alpha: 0.6),
     emptyStateIconColor: _accentBlue.withValues(alpha: 0.68),
     emptyStateTextColor: _textSecondary.withValues(alpha: 0.92),
   ),
 
   // --- Search ---
   search: SearchThemeData(
-    bgColor: Colors.white.withOpacity(0.6),
+    bgColor: Colors.white.withValues(alpha: 0.6),
     textColor: _textSecondary,
-    hintColor: _textSecondary.withOpacity(0.4),
+    hintColor: _textSecondary.withValues(alpha: 0.4),
     iconColor: _accentBlue,
-    border: Border.all(color: Colors.white.withOpacity(0.7), width: 1.5),
+    border: Border.all(color: Colors.white.withValues(alpha: 0.7), width: 1.5),
   ),
 
   // --- Month Divider ---
   monthDivider: MonthDividerThemeData(
     textColor: _textSecondary,
-    lineColor: _accentBlue.withOpacity(0.2),
-    paperColor: Colors.white.withOpacity(0.8),
+    lineColor: _accentBlue.withValues(alpha: 0.2),
+    paperColor: Colors.white.withValues(alpha: 0.8),
     shadows: [
       BoxShadow(
-        color: _accentBlue.withOpacity(0.1),
+        color: _accentBlue.withValues(alpha: 0.1),
         blurRadius: 8,
         offset: const Offset(0, 3),
       ),
@@ -364,12 +364,12 @@ final afterRainTheme = PaperWhisperTheme(
 
   // --- Dialog ---
   dialog: AppDialogThemeData(
-    paper: _surface.withOpacity(0.95),
+    paper: _surface.withValues(alpha: 0.95),
     title: _textSecondary,
     text: _textSecondary,
     icon: _accentBlue,
-    tape: _primaryLight.withOpacity(0.4),
-    shadow: _accentBlue.withOpacity(0.15),
+    tape: _primaryLight.withValues(alpha: 0.4),
+    shadow: _accentBlue.withValues(alpha: 0.15),
     border: Colors.white,
     primaryBtn: _accentBlue,
     primaryBtnText: Colors.white,
@@ -406,56 +406,56 @@ final afterRainTheme = PaperWhisperTheme(
 
   // --- Lock Screen ---
   lockScreen: LockScreenThemeData(
-    displayBg: Colors.white.withOpacity(0.4),
-    displayBorder: Colors.white.withOpacity(0.6),
+    displayBg: Colors.white.withValues(alpha: 0.4),
+    displayBorder: Colors.white.withValues(alpha: 0.6),
     accentColor: _accentBlue,
-    keyBg: Colors.white.withOpacity(0.5),
-    keyBorder: Colors.white.withOpacity(0.8),
+    keyBg: Colors.white.withValues(alpha: 0.5),
+    keyBorder: Colors.white.withValues(alpha: 0.8),
     keyText: _textSecondary,
   ),
 
   // --- Mobile Header ---
   mobileHeader: MobileHeaderColorsData(
-    background: _surface.withOpacity(0.85),
-    border: Colors.white.withOpacity(0.4),
+    background: _surface.withValues(alpha: 0.85),
+    border: Colors.white.withValues(alpha: 0.4),
     iconColor: _accentBlue,
     titleColor: _textSecondary,
-    subtitleColor: _textSecondary.withOpacity(0.7),
+    subtitleColor: _textSecondary.withValues(alpha: 0.7),
   ),
 
   // --- Dialog Input ---
   dialogInput: DialogInputThemeData(
     textColor: const Color(0xFF455A64),
-    hintColor: const Color(0xFF455A64).withOpacity(0.4),
-    borderColor: const Color(0xFF455A64).withOpacity(0.2),
-    focusedBorderColor: const Color(0xFF455A64).withOpacity(0.6),
-    iconColor: const Color(0xFF455A64).withOpacity(0.4),
-    backgroundColor: Colors.white.withOpacity(0.5),
-    descriptionColor: const Color(0xFF455A64).withOpacity(0.7),
+    hintColor: const Color(0xFF455A64).withValues(alpha: 0.4),
+    borderColor: const Color(0xFF455A64).withValues(alpha: 0.2),
+    focusedBorderColor: const Color(0xFF455A64).withValues(alpha: 0.6),
+    iconColor: const Color(0xFF455A64).withValues(alpha: 0.4),
+    backgroundColor: Colors.white.withValues(alpha: 0.5),
+    descriptionColor: const Color(0xFF455A64).withValues(alpha: 0.7),
   ),
 
   // --- Statistics ---
   statistics: StatisticsThemeData(
     cardBackground: BoxDecoration(
-      color: Colors.white.withOpacity(0.6),
+      color: Colors.white.withValues(alpha: 0.6),
       borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: Colors.white.withOpacity(0.8), width: 1.5),
+      border: Border.all(color: Colors.white.withValues(alpha: 0.8), width: 1.5),
     ),
     cardShadow: BoxShadow(
-      color: _accentBlue.withOpacity(0.15),
+      color: _accentBlue.withValues(alpha: 0.15),
       blurRadius: 20,
       offset: const Offset(0, 8),
       spreadRadius: -4,
     ),
-    cardBorder: Border.all(color: Colors.white.withOpacity(0.8), width: 1.5),
+    cardBorder: Border.all(color: Colors.white.withValues(alpha: 0.8), width: 1.5),
     accentColor: _accentBlue,
     textColor: _textSecondary,
-    secondaryTextColor: _textSecondary.withOpacity(0.7),
+    secondaryTextColor: _textSecondary.withValues(alpha: 0.7),
     chartColor: _primaryMain,
     badgeStyle: StatisticsBadgeStyleData(
-      backgroundColor: _primaryLight.withOpacity(0.4),
+      backgroundColor: _primaryLight.withValues(alpha: 0.4),
       textColor: _accentBlue,
-      borderColor: _accentBlue.withOpacity(0.3),
+      borderColor: _accentBlue.withValues(alpha: 0.3),
     ),
   ),
 
@@ -466,14 +466,14 @@ final afterRainTheme = PaperWhisperTheme(
     restoreColor: _accentBlue,
     dangerColor: const Color(0xFFE57373),
     cardTitleColor: _textSecondary,
-    cardDateColor: _textSecondary.withOpacity(0.6),
+    cardDateColor: _textSecondary.withValues(alpha: 0.6),
     cardDecoration: BoxDecoration(
-      color: Colors.white.withOpacity(0.7),
+      color: Colors.white.withValues(alpha: 0.7),
       borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: Colors.white.withOpacity(0.6), width: 1),
+      border: Border.all(color: Colors.white.withValues(alpha: 0.6), width: 1),
       boxShadow: [
         BoxShadow(
-          color: _accentBlue.withOpacity(0.1),
+          color: _accentBlue.withValues(alpha: 0.1),
           blurRadius: 8,
           offset: const Offset(0, 2),
         ),
@@ -490,16 +490,16 @@ final afterRainTheme = PaperWhisperTheme(
     switchTrackColor: Colors.lightBlue[50]!,
     switchThumbColor: Colors.white,
     switchActiveText: _accentBlue,
-    switchInactiveText: _accentBlue.withOpacity(0.5),
+    switchInactiveText: _accentBlue.withValues(alpha: 0.5),
     primaryGradient: const LinearGradient(
       colors: [Color(0xFF4FC3F7), Color(0xFF0288D1)],
     ),
-    primaryShadowColor: _accentBlue.withOpacity(0.3),
-    secondaryBtnColor: Colors.white.withOpacity(0.6),
+    primaryShadowColor: _accentBlue.withValues(alpha: 0.3),
+    secondaryBtnColor: Colors.white.withValues(alpha: 0.6),
     secondaryBtnTextColor: const Color(0xFF0277BD),
-    secondaryBorderColor: _accentBlue.withOpacity(0.2),
-    tipsBgColor: Colors.white.withOpacity(0.2),
-    switchBgColor: Colors.black.withOpacity(0.05),
+    secondaryBorderColor: _accentBlue.withValues(alpha: 0.2),
+    tipsBgColor: Colors.white.withValues(alpha: 0.2),
+    switchBgColor: Colors.black.withValues(alpha: 0.05),
     slidingSwitchShadowOpacity: 0.05,
     thumbShadowOpacity: 0.1,
   ),
@@ -558,14 +558,14 @@ final afterRainTheme = PaperWhisperTheme(
     bgColor: _surface,
     appBarTextColor: _textSecondary,
     appBarIconColor: _textSecondary,
-    inputBg: Colors.white.withOpacity(0.6),
+    inputBg: Colors.white.withValues(alpha: 0.6),
     inputTextColor: _textSecondary,
-    hintColor: _textSecondary.withOpacity(0.5),
-    dropdownBg: Colors.white.withOpacity(0.6),
+    hintColor: _textSecondary.withValues(alpha: 0.5),
+    dropdownBg: Colors.white.withValues(alpha: 0.6),
     dropdownIconColor: _accentBlue,
     dropdownMenuBg: _surface,
     dropdownItemColor: _textSecondary,
-    photoEmptyColor: _accentBlue.withOpacity(0.05),
+    photoEmptyColor: _accentBlue.withValues(alpha: 0.05),
     photoIconColor: _accentBlue,
   ),
 
@@ -590,7 +590,7 @@ final afterRainTheme = PaperWhisperTheme(
     border: Border.all(color: const Color(0x339999BF), width: 1),
     shadows: [
       BoxShadow(
-        color: const Color(0xFF8981AA).withOpacity(0.3),
+        color: const Color(0xFF8981AA).withValues(alpha: 0.3),
         blurRadius: 10,
         offset: const Offset(0, 4),
       ),

@@ -331,7 +331,7 @@ class _RefreshAreaWidget extends StatelessWidget {
                         borderRadius: BorderRadius.circular(1),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
+                            color: Colors.black.withValues(alpha: 0.2),
                             blurRadius: 2,
                           ),
                         ],
@@ -348,7 +348,7 @@ class _RefreshAreaWidget extends StatelessWidget {
             Text(
               statusText,
               style: GoogleFonts.notoSerifSc(
-                color: textColor.withOpacity(0.9),
+                color: textColor.withValues(alpha: 0.9),
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),
@@ -381,7 +381,7 @@ class _RefreshAreaWidget extends StatelessWidget {
                          Text(
                            '查看进度详情',
                            style: GoogleFonts.notoSerifSc(
-                             color: textColor.withOpacity(1.0),
+                             color: textColor.withValues(alpha: 1.0),
                              fontSize: 12,
                              decoration: TextDecoration.underline,
                              fontWeight: FontWeight.bold,
@@ -414,14 +414,14 @@ class _RefreshAreaWidget extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 2,
             offset: Offset(isLeft ? -1 : 1, 1),
           ),
         ],
       ),
       child: CustomPaint(
-        painter: _PageLinesPainter(color: lineColor.withOpacity(0.2), isLeft: isLeft),
+        painter: _PageLinesPainter(color: lineColor.withValues(alpha: 0.2), isLeft: isLeft),
       ),
     );
   }

@@ -222,7 +222,7 @@ class _MomentDetailPageState extends State<MomentDetailPage> with SingleTickerPr
           GestureDetector(
             onTap: () => Navigator.pop(context),
             child: Container(
-              color: Colors.black.withOpacity(0.3),
+              color: Colors.black.withValues(alpha: 0.3),
               child: BackdropFilter(
                 filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                 child: Container(color: Colors.transparent),
@@ -284,9 +284,9 @@ class _MomentDetailPageState extends State<MomentDetailPage> with SingleTickerPr
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.5),
+                      color: Colors.black.withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(30),
-                      border: Border.all(color: Colors.white.withOpacity(0.3)),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -332,7 +332,7 @@ class _MomentDetailPageState extends State<MomentDetailPage> with SingleTickerPr
               borderRadius: BorderRadius.circular(2),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.3),
+                  color: Colors.black.withValues(alpha: 0.3),
                   blurRadius: 25,
                   offset: const Offset(5, 15),
                 )
@@ -356,7 +356,7 @@ class _MomentDetailPageState extends State<MomentDetailPage> with SingleTickerPr
                               child: Container(
                                 decoration: BoxDecoration(
                                   color: Colors.white,
-                                  border: Border.all(color: Colors.grey.withOpacity(0.3)),
+                                  border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
                                   boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4, offset: const Offset(2,2))]
                                 ),
                               ),
@@ -366,7 +366,7 @@ class _MomentDetailPageState extends State<MomentDetailPage> with SingleTickerPr
                               child: Container(
                                 decoration: BoxDecoration(
                                   color: Colors.white,
-                                  border: Border.all(color: Colors.grey.withOpacity(0.3)),
+                                  border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
                                   boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4, offset:const Offset(2,2))]
                                 ),
                               ),
@@ -404,7 +404,7 @@ class _MomentDetailPageState extends State<MomentDetailPage> with SingleTickerPr
                                     width: active ? 8 : 6,
                                     height: active ? 8 : 6,
                                     decoration: BoxDecoration(
-                                      color: active ? Colors.white : Colors.white.withOpacity(0.5),
+                                      color: active ? Colors.white : Colors.white.withValues(alpha: 0.5),
                                       shape: BoxShape.circle,
                                       boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 2)]
                                     ),
@@ -422,7 +422,7 @@ class _MomentDetailPageState extends State<MomentDetailPage> with SingleTickerPr
                     lineHeight: 36.0,
                     color: context.watch<SettingsProvider>().compatibilityMode 
                            ? Colors.transparent 
-                           : Colors.black.withOpacity(0.08),
+                           : Colors.black.withValues(alpha: 0.08),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4.0),

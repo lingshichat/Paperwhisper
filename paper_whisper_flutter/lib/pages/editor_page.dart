@@ -487,8 +487,14 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     final secondaryColor = AppTheme.getTextSecondaryColor(theme);
 
     // 700px width constraint handled by PaperSheetWidget
-    return WillPopScope(
-      onWillPop: _onWillPop,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, dynamic result) async {
+        if (didPop) return;
+        if (await _onWillPop() && context.mounted) {
+          Navigator.of(context).pop();
+        }
+      },
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: Stack(

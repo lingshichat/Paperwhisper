@@ -37,7 +37,7 @@ class VintageStamp extends StatelessWidget {
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.15),
+              color: Colors.black.withValues(alpha: 0.15),
               blurRadius: 8,
               offset: const Offset(0, 4),
               spreadRadius: -2,
@@ -76,10 +76,10 @@ class VintageStamp extends StatelessWidget {
                       Container(
                         padding: EdgeInsets.all(width * 0.08),
                         decoration: BoxDecoration(
-                          color: colors.accentColor.withOpacity(0.15),
+                          color: colors.accentColor.withValues(alpha: 0.15),
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: colors.accentColor.withOpacity(0.3),
+                            color: colors.accentColor.withValues(alpha: 0.3),
                             width: 1,
                           ),
                         ),
@@ -95,7 +95,7 @@ class VintageStamp extends StatelessWidget {
                         label,
                         style: GoogleFonts.notoSerifSc(
                           fontSize: width * 0.12,
-                          color: colors.textColor.withOpacity(0.7),
+                          color: colors.textColor.withValues(alpha: 0.7),
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -108,10 +108,10 @@ class VintageStamp extends StatelessWidget {
                           vertical: height * 0.02,
                         ),
                         decoration: BoxDecoration(
-                          color: colors.accentColor.withOpacity(0.2),
+                          color: colors.accentColor.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(height * 0.1),
                           border: Border.all(
-                            color: colors.accentColor.withOpacity(0.4),
+                            color: colors.accentColor.withValues(alpha: 0.4),
                             width: 1,
                           ),
                         ),
@@ -138,7 +138,7 @@ class VintageStamp extends StatelessWidget {
                       height: width * 0.35,
                       decoration: BoxDecoration(
                         border: Border.all(
-                          color: colors.accentColor.withOpacity(0.3),
+                          color: colors.accentColor.withValues(alpha: 0.3),
                           width: 1.5,
                         ),
                         shape: BoxShape.circle,
@@ -159,49 +159,49 @@ class VintageStamp extends StatelessWidget {
       case AppTheme.themeGardenOfWords:
         return _StampColors(
           bgColors: [const Color(0xFF37474F), const Color(0xFF263238)],
-          borderColor: const Color(0xFF81C784).withOpacity(0.4),
+          borderColor: const Color(0xFF81C784).withValues(alpha: 0.4),
           accentColor: const Color(0xFF81C784),
           textColor: const Color(0xFFECEFF1),
         );
       case AppTheme.themeTwilight:
         return _StampColors(
           bgColors: [const Color(0xFF352044), const Color(0xFF2E1C55)],
-          borderColor: const Color(0xFFFF9A6C).withOpacity(0.4),
+          borderColor: const Color(0xFFFF9A6C).withValues(alpha: 0.4),
           accentColor: const Color(0xFFFF5252),
           textColor: const Color(0xFFE4E0EC),
         );
       case AppTheme.themeAfterRain:
         return _StampColors(
-          bgColors: [Colors.white.withOpacity(0.9), const Color(0xFFF0F8FF)],
-          borderColor: const Color(0xFF4FC3F7).withOpacity(0.5),
+          bgColors: [Colors.white.withValues(alpha: 0.9), const Color(0xFFF0F8FF)],
+          borderColor: const Color(0xFF4FC3F7).withValues(alpha: 0.5),
           accentColor: const Color(0xFF0288D1),
           textColor: const Color(0xFF455A64),
         );
       case AppTheme.themeSeaFlower:
         return _StampColors(
           bgColors: [const Color(0xFFFFF5F7), const Color(0xFFFCE4EC)],
-          borderColor: const Color(0xFFF06292).withOpacity(0.4),
+          borderColor: const Color(0xFFF06292).withValues(alpha: 0.4),
           accentColor: const Color(0xFFF06292),
           textColor: const Color(0xFF880E4F),
         );
       case AppTheme.themeMidnight:
         return _StampColors(
           bgColors: [const Color(0xFF1a237e), const Color(0xFF161b22)],
-          borderColor: const Color(0xFF7986cb).withOpacity(0.4),
+          borderColor: const Color(0xFF7986cb).withValues(alpha: 0.4),
           accentColor: const Color(0xFF7986cb),
           textColor: const Color(0xFFe6edf3),
         );
       case AppTheme.themeAmberLens:
         return _StampColors(
           bgColors: [const Color(0xFF2C2C2C), const Color(0xFF1E1E1E)],
-          borderColor: const Color(0xFFFF9800).withOpacity(0.4),
+          borderColor: const Color(0xFFFF9800).withValues(alpha: 0.4),
           accentColor: const Color(0xFFFF9800),
           textColor: const Color(0xFFE0E0E0),
         );
       default: // Vintage
         return _StampColors(
           bgColors: [const Color(0xFFF4ECD8), const Color(0xFFE8DCC4)],
-          borderColor: const Color(0xFF5D4037).withOpacity(0.3),
+          borderColor: const Color(0xFF5D4037).withValues(alpha: 0.3),
           accentColor: const Color(0xFFC0392B),
           textColor: const Color(0xFF2C3E50),
         );
@@ -281,7 +281,7 @@ class _PaperTexturePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = color.withOpacity(0.05)
+      ..color = color.withValues(alpha: 0.05)
       ..style = PaintingStyle.fill;
 
     final random = math.Random(123);

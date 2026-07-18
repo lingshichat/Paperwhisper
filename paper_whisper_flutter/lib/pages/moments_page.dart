@@ -387,7 +387,7 @@ class _MomentsPageState extends State<MomentsPage> {
                     ),
                     labelStyle: GoogleFonts.notoSerifSc(color: hintColor),
                     hintStyle: GoogleFonts.notoSerifSc(
-                      color: hintColor.withOpacity(0.5),
+                      color: hintColor.withValues(alpha: 0.5),
                     ),
                   ),
                   style: GoogleFonts.notoSerifSc(color: textColor),
@@ -608,14 +608,14 @@ class _MomentsPageState extends State<MomentsPage> {
                                   borderRadius: BorderRadius.circular(24),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withOpacity(
+                                      color: Colors.black.withValues(alpha: 
                                         0.2,
                                       ), // Deep shadow
                                       blurRadius: 15,
                                       offset: const Offset(0, 8),
                                     ),
                                     BoxShadow(
-                                      color: Colors.black.withOpacity(
+                                      color: Colors.black.withValues(alpha: 
                                         0.1,
                                       ), // Ambient shadow
                                       blurRadius: 5,
@@ -790,7 +790,7 @@ class _MomentsPageState extends State<MomentsPage> {
               Text(
                 "${_selectedDate.year}年${_selectedDate.month}月",
                 style: GoogleFonts.notoSerifSc(
-                  color: appBarTextColor.withOpacity(0.8),
+                  color: appBarTextColor.withValues(alpha: 0.8),
                   fontSize: 13,
                 ),
               ),
@@ -813,7 +813,7 @@ class _MomentsPageState extends State<MomentsPage> {
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: appBarIconColor.withOpacity(0.2),
+                        color: appBarIconColor.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Row(
@@ -985,7 +985,7 @@ class _MomentsPageState extends State<MomentsPage> {
       margin: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFF8D6E63).withOpacity(0.9),
+        color: const Color(0xFF8D6E63).withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: const Color(0xFF5D4037)),
       ),
@@ -1034,7 +1034,7 @@ class _MomentsPageState extends State<MomentsPage> {
                   child: Text(
                     '没有找到相关记忆...',
                     style: GoogleFonts.notoSerifSc(
-                      color: textColor?.withOpacity(0.7) ?? Colors.white70,
+                      color: textColor?.withValues(alpha: 0.7) ?? Colors.white70,
                       fontSize: 16,
                     ),
                   ),
@@ -1060,9 +1060,9 @@ class _MomentsPageState extends State<MomentsPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05), // Subtle bg for header
+        color: Colors.white.withValues(alpha: 0.05), // Subtle bg for header
         border: Border(
-          bottom: BorderSide(color: Colors.white.withOpacity(0.1)),
+          bottom: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
         ),
       ),
       child: Row(
@@ -1078,7 +1078,7 @@ class _MomentsPageState extends State<MomentsPage> {
                 Text(
                   "${_selectedDate.year}年${_selectedDate.month}月",
                   style: GoogleFonts.notoSerifSc(
-                    color: textColor.withOpacity(0.8),
+                    color: textColor.withValues(alpha: 0.8),
                     fontSize: 13,
                   ),
                 ),
@@ -1105,7 +1105,7 @@ class _MomentsPageState extends State<MomentsPage> {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: iconColor.withOpacity(0.2),
+                              color: iconColor.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Row(

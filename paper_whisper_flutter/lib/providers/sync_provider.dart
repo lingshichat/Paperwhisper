@@ -733,7 +733,7 @@ class SyncProvider with ChangeNotifier {
         InitializationSettings(android: initializationSettingsAndroid);
 
     if (Platform.isAndroid || Platform.isIOS) {
-      await _notificationsPlugin.initialize(initializationSettings);
+      await _notificationsPlugin.initialize(settings: initializationSettings);
     }
   }
 
@@ -1956,10 +1956,10 @@ class SyncProvider with ChangeNotifier {
     );
 
     await _notificationsPlugin.show(
-      _notificationId,
-      'PaperWhisper 云同步',
-      body ?? '正在同步中...',
-      platformChannelSpecifics,
+      id: _notificationId,
+      title: 'PaperWhisper 云同步',
+      body: body ?? '正在同步中...',
+      notificationDetails: platformChannelSpecifics,
     );
   }
 
@@ -1981,15 +1981,15 @@ class SyncProvider with ChangeNotifier {
     );
 
     await _notificationsPlugin.show(
-      _notificationId,
-      '同步完成',
-      message,
-      platformChannelSpecifics,
+      id: _notificationId,
+      title: '同步完成',
+      body: message,
+      notificationDetails: platformChannelSpecifics,
     );
   }
 
   Future<void> _cancelNotification() async {
     if (!Platform.isAndroid && !Platform.isIOS) return;
-    await _notificationsPlugin.cancel(_notificationId);
+    await _notificationsPlugin.cancel(id: _notificationId);
   }
 }
