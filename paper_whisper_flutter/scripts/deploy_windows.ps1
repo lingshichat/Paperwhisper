@@ -5,7 +5,7 @@ $ErrorActionPreference = "Stop"
 # --- 🛠️ 配置区域 (与 deploy.sh 保持一致) ---
 $BucketName = "paperwhisper"
 $R2Remote = "bitiful"
-$Domain = "https://paperwhisper.s3.bitiful.net"
+$Domain = "https://pwdl.lingshichat.cn"
 # ----------------------------------------
 
 # 设置工作目录为 Flutter 项目根目录

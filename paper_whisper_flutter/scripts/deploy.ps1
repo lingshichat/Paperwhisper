@@ -3,7 +3,7 @@ $ErrorActionPreference = "Stop"
 # --- 🛠️ 配置区域 ---
 $BUCKET_NAME = "paperwhisper"
 $R2_REMOTE = "bitiful"
-$DOMAIN = "https://paperwhisper.s3.bitiful.net"
+$DOMAIN = "https://pwdl.lingshichat.cn"
 # --------------------
 
 # 设置工作目录为 Flutter 项目根目录

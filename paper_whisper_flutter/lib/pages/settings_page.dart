@@ -812,8 +812,8 @@ class _SettingsPageState extends State<SettingsPage>
           isForceUpdate: false,
           changelog: const ['开发测试入口：本地更新配置缺失时的回退数据'],
           downloadUrl: const {
-            'android': 'https://paperwhisper.s3.bitiful.net/Android/latest.apk',
-            'windows': 'https://paperwhisper.s3.bitiful.net/Windows/latest.exe',
+            'android': 'https://pwdl.lingshichat.cn/Android/latest.apk',
+            'windows': 'https://pwdl.lingshichat.cn/Windows/latest.exe',
           },
           backupUrl: const {'android': '', 'windows': ''},
         );

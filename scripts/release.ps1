@@ -85,7 +85,7 @@ $Config = @{
     # R2/S3 配置 (用于分发)
     BucketName = "paperwhisper"
     R2Remote   = "bitiful"
-    Domain     = "https://paperwhisper.s3.bitiful.net"
+    Domain     = "https://pwdl.lingshichat.cn"
 
     # 路径配置
     FlutterProjectDir = "paper_whisper_flutter"

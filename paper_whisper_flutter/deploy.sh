@@ -4,7 +4,7 @@ set -e
 # --- 🛠️ 配置区域 ---
 BUCKET_NAME="paperwhisper"
 R2_REMOTE="bitiful"
-DOMAIN="https://paperwhisper.s3.bitiful.net"
+DOMAIN="https://pwdl.lingshichat.cn"
 # --------------------
 
 # 0. 同步版本号 (from releases/version.json)

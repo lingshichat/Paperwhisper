@@ -41,7 +41,7 @@ class UpdateService {
 
   // 远程版本配置 URL
   static const String _versionUrl =
-      'https://paperwhisper.s3.bitiful.net/version.json';
+      'https://pwdl.lingshichat.cn/version.json';
 
   // 请求超时时间
   static const Duration _timeout = Duration(seconds: 10);
