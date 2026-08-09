@@ -67,43 +67,91 @@ class EditorMetaSelector extends StatelessWidget {
     ),
   );
 
+  /// 单行 Row 布局所需的最小可用宽度阈值。
+  ///
+  /// 基于实际可用 maxWidth 判定：达到该宽度即保留原始单行 Row（Widget
+  /// 树、间距、文案与交互完全不变）；低于该宽度改用 Wrap 分组换行，
+  /// 避免 360 宽窄屏下元信息横向溢出。
+  ///
+  /// 数值依据：真实 Courier Prime（等宽 0.6em）下日期 + 两个分隔符 +
+  /// 天气 + 心情的最宽组合约 266px，取 300 保留约 34px 余量；编辑器
+  /// 内容区宽度 = 屏宽 - 纸张两侧 60px 内边距，360 宽屏为 240px，
+  /// 480 宽屏为 360px，桌面常宽 580px，均落在正确分支。
+  static const double _rowMinWidth = 300;
+
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        GestureDetector(
-          onTap: () async {
-            DateTime initialDate;
-            try {
-              initialDate = DateTime.parse(dateString);
-            } catch (_) {
-              initialDate = DateTime.now();
-            }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth >= _rowMinWidth) {
+          // 宽度充足：保留原单行 Row 布局，Widget 树与间距完全不变。
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              _buildDateSelector(context),
+              metaSeparator(metaTextColor),
+              _buildWeatherSelector(),
+              metaSeparator(metaTextColor),
+              _buildMoodSelector(),
+            ],
+          );
+        }
 
-            // 选择结果经回调暂存：SkeuomorphicDatePicker 在选中后延迟 200ms
-            // 自行关闭对话框，这里不主动 pop，保留原有交互时序。
-            DateTime? selectedDate;
-            await showDialog<void>(
-              context: context,
-              builder: (ctx) => SkeuomorphicDatePicker(
-                initialDate: initialDate,
-                onDateSelected: (date) => selectedDate = date,
-              ),
-            );
-            final selected = selectedDate;
-            if (selected == null) return; // 未选择（点遮罩/返回关闭）：不更新
-            if (!context.mounted) return; // await 后 context 可能已失效
-            onDateChanged(selected);
-          },
-          child: Text(dateString, style: metaStyle(metaTextColor)),
-        ),
-        metaSeparator(metaTextColor),
-        _buildWeatherSelector(),
-        metaSeparator(metaTextColor),
-        _buildMoodSelector(),
-      ],
+        // 窄内容区：Wrap 分组换行。日期单独成项，后续每个元信息与其
+        // 前置分隔符作为一组，避免分隔符孤立在行尾；组内水平间距与
+        // 垂直居中和原 Row 保持一致，控件类型与文案不变。
+        return Wrap(
+          alignment: WrapAlignment.center,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 0,
+          runSpacing: 4,
+          children: [
+            _buildDateSelector(context),
+            _metaGroup(_buildWeatherSelector()),
+            _metaGroup(_buildMoodSelector()),
+          ],
+        );
+      },
+    );
+  }
+
+  /// 日期选择器：SkeuomorphicDatePicker 弹窗与 async mounted 守卫保持原实现。
+  Widget _buildDateSelector(BuildContext context) {
+    return GestureDetector(
+      onTap: () async {
+        DateTime initialDate;
+        try {
+          initialDate = DateTime.parse(dateString);
+        } catch (_) {
+          initialDate = DateTime.now();
+        }
+
+        // 选择结果经回调暂存：SkeuomorphicDatePicker 在选中后延迟 200ms
+        // 自行关闭对话框，这里不主动 pop，保留原有交互时序。
+        DateTime? selectedDate;
+        await showDialog<void>(
+          context: context,
+          builder: (ctx) => SkeuomorphicDatePicker(
+            initialDate: initialDate,
+            onDateSelected: (date) => selectedDate = date,
+          ),
+        );
+        final selected = selectedDate;
+        if (selected == null) return; // 未选择（点遮罩/返回关闭）：不更新
+        if (!context.mounted) return; // await 后 context 可能已失效
+        onDateChanged(selected);
+      },
+      child: Text(dateString, style: metaStyle(metaTextColor)),
+    );
+  }
+
+  /// 分隔符与其后的元信息作为一组（Wrap 换行时避免分隔符孤立在行尾）。
+  Widget _metaGroup(Widget content) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [metaSeparator(metaTextColor), content],
     );
   }
 
