@@ -78,12 +78,15 @@ class SettingsUpdateController {
     if (_checking) return const SettingsUpdateBusy();
     _checking = true;
     try {
-      // 与页面同序：先取当前版本（失败直接转 typed failure）。
+      // 与页面同序：先取当前版本（失败直接转 typed failure），
+      // 已读版本传给 checkManual 复用，避免重复查询 gateway。
       final currentVersion = await _coordinator.getCurrentVersion();
       _ensureUsable();
       _currentVersion = currentVersion;
 
-      final outcome = await _coordinator.checkManual();
+      final outcome = await _coordinator.checkManual(
+        knownCurrentVersion: currentVersion,
+      );
       _ensureUsable();
       return _map(outcome);
     } catch (e) {

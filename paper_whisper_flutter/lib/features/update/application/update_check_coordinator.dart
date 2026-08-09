@@ -128,11 +128,15 @@ class UpdateCheckCoordinator {
   Future<String> getCurrentVersion() => _gateway.getCurrentVersion();
 
   /// 手动检查（不受去重限制，settings 手动入口使用）。
-  Future<UpdateCheckOutcome> checkManual() async {
+  ///
+  /// [knownCurrentVersion]：调用方已读取的当前版本（如设置页先取版本
+  /// 用于副标题展示），available 时复用，避免重复查询 gateway。
+  Future<UpdateCheckOutcome> checkManual({String? knownCurrentVersion}) async {
     try {
       final info = await _gateway.checkForUpdate();
       if (info == null) return const UpdateCheckUpToDate();
-      final currentVersion = await _gateway.getCurrentVersion();
+      final currentVersion =
+          knownCurrentVersion ?? await _gateway.getCurrentVersion();
       return UpdateCheckAvailable(info: info, currentVersion: currentVersion);
     } catch (e) {
       return UpdateCheckFailure(error: e);

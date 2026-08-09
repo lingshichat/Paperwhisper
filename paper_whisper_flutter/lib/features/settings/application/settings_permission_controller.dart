@@ -18,6 +18,10 @@ abstract interface class SettingsPermissionGateway {
 
   /// 请求指定种类权限，返回 typed outcome。
   Future<PermissionRequestOutcome> request(SettingsPermissionKind kind);
+
+  /// 鸿蒙系统判定（透传 [PermissionCoordinator.isHarmonyOS]，页面不直接
+  /// 持有协调器）。
+  Future<bool> isHarmonyOS();
 }
 
 /// 生产适配器：委托 [PermissionCoordinator]，负责 kind → 插件权限映射。
@@ -43,6 +47,9 @@ class SettingsPermissionGatewayAdapter implements SettingsPermissionGateway {
   @override
   Future<PermissionRequestOutcome> request(SettingsPermissionKind kind) =>
       _coordinator.requestPermission(_toPermission(kind));
+
+  @override
+  Future<bool> isHarmonyOS() => _coordinator.isHarmonyOS();
 }
 
 /// 设置页权限控制器（context-free）。
@@ -101,6 +108,14 @@ class SettingsPermissionController {
     final outcome = await _gateway.request(kind);
     _ensureUsable();
     return outcome;
+  }
+
+  /// 鸿蒙系统判定（透传网关，页面据此决定跳系统设置还是请求权限）。
+  Future<bool> isHarmonyOS() async {
+    _ensureUsable();
+    final result = await _gateway.isHarmonyOS();
+    _ensureUsable();
+    return result;
   }
 
   /// 释放：之后所有公开方法抛 [StateError]，不产生任何状态变更。

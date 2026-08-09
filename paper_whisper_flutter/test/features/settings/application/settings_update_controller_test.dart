@@ -13,6 +13,7 @@ class _FakeUpdateGateway implements UpdateCheckGateway {
   bool throwOnVersion = false;
   Completer<void>? gate;
   int checkCalls = 0;
+  int versionCalls = 0;
 
   @override
   Future<UpdateInfo?> checkForUpdate() async {
@@ -24,6 +25,7 @@ class _FakeUpdateGateway implements UpdateCheckGateway {
 
   @override
   Future<String> getCurrentVersion() async {
+    versionCalls++;
     if (throwOnVersion) throw Exception('version boom');
     return version;
   }
@@ -53,6 +55,20 @@ void main() {
       expect(available.currentVersion, '1.0.0');
       expect(controller.currentVersion, '1.0.0');
       expect(controller.checking, isFalse);
+    });
+
+    test('available：已读版本传给协调器复用，gateway getCurrentVersion 只调用 1 次', () async {
+      final gateway = _FakeUpdateGateway()..info = _info();
+      final controller = SettingsUpdateController(
+        coordinator: UpdateCheckCoordinator(gateway: gateway),
+      );
+
+      final outcome = await controller.manualCheck();
+
+      expect(outcome, isA<SettingsUpdateAvailable>());
+      expect(gateway.checkCalls, 1);
+      // controller 先取版本展示，checkManual 复用已知版本：不重复查询。
+      expect(gateway.versionCalls, 1);
     });
 
     test('upToDate：无新版本', () async {

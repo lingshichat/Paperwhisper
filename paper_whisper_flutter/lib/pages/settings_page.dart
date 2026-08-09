@@ -11,8 +11,12 @@ import '../providers/settings_provider.dart';
 import '../providers/sync_provider.dart';
 import '../services/update_service.dart';
 import '../services/moment_service.dart';
-import '../features/update/application/update_check_coordinator.dart';
 import '../features/permissions/application/permission_coordinator.dart';
+import '../features/settings/application/settings_permission_controller.dart';
+import '../features/settings/application/settings_storage_controller.dart';
+import '../features/settings/application/settings_update_controller.dart';
+import '../features/settings/presentation/widgets/settings_permission_content.dart';
+import '../features/settings/presentation/widgets/settings_storage_content.dart';
 import '../features/sync/presentation/sync_status_formatter.dart';
 import '../widgets/update_dialog.dart';
 import '../widgets/skeuomorphic_toast.dart';
@@ -36,26 +40,41 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage>
     with WidgetsBindingObserver {
-  bool _isCheckingUpdate = false;
-  String? _currentVersion;
-  String _storageInfo = '计算中...';
-  String _internalStats = '';
-  bool _hasInternalClutter = false;
+  // 设置页控制器（context-free，页面只翻译 typed outcome 为 UI）
+  SettingsPermissionController? _permissionController;
+  SettingsStorageController? _storageController;
+  SettingsUpdateController? _updateController;
+  bool _controllersReady = false;
 
-  // 横切协调器（context-free，页面只翻译 typed outcome 为 UI）
-  final UpdateCheckCoordinator _updateCheckCoordinator =
-      UpdateCheckCoordinator();
-  final PermissionCoordinator _permissionCoordinator = PermissionCoordinator();
-
-  // Permission State
-  Map<String, PermissionStatus> _permStatuses = {};
-  String _permSummary = '检测中...';
-  bool _isAllGranted = false;
+  // 未加载时的权限兜底快照：保持原 null status 视觉（三行均「未获取」）。
+  static const PermissionSnapshot _kDeniedPermissionFallback =
+      PermissionSnapshot(
+        storage: PermissionStatus.denied,
+        photos: PermissionStatus.denied,
+        notification: PermissionStatus.denied,
+      );
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 控制器依赖 context 提供的 MomentService（构造 StorageService 一次），
+    // 在依赖可用后创建；初始 load 只在首次触发。
+    if (_controllersReady) return;
+    _controllersReady = true;
+    // 共享 MomentService 构造 StorageService（只一次，页面不每次 new）。
+    _storageController = SettingsStorageController(
+      gateway: SettingsStorageGatewayAdapter(
+        StorageService(momentService: context.read<MomentService>()),
+      ),
+    );
+    _permissionController = SettingsPermissionController();
+    _updateController = SettingsUpdateController();
     _loadStorageInfo();
     _checkAllPermissions();
   }
@@ -63,6 +82,9 @@ class _SettingsPageState extends State<SettingsPage>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _permissionController?.dispose();
+    _storageController?.dispose();
+    _updateController?.dispose();
     super.dispose();
   }
 
@@ -74,59 +96,27 @@ class _SettingsPageState extends State<SettingsPage>
   }
 
   Future<void> _checkAllPermissions() async {
-    // 权限状态查询与汇总委托 context-free 的 PermissionCoordinator。
-    final snapshot = await _permissionCoordinator.checkAll();
+    final controller = _permissionController;
+    if (controller == null) return;
+    try {
+      await controller.load();
+    } on StateError {
+      return; // dispose 后不再更新
+    }
     if (!mounted) return;
-    setState(() {
-      _permStatuses = {
-        'storage': snapshot.storage,
-        'photos': snapshot.photos,
-        'notification': snapshot.notification,
-      };
-      _isAllGranted = snapshot.isAllGranted;
-      _permSummary = snapshot.summary;
-    });
+    setState(() {});
   }
-
-  // 共享 MomentService 注入 StorageService（不维护写 Manifest 的独立实例）
-  StorageService get _storageService =>
-      StorageService(momentService: context.read<MomentService>());
 
   Future<void> _loadStorageInfo() async {
-    final service = _storageService;
-    final cacheSize = await service.getCacheSize();
-    final dataSize = await service.getUserDataSize();
-    final path = await service.getDataPath();
-    final total = cacheSize + dataSize;
-
-    // Internal Check
-    final internal = await service.getInternalStorageStats();
-    final docSize = internal['doc'] as int? ?? 0;
-    final supportSize = internal['support'] as int? ?? 0;
-    final clutterSize = internal['clutter'] as int? ?? 0;
-
-    // Check clutter: if using External path, but Internal has > 1MB *clutter* data (excl system files)
-    bool usingExternal = path.contains(
-      '/storage/emulated/0',
-    ); // Simple heuristic
-    bool hasClutter =
-        usingExternal && clutterSize > 1024 * 1024; // >1MB clutter only
-
-    if (mounted) {
-      setState(() {
-        _storageInfo =
-            "内容占用: ${_formatSize(total)} (缓存: ${_formatSize(cacheSize)})";
-        _internalStats =
-            "Doc: ${_formatSize(docSize)} / Support: ${_formatSize(supportSize)}";
-        _hasInternalClutter = hasClutter;
-      });
+    final controller = _storageController;
+    if (controller == null) return;
+    try {
+      await controller.load();
+    } on StateError {
+      return; // dispose 后不再更新
     }
-  }
-
-  String _formatSize(int bytes) {
-    if (bytes < 1024) return "$bytes B";
-    if (bytes < 1024 * 1024) return "${(bytes / 1024).toStringAsFixed(1)} KB";
-    return "${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB";
+    if (!mounted) return;
+    setState(() {});
   }
 
   @override
@@ -303,11 +293,11 @@ class _SettingsPageState extends State<SettingsPage>
             _buildDivider(themeConfig),
             _buildSettingsItem(
               context: context,
-              icon: _isAllGranted
+              icon: (_permissionController?.snapshot?.isAllGranted ?? false)
                   ? Icons.verified_user_outlined
                   : Icons.gpp_maybe_outlined,
               title: '系统权限管理',
-              subtitle: _permSummary,
+              subtitle: _permissionController?.snapshot?.summary ?? '检测中...',
               textColor: textColor,
               onTap: () => _showPermissionManager(context),
             ),
@@ -316,7 +306,7 @@ class _SettingsPageState extends State<SettingsPage>
               context: context,
               icon: Icons.sd_storage_outlined,
               title: '存储空间管理',
-              subtitle: _storageInfo,
+              subtitle: _storageController?.snapshot?.summary ?? '计算中...',
               textColor: textColor,
               onTap: () => _showStorageManager(context, themeConfig),
             ),
@@ -374,12 +364,16 @@ class _SettingsPageState extends State<SettingsPage>
               context: context,
               icon: Icons.system_update_outlined,
               title: '检测更新',
-              subtitle: _isCheckingUpdate
+              subtitle: (_updateController?.checking ?? false)
                   ? '检测中...'
-                  : (_currentVersion != null ? 'v$_currentVersion' : '点击检查新版本'),
+                  : ((_updateController?.currentVersion) != null
+                        ? 'v${_updateController?.currentVersion}'
+                        : '点击检查新版本'),
               textColor: textColor,
-              isLoading: _isCheckingUpdate,
-              onTap: _isCheckingUpdate ? () {} : () => _checkForUpdate(context),
+              isLoading: _updateController?.checking ?? false,
+              onTap: (_updateController?.checking ?? false)
+                  ? () {}
+                  : _checkForUpdate,
             ),
             _buildDivider(themeConfig),
             _buildSettingsItem(
@@ -600,6 +594,7 @@ class _SettingsPageState extends State<SettingsPage>
     final themeConfig = AppTheme.getSettingsTheme(theme);
     final Color sheetDividerColor =
         themeConfig['sheetInfoDividerColor'] as Color;
+    final Color sheetTextColor = themeConfig['sheetTextColor'] as Color;
 
     showModalBottomSheet(
       context: context,
@@ -608,32 +603,13 @@ class _SettingsPageState extends State<SettingsPage>
         context,
         title: '应用权限管理',
         children: [
-          _buildPermissionRow(
-            context,
-            '文件存储 (核心)',
-            '用于日记数据的读取与备份',
-            Icons.folder_copy_outlined,
-            _permStatuses['storage'],
-            Permission.manageExternalStorage,
-            isCritical: true,
-          ),
-          Divider(color: sheetDividerColor, height: 1),
-          _buildPermissionRow(
-            context,
-            '相册访问',
-            '用于在日记中插入图片',
-            Icons.photo_library_outlined,
-            _permStatuses['photos'],
-            Permission.photos,
-          ),
-          Divider(color: sheetDividerColor, height: 1),
-          _buildPermissionRow(
-            context,
-            '通知提醒',
-            '显示数据同步进度与状态',
-            Icons.notifications_outlined,
-            _permStatuses['notification'],
-            Permission.notification,
+          SettingsPermissionContent(
+            // 未加载时用兜底快照保持原 null status 视觉（三行均「未获取」）。
+            snapshot:
+                _permissionController?.snapshot ?? _kDeniedPermissionFallback,
+            textColor: sheetTextColor,
+            dividerColor: sheetDividerColor,
+            onRequest: (kind) => _handlePermissionRequest(ctx, kind),
           ),
           const SizedBox(height: 20),
           SkeuomorphicDialogButton(
@@ -649,160 +625,84 @@ class _SettingsPageState extends State<SettingsPage>
     );
   }
 
-  Widget _buildPermissionRow(
-    BuildContext context,
-    String title,
-    String subtitle,
-    IconData icon,
-    PermissionStatus? status,
-    Permission perm, {
-    bool isCritical = false,
-  }) {
-    final theme = Provider.of<SettingsProvider>(context).currentTheme;
-    final themeConfig = AppTheme.getSettingsTheme(theme);
-    final textColor = themeConfig['sheetTextColor'] as Color;
+  /// 权限请求编排（页面职责）：pop → 鸿蒙判定 → toast / openAppSettings →
+  /// 500ms 后重新加载状态；请求与判定委托 context-free 的 PermissionController。
+  Future<void> _handlePermissionRequest(
+    BuildContext ctx,
+    SettingsPermissionKind kind,
+  ) async {
+    Navigator.pop(ctx);
+    final controller = _permissionController;
+    if (controller == null) return;
 
-    bool isGranted = status?.isGranted == true;
-    bool isLimited = status?.isLimited == true;
+    // 鸿蒙判定与权限请求委托 PermissionController；
+    // 说明 Toast / openAppSettings 留在页面。
+    try {
+      final isHarmony = await controller.isHarmonyOS();
+      if (!mounted) return;
 
-    Color statusColor = isGranted
-        ? Colors.green
-        : (isCritical ? Colors.red : Colors.orange.shade800);
-    String statusText = isGranted ? '已获取' : (isLimited ? '部分允许' : '未获取');
+      if (isHarmony) {
+        SkeuomorphicToast.info(context, '正在跳转设置页...');
+        await openAppSettings();
+      } else {
+        final outcome = await controller.request(kind);
+        if (!mounted) return;
 
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: textColor.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Icon(icon, color: textColor, size: 20),
-      ),
-      title: Text(
-        title,
-        style: GoogleFonts.notoSerifSc(
-          color: textColor,
-          fontWeight: FontWeight.bold,
-          fontSize: 15,
-        ),
-      ),
-      subtitle: Text(
-        subtitle,
-        style: GoogleFonts.notoSerifSc(
-          color: textColor.withValues(alpha: 0.6),
-          fontSize: 11,
-        ),
-      ),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (isGranted)
-            Text(
-              statusText,
-              style: TextStyle(
-                color: statusColor,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            )
-          else
-            InkWell(
-              borderRadius: BorderRadius.circular(6),
-              onTap: () async {
-                Navigator.pop(context);
+        switch (outcome) {
+          case PermissionRequestOutcome.granted:
+            SkeuomorphicToast.success(context, '授权成功');
+          case PermissionRequestOutcome.permanentlyDenied:
+            SkeuomorphicToast.warning(context, '请在设置中手动开启');
+            openAppSettings();
+          case PermissionRequestOutcome.denied:
+            SkeuomorphicToast.info(context, '权限未授予');
+        }
 
-                // 鸿蒙判定与权限请求委托 PermissionCoordinator；
-                // 说明 Toast / openAppSettings 留在页面。
-                final isHarmony = await _permissionCoordinator.isHarmonyOS();
-                if (!context.mounted) return;
-
-                if (isHarmony) {
-                  SkeuomorphicToast.info(context, '正在跳转设置页...');
-                  await openAppSettings();
-                } else {
-                  final outcome = await _permissionCoordinator
-                      .requestPermission(perm);
-                  if (!context.mounted) return;
-
-                  switch (outcome) {
-                    case PermissionRequestOutcome.granted:
-                      SkeuomorphicToast.success(context, '授权成功');
-                    case PermissionRequestOutcome.permanentlyDenied:
-                      SkeuomorphicToast.warning(context, '请在设置中手动开启');
-                      openAppSettings();
-                    case PermissionRequestOutcome.denied:
-                      SkeuomorphicToast.info(context, '权限未授予');
-                  }
-
-                  // Check again
-                  await Future.delayed(const Duration(milliseconds: 500));
-                  if (!mounted) return;
-                  _checkAllPermissions();
-                }
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: statusColor.withValues(alpha: 0.2)),
-                ),
-                child: Text(
-                  '去授权',
-                  style: TextStyle(
-                    color: statusColor,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
+        // Check again
+        await Future.delayed(const Duration(milliseconds: 500));
+        if (!mounted) return;
+        await _checkAllPermissions();
+      }
+    } on StateError {
+      // 仅 dispose 生命周期取消（isHarmonyOS / request / 500ms reload 全程）：
+      // 静默返回，不再触碰 UI / Toast。
+      return;
+    }
   }
 
-  /// 手动检测更新
-  Future<void> _checkForUpdate(BuildContext context) async {
-    setState(() => _isCheckingUpdate = true);
+  /// 手动检测更新：经 SettingsUpdateController 的 typed outcome 穷尽翻译；
+  /// checking 禁用语义与 finally 复位由控制器内部保证，页面只做 UI 反馈。
+  Future<void> _checkForUpdate() async {
+    final controller = _updateController;
+    if (controller == null) return;
+    // manualCheck 同步置 checking=true：立即刷新，让「检测中...」、loading
+    // 与禁用态跨网络等待渲染，而不是等结果返回后才一次性更新。
+    final future = controller.manualCheck();
+    if (mounted) setState(() {});
+    final SettingsUpdateCheckOutcome outcome;
     try {
-      // 保留原时序：先取当前版本用于设置项副标题展示（经协调器
-      // gateway，避免页面直接依赖 UpdateService 单例的额外失败点）。
-      final currentVersion = await _updateCheckCoordinator.getCurrentVersion();
-      if (mounted) setState(() => _currentVersion = currentVersion);
-
-      // 手动检查不受会话去重限制，结果由页面穷尽翻译。
-      final outcome = await _updateCheckCoordinator.checkManual();
-      if (!context.mounted) return;
-      switch (outcome) {
-        case UpdateCheckAvailable(:final info, :final currentVersion):
-          UpdateDialog.show(
-            context,
-            updateInfo: info,
-            currentVersion: currentVersion,
-          );
-        case UpdateCheckUpToDate():
-          SkeuomorphicToast.success(context, '已是最新版本 ✔');
-        case UpdateCheckFailure():
-          SkeuomorphicToast.error(context, '检测更新失败，请检查网络');
-        case UpdateCheckSkipped():
-          // 手动检查不会产生 skipped，防御忽略
-          break;
-      }
-    } catch (e) {
-      // 整体异常兜底（getCurrentVersion 等未预期失败）：mounted 后
-      // 逐字提示，loading 复位仍由 finally 保证。
-      if (!context.mounted) return;
-      SkeuomorphicToast.error(context, '检测更新失败，请检查网络');
-    } finally {
-      if (mounted) {
-        setState(() => _isCheckingUpdate = false);
-      }
+      outcome = await future;
+    } on StateError {
+      // 仅 dispose 生命周期取消：静默返回，不再触碰 UI，不重复 Toast。
+      return;
+    }
+    if (!mounted) return;
+    // 刷新 checking / currentVersion 展示（controller 非 ChangeNotifier）。
+    setState(() {});
+    switch (outcome) {
+      case SettingsUpdateAvailable(:final info, :final currentVersion):
+        UpdateDialog.show(
+          context,
+          updateInfo: info,
+          currentVersion: currentVersion,
+        );
+      case SettingsUpdateUpToDate():
+        SkeuomorphicToast.success(context, '已是最新版本 ✔');
+      case SettingsUpdateFailure():
+        SkeuomorphicToast.error(context, '检测更新失败，请检查网络');
+      case SettingsUpdateBusy():
+        // 已有检查进行中：保持禁用语义，不重复提示。
+        break;
     }
   }
 
@@ -1143,6 +1043,8 @@ class _SettingsPageState extends State<SettingsPage>
     final Color infoDividerColor =
         themeConfig['sheetInfoDividerColor'] as Color;
 
+    final snap = _storageController?.snapshot;
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -1150,168 +1052,79 @@ class _SettingsPageState extends State<SettingsPage>
         context,
         title: '用户数据管理',
         children: [
-          ListTile(
-            leading: Icon(Icons.delete_sweep, color: sheetTextColor),
-            title: Text(
-              '清理无用图片 (深度清理)',
-              style: GoogleFonts.notoSerifSc(color: sheetTextColor),
-            ),
-            subtitle: Text(
-              '扫描并删除未被任何随心记引用的冗余图片',
-              style: GoogleFonts.notoSerifSc(
-                color: sheetTextColor.withValues(alpha: 0.6),
-                fontSize: 12,
-              ),
-            ),
-            onTap: () async {
-              Navigator.pop(ctx);
-              SkeuomorphicToast.info(context, '正在深度清理...');
-              int freed = await _storageService.cleanOrphanImages();
-              await _loadStorageInfo(); // Refresh
-              if (context.mounted) {
-                SkeuomorphicToast.success(
-                  context,
-                  '清理完成，释放 ${_formatSize(freed)} 空间',
-                );
-              }
-            },
-          ),
-          Divider(color: sheetTextColor.withValues(alpha: 0.1)),
-          ListTile(
-            leading: Icon(Icons.cleaning_services, color: sheetTextColor),
-            title: Text(
-              '立即清理缓存',
-              style: GoogleFonts.notoSerifSc(color: sheetTextColor),
-            ),
-            subtitle: Text(
-              '清理产生的临时文件 (不影响数据)',
-              style: GoogleFonts.notoSerifSc(
-                color: sheetTextColor.withValues(alpha: 0.6),
-                fontSize: 12,
-              ),
-            ),
-            onTap: () async {
-              Navigator.pop(ctx);
-              await _storageService.cleanTemporaryCache();
-              await _loadStorageInfo(); // Refresh
-              if (context.mounted) {
-                SkeuomorphicToast.success(context, '缓存已清理');
-              }
-            },
-          ),
-          const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: infoBgColor,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: infoBorderColor),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.perm_device_information,
-                      size: 16,
-                      color: sheetTextColor.withValues(alpha: 0.7),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '系统运行数据 (App必须)',
-                      style: GoogleFonts.notoSerifSc(
-                        color: sheetTextColor.withValues(alpha: 0.8),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '包含字体缓存 (Support) 及 App 资源文件 (Doc)。\n此部分数据维持 App 正常运行，无需清理。',
-                  style: GoogleFonts.notoSerifSc(
-                    color: sheetTextColor.withValues(alpha: 0.6),
-                    fontSize: 11,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Divider(color: infoDividerColor, height: 1),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '占用空间: $_internalStats',
-                      style: GoogleFonts.notoSerifSc(
-                        color: sheetTextColor.withValues(alpha: 0.5),
-                        fontSize: 10,
-                      ),
-                    ),
-                  ],
-                ),
-                if (_hasInternalClutter)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: InkWell(
-                      onTap: () async {
-                        Navigator.pop(ctx);
-                        SkeuomorphicToast.info(context, '正在清理私有残留...');
-                        int freed = await _storageService
-                            .cleanInternalClutter();
-                        await _loadStorageInfo();
-                        if (context.mounted) {
-                          SkeuomorphicToast.success(
-                            context,
-                            '清理了 ${_formatSize(freed)} 旧数据',
-                          );
-                        }
-                      },
-                      child: Text(
-                        '>> 发现残留数据，点击清理',
-                        style: GoogleFonts.notoSerifSc(
-                          color: Colors.red,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                  ),
-                if (_internalStats.contains('Support') &&
-                    !(_internalStats.contains('0 B')))
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: InkWell(
-                      onTap: () async {
-                        Navigator.pop(ctx);
-                        SkeuomorphicToast.info(context, '正在清理字体缓存...');
-                        await _storageService.cleanFontCache();
-                        await _loadStorageInfo();
-                        if (context.mounted) {
-                          SkeuomorphicToast.success(
-                            context,
-                            '字体缓存已清除 (下次启动将自动重新下载)',
-                          );
-                        }
-                      },
-                      child: Text(
-                        '>> 强制清除字体缓存 (修复显示异常)',
-                        style: GoogleFonts.notoSerifSc(
-                          color: Colors.orange[800],
-                          fontWeight: FontWeight.bold,
-                          fontSize: 10,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
+          SettingsStorageContent(
+            // 未加载时保持原默认视觉（internalStats 空串 / 无残留入口）。
+            internalStats: snap?.internalStats ?? '',
+            hasInternalClutter: snap?.hasInternalClutter ?? false,
+            textColor: sheetTextColor,
+            infoBackgroundColor: infoBgColor,
+            infoBorderColor: infoBorderColor,
+            infoDividerColor: infoDividerColor,
+            onCleanOrphanImages: () => _cleanOrphanImages(ctx),
+            onCleanTemporaryCache: () => _cleanTemporaryCache(ctx),
+            onCleanInternalClutter: () => _cleanInternalClutter(ctx),
+            onCleanFontCache: () => _cleanFontCache(ctx),
           ),
         ],
       ),
     );
+  }
+
+  /// 清理无用图片（编排留在页面：pop → toast → IO → 重载 → toast）。
+  Future<void> _cleanOrphanImages(BuildContext ctx) async {
+    Navigator.pop(ctx);
+    SkeuomorphicToast.info(context, '正在深度清理...');
+    final controller = _storageController;
+    if (controller == null) return;
+    final freed = await controller.cleanOrphanImages();
+    await _loadStorageInfo(); // Refresh
+    if (mounted) {
+      SkeuomorphicToast.success(
+        context,
+        '清理完成，释放 ${SettingsStorageController.formatSize(freed)} 空间',
+      );
+    }
+  }
+
+  /// 立即清理缓存。
+  Future<void> _cleanTemporaryCache(BuildContext ctx) async {
+    Navigator.pop(ctx);
+    final controller = _storageController;
+    if (controller == null) return;
+    await controller.cleanTemporaryCache();
+    await _loadStorageInfo(); // Refresh
+    if (mounted) {
+      SkeuomorphicToast.success(context, '缓存已清理');
+    }
+  }
+
+  /// 清理内部私有残留（仅发现残留时可达）。
+  Future<void> _cleanInternalClutter(BuildContext ctx) async {
+    Navigator.pop(ctx);
+    SkeuomorphicToast.info(context, '正在清理私有残留...');
+    final controller = _storageController;
+    if (controller == null) return;
+    final freed = await controller.cleanInternalClutter();
+    await _loadStorageInfo();
+    if (mounted) {
+      SkeuomorphicToast.success(
+        context,
+        '清理了 ${SettingsStorageController.formatSize(freed)} 旧数据',
+      );
+    }
+  }
+
+  /// 强制清除字体缓存（仅 Support 占用非 0 时可达）。
+  Future<void> _cleanFontCache(BuildContext ctx) async {
+    Navigator.pop(ctx);
+    SkeuomorphicToast.info(context, '正在清理字体缓存...');
+    final controller = _storageController;
+    if (controller == null) return;
+    await controller.cleanFontCache();
+    await _loadStorageInfo();
+    if (mounted) {
+      SkeuomorphicToast.success(context, '字体缓存已清除 (下次启动将自动重新下载)');
+    }
   }
 
   Widget _buildSkeuomorphicBottomSheet(

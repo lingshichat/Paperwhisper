@@ -12,6 +12,8 @@ class _FakePermissionGateway implements SettingsPermissionGateway {
   Completer<PermissionSnapshot>? gate;
   final requestedKinds = <SettingsPermissionKind>[];
   PermissionRequestOutcome Function(SettingsPermissionKind)? onRequest;
+  bool harmonyOS = false;
+  bool throwOnHarmony = false;
 
   @override
   Future<PermissionSnapshot> checkAll() async {
@@ -24,6 +26,12 @@ class _FakePermissionGateway implements SettingsPermissionGateway {
   Future<PermissionRequestOutcome> request(SettingsPermissionKind kind) async {
     requestedKinds.add(kind);
     return onRequest!(kind);
+  }
+
+  @override
+  Future<bool> isHarmonyOS() async {
+    if (throwOnHarmony) throw Exception('harmony boom');
+    return harmonyOS;
   }
 }
 
@@ -125,6 +133,48 @@ void main() {
         SettingsPermissionKind.photos,
         SettingsPermissionKind.notification,
       ]);
+    });
+
+    test('isHarmonyOS：透传网关判定结果（true / false / 异常）', () async {
+      final harmonyGateway = _FakePermissionGateway()..harmonyOS = true;
+      final nonHarmonyGateway = _FakePermissionGateway();
+      final throwingGateway = _FakePermissionGateway()..throwOnHarmony = true;
+
+      final harmonyController = SettingsPermissionController(
+        gateway: harmonyGateway,
+      );
+      final nonHarmonyController = SettingsPermissionController(
+        gateway: nonHarmonyGateway,
+      );
+      final throwingController = SettingsPermissionController(
+        gateway: throwingGateway,
+      );
+
+      expect(await harmonyController.isHarmonyOS(), isTrue);
+      expect(await nonHarmonyController.isHarmonyOS(), isFalse);
+      await expectLater(throwingController.isHarmonyOS(), throwsException);
+    });
+
+    test('isHarmonyOS 适配器：委托 PermissionCoordinator 的平台判定', () async {
+      var harmonyCalls = 0;
+      final coordinator = PermissionCoordinator(
+        isHarmonyOS: () async {
+          harmonyCalls++;
+          return true;
+        },
+      );
+      final adapter = SettingsPermissionGatewayAdapter(coordinator);
+
+      expect(await adapter.isHarmonyOS(), isTrue);
+      expect(harmonyCalls, 1);
+    });
+
+    test('dispose 后 isHarmonyOS 抛 StateError，不产生状态变更', () async {
+      final gateway = _FakePermissionGateway()..harmonyOS = true;
+      final controller = SettingsPermissionController(gateway: gateway);
+
+      controller.dispose();
+      await expectLater(controller.isHarmonyOS(), throwsStateError);
     });
 
     test('request 异常：向调用方传播（页面语义不吞）', () async {

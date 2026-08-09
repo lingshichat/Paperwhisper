@@ -335,39 +335,18 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(storageEntry);
 
-      // 已知产品缺陷：存储管理 BottomSheet 的 ListTile 被带背景色的
-      // Container 包裹，触发 Flutter 断言（与 sync_settings 的
-      // SwitchListTile 同类，属阶段 1 修复范围）；本阶段不动 lib。
-      // 该场景一帧抛出 2 个同款断言，flutter_test 会把多异常聚合成
-      // "Multiple exceptions (2)..."，takeException 拿不到原始文本，
-      // 故经 FlutterError.onError 拦截后逐一校验异常内容：只刻画该
-      // 已知缺陷，出现其它异常类型（非本缺陷的回归）仍会使测试失败。
-      // 修复产品后移除拦截，改回 expect(tester.takeException(), isNull)。
-      final capturedExceptions = <Object?>[];
-      final originalOnError = FlutterError.onError;
-      FlutterError.onError = (FlutterErrorDetails details) {
-        capturedExceptions.add(details.exception);
-        FlutterError.dumpErrorToConsole(details);
-      };
-      addTearDown(() {
-        FlutterError.onError = originalOnError;
-      });
-
+      // S3a 后存储弹层由 SettingsStorageContent 呈现：操作行外套透明
+      // Material，不再触发「ListTile background color or ink splashes may
+      // be invisible」断言，因此直接断言无异常（原 FlutterError 拦截
+      // 已移除）。存储统计 IO 在 fake async 下悬挂，subtitle 停留
+      // 「计算中...」。
       await tester.pumpAndSettle();
 
       expect(find.text('用户数据管理'), findsOneWidget);
       expect(find.text('清理无用图片 (深度清理)'), findsOneWidget);
       expect(find.text('立即清理缓存'), findsOneWidget);
       expect(find.text('计算中...'), findsOneWidget);
-      expect(capturedExceptions, isNotEmpty);
-      for (final exception in capturedExceptions) {
-        expect(
-          exception.toString(),
-          contains(
-            'ListTile background color or ink splashes may be invisible',
-          ),
-        );
-      }
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('检测更新：网络失败后展示失败反馈并恢复状态', (tester) async {

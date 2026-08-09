@@ -224,6 +224,48 @@ void main() {
       );
       expect(await failing.checkManual(), isA<UpdateCheckFailure>());
     });
+
+    test('手动检查传入已知版本：available 时复用，不再查询当前版本', () async {
+      final gateway = _FakeGateway(info: sampleInfo(), currentVersion: '1.0.0');
+      final coordinator = UpdateCheckCoordinator(
+        gateway: gateway,
+        sessionCheckedPurposes: <String>{},
+      );
+
+      final outcome = await coordinator.checkManual(
+        knownCurrentVersion: '9.9.9',
+      );
+
+      expect(outcome, isA<UpdateCheckAvailable>());
+      final available = outcome as UpdateCheckAvailable;
+      expect(available.currentVersion, '9.9.9');
+      expect(gateway.checkCalls, 1);
+      expect(gateway.versionCalls, 0, reason: '已知版本复用，不重复查询');
+    });
+
+    test('手动检查传入已知版本：无新版本时不取版本，错误路径仍转 failure', () async {
+      final upToDate = UpdateCheckCoordinator(
+        gateway: _FakeGateway(info: null, currentVersion: '1.0.0'),
+        sessionCheckedPurposes: <String>{},
+      );
+      expect(
+        await upToDate.checkManual(knownCurrentVersion: '1.0.0'),
+        isA<UpdateCheckUpToDate>(),
+      );
+
+      final failing = UpdateCheckCoordinator(
+        gateway: _FakeGateway(
+          info: null,
+          currentVersion: '1.0.0',
+          error: Exception('boom'),
+        ),
+        sessionCheckedPurposes: <String>{},
+      );
+      expect(
+        await failing.checkManual(knownCurrentVersion: '1.0.0'),
+        isA<UpdateCheckFailure>(),
+      );
+    });
   });
 }
 
