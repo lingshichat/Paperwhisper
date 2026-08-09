@@ -23,7 +23,7 @@ import '../widgets/skeuomorphic_search_bar.dart'; // Added
 import '../services/payment_service.dart';
 import '../pages/premium_membership_page.dart';
 import '../widgets/slide_page_route.dart';
-import '../services/update_service.dart'; // Added
+import '../features/update/application/update_check_coordinator.dart';
 import '../widgets/update_dialog.dart'; // Added
 
 class MomentsPage extends StatefulWidget {
@@ -66,9 +66,6 @@ class _MomentsPageState extends State<MomentsPage> {
   // Dynamic Input Height
   double _inputHeight = 80.0;
 
-  // Static flag to ensure update check only happens once per app session
-  static bool _hasCheckedUpdate = false;
-
   @override
   void initState() {
     super.initState();
@@ -88,29 +85,32 @@ class _MomentsPageState extends State<MomentsPage> {
     });
   }
 
+  // 自动检查委托 context-free 的 UpdateCheckCoordinator（purpose 级
+  // 会话去重：成功一次后本进程不再重复，失败回滚可重试）；保留原 2s
+  // 延迟与静默失败语义，available 才弹 UpdateDialog。延迟留在页面，
+  // 延迟后先检查 mounted 再发起网络请求（不持页面生命周期闭包进协调器）。
+  final UpdateCheckCoordinator _updateCheckCoordinator =
+      UpdateCheckCoordinator();
+
   Future<void> _checkUpdate() async {
-    if (_hasCheckedUpdate) return;
-    _hasCheckedUpdate = true;
+    // 保留原时序：先延迟 2s 不阻塞首帧渲染，延迟后先检查 mounted
+    // 再发起网络请求（页面销毁时不再白费一次请求）。
+    await Future.delayed(const Duration(seconds: 2));
+    if (!mounted) return;
 
-    try {
-      final updateService = UpdateService();
-      // Add a small delay to not block UI rendering immediately
-      await Future.delayed(const Duration(seconds: 2));
-      if (!mounted) return;
-
-      final info = await updateService.checkForUpdate();
-      if (info != null && mounted) {
-        final currentVersion = await updateService.getCurrentVersion();
-        if (mounted) {
-          UpdateDialog.show(
-            context,
-            updateInfo: info,
-            currentVersion: currentVersion,
-          );
-        }
-      }
-    } catch (e) {
-      debugPrint('自动更新检查失败: $e');
+    final outcome = await _updateCheckCoordinator.checkAuto(purpose: 'moments');
+    if (!mounted) return;
+    switch (outcome) {
+      case UpdateCheckAvailable(:final info, :final currentVersion):
+        UpdateDialog.show(
+          context,
+          updateInfo: info,
+          currentVersion: currentVersion,
+        );
+      case UpdateCheckUpToDate():
+      case UpdateCheckFailure():
+      case UpdateCheckSkipped():
+        break; // 自动检查静默
     }
   }
 

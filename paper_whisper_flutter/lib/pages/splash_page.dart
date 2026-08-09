@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../config/app_theme.dart';
-import '../services/update_service.dart';
+import '../features/update/application/update_check_coordinator.dart';
 import '../widgets/update_dialog.dart';
 import 'diary_list_page.dart';
 import 'intro_page.dart';
@@ -143,34 +143,35 @@ class _SplashPageState extends State<SplashPage> {
     );
   }
 
-  /// 导航完成后延迟检测更新
-  Future<void> _checkForUpdateAfterNavigation() async {
-    // 等待页面动画完成
-    await Future.delayed(const Duration(milliseconds: 1000));
+  /// 导航完成后延迟检测更新。
+  ///
+  /// 自动检查委托 context-free 的 UpdateCheckCoordinator：保留原 1s
+  /// 延迟与静默失败语义，available 才经 Navigator context 弹
+  /// UpdateDialog；purpose 级会话去重使同进程内多次导航不再重复检查。
+  /// 延迟留在页面，延迟后先检查 mounted 再发起网络请求。
+  final UpdateCheckCoordinator _updateCheckCoordinator =
+      UpdateCheckCoordinator();
 
+  Future<void> _checkForUpdateAfterNavigation() async {
+    // 保留原时序：先延迟 1s 等待页面动画完成，延迟后先检查 mounted
+    // 再发起网络请求。
+    await Future.delayed(const Duration(milliseconds: 1000));
     if (!mounted) return;
 
-    try {
-      final updateService = UpdateService();
-      final updateInfo = await updateService.checkForUpdate();
-
-      if (updateInfo != null && mounted) {
-        final currentVersion = await updateService.getCurrentVersion();
-
-        // 获取当前 Navigator 的 context
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            final navigatorContext = Navigator.of(context).context;
-            UpdateDialog.show(
-              navigatorContext,
-              updateInfo: updateInfo,
-              currentVersion: currentVersion,
-            );
-          }
-        });
-      }
-    } catch (e) {
-      debugPrint('启动时检测更新失败: $e');
+    final outcome = await _updateCheckCoordinator.checkAuto(purpose: 'splash');
+    if (!mounted) return;
+    if (outcome is UpdateCheckAvailable) {
+      // 获取当前 Navigator 的 context
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          final navigatorContext = Navigator.of(context).context;
+          UpdateDialog.show(
+            navigatorContext,
+            updateInfo: outcome.info,
+            currentVersion: outcome.currentVersion,
+          );
+        }
+      });
     }
   }
 

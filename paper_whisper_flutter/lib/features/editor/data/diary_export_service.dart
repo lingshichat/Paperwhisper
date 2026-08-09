@@ -4,8 +4,8 @@ import 'dart:ui' as ui;
 
 import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as path;
-import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
+
+import '../../export/data/export_path_resolver.dart';
 
 /// 长图导出分块计划（纯数据，可独立测试）。
 ///
@@ -198,23 +198,11 @@ class DiaryExportService {
     );
   }
 
-  /// 解析导出目录：优先使用注入的 resolver，缺省走平台三分支。
+  /// 解析导出目录：优先使用注入的 resolver，缺省走 [ExportPathResolver]
+  /// 的平台三分支（Android 授权 / Android 未授权 / 非 Android）。
   Future<Directory> _resolveExportDir() async {
     final resolver = exportDirectoryResolver;
     if (resolver != null) return resolver();
-    return Directory(await _resolveExportDirectory());
-  }
-
-  /// 解析导出目录（Android 授权 / Android 未授权 / 非 Android 三分支）。
-  Future<String> _resolveExportDirectory() async {
-    final Directory directory = await getApplicationDocumentsDirectory();
-    if (Platform.isAndroid) {
-      if (await Permission.manageExternalStorage.isGranted) {
-        return '/storage/emulated/0/Pictures/PaperWhisper';
-      }
-      final Directory? extDir = await getExternalStorageDirectory();
-      return path.join(extDir?.path ?? directory.path, 'Exports');
-    }
-    return path.join(directory.path, 'PaperWhisper_Exports');
+    return (await const ExportPathResolver().resolve()).directory;
   }
 }

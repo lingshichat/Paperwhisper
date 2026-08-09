@@ -4,8 +4,8 @@ import 'package:flutter/rendering.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:audioplayers/audioplayers.dart';
+import '../features/export/data/export_path_resolver.dart';
 import 'dart:async';
 
 import 'dart:io';
@@ -129,34 +129,16 @@ class _MomentCardState extends State<MomentCard> {
       var byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       var pngBytes = byteData!.buffer.asUint8List();
 
-      final directory = await getApplicationDocumentsDirectory();
-      String exportPath;
-
-      if (Platform.isAndroid) {
-        if (await Permission.manageExternalStorage.isGranted) {
-          // Change to standard Pictures directory for Gallery visibility
-          exportPath = '/storage/emulated/0/Pictures/PaperWhisper';
-        } else {
-          // Fallback to app specific external dir or standard docs
-          final extDir = await getExternalStorageDirectory();
-          // extDir is Android/data/.../files
-          // Let's use a nice subfolder
-          if (extDir != null) {
-            exportPath = path.join(extDir.path, 'Exports');
-          } else {
-            exportPath = path.join(directory.path, 'Exports');
-          }
-        }
-      } else {
-        exportPath = path.join(directory.path, 'PaperWhisper_Exports');
-      }
+      // 导出目录委托 ExportPathResolver（平台/授权三分支，context-free）。
+      final exportResult = await const ExportPathResolver().resolve();
+      String exportPath = exportResult.path;
 
       final exportDir = Directory(exportPath);
       if (!await exportDir.exists()) {
         try {
           await exportDir.create(recursive: true);
         } catch (e) {
-          // Final fallback
+          // Final fallback：mkdir 失败时回退到应用文档目录 Exports（原语义）
           final recoverDir = await getApplicationDocumentsDirectory();
           exportPath = path.join(recoverDir.path, 'Exports');
           await Directory(exportPath).create(recursive: true);

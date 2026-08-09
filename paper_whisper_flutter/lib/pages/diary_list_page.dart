@@ -31,7 +31,8 @@ import '../widgets/smooth_cover_page_route.dart'; // SmoothCoverPageRoute
 import 'dart:io' show Platform;
 import '../models/update_info.dart';
 import '../services/update_service.dart';
-import '../utils/platform_utils.dart';
+import '../features/update/application/update_check_coordinator.dart';
+import '../features/permissions/application/permission_coordinator.dart';
 import 'book_directory_page.dart';
 
 class DiaryListPage extends StatefulWidget {
@@ -117,6 +118,11 @@ class _DiaryListPageState extends State<DiaryListPage>
     }
   }
 
+  // 横切协调器（context-free）
+  final UpdateCheckCoordinator _updateCheckCoordinator =
+      UpdateCheckCoordinator();
+  final PermissionCoordinator _permissionCoordinator = PermissionCoordinator();
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
@@ -125,16 +131,9 @@ class _DiaryListPageState extends State<DiaryListPage>
   }
 
   Future<void> _checkPermissionAndReload() async {
-    if (Platform.isAndroid) {
-      if (await Permission.manageExternalStorage.isGranted) {
-        if (mounted) {
-          await Provider.of<DiaryProvider>(
-            context,
-            listen: false,
-          ).loadEntries();
-        }
-      }
-    } else {
+    // 非 Android 直接重载；Android 需存储权限已授予。
+    if (!Platform.isAndroid ||
+        await _permissionCoordinator.isStorageGranted()) {
       if (mounted) {
         await Provider.of<DiaryProvider>(context, listen: false).loadEntries();
       }
@@ -210,9 +209,8 @@ class _DiaryListPageState extends State<DiaryListPage>
   Future<void> _checkAndroidPermissions() async {
     if (!Platform.isAndroid) return;
 
-    // 1. Check current status
-    var status = await Permission.manageExternalStorage.status;
-    if (status.isGranted) return;
+    // 1. Check current status（委托 PermissionCoordinator）
+    if (await _permissionCoordinator.isStorageGranted()) return;
 
     // 2. Determine if dialog should be shown (Simplified: always show if not granted)
     // We wait for the first frame to render before showing dialog
@@ -251,13 +249,15 @@ class _DiaryListPageState extends State<DiaryListPage>
     // 只有在非web平台检测
     if (kIsWeb) return;
 
-    try {
-      final updateInfo = await UpdateService().checkForUpdate();
-      if (updateInfo != null && mounted) {
-        _showUnifiedDialog(updateInfo, isAnnouncement: false);
-      }
-    } catch (e) {
-      debugPrint('Update check failed: $e');
+    // 自动检查委托 UpdateCheckCoordinator（purpose 级会话去重：进程内
+    // 首次成功检查后不再重复，避免主页每次进入都发请求；每次启动
+    // 新进程仍会检查，保证更新提示不漏）。
+    final outcome = await _updateCheckCoordinator.checkAuto(
+      purpose: 'diary-list',
+    );
+    if (!mounted) return;
+    if (outcome is UpdateCheckAvailable) {
+      _showUnifiedDialog(outcome.info, isAnnouncement: false);
     }
   }
 
@@ -402,8 +402,8 @@ class _DiaryListPageState extends State<DiaryListPage>
     final bool? dontAskAgain = prefs.getBool('permission_dont_ask_again');
     if (dontAskAgain == true) return;
 
-    // 检测是否为鸿蒙系统
-    final isHarmony = await PlatformUtils.isHarmonyOS();
+    // 检测是否为鸿蒙系统（委托 PermissionCoordinator）
+    final isHarmony = await _permissionCoordinator.isHarmonyOS();
 
     if (!mounted) return;
 
@@ -464,9 +464,12 @@ class _DiaryListPageState extends State<DiaryListPage>
                   }
                 }
               } else {
-                // 标准 Android：使用 permission_handler 请求
-                final status = await Permission.manageExternalStorage.request();
-                if (status.isGranted) {
+                // 标准 Android：请求委托 PermissionCoordinator，typed 结果
+                // 由页面翻译为 reload / Toast。
+                final outcome = await _permissionCoordinator.requestPermission(
+                  Permission.manageExternalStorage,
+                );
+                if (outcome == PermissionRequestOutcome.granted) {
                   if (mounted) {
                     await Provider.of<DiaryProvider>(
                       context,
@@ -491,9 +494,8 @@ class _DiaryListPageState extends State<DiaryListPage>
     Future.delayed(const Duration(seconds: 2), () async {
       if (!mounted) return;
 
-      final status = await Permission.manageExternalStorage.status;
-      if (!mounted) return;
-      if (status.isGranted) {
+      if (await _permissionCoordinator.isStorageGranted()) {
+        if (!mounted) return;
         await Provider.of<DiaryProvider>(
           context,
           listen: false,

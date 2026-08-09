@@ -6,13 +6,14 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../config/app_theme.dart';
-import '../models/sync_trust_snapshot.dart';
 import '../models/update_info.dart';
 import '../providers/settings_provider.dart';
 import '../providers/sync_provider.dart';
 import '../services/update_service.dart';
 import '../services/moment_service.dart';
-import '../utils/platform_utils.dart';
+import '../features/update/application/update_check_coordinator.dart';
+import '../features/permissions/application/permission_coordinator.dart';
+import '../features/sync/presentation/sync_status_formatter.dart';
 import '../widgets/update_dialog.dart';
 import '../widgets/skeuomorphic_toast.dart';
 import '../widgets/skeuomorphic_dialog.dart';
@@ -41,6 +42,11 @@ class _SettingsPageState extends State<SettingsPage>
   String _internalStats = '';
   bool _hasInternalClutter = false;
 
+  // 横切协调器（context-free，页面只翻译 typed outcome 为 UI）
+  final UpdateCheckCoordinator _updateCheckCoordinator =
+      UpdateCheckCoordinator();
+  final PermissionCoordinator _permissionCoordinator = PermissionCoordinator();
+
   // Permission State
   Map<String, PermissionStatus> _permStatuses = {};
   String _permSummary = '检测中...';
@@ -68,29 +74,17 @@ class _SettingsPageState extends State<SettingsPage>
   }
 
   Future<void> _checkAllPermissions() async {
-    // Check key permissions
-    final pStorage = await Permission.manageExternalStorage.status;
-    final pPhotos = await Permission
-        .photos
-        .status; // Android 13+ specific usually, or generic
-    final pNotification = await Permission.notification.status;
-
+    // 权限状态查询与汇总委托 context-free 的 PermissionCoordinator。
+    final snapshot = await _permissionCoordinator.checkAll();
+    if (!mounted) return;
     setState(() {
       _permStatuses = {
-        'storage': pStorage,
-        'photos': pPhotos,
-        'notification': pNotification,
+        'storage': snapshot.storage,
+        'photos': snapshot.photos,
+        'notification': snapshot.notification,
       };
-
-      _isAllGranted =
-          pStorage.isGranted && pNotification.isGranted; // Storage is critical
-
-      int grantedCount = 0;
-      if (pStorage.isGranted) grantedCount++;
-      if (pPhotos.isGranted || pPhotos.isLimited) grantedCount++;
-      if (pNotification.isGranted) grantedCount++;
-
-      _permSummary = "权限状态: $grantedCount / 3 已获取";
+      _isAllGranted = snapshot.isAllGranted;
+      _permSummary = snapshot.summary;
     });
   }
 
@@ -719,23 +713,27 @@ class _SettingsPageState extends State<SettingsPage>
               onTap: () async {
                 Navigator.pop(context);
 
-                final isHarmony = await PlatformUtils.isHarmonyOS();
+                // 鸿蒙判定与权限请求委托 PermissionCoordinator；
+                // 说明 Toast / openAppSettings 留在页面。
+                final isHarmony = await _permissionCoordinator.isHarmonyOS();
                 if (!context.mounted) return;
 
                 if (isHarmony) {
                   SkeuomorphicToast.info(context, '正在跳转设置页...');
                   await openAppSettings();
                 } else {
-                  final newStatus = await perm.request();
+                  final outcome = await _permissionCoordinator
+                      .requestPermission(perm);
                   if (!context.mounted) return;
 
-                  if (newStatus.isGranted) {
-                    SkeuomorphicToast.success(context, '授权成功');
-                  } else if (newStatus.isPermanentlyDenied) {
-                    SkeuomorphicToast.warning(context, '请在设置中手动开启');
-                    openAppSettings();
-                  } else {
-                    SkeuomorphicToast.info(context, '权限未授予');
+                  switch (outcome) {
+                    case PermissionRequestOutcome.granted:
+                      SkeuomorphicToast.success(context, '授权成功');
+                    case PermissionRequestOutcome.permanentlyDenied:
+                      SkeuomorphicToast.warning(context, '请在设置中手动开启');
+                      openAppSettings();
+                    case PermissionRequestOutcome.denied:
+                      SkeuomorphicToast.info(context, '权限未授予');
                   }
 
                   // Check again
@@ -773,21 +771,32 @@ class _SettingsPageState extends State<SettingsPage>
   Future<void> _checkForUpdate(BuildContext context) async {
     setState(() => _isCheckingUpdate = true);
     try {
-      final updateService = UpdateService();
-      final currentVersion = await updateService.getCurrentVersion();
-      setState(() => _currentVersion = currentVersion);
-      final updateInfo = await updateService.checkForUpdate();
+      // 保留原时序：先取当前版本用于设置项副标题展示（经协调器
+      // gateway，避免页面直接依赖 UpdateService 单例的额外失败点）。
+      final currentVersion = await _updateCheckCoordinator.getCurrentVersion();
+      if (mounted) setState(() => _currentVersion = currentVersion);
+
+      // 手动检查不受会话去重限制，结果由页面穷尽翻译。
+      final outcome = await _updateCheckCoordinator.checkManual();
       if (!context.mounted) return;
-      if (updateInfo != null) {
-        UpdateDialog.show(
-          context,
-          updateInfo: updateInfo,
-          currentVersion: currentVersion,
-        );
-      } else {
-        SkeuomorphicToast.success(context, '已是最新版本 ✔');
+      switch (outcome) {
+        case UpdateCheckAvailable(:final info, :final currentVersion):
+          UpdateDialog.show(
+            context,
+            updateInfo: info,
+            currentVersion: currentVersion,
+          );
+        case UpdateCheckUpToDate():
+          SkeuomorphicToast.success(context, '已是最新版本 ✔');
+        case UpdateCheckFailure():
+          SkeuomorphicToast.error(context, '检测更新失败，请检查网络');
+        case UpdateCheckSkipped():
+          // 手动检查不会产生 skipped，防御忽略
+          break;
       }
     } catch (e) {
+      // 整体异常兜底（getCurrentVersion 等未预期失败）：mounted 后
+      // 逐字提示，loading 复位仍由 finally 保证。
       if (!context.mounted) return;
       SkeuomorphicToast.error(context, '检测更新失败，请检查网络');
     } finally {
@@ -988,39 +997,10 @@ class _SettingsPageState extends State<SettingsPage>
 
   String _getSyncStatusText(BuildContext context) {
     final syncProvider = Provider.of<SyncProvider>(context);
-    final snapshot = syncProvider.trustSnapshot;
-
-    if (snapshot.state == SyncTrustState.notEnabled) return '未启用';
-    if (snapshot.state == SyncTrustState.syncing) return '同步中...';
-    if (snapshot.state == SyncTrustState.localChangesPending) {
-      return '尚有 ${snapshot.totalPendingCount} 项待同步';
-    }
-    if (snapshot.state == SyncTrustState.syncFailed) {
-      return snapshot.failureReason ?? '同步失败，内容仍保留在本地';
-    }
-    if (snapshot.state == SyncTrustState.needsAttention) {
-      return snapshot.failureReason ?? '需要检查同步配置';
-    }
-    if (snapshot.lastSuccessfulSyncAt != null) {
-      final platform = _formatSyncPlatform(snapshot.lastSuccessfulSyncPlatform);
-      return '最近一次成功同步：${_formatTime(snapshot.lastSuccessfulSyncAt!)}${platform == null ? '' : '（$platform）'}';
-    }
-    return '已启用';
-  }
-
-  String? _formatSyncPlatform(String? platform) {
-    switch (platform) {
-      case 'webdav':
-        return 'WebDAV';
-      case 's3':
-        return 'S3';
-      default:
-        return null;
-    }
-  }
-
-  String _formatTime(DateTime time) {
-    return "${time.year}-${time.month}-${time.day} ${time.hour}:${time.minute}";
+    // 状态文案逐字委托 SyncStatusFormatter（settings 风格：分钟不补零）。
+    return const SyncStatusFormatter().formatCompactStatus(
+      syncProvider.trustSnapshot,
+    );
   }
 
   // --- Theme & Storage Helpers (Unchanged Logic, just helper methods) ---

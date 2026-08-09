@@ -31,11 +31,12 @@ import '../support/sync_test_fakes.dart';
 /// dispose 清理。
 ///
 /// seam 说明：
-/// - 更新检查（`_checkUpdate`）在 initState postFrame 触发 2s 延迟 +
-///   真实网络请求（fake async 下悬挂，10s 超时失败）。每个测试的
-///   tearDown 统一推进 12s 消化这些 timer，避免 pending timer 报错；
-///   static `_hasCheckedUpdate` 使该检查整个测试进程只执行一次，测试
-///   不断言更新弹窗行为。
+/// - 更新检查（`_checkUpdate`）在 initState postFrame 触发，页面内 2s
+///   延迟 + 真实网络请求（fake async 下悬挂，10s 超时失败）。每个
+///   测试在 pump 阶段统一推进 3s 消化该延迟与失败链路的 timer，避免
+///   pending timer 报错；检查委托 UpdateCheckCoordinator（purpose 级
+///   会话去重 + 失败回滚，语义等价原 static `_hasCheckedUpdate`），
+///   测试不断言更新弹窗行为。
 /// - 免费额度（`PaymentService.canUseProFeatures` 恒为 true，硬编码）
 ///   使「当日 3 条」限制分支不可达，无法通过注入覆盖，故无额度用例；
 ///   该分支的提取与测试留待重构后注入点就绪。

@@ -7,6 +7,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../../providers/sync_provider.dart';
 import '../../../widgets/skeuomorphic_dialog.dart';
 import '../../../widgets/skeuomorphic_toast.dart';
+import '../application/save_sync_coordinator.dart';
 import '../application/sync_run_result.dart';
 
 /// 同步 UI 协调器（唯一负责通知权限说明、Dialog/Toast、手动同步与
@@ -24,9 +25,13 @@ import '../application/sync_run_result.dart';
 /// 迁移来源（原 `sync_provider.dart`）：`checkNotificationPermission`
 /// （965-1012）与 `sync` 的权限检查、Toast 反馈分支（1014-1200）。
 class SyncUiCoordinator {
-  SyncUiCoordinator(this._context);
+  SyncUiCoordinator(this._context, {SaveSyncCoordinator? saveSyncCoordinator})
+    : _saveSyncCoordinator = saveSyncCoordinator ?? const SaveSyncCoordinator();
 
   final BuildContext _context;
+
+  /// 保存后同步决策协调器（context-free，可注入替身以便测试决策分支）。
+  final SaveSyncCoordinator _saveSyncCoordinator;
 
   /// 检查并请求通知权限（强制）。
   ///
@@ -134,7 +139,9 @@ class SyncUiCoordinator {
 
   /// 保存后自动同步决策与即时反馈（日记/随心记保存路径共用）。
   ///
-  /// 保留原调用点文案与触发时机：
+  /// 决策（刷新快照 → 配置/待同步计数分支）委托 context-free 的
+  /// [SaveSyncCoordinator]；本方法只负责把 typed 决策翻译为
+  /// Toast / 通知权限申请 / 自动同步触发，保留原调用点文案与触发时机：
   /// - 启用自动同步：准备同步提示 → 通知权限申请 → 30s 防抖自动同步
   ///   （自动同步由调度器静默执行，不持有 context，完成反馈走 OS 通知
   ///   与信任快照状态）；
@@ -150,29 +157,24 @@ class SyncUiCoordinator {
     required String preparingToast,
     bool preparingToastAsInfo = false,
   }) async {
-    await provider.refreshTrustSnapshot();
+    final decision = await _saveSyncCoordinator.decideAfterSave(provider);
     if (!_context.mounted) return;
-    final pendingCount = provider.trustSnapshot.totalPendingCount;
-
-    if (provider.config.enabled &&
-        provider.config.autoSync &&
-        provider.isConfigured) {
-      if (preparingToastAsInfo) {
-        SkeuomorphicToast.info(_context, preparingToast);
-      } else {
-        SkeuomorphicToast.success(_context, preparingToast);
-      }
-      if (!_context.mounted) return;
-      final granted = await checkNotificationPermission();
-      if (_context.mounted && granted) {
-        unawaited(provider.requestAutoSync());
-      }
-    } else if (provider.config.enabled && pendingCount > 0) {
-      if (!_context.mounted) return;
-      SkeuomorphicToast.info(_context, '已保存，尚有 $pendingCount 项待同步');
-    } else {
-      if (!_context.mounted) return;
-      SkeuomorphicToast.success(_context, savedToast);
+    switch (decision) {
+      case SaveSyncAutoSync():
+        if (preparingToastAsInfo) {
+          SkeuomorphicToast.info(_context, preparingToast);
+        } else {
+          SkeuomorphicToast.success(_context, preparingToast);
+        }
+        if (!_context.mounted) return;
+        final granted = await checkNotificationPermission();
+        if (_context.mounted && granted) {
+          unawaited(provider.requestAutoSync());
+        }
+      case SaveSyncPending(:final pendingCount):
+        SkeuomorphicToast.info(_context, '已保存，尚有 $pendingCount 项待同步');
+      case SaveSyncSaved():
+        SkeuomorphicToast.success(_context, savedToast);
     }
   }
 
@@ -180,9 +182,10 @@ class SyncUiCoordinator {
   ///
   /// 仅在启用自动同步时申请通知权限并触发 30s 防抖同步，不额外展示
   /// Toast（原 `moments_page._handleAggregation` 的同步段语义）。
+  /// 配置门禁委托 [SaveSyncCoordinator.shouldAutoSync]。
   Future<void> requestAutoSyncIfConfigured(SyncProvider provider) async {
     if (!_context.mounted) return;
-    if (provider.config.autoSync && provider.isConfigured) {
+    if (_saveSyncCoordinator.shouldAutoSync(provider)) {
       final granted = await checkNotificationPermission();
       if (_context.mounted && granted) {
         unawaited(provider.requestAutoSync());

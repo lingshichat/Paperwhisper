@@ -7,8 +7,7 @@ import 'package:flutter/rendering.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:path/path.dart' as path;
-import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
+import '../features/export/data/export_path_resolver.dart';
 import '../models/moment.dart';
 import '../widgets/postmark_stamp.dart';
 import '../providers/settings_provider.dart';
@@ -141,20 +140,8 @@ class _MomentDetailPageState extends State<MomentDetailPage>
       var byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       var pngBytes = byteData!.buffer.asUint8List();
 
-      final directory = await getApplicationDocumentsDirectory();
-      String exportPath;
-      if (Platform.isAndroid) {
-        if (await Permission.manageExternalStorage.isGranted) {
-          exportPath = '/storage/emulated/0/Pictures/PaperWhisper';
-        } else {
-          final extDir = await getExternalStorageDirectory();
-          exportPath = path.join(extDir?.path ?? directory.path, 'Exports');
-        }
-      } else {
-        exportPath = path.join(directory.path, 'PaperWhisper_Exports');
-      }
-
-      final exportDir = Directory(exportPath);
+      // 导出目录委托 ExportPathResolver（平台/授权三分支，context-free）。
+      final exportDir = (await const ExportPathResolver().resolve()).directory;
       if (!await exportDir.exists()) {
         try {
           await exportDir.create(recursive: true);

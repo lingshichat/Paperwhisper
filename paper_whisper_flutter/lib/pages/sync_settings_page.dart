@@ -9,6 +9,7 @@ import '../providers/settings_provider.dart';
 import '../providers/sync_provider.dart';
 import '../services/payment_service.dart';
 import '../features/sync/presentation/sync_ui_coordinator.dart';
+import '../features/sync/presentation/sync_status_formatter.dart';
 import '../widgets/skeuomorphic_toast.dart';
 import 'premium_membership_page.dart';
 import '../widgets/slide_page_route.dart';
@@ -697,45 +698,32 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
     final snapshot = provider.trustSnapshot;
 
     IconData icon;
-    String title;
-
     switch (snapshot.state) {
       case SyncTrustState.notEnabled:
         icon = Icons.cloud_off_outlined;
-        title = '同步未启用';
         break;
       case SyncTrustState.localChangesPending:
         icon = Icons.schedule_outlined;
-        title = '本地仍有内容待同步';
         break;
       case SyncTrustState.syncing:
         icon = Icons.sync;
-        title = '正在同步';
         break;
       case SyncTrustState.syncedSuccessfully:
         icon = Icons.verified_outlined;
-        title = '同步状态正常';
         break;
       case SyncTrustState.syncFailed:
         icon = Icons.error_outline;
-        title = '同步失败';
         break;
       case SyncTrustState.needsAttention:
         icon = Icons.warning_amber_rounded;
-        title = '需要检查同步配置';
         break;
     }
 
-    final lines = <String>[
-      if (snapshot.totalPendingCount > 0)
-        '尚有 ${snapshot.totalPendingCount} 项待同步',
-      if (snapshot.lastSuccessfulSyncAt != null)
-        '最近一次成功同步：${_formatSyncTime(snapshot.lastSuccessfulSyncAt!)}${_formatSyncPlatform(snapshot.lastSuccessfulSyncPlatform) == null ? '' : '（${_formatSyncPlatform(snapshot.lastSuccessfulSyncPlatform)!}）'}',
-      if (snapshot.failureReason != null && snapshot.failureReason!.isNotEmpty)
-        snapshot.failureReason!,
-      if (snapshot.state == SyncTrustState.syncFailed) '可使用下方“立即同步”重试',
-      if (snapshot.state == SyncTrustState.notEnabled) '启用后即可把本地内容同步到云端',
-    ];
+    // 状态卡文案（title + lines）逐字委托 SyncStatusFormatter
+    // （sync_settings 风格：分钟补零）；icon 与颜色仍由页面决定。
+    final cardText = const SyncStatusFormatter().buildStatusCard(snapshot);
+    final String title = cardText.title;
+    final lines = cardText.lines;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -798,22 +786,6 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
         ],
       ),
     );
-  }
-
-  String _formatSyncTime(DateTime time) {
-    final minute = time.minute.toString().padLeft(2, '0');
-    return '${time.year}-${time.month}-${time.day} ${time.hour}:$minute';
-  }
-
-  String? _formatSyncPlatform(String? platform) {
-    switch (platform) {
-      case 'webdav':
-        return 'WebDAV';
-      case 's3':
-        return 'S3';
-      default:
-        return null;
-    }
   }
 
   Widget _buildTextField({
