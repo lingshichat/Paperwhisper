@@ -5,6 +5,14 @@ class SyncRunOutcome {
   int failedDownloads = 0;
   int failedDeletes = 0;
   int skippedOperations = 0;
+
+  /// 各分类已完成的操作计数（供门面统计与成功文案使用）。
+  /// 原 `SyncProvider` 的 `_statDiaries/_statMoments/_statImages/_statAudio`。
+  int processedDiaries = 0;
+  int processedMoments = 0;
+  int processedImages = 0;
+  int processedAudio = 0;
+
   final List<String> errors = <String>[];
 
   bool get hasFailures =>
