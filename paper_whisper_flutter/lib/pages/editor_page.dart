@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:ui' as ui;
 import 'package:image/image.dart' as img; // Added for splitting
 import 'package:flutter/material.dart';
@@ -15,6 +14,7 @@ import '../widgets/skeuomorphic_toast.dart';
 import '../services/draft_service.dart'; // Added
 import '../widgets/slide_page_route.dart'; // Needed for "Save As New" navigation
 import '../widgets/skeuomorphic_date_picker.dart';
+import '../features/editor/application/editor_session_controller.dart';
 import '../features/sync/presentation/sync_ui_coordinator.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
@@ -42,51 +42,25 @@ class EditorPage extends StatefulWidget {
 }
 
 class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
-  late TextEditingController _titleController;
-  late TextEditingController _contentController;
-  late TextEditingController
-  _previewController; // Controller for truncated text
-
-  late WeatherType _weather;
-  late MoodType _mood;
-  late bool _isMarkdown;
-
-  bool _isEditing = false;
-  late String _currentDateStr;
+  // 编辑会话：编辑状态、草稿生命周期与自动保存编排由控制器持有
+  late final EditorSessionController _session;
 
   // 懒加载状态
   bool _isPreviewMode = false; // 是否处于首屏预览模式
 
-  // Draft Logic
   // Focus Node
   final FocusNode _focusNode = FocusNode();
-
-  final _draftService = DraftService();
-  Timer? _autoSaveTimer;
-  bool _hasDraftChanges = false;
-  bool _hasCheckedDraft = false; // Prevent double checking
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
-    final e = widget.entry;
-    final fullText = e?.content ?? '';
-    _titleController = TextEditingController(text: e?.title ?? '');
-    _contentController = TextEditingController(text: fullText);
-
-    // 初始化预览控制器：只截取前 200 字符（约一屏），极致减少渲染压力
-    // 1000字符依然会导致显著卡顿，200字符是性能与视觉填充的平衡点
-    _previewController = TextEditingController(
-      text: fullText.length > 200 ? fullText.substring(0, 200) : fullText,
+    // 编辑会话：初始值来自入口条目，草稿服务由页面注入
+    _session = EditorSessionController(
+      initialEntry: widget.entry,
+      draftService: DraftService(),
     );
-
-    _weather = e?.weather ?? WeatherType.sunny;
-    _mood = e?.mood ?? MoodType.calm;
-    _isMarkdown = e?.isMarkdown ?? false;
-    _isEditing = (e == null);
-    _currentDateStr = e?.dateString ?? DateTime.now().toString().split(' ')[0];
 
     // 初始化状态
     _isPreviewMode = widget.usePreviewMode;
@@ -100,10 +74,6 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         }
       });
     }
-
-    // Listeners for auto-save
-    _titleController.addListener(_onTextChanged);
-    _contentController.addListener(_onTextChanged);
 
     // Check Draft after UI build (For BOTH new and existing entries)
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkDraft());
@@ -128,13 +98,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     if (status == AnimationStatus.reverse) {
       // 必须同步最新的编辑内容到预览控制器
       if (!_isPreviewMode) {
-        final fullText = _contentController.text;
-        final trunk = fullText.length > 200
-            ? fullText.substring(0, 200)
-            : fullText;
-        if (_previewController.text != trunk) {
-          _previewController.text = trunk;
-        }
+        _session.syncPreviewText();
 
         setState(() {
           _isPreviewMode = true; // 开启优化的预览模式
@@ -148,10 +112,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     // 移除监听
     _routeAnimation?.removeStatusListener(_onRouteAnimationStatusChanged);
-    _autoSaveTimer?.cancel();
-    _titleController.dispose();
-    _contentController.dispose();
-    _previewController.dispose();
+    _session.dispose();
     _focusNode.dispose();
     super.dispose();
   }
@@ -159,82 +120,27 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused) {
-      _performAutoSave(); // 切后台立即保存
+      _session.performAutoSave(); // 切后台立即保存
     }
   }
 
-  // Auto-Save Logic (Debounce)
-  void _onTextChanged() {
-    if (!_isEditing) return;
-
-    // Reset timer
-    _autoSaveTimer?.cancel();
-    _autoSaveTimer = Timer(const Duration(seconds: 2), _performAutoSave);
-    _hasDraftChanges = true;
-  }
-
-  Future<void> _performAutoSave() async {
-    if (!mounted || !_hasDraftChanges) return;
-    if (_titleController.text.isEmpty && _contentController.text.isEmpty) {
-      return; // 空内容不存
-    }
-
-    final id = widget.entry?.filename ?? 'new';
-    final currentEntry = DiaryEntry(
-      filename: id == 'new' ? '' : id,
-      dateString: _currentDateStr,
-      title: _titleController.text,
-      weather: _weather,
-      mood: _mood,
-      content: _contentController.text,
-      isMarkdown: _isMarkdown,
-    );
-
-    await _draftService.saveDraft(id, currentEntry);
-    debugPrint('Auto-saved draft for $id');
-    _hasDraftChanges = false;
-  }
-
+  // Auto-Save Logic (Debounce) 由 EditorSessionController 持有
   // Restore Logic
   // Static lock to prevent multiple dialogs (e.g. double click opening two pages)
   static bool _isDialogShowing = false;
 
   Future<void> _checkDraft() async {
-    if (_hasCheckedDraft) return;
-    _hasCheckedDraft = true;
-
-    final id = widget.entry?.filename ?? 'new';
-    final draft = await _draftService.getDraft(id);
-
-    if (draft == null) return;
-
-    // 如果是新建，只要有草稿就恢复
-    // 如果是编辑旧日记，对比内容是否不同
-    if (id != 'new') {
-      final currentContent = widget.entry?.content ?? '';
-      if (draft.content == currentContent &&
-          draft.title == (widget.entry?.title ?? '')) {
-        await _draftService.clearDraft(id);
-        return;
-      }
-    } else {
-      if (draft.content.isEmpty && draft.title.isEmpty) {
-        await _draftService.clearDraft(id);
-        return;
-      }
-    }
+    // 数据判定（草稿是否需恢复/是否残缺）在控制器内完成
+    final info = await _session.checkDraftRestore();
+    if (info == null) return;
 
     if (!mounted) return;
 
     // Critical Check: If dialog is already showing (globally), skip this one
     if (_isDialogShowing) return;
 
-    bool isIncomplete = false;
-    if (id != 'new' && widget.entry != null) {
-      if (draft.content.length < widget.entry!.content.length) {
-        isIncomplete = true;
-      }
-    }
+    final draft = info.draft;
+    final bool isIncomplete = info.isIncomplete;
 
     _isDialogShowing = true; // Lock
 
@@ -294,7 +200,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                     isPrimary: false,
                     onPressed: () async {
                       Navigator.pop(ctx);
-                      await _draftService.clearDraft(id);
+                      await _session.clearDraft();
                       if (mounted) {
                         SkeuomorphicToast.success(context, '草稿已丢弃');
                       }
@@ -311,11 +217,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                       Navigator.pop(ctx);
                       if (!mounted) return;
                       setState(() {
-                        _titleController.text = draft.title;
-                        _contentController.text = draft.content;
-                        _weather = draft.weather;
-                        _mood = draft.mood;
-                        _currentDateStr = draft.dateString;
+                        _session.restoreFromDraft(draft);
                       });
                       if (mounted) {
                         SkeuomorphicToast.success(context, '内容已恢复');
@@ -335,26 +237,24 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
 
   void _save() async {
     // 1. STOP AUTO SAVE! Prevent race condition where auto-save writes draft AFTER we clear it
-    _autoSaveTimer?.cancel();
-    _hasDraftChanges = false;
+    _session.cancelPendingAutoSave();
 
     final provider = Provider.of<DiaryProvider>(context, listen: false);
     final newEntry = DiaryEntry(
       filename: widget.entry?.filename ?? '',
-      dateString: _currentDateStr,
-      title: _titleController.text,
-      weather: _weather,
-      mood: _mood,
-      content: _contentController.text,
-      isMarkdown: _isMarkdown,
+      dateString: _session.dateString,
+      title: _session.titleController.text,
+      weather: _session.weather,
+      mood: _session.mood,
+      content: _session.contentController.text,
+      isMarkdown: _session.isMarkdown,
     );
 
     try {
       await provider.saveEntry(newEntry);
 
       // Save Success: Clear Draft!
-      final id = widget.entry?.filename ?? 'new';
-      await _draftService.clearDraft(id);
+      await _session.clearDraft();
 
       if (mounted) {
         final syncProvider = context.read<SyncProvider>();
@@ -380,8 +280,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     if (widget.entry == null) return;
 
     // STOP AUTO SAVE
-    _autoSaveTimer?.cancel();
-    _hasDraftChanges = false;
+    _session.cancelPendingAutoSave();
 
     final provider = Provider.of<DiaryProvider>(context, listen: false);
     final confirm = await showDialog<bool>(
@@ -411,7 +310,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     if (confirm == true) {
       await provider.deleteEntry(widget.entry!.filename);
       // Delete success: Also clear draft if any
-      await _draftService.clearDraft(widget.entry!.filename);
+      await _session.clearDraft();
       if (mounted) {
         final syncProvider = context.read<SyncProvider>();
         await syncProvider.refreshTrustSnapshot();
@@ -421,18 +320,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     }
   }
 
-  bool get _hasChanges {
-    // New entry: only dirty if there is content
-    if (widget.entry == null) {
-      return _titleController.text.isNotEmpty ||
-          _contentController.text.isNotEmpty;
-    }
-    // Existing entry: compare with initial values
-    return _titleController.text != (widget.entry?.title ?? '') ||
-        _contentController.text != (widget.entry?.content ?? '') ||
-        _weather != (widget.entry?.weather ?? WeatherType.sunny) ||
-        _mood != (widget.entry?.mood ?? MoodType.calm);
-  }
+  bool get _hasChanges => _session.hasChanges;
 
   Future<bool> _onWillPop() async {
     if (!_hasChanges) return true;
@@ -453,8 +341,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
             isPrimary: false,
             onPressed: () async {
               // Discard: Clear draft too!
-              final id = widget.entry?.filename ?? 'new';
-              await _draftService.clearDraft(id);
+              await _session.clearDraft();
               if (!context.mounted) return;
               Navigator.pop(context, true);
             },
@@ -584,7 +471,9 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   }
 
   Widget _buildWordCount(Color color) {
-    if (_contentController.text.isEmpty) return const SizedBox.shrink();
+    if (_session.contentController.text.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 20),
@@ -595,7 +484,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10),
             child: Text(
-              '${_contentController.text.length} 字',
+              '${_session.contentController.text.length} 字',
               style: GoogleFonts.notoSerifSc(
                 fontSize: 12,
                 color: color.withValues(alpha: 0.4),
@@ -616,7 +505,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   ) {
     // Threshold for switching to performance mode
     // ~200 lines or ~5000 chars
-    bool usePerformanceMode = _contentController.text.length > 3000;
+    bool usePerformanceMode = _session.contentController.text.length > 3000;
     final tc = AppTheme.getEditorTheme(theme);
 
     if (usePerformanceMode) {
@@ -756,7 +645,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
           ),
           const SizedBox(width: 5),
 
-          if (!_isEditing && widget.entry != null) ...[
+          if (!_session.isEditing && widget.entry != null) ...[
             IconButton(
               icon: Icon(Icons.delete_outline, color: iconColor),
               onPressed: _delete,
@@ -765,7 +654,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
             const SizedBox(width: 10),
           ],
 
-          if (_isEditing)
+          if (_session.isEditing)
             GestureDetector(
               onTap: _save,
               child: Container(
@@ -815,7 +704,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
           else
             IconButton(
               icon: Icon(Icons.edit_outlined, color: iconColor),
-              onPressed: () => setState(() => _isEditing = true),
+              onPressed: () => setState(() => _session.isEditing = true),
               tooltip: '编辑',
             ),
         ],
@@ -842,7 +731,9 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
       children: [
         // Title (always Text, never TextField)
         Text(
-          _titleController.text.isEmpty ? '无题' : _titleController.text,
+          _session.titleController.text.isEmpty
+              ? '无题'
+              : _session.titleController.text,
           style: GoogleFonts.notoSerifSc(
             fontSize: 36,
             fontWeight: FontWeight.bold,
@@ -857,14 +748,17 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text(_currentDateStr, style: _metaStyle(secondaryColor)),
+            Text(_session.dateString, style: _metaStyle(secondaryColor)),
             _metaSeparator(secondaryColor),
             Text(
-              _weather.name.toUpperCase(),
+              _session.weather.name.toUpperCase(),
               style: _metaStyle(secondaryColor),
             ),
             _metaSeparator(secondaryColor),
-            Text(_mood.name.toUpperCase(), style: _metaStyle(secondaryColor)),
+            Text(
+              _session.mood.name.toUpperCase(),
+              style: _metaStyle(secondaryColor),
+            ),
           ],
         ),
       ],
@@ -877,9 +771,9 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     final tc = AppTheme.getEditorTheme(theme);
     return Column(
       children: [
-        if (_isEditing)
+        if (_session.isEditing)
           TextField(
-            controller: _titleController,
+            controller: _session.titleController,
             textAlign: TextAlign.center,
             style: GoogleFonts.notoSerifSc(
               fontSize: 36,
@@ -895,7 +789,9 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
           )
         else
           Text(
-            _titleController.text.isEmpty ? '无题' : _titleController.text,
+            _session.titleController.text.isEmpty
+                ? '无题'
+                : _session.titleController.text,
             style: GoogleFonts.notoSerifSc(
               fontSize: 36,
               fontWeight: FontWeight.bold,
@@ -914,7 +810,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
               onTap: () {
                 DateTime initialDate;
                 try {
-                  initialDate = DateTime.parse(_currentDateStr);
+                  initialDate = DateTime.parse(_session.dateString);
                 } catch (_) {
                   initialDate = DateTime.now();
                 }
@@ -925,7 +821,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                     initialDate: initialDate,
                     onDateSelected: (date) {
                       setState(() {
-                        _currentDateStr = date.toString().split(
+                        _session.dateString = date.toString().split(
                           ' ',
                         )[0]; // yyyy-MM-dd
                       });
@@ -934,7 +830,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                 );
               },
               child: Text(
-                _currentDateStr,
+                _session.dateString,
                 style: _metaStyle(secondaryColor),
               ), // _metaStyle sends color
             ),
@@ -966,11 +862,11 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
       child: Container(
         padding: const EdgeInsets.only(top: 0), // Adjust if needed
         constraints: const BoxConstraints(minHeight: 300),
-        child: _isEditing
+        child: _session.isEditing
             ? TextField(
                 controller: _isPreviewMode
-                    ? _previewController
-                    : _contentController, // Fix 1
+                    ? _session.previewController
+                    : _session.contentController, // Fix 1
                 style: GoogleFonts.notoSerifSc(
                   fontSize: fontSize,
                   color: textColor,
@@ -998,8 +894,9 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
               )
             : Text(
                 _isPreviewMode
-                    ? _previewController.text
-                    : _contentController
+                    ? _session.previewController.text
+                    : _session
+                          .contentController
                           .text, // Fix 2: Critical for preview lag
                 style: GoogleFonts.notoSerifSc(
                   fontSize: fontSize,
@@ -1033,8 +930,11 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   );
 
   Widget _buildWeatherSelector(Color color) {
-    if (!_isEditing) {
-      return Text(_weather.name.toUpperCase(), style: _metaStyle(color));
+    if (!_session.isEditing) {
+      return Text(
+        _session.weather.name.toUpperCase(),
+        style: _metaStyle(color),
+      );
     }
 
     final settings = Provider.of<SettingsProvider>(context, listen: false);
@@ -1046,7 +946,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     final Color dropdownText = tc['dropdownText'];
 
     return DropdownButton<WeatherType>(
-      value: _weather,
+      value: _session.weather,
       underline: const SizedBox(),
       icon: const SizedBox(),
       dropdownColor: dropdownBg,
@@ -1077,14 +977,14 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
           )
           .toList(),
       onChanged: (val) {
-        if (val != null) setState(() => _weather = val);
+        if (val != null) setState(() => _session.weather = val);
       },
     );
   }
 
   Widget _buildMoodSelector(Color color) {
-    if (!_isEditing) {
-      return Text(_mood.name.toUpperCase(), style: _metaStyle(color));
+    if (!_session.isEditing) {
+      return Text(_session.mood.name.toUpperCase(), style: _metaStyle(color));
     }
 
     final settings = Provider.of<SettingsProvider>(context, listen: false);
@@ -1095,13 +995,13 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     final Color menuText = tc['dropdownText'];
 
     return PopupMenuButton<MoodType>(
-      initialValue: _mood,
+      initialValue: _session.mood,
       color: menuBg,
       padding: EdgeInsets.zero,
       tooltip: '',
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      onSelected: (val) => setState(() => _mood = val),
+      onSelected: (val) => setState(() => _session.mood = val),
       itemBuilder: (context) => MoodType.values
           .map(
             (m) => PopupMenuItem(
@@ -1116,7 +1016,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
         child: Text(
-          _mood.name.toUpperCase(),
+          _session.mood.name.toUpperCase(),
           style: _metaStyle(color).copyWith(fontWeight: FontWeight.w600),
         ),
       ),
@@ -1129,7 +1029,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   Future<void> _captureAndSave() async {
     try {
       // 1. Prepare Data & Keys
-      final String textToExport = _contentController.text;
+      final String textToExport = _session.contentController.text;
 
       final List<String> lines = textToExport.split('\n');
       if (lines.isEmpty) lines.add('');
@@ -1257,14 +1157,14 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   // --- New Helper Methods for CustomScrollView Refactor ---
 
   Widget _buildContentSliver(Color textColor, String theme) {
-    if (_isEditing) {
+    if (_session.isEditing) {
       return SliverToBoxAdapter(child: _buildEditorField(textColor, theme));
     } else {
       // Split content into lines for performance
       // 在预览模式下，使用截断的文本，这会生成非常少的 lines，极大提升首屏渲染性能
       final text = _isPreviewMode
-          ? _previewController.text
-          : _contentController.text;
+          ? _session.previewController.text
+          : _session.contentController.text;
       final lines = text.split('\n');
       if (lines.isEmpty) lines.add('');
 
@@ -1300,7 +1200,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
               child: GestureDetector(
                 onTap: () {
                   setState(() {
-                    _isEditing = true;
+                    _session.isEditing = true;
                   });
                   Future.delayed(const Duration(milliseconds: 50), () {
                     if (!context.mounted) return;
@@ -1342,8 +1242,8 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         padding: const EdgeInsets.symmetric(horizontal: 0),
         child: TextField(
           controller: _isPreviewMode
-              ? _previewController
-              : _contentController, // 预览模式使用截断文本
+              ? _session.previewController
+              : _session.contentController, // 预览模式使用截断文本
           focusNode: _focusNode,
           maxLines: null,
           style: GoogleFonts.notoSerifSc(
@@ -1460,7 +1360,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
 
     // --- Body Chunks ---
 
-    final String textToExport = _contentController.text;
+    final String textToExport = _session.contentController.text;
 
     final List<String> lines = textToExport.split('\n');
     if (lines.isEmpty) lines.add('');
