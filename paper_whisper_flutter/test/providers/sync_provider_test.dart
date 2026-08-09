@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as path;
 import 'package:paper_whisper_flutter/models/diary_entry.dart';
+import 'package:paper_whisper_flutter/models/moment.dart';
 import 'package:paper_whisper_flutter/models/sync_config.dart';
 import 'package:paper_whisper_flutter/models/sync_trust_snapshot.dart';
 import 'package:paper_whisper_flutter/providers/diary_provider.dart';
@@ -59,6 +60,109 @@ void main() {
     });
 
     test(
+      'saveConfig persists config, notifies listeners, and never triggers sync',
+      () async {
+        final secretStore = SyncSecretStore.fake();
+        final provider = TestableSyncProvider(
+          webDavService: FakeWebDavSyncService(),
+          momentService: FakeMomentService(tempDir),
+          secretStore: secretStore,
+          initializeNotifications: false,
+        );
+        await provider.ensureInitialized();
+
+        var notifyCount = 0;
+        provider.addListener(() => notifyCount++);
+
+        final config = SyncConfig(
+          enabled: true,
+          autoSync: true,
+          serverUrl: 'https://dav.example.com/',
+          username: 'demo',
+          password: 'secret',
+        );
+        await provider.saveConfig(config);
+
+        // 内存中配置已更新
+        expect(provider.config.enabled, isTrue);
+        expect(provider.config.autoSync, isTrue);
+        expect(provider.config.serverUrl, 'https://dav.example.com/');
+        expect(provider.config.username, 'demo');
+        // 保存配置本身不触发同步，只做连接/状态刷新
+        expect(provider.syncCallCount, 0);
+        // 监听器收到通知（trust snapshot 刷新）
+        expect(notifyCount, greaterThan(0));
+
+        // 持久化：新实例（共享同一 secret store）能读回同一份配置
+        final reloaded = TestableSyncProvider(
+          webDavService: FakeWebDavSyncService(),
+          momentService: FakeMomentService(tempDir),
+          secretStore: secretStore,
+          initializeNotifications: false,
+        );
+        await reloaded.ensureInitialized();
+        expect(reloaded.config.enabled, isTrue);
+        expect(reloaded.config.autoSync, isTrue);
+        expect(reloaded.config.serverUrl, 'https://dav.example.com/');
+        expect(reloaded.config.username, 'demo');
+        // 密码不落 SharedPreferences，经 secret store 回填
+        expect(reloaded.config.password, 'secret');
+      },
+    );
+
+    test(
+      'sync returns early without connecting when sync is disabled',
+      () async {
+        final webDav = FakeWebDavSyncService();
+        final provider = SyncProvider(
+          webDavService: webDav,
+          momentService: FakeMomentService(tempDir),
+          secretStore: SyncSecretStore.fake(),
+          initializeNotifications: false,
+        );
+        await provider.ensureInitialized();
+
+        // 默认配置未启用：sync 应安全早退，不连接、不改变信任状态
+        await provider.sync();
+
+        expect(provider.trustSnapshot.state, SyncTrustState.notEnabled);
+        expect(provider.lastError, isEmpty);
+        expect(webDav.isConnected, isFalse);
+      },
+    );
+
+    test(
+      'sync marks needs attention when enabled but credentials are missing',
+      () async {
+        final webDav = FakeWebDavSyncService();
+        final provider = SyncProvider(
+          webDavService: webDav,
+          momentService: FakeMomentService(tempDir),
+          secretStore: SyncSecretStore.fake(),
+          initializeNotifications: false,
+        );
+        await provider.ensureInitialized();
+
+        // 启用同步但未填写账号/密码
+        await provider.saveConfig(
+          SyncConfig(
+            enabled: true,
+            autoSync: true,
+            serverUrl: 'https://dav.example.com/',
+            username: '',
+            password: '',
+          ),
+        );
+
+        await provider.sync();
+
+        expect(provider.trustSnapshot.state, SyncTrustState.needsAttention);
+        expect(provider.lastError, '配置异常，请检查账号或服务器地址');
+        expect(webDav.isConnected, isFalse);
+      },
+    );
+
+    test(
       'partial upload failure leaves sync in failed state with pending items',
       () async {
         const filename = '2026-03-12_a.txt';
@@ -102,6 +206,67 @@ void main() {
 
         expect(provider.trustSnapshot.state, SyncTrustState.syncFailed);
         expect(provider.trustSnapshot.totalPendingCount, greaterThan(0));
+        expect(provider.lastSyncTime, isNull);
+      },
+    );
+
+    test(
+      'moment image upload failure keeps failed trust state with pending media',
+      () async {
+        const imageName = 'demo.jpg';
+        // 使用真实 MomentService（debug 数据目录）：saveMoment 与
+        // getAllReferencedImages 必须走真实公开实现，图片引用才能被
+        // 同步引擎识别（fake 重声明 _dataDir 遮蔽父类字段，且引用恒为空）
+        final momentService = MomentService(debugDataDir: tempDir);
+        await momentService.init();
+
+        // 准备一条带图片的随心记，媒体文件真实落盘
+        final imageFile = File(
+          path.join(momentService.imagesDir!.path, imageName),
+        );
+        await imageFile.create(recursive: true);
+        await imageFile.writeAsString('image-bytes');
+        await momentService.saveMoment(
+          Moment(
+            uuid: 'img-fail',
+            content: '带图片的随心记',
+            images: const <String>['images/demo.jpg'],
+            createdAt: DateTime(2026, 3, 12, 10, 0),
+          ),
+        );
+
+        // 日记侧为空，确保失败只来自图片上传阶段
+        final diaryService = FakeDiaryService(tempDir);
+        await diaryService.init();
+        final diaryProvider = DiaryProvider(diaryService, <DiaryEntry>[]);
+
+        final provider = SyncProvider(
+          webDavService: FakeWebDavSyncService(failUploadFor: imageName),
+          momentService: momentService,
+          secretStore: SyncSecretStore.fake(),
+          initializeNotifications: false,
+        );
+        provider.updateDiaryProvider(diaryProvider);
+
+        await provider.saveConfig(
+          SyncConfig(
+            enabled: true,
+            autoSync: true,
+            serverUrl: 'https://dav.example.com/',
+            username: 'demo',
+            password: 'secret',
+          ),
+        );
+
+        await provider.sync();
+
+        // 图片上传失败 → 失败态，且 pending 计数按类别保留
+        expect(provider.trustSnapshot.state, SyncTrustState.syncFailed);
+        expect(provider.trustSnapshot.pendingMomentCount, greaterThan(0));
+        expect(provider.trustSnapshot.pendingImageCount, greaterThan(0));
+        expect(provider.trustSnapshot.totalPendingCount, greaterThan(0));
+        expect(provider.trustSnapshot.failureReason, isNotNull);
+        expect(provider.trustSnapshot.failureReason, isNotEmpty);
         expect(provider.lastSyncTime, isNull);
       },
     );
@@ -162,95 +327,38 @@ void main() {
       expect(provider.lastError, '配置异常，请检查账号或服务器地址');
     });
 
-    test('switching back to a previously synced platform restores its baseline', () async {
-      const filename = '2026-03-12_scope.txt';
-      final diaryService = FakeDiaryService(tempDir);
-      await diaryService.init();
-      final diaryFile = File(path.join(diaryService.dataDir!.path, filename));
-      await diaryFile.writeAsString(
-        DiaryEntry(
-          filename: filename,
-          dateString: '2026-03-12',
-          title: '平台切换测试',
-          content: 'same content',
-        ).toFileContent(),
-      );
-      diaryService.manifestService.updateItem(
-        filename,
-        isDeleted: false,
-        timestamp: 22334455,
-      );
+    test(
+      'switching back to a previously synced platform restores its baseline',
+      () async {
+        const filename = '2026-03-12_scope.txt';
+        final diaryService = FakeDiaryService(tempDir);
+        await diaryService.init();
+        final diaryFile = File(path.join(diaryService.dataDir!.path, filename));
+        await diaryFile.writeAsString(
+          DiaryEntry(
+            filename: filename,
+            dateString: '2026-03-12',
+            title: '平台切换测试',
+            content: 'same content',
+          ).toFileContent(),
+        );
+        diaryService.manifestService.updateItem(
+          filename,
+          isDeleted: false,
+          timestamp: 22334455,
+        );
 
-      final diaryProvider = DiaryProvider(diaryService, <DiaryEntry>[]);
-      final provider = SyncProvider(
-        webDavService: FakeWebDavSyncService(),
-        s3Service: FakeS3SyncService(),
-        momentService: FakeMomentService(tempDir),
-        secretStore: SyncSecretStore.fake(),
-        initializeNotifications: false,
-      );
-      provider.updateDiaryProvider(diaryProvider);
+        final diaryProvider = DiaryProvider(diaryService, <DiaryEntry>[]);
+        final provider = SyncProvider(
+          webDavService: FakeWebDavSyncService(),
+          s3Service: FakeS3SyncService(),
+          momentService: FakeMomentService(tempDir),
+          secretStore: SyncSecretStore.fake(),
+          initializeNotifications: false,
+        );
+        provider.updateDiaryProvider(diaryProvider);
 
-      final s3Config = SyncConfig(
-        enabled: true,
-        autoSync: true,
-        syncType: SyncType.s3,
-        s3EndPoint: 's3.example.com',
-        s3AccessKey: 'ak',
-        s3SecretKey: 'sk',
-        s3BucketName: 'bucket-a',
-      );
-      final webDavConfig = SyncConfig(
-        enabled: true,
-        autoSync: true,
-        syncType: SyncType.webdav,
-        serverUrl: 'https://dav.example.com/',
-        username: 'demo',
-        password: 'secret',
-      );
-
-      await provider.saveConfig(s3Config);
-      await provider.sync();
-
-      expect(provider.trustSnapshot.state, SyncTrustState.syncedSuccessfully);
-      expect(provider.trustSnapshot.totalPendingCount, 0);
-      expect(provider.trustSnapshot.lastSuccessfulSyncPlatform, 's3');
-
-      await provider.saveConfig(webDavConfig);
-
-      expect(provider.trustSnapshot.state, SyncTrustState.localChangesPending);
-      expect(provider.trustSnapshot.totalPendingCount, greaterThan(0));
-      expect(provider.trustSnapshot.lastSuccessfulSyncPlatform, 's3');
-
-      await provider.saveConfig(s3Config);
-
-      expect(provider.trustSnapshot.state, SyncTrustState.syncedSuccessfully);
-      expect(provider.trustSnapshot.totalPendingCount, 0);
-      expect(provider.trustSnapshot.lastSuccessfulSyncPlatform, 's3');
-    });
-
-    test('remote missing during S3 archive delete does not fail sync', () async {
-      const filename = '2026-03-12_deleted.txt';
-      final diaryService = FakeDiaryService(tempDir);
-      await diaryService.init();
-      diaryService.manifestService.updateItem(
-        filename,
-        isDeleted: true,
-        timestamp: 99887766,
-      );
-
-      final diaryProvider = DiaryProvider(diaryService, <DiaryEntry>[]);
-      final provider = SyncProvider(
-        webDavService: FakeWebDavSyncService(),
-        s3Service: FakeS3SyncService(),
-        momentService: FakeMomentService(tempDir),
-        secretStore: SyncSecretStore.fake(),
-        initializeNotifications: false,
-      );
-      provider.updateDiaryProvider(diaryProvider);
-
-      await provider.saveConfig(
-        SyncConfig(
+        final s3Config = SyncConfig(
           enabled: true,
           autoSync: true,
           syncType: SyncType.s3,
@@ -258,14 +366,80 @@ void main() {
           s3AccessKey: 'ak',
           s3SecretKey: 'sk',
           s3BucketName: 'bucket-a',
-        ),
-      );
+        );
+        final webDavConfig = SyncConfig(
+          enabled: true,
+          autoSync: true,
+          syncType: SyncType.webdav,
+          serverUrl: 'https://dav.example.com/',
+          username: 'demo',
+          password: 'secret',
+        );
 
-      await provider.sync();
+        await provider.saveConfig(s3Config);
+        await provider.sync();
 
-      expect(provider.trustSnapshot.state, SyncTrustState.syncedSuccessfully);
-      expect(provider.trustSnapshot.totalPendingCount, 0);
-    });
+        expect(provider.trustSnapshot.state, SyncTrustState.syncedSuccessfully);
+        expect(provider.trustSnapshot.totalPendingCount, 0);
+        expect(provider.trustSnapshot.lastSuccessfulSyncPlatform, 's3');
+
+        await provider.saveConfig(webDavConfig);
+
+        expect(
+          provider.trustSnapshot.state,
+          SyncTrustState.localChangesPending,
+        );
+        expect(provider.trustSnapshot.totalPendingCount, greaterThan(0));
+        expect(provider.trustSnapshot.lastSuccessfulSyncPlatform, 's3');
+
+        await provider.saveConfig(s3Config);
+
+        expect(provider.trustSnapshot.state, SyncTrustState.syncedSuccessfully);
+        expect(provider.trustSnapshot.totalPendingCount, 0);
+        expect(provider.trustSnapshot.lastSuccessfulSyncPlatform, 's3');
+      },
+    );
+
+    test(
+      'remote missing during S3 archive delete does not fail sync',
+      () async {
+        const filename = '2026-03-12_deleted.txt';
+        final diaryService = FakeDiaryService(tempDir);
+        await diaryService.init();
+        diaryService.manifestService.updateItem(
+          filename,
+          isDeleted: true,
+          timestamp: 99887766,
+        );
+
+        final diaryProvider = DiaryProvider(diaryService, <DiaryEntry>[]);
+        final provider = SyncProvider(
+          webDavService: FakeWebDavSyncService(),
+          s3Service: FakeS3SyncService(),
+          momentService: FakeMomentService(tempDir),
+          secretStore: SyncSecretStore.fake(),
+          initializeNotifications: false,
+        );
+        provider.updateDiaryProvider(diaryProvider);
+
+        await provider.saveConfig(
+          SyncConfig(
+            enabled: true,
+            autoSync: true,
+            syncType: SyncType.s3,
+            s3EndPoint: 's3.example.com',
+            s3AccessKey: 'ak',
+            s3SecretKey: 'sk',
+            s3BucketName: 'bucket-a',
+          ),
+        );
+
+        await provider.sync();
+
+        expect(provider.trustSnapshot.state, SyncTrustState.syncedSuccessfully);
+        expect(provider.trustSnapshot.totalPendingCount, 0);
+      },
+    );
   });
 }
 
