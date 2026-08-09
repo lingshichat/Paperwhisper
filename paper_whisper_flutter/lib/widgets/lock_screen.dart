@@ -5,7 +5,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
 
-import '../services/auth_service.dart';
 import '../providers/settings_provider.dart';
 import '../widgets/skeuomorphic_toast.dart';
 import '../config/app_theme.dart';
@@ -23,11 +22,15 @@ class LockScreen extends StatefulWidget {
   final bool enableBack; // If false, user cannot pop (for App Resume lock)
   final LockScreenMode mode; // Default to unlock
 
+  /// 测试注入的控制器；为 null 时生产自建并仅 dispose 自有实例。
+  final LockController? controller;
+
   const LockScreen({
     super.key,
     required this.onUnlocked,
     this.enableBack = false,
     this.mode = LockScreenMode.unlock,
+    this.controller,
   });
 
   @override
@@ -35,16 +38,8 @@ class LockScreen extends StatefulWidget {
 }
 
 class _LockScreenState extends State<LockScreen> with TickerProviderStateMixin {
-  final AuthService _authService = AuthService();
-
-  // State
-  late LockScreenMode _currentMode;
-  String _inputPin = "";
-  final int _pinLength = 4;
-  String? _tempPinForSetup; // To store first entry during setup
-
-  bool _isBiometricAvailable = false;
-  bool _useBiometric = false; // Is currently showing biometric icon?
+  late final LockController _controller;
+  late final bool _ownsController;
 
   // Animations
   late AnimationController _shakeController; // Error shake
@@ -56,7 +51,8 @@ class _LockScreenState extends State<LockScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    _currentMode = widget.mode;
+    _ownsController = widget.controller == null;
+    _controller = widget.controller ?? LockController(mode: widget.mode);
 
     // Shake Animation
     _shakeController = AnimationController(
@@ -79,140 +75,127 @@ class _LockScreenState extends State<LockScreen> with TickerProviderStateMixin {
       curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
     );
 
-    _authService.isLockScreenVisible = true;
     _initAuth();
   }
 
   @override
   void dispose() {
-    _authService.isLockScreenVisible = false;
+    if (_ownsController) {
+      _controller.dispose();
+    }
     _shakeController.dispose();
     _fingerprintEntryController.dispose();
     super.dispose();
   }
 
   Future<void> _initAuth() async {
-    // Only check bio if in unlock mode
-    if (_currentMode == LockScreenMode.unlock) {
-      final bioEnabled = await _authService.isBiometricEnabled();
-      final canBio = await _authService.canCheckBiometrics();
+    // 控制器负责 visible 标记与生物识别可用性查询（仅 unlock 模式）
+    try {
+      await _controller.initialize();
+    } on StateError {
+      return; // 页面已释放，静默
+    }
+    if (!mounted) return;
 
-      if (mounted) {
-        setState(() {
-          _isBiometricAvailable = bioEnabled && canBio;
-          _useBiometric = _isBiometricAvailable; // Start with bio if available
-        });
+    setState(() {}); // 反映 biometricAvailable / useBiometric
 
-        if (_useBiometric) {
-          _fingerprintEntryController.forward(); // Play entry animation
+    if (_controller.useBiometric) {
+      _fingerprintEntryController.forward(); // Play entry animation
 
-          // Auto-trigger with delay for smooth entry
-          Future.delayed(const Duration(milliseconds: 500), () {
-            if (mounted && _useBiometric) {
-              _triggerBiometric();
-            }
-          });
+      // Auto-trigger with delay for smooth entry（保留原 500ms 时序）
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted && _controller.useBiometric) {
+          _triggerBiometric();
         }
-      }
+      });
     }
   }
 
   Future<void> _triggerBiometric() async {
     // Delay slightly to let animation play and UI settle
     await Future.delayed(const Duration(milliseconds: 500));
-    if (!mounted || !_useBiometric) return;
+    if (!mounted || !_controller.useBiometric) return;
 
-    final success = await _authService.authenticateBiometric();
-    if (success) {
-      _finish(true);
-    } else {
-      // Stay on bio screen or verify?
-      // User can click icon to retry or click "Use Password"
+    final LockBiometricResult result;
+    try {
+      result = await _controller.authenticateBiometric();
+    } on StateError {
+      return; // 页面已释放，静默
     }
+    if (!mounted) return;
+    if (result == LockBiometricResult.authenticated) {
+      _finish();
+    }
+    // failed：停留在当前界面，可点击重试或改用密码
   }
 
-  void _finish(bool success) {
-    if (success) {
-      _authService.unlockApp();
-      widget.onUnlocked();
-    }
+  void _finish() {
+    // controller 已在成功路径调用 unlockApp，页面只触发回调，不重复解锁
+    widget.onUnlocked();
   }
 
   // --- Logic ---
 
   void _onKeyTap(String value) {
-    if (_inputPin.length < _pinLength) {
-      HapticFeedback.lightImpact(); // Physical feel
-      setState(() {
-        _inputPin += value;
-      });
+    // 满 pinLength 位后不再触发多余 haptic（恢复旧 length<4 行为）
+    if (_controller.inputPin.length >= _controller.pinLength) return;
+    HapticFeedback.lightImpact(); // Physical feel
+    final result = _controller.appendDigit(value);
+    if (mounted) setState(() {}); // 刷新输入显示
 
-      if (_inputPin.length == _pinLength) {
-        _onSubmitPin();
-      }
+    if (result == PinKeyResult.readyToSubmit) {
+      _onSubmitPin();
     }
   }
 
   void _onDelete() {
-    if (_inputPin.isNotEmpty) {
+    if (_controller.inputPin.isNotEmpty) {
       HapticFeedback.lightImpact();
-      setState(() {
-        _inputPin = _inputPin.substring(0, _inputPin.length - 1);
-      });
+      _controller.delete();
+      if (mounted) setState(() {});
     }
   }
 
   Future<void> _onSubmitPin() async {
     // Wait a brief moment to show the last digit
     await Future.delayed(const Duration(milliseconds: 200));
+    if (!mounted) return;
 
-    switch (_currentMode) {
-      case LockScreenMode.unlock:
-      case LockScreenMode.verify:
-        final isValid = await _authService.verifyPin(_inputPin);
-        if (isValid) {
-          HapticFeedback.mediumImpact(); // Success clunk
-          _finish(true);
-        } else {
-          _onError();
-        }
-        break;
+    final LockSubmitResult result;
+    try {
+      result = await _controller.submit();
+    } on StateError {
+      return; // 页面已释放，静默
+    }
+    if (!mounted) return;
 
-      case LockScreenMode.setup:
-        _tempPinForSetup = _inputPin;
-        setState(() {
-          _inputPin = "";
-          _currentMode = LockScreenMode.confirm;
-        });
-        break;
-
-      case LockScreenMode.confirm:
-        if (_inputPin == _tempPinForSetup) {
-          await _authService.setPin(_inputPin);
-          if (mounted) SkeuomorphicToast.success(context, "密码设置成功");
-          _finish(true);
-        } else {
-          if (mounted) SkeuomorphicToast.error(context, "两次输入不一致");
-          _onError();
-          // Reset to setup? Or just clear confirm?
-          // Let's clear confirm and try again
-          setState(() {
-            _inputPin = "";
-            // Optionally go back to setup step 1 if we want to be strict
-            _currentMode = LockScreenMode.setup;
-            _tempPinForSetup = null;
-          });
-        }
-        break;
+    switch (result) {
+      case LockUnlocked():
+        // unlock / verify 校验通过（controller 已 unlockApp）
+        HapticFeedback.mediumImpact(); // Success clunk
+        _finish();
+      case LockInvalid():
+        // 校验失败，controller 已清空输入
+        _onError();
+      case LockAwaitConfirmation():
+        // setup 第一步完成，已进入 confirm：刷新标题
+        setState(() {});
+      case LockSetupCompleted():
+        // 两次一致（controller 已 setPin + unlockApp）
+        HapticFeedback.mediumImpact();
+        if (mounted) SkeuomorphicToast.success(context, "密码设置成功");
+        _finish();
+      case LockMismatch():
+        // 两次不一致：controller 已重置回 setup 并清空输入
+        if (mounted) SkeuomorphicToast.error(context, "两次输入不一致");
+        _onError();
     }
   }
 
   void _onError() {
     HapticFeedback.heavyImpact(); // Error rattle
     _shakeController.forward(from: 0.0);
-    setState(() {
-      _inputPin = "";
-    });
+    if (mounted) setState(() {}); // 输入已由 controller 清空
   }
 
   // --- UI Components ---
@@ -261,14 +244,14 @@ class _LockScreenState extends State<LockScreen> with TickerProviderStateMixin {
                       child: Column(
                         children: [
                           // 1. PIN Mode: Top Spacing & Display Window
-                          if (!_useBiometric) ...[
+                          if (!_controller.useBiometric) ...[
                             const SizedBox(height: 60),
                             _buildDisplayWindow(theme),
                             const Spacer(),
                           ],
 
                           // 2. Biometric Mode: Top Spacer to center content
-                          if (_useBiometric) const Spacer(),
+                          if (_controller.useBiometric) const Spacer(),
 
                           // 3. Main Content
                           AnimatedSwitcher(
@@ -284,16 +267,17 @@ class _LockScreenState extends State<LockScreen> with TickerProviderStateMixin {
                                     child: child,
                                   ),
                                 ),
-                            child: _useBiometric
+                            child: _controller.useBiometric
                                 ? _buildBiometricControls(theme)
                                 : _buildKeypad(theme),
                           ),
 
                           // 4. Biometric Mode: Bottom Spacer to center content
-                          if (_useBiometric) const Spacer(),
+                          if (_controller.useBiometric) const Spacer(),
 
                           // 5. PIN Mode: Bottom Spacing
-                          if (!_useBiometric) const SizedBox(height: 40),
+                          if (!_controller.useBiometric)
+                            const SizedBox(height: 40),
                         ],
                       ),
                     ),
@@ -327,10 +311,10 @@ class _LockScreenState extends State<LockScreen> with TickerProviderStateMixin {
 
   Widget _buildDisplayWindow(String theme) {
     String title = "请输入密码";
-    if (_currentMode == LockScreenMode.setup) title = "请设置新密码";
-    if (_currentMode == LockScreenMode.confirm) title = "请再次确认密码";
-    if (_currentMode == LockScreenMode.verify) title = "验证旧密码";
-    if (_useBiometric) title = "验证身份";
+    if (_controller.mode == LockScreenMode.setup) title = "请设置新密码";
+    if (_controller.mode == LockScreenMode.confirm) title = "请再次确认密码";
+    if (_controller.mode == LockScreenMode.verify) title = "验证旧密码";
+    if (_controller.useBiometric) title = "验证身份";
 
     final textColor = AppTheme.getTextColor(theme);
     final themeConfig = AppTheme.getLockScreenTheme(theme);
@@ -407,8 +391,8 @@ class _LockScreenState extends State<LockScreen> with TickerProviderStateMixin {
         alignment: Alignment.center,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(_pinLength, (index) {
-            final bool filled = index < _inputPin.length;
+          children: List.generate(_controller.pinLength, (index) {
+            final bool filled = index < _controller.inputPin.length;
             return Container(
               margin: const EdgeInsets.symmetric(horizontal: 10),
               width: 16,
@@ -470,8 +454,8 @@ class _LockScreenState extends State<LockScreen> with TickerProviderStateMixin {
       alignment: Alignment.center,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(_pinLength, (index) {
-          final bool filled = index < _inputPin.length;
+        children: List.generate(_controller.pinLength, (index) {
+          final bool filled = index < _controller.inputPin.length;
           return AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             margin: const EdgeInsets.symmetric(horizontal: 12),
@@ -523,8 +507,8 @@ class _LockScreenState extends State<LockScreen> with TickerProviderStateMixin {
       alignment: Alignment.center,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(_pinLength, (index) {
-          final bool filled = index < _inputPin.length;
+        children: List.generate(_controller.pinLength, (index) {
+          final bool filled = index < _controller.inputPin.length;
           return Container(
             margin: const EdgeInsets.symmetric(horizontal: 10),
             width: 14,
@@ -592,9 +576,8 @@ class _LockScreenState extends State<LockScreen> with TickerProviderStateMixin {
         const SizedBox(height: 48), // Increased spacing
         GestureDetector(
           onTap: () {
-            setState(() {
-              _useBiometric = false;
-            });
+            _controller.setUseBiometric(false);
+            if (mounted) setState(() {});
           },
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -637,10 +620,13 @@ class _LockScreenState extends State<LockScreen> with TickerProviderStateMixin {
               _buildFunctionKey(
                 icon: Icons.fingerprint,
                 theme: theme,
-                onTap: _isBiometricAvailable
-                    ? () => setState(() => _useBiometric = true)
+                onTap: _controller.biometricAvailable
+                    ? () {
+                        _controller.setUseBiometric(true);
+                        if (mounted) setState(() {});
+                      }
                     : null,
-                enabled: _isBiometricAvailable,
+                enabled: _controller.biometricAvailable,
               ),
               _buildKey('0', theme),
               _buildFunctionKey(
