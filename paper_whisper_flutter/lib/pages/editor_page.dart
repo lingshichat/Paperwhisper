@@ -7,15 +7,18 @@ import '../providers/sync_provider.dart';
 import '../models/diary_entry.dart';
 import '../config/app_theme.dart';
 import '../providers/settings_provider.dart';
-import '../widgets/paper_sheet_widget.dart';
 import '../widgets/skeuomorphic_dialog.dart';
 import '../widgets/skeuomorphic_toast.dart';
 import '../services/draft_service.dart'; // Added
 import '../widgets/slide_page_route.dart'; // Needed for "Save As New" navigation
-import '../widgets/skeuomorphic_date_picker.dart';
 import '../features/editor/application/editor_save_coordinator.dart';
 import '../features/editor/application/editor_session_controller.dart';
 import '../features/editor/data/diary_export_service.dart';
+import '../features/editor/presentation/widgets/editor_body.dart';
+import '../features/editor/presentation/widgets/editor_branding_footer.dart';
+import '../features/editor/presentation/widgets/editor_meta_selector.dart';
+import '../features/editor/presentation/widgets/editor_top_bar.dart';
+import '../features/editor/presentation/widgets/lined_paper_painter.dart';
 import '../features/sync/presentation/sync_ui_coordinator.dart';
 import '../widgets/export_success_dialog.dart';
 import 'package:flutter/rendering.dart'; // For RenderRepaintBoundary
@@ -404,9 +407,57 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
             if (!_isCaptureMode)
               Column(
                 children: [
-                  _buildTopBar(context, theme, textColor),
+                  EditorTopBar(
+                    theme: theme,
+                    isEditing: _session.isEditing,
+                    showDelete: widget.entry != null,
+                    onBack: () async {
+                      if (await _onWillPop()) {
+                        if (context.mounted) Navigator.pop(context);
+                      }
+                    },
+                    onSave: _save,
+                    onDelete: _delete,
+                    onExport: _captureAndSave,
+                    onEditToggle: () =>
+                        setState(() => _session.isEditing = true),
+                  ),
 
-                  _buildAdaptiveContent(textColor, secondaryColor, theme),
+                  Expanded(
+                    child: EditorBody(
+                      titleController: _session.titleController,
+                      contentController: _session.contentController,
+                      previewController: _session.previewController,
+                      isEditing: _session.isEditing,
+                      isPreviewMode: _isPreviewMode,
+                      focusNode: _focusNode,
+                      theme: theme,
+                      textColor: textColor,
+                      secondaryColor: secondaryColor,
+                      hideLines: Provider.of<SettingsProvider>(
+                        context,
+                      ).compatibilityMode,
+                      dateString: _session.dateString,
+                      weather: _session.weather,
+                      mood: _session.mood,
+                      onDateChanged: (date) => setState(() {
+                        _session.dateString = date.toString().split(
+                          ' ',
+                        )[0]; // yyyy-MM-dd
+                      }),
+                      onWeatherChanged: (val) =>
+                          setState(() => _session.weather = val),
+                      onMoodChanged: (val) =>
+                          setState(() => _session.mood = val),
+                      onTapToEdit: () {
+                        setState(() => _session.isEditing = true);
+                        Future.delayed(const Duration(milliseconds: 50), () {
+                          if (!context.mounted) return;
+                          FocusScope.of(context).requestFocus(_focusNode);
+                        });
+                      },
+                    ),
+                  ),
                 ],
               ),
 
@@ -457,287 +508,6 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     );
   }
 
-  Widget _buildBrandingFooter(Color secondaryColor) {
-    return Center(
-      child: Column(
-        children: [
-          Text(
-            'CREATED WITH',
-            style: GoogleFonts.courierPrime(
-              fontSize: 10,
-              color: secondaryColor.withValues(alpha: 0.4),
-              letterSpacing: 2,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '纸语 PaperWhisper',
-            style: GoogleFonts.notoSerifSc(
-              fontSize: 12,
-              color: secondaryColor.withValues(alpha: 0.6),
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 10), // Bottom padding
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWordCount(Color color) {
-    if (_session.contentController.text.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 20),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(height: 1, width: 20, color: color.withValues(alpha: 0.2)),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Text(
-              '${_session.contentController.text.length} 字',
-              style: GoogleFonts.notoSerifSc(
-                fontSize: 12,
-                color: color.withValues(alpha: 0.4),
-                letterSpacing: 1,
-              ),
-            ),
-          ),
-          Container(height: 1, width: 20, color: color.withValues(alpha: 0.2)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAdaptiveContent(
-    Color textColor,
-    Color secondaryColor,
-    String theme,
-  ) {
-    // Threshold for switching to performance mode
-    // ~200 lines or ~5000 chars
-    bool usePerformanceMode = _session.contentController.text.length > 3000;
-    final tc = AppTheme.getEditorTheme(theme);
-
-    if (usePerformanceMode) {
-      // --- Performance Mode (Slivers) ---
-      // Fully expanded, no outer padding
-      return Expanded(
-        child: RepaintBoundary(
-          // key: _sheetKey, // Removed to avoid conflict with export view
-          child: PaperSheetWidget(
-            padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 40),
-            child: CustomScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              slivers: [
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 20),
-                    child: _buildHeader(textColor, secondaryColor),
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 30),
-                    child: Center(
-                      child: Container(
-                        width: 60,
-                        height: 2,
-                        color: (tc['cursorColor'] as Color).withValues(
-                          alpha: 0.5,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                _buildContentSliver(textColor, theme),
-                SliverToBoxAdapter(child: const SizedBox(height: 40)),
-                SliverToBoxAdapter(
-                  child: _buildWordCount(secondaryColor),
-                ), // Word Count
-                SliverToBoxAdapter(child: const SizedBox(height: 20)),
-                SliverToBoxAdapter(child: _buildBrandingFooter(secondaryColor)),
-                // Sufficient bottom padding inside the scroll view
-                const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
-              ],
-            ),
-          ),
-        ),
-      );
-    } else {
-      // --- Standard Mode (SingleChildScrollView) ---
-      // Uses shrinkWrap to float as a card when short, fills screen when long
-      return Expanded(
-        child: RepaintBoundary(
-          // key: _sheetKey, // Removed to avoid conflict with export view
-          child: PaperSheetWidget(
-            padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 40),
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildHeader(textColor, secondaryColor),
-                  const SizedBox(height: 30),
-                  Center(
-                    child: Container(
-                      width: 60,
-                      height: 2,
-                      color: (tc['cursorColor'] as Color).withValues(
-                        alpha: 0.5,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 30),
-                  // Standard Content Area (TextField/Text)
-                  _buildContentArea(textColor, theme),
-                  const SizedBox(height: 30),
-                  _buildWordCount(secondaryColor), // Word Count
-                  const SizedBox(height: 10),
-                  _buildBrandingFooter(secondaryColor),
-                  // Bottom padding inside scroll view
-                  const SizedBox(height: 100),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-  }
-
-  Widget _buildTopBar(BuildContext context, String theme, Color textColor) {
-    final tc = AppTheme.getEditorTheme(theme);
-
-    final Color barBg = tc['appBarBg'];
-    final Color iconColor = tc['iconColor'];
-    final Border? border = tc['appBarBorder'];
-
-    Widget barContent = Container(
-      // 移除固定高度，改用最小高度约束+padding适配
-      constraints: BoxConstraints(
-        minHeight: kToolbarHeight + MediaQuery.of(context).padding.top,
-      ),
-      padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top > 0
-            ? MediaQuery.of(context).padding.top
-            : 24,
-        left: 10,
-        right: 20,
-        bottom: 8, // 添加底部留白以保证美观
-      ),
-      decoration: BoxDecoration(color: barBg, border: border),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: () async {
-              if (await _onWillPop()) {
-                if (context.mounted) Navigator.pop(context);
-              }
-            },
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.arrow_back, color: iconColor, size: 18),
-                  const SizedBox(width: 4),
-                  Text('返回列表', style: TextStyle(color: iconColor)),
-                ],
-              ),
-            ),
-          ),
-          const Spacer(),
-          // Action Buttons
-          IconButton(
-            icon: Icon(Icons.share_outlined, color: iconColor),
-            onPressed: _captureAndSave,
-            tooltip: '导出为图片',
-          ),
-          const SizedBox(width: 5),
-
-          if (!_session.isEditing && widget.entry != null) ...[
-            IconButton(
-              icon: Icon(Icons.delete_outline, color: iconColor),
-              onPressed: _delete,
-              tooltip: '撕毁',
-            ),
-            const SizedBox(width: 10),
-          ],
-
-          if (_session.isEditing)
-            GestureDetector(
-              onTap: _save,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: tc['saveButtonBg'],
-                  borderRadius: BorderRadius.circular(8),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.2),
-                      offset: const Offset(0, 2),
-                      blurRadius: 4,
-                    ),
-                    BoxShadow(
-                      color: Colors.white.withValues(alpha: 0.3),
-                      offset: const Offset(0, -1),
-                      blurRadius: 0,
-                      spreadRadius: 0,
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      '✓',
-                      style: TextStyle(
-                        color: tc['saveButtonCheckColor'],
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '完成',
-                      style: TextStyle(
-                        color: tc['saveButtonTextColor'],
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            )
-          else
-            IconButton(
-              icon: Icon(Icons.edit_outlined, color: iconColor),
-              onPressed: () => setState(() => _session.isEditing = true),
-              tooltip: '编辑',
-            ),
-        ],
-      ),
-    );
-
-    // 部分主题需要模糊效果
-    if (tc['applyBlur'] == true) {
-      return ClipRect(
-        child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-          child: barContent,
-        ),
-      );
-    }
-
-    return barContent;
-  }
-
   /// Export-specific header - uses pure Text widgets to avoid
   /// TextField, DropdownButton, PopupMenuButton artifacts in exported images.
   Widget _buildExportHeader(Color textColor, Color secondaryColor) {
@@ -762,278 +532,23 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text(_session.dateString, style: _metaStyle(secondaryColor)),
-            _metaSeparator(secondaryColor),
+            Text(
+              _session.dateString,
+              style: EditorMetaSelector.metaStyle(secondaryColor),
+            ),
+            EditorMetaSelector.metaSeparator(secondaryColor),
             Text(
               _session.weather.name.toUpperCase(),
-              style: _metaStyle(secondaryColor),
+              style: EditorMetaSelector.metaStyle(secondaryColor),
             ),
-            _metaSeparator(secondaryColor),
+            EditorMetaSelector.metaSeparator(secondaryColor),
             Text(
               _session.mood.name.toUpperCase(),
-              style: _metaStyle(secondaryColor),
+              style: EditorMetaSelector.metaStyle(secondaryColor),
             ),
           ],
         ),
       ],
-    );
-  }
-
-  Widget _buildHeader(Color textColor, Color secondaryColor) {
-    // 通过 AppTheme 获取编辑器主题配置
-    final theme = Provider.of<SettingsProvider>(context).currentTheme;
-    final tc = AppTheme.getEditorTheme(theme);
-    return Column(
-      children: [
-        if (_session.isEditing)
-          TextField(
-            controller: _session.titleController,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.notoSerifSc(
-              fontSize: 36,
-              fontWeight: FontWeight.bold,
-              color: textColor,
-            ),
-            cursorColor: tc['cursorColor'],
-            decoration: InputDecoration(
-              hintText: '在此输入标题...',
-              hintStyle: TextStyle(color: tc['hintColor']),
-              border: InputBorder.none,
-            ),
-          )
-        else
-          Text(
-            _session.titleController.text.isEmpty
-                ? '无题'
-                : _session.titleController.text,
-            style: GoogleFonts.notoSerifSc(
-              fontSize: 36,
-              fontWeight: FontWeight.bold,
-              color: textColor, // Use dynamic theme color
-            ),
-            textAlign: TextAlign.center,
-          ),
-
-        const SizedBox(height: 15),
-        // Meta
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            GestureDetector(
-              onTap: () {
-                DateTime initialDate;
-                try {
-                  initialDate = DateTime.parse(_session.dateString);
-                } catch (_) {
-                  initialDate = DateTime.now();
-                }
-
-                showDialog(
-                  context: context,
-                  builder: (ctx) => SkeuomorphicDatePicker(
-                    initialDate: initialDate,
-                    onDateSelected: (date) {
-                      setState(() {
-                        _session.dateString = date.toString().split(
-                          ' ',
-                        )[0]; // yyyy-MM-dd
-                      });
-                    },
-                  ),
-                );
-              },
-              child: Text(
-                _session.dateString,
-                style: _metaStyle(secondaryColor),
-              ), // _metaStyle sends color
-            ),
-            _metaSeparator(secondaryColor),
-            _buildWeatherSelector(secondaryColor),
-            _metaSeparator(secondaryColor),
-            _buildMoodSelector(secondaryColor),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildContentArea(Color textColor, String theme) {
-    const double fontSize = 18.0;
-    const double lineHeight = 32.0;
-
-    // Strict alignment: height = 32/18 = 1.7777...
-    final bool hideLines = Provider.of<SettingsProvider>(
-      context,
-    ).compatibilityMode;
-
-    final tc = AppTheme.getEditorTheme(theme);
-    return CustomPaint(
-      foregroundPainter: LinedPaperPainter(
-        lineColor: hideLines ? Colors.transparent : tc['lineColor'],
-        lineHeight: lineHeight,
-      ),
-      child: Container(
-        padding: const EdgeInsets.only(top: 0), // Adjust if needed
-        constraints: const BoxConstraints(minHeight: 300),
-        child: _session.isEditing
-            ? TextField(
-                controller: _isPreviewMode
-                    ? _session.previewController
-                    : _session.contentController, // Fix 1
-                style: GoogleFonts.notoSerifSc(
-                  fontSize: fontSize,
-                  color: textColor,
-                  height: lineHeight / fontSize,
-                ),
-                strutStyle: StrutStyle(
-                  fontFamily: GoogleFonts.notoSerifSc().fontFamily,
-                  fontSize: fontSize,
-                  height: (lineHeight / fontSize),
-                  leading: 0,
-                  forceStrutHeight: true,
-                  leadingDistribution: TextLeadingDistribution.even,
-                ),
-                cursorColor: tc['cursorColor'],
-                cursorHeight: 22,
-                decoration: const InputDecoration(
-                  border: InputBorder.none,
-                  contentPadding:
-                      EdgeInsets.zero, // Important: keep zero to match Strut
-                  isCollapsed: true,
-                  isDense: true,
-                  counterText: "",
-                ),
-                maxLines: null,
-              )
-            : Text(
-                _isPreviewMode
-                    ? _session.previewController.text
-                    : _session
-                          .contentController
-                          .text, // Fix 2: Critical for preview lag
-                style: GoogleFonts.notoSerifSc(
-                  fontSize: fontSize,
-                  color: textColor,
-                  height: lineHeight / fontSize,
-                ),
-                // Ensure display text matches input style exactly
-                strutStyle: StrutStyle(
-                  fontFamily: GoogleFonts.notoSerifSc().fontFamily,
-                  fontSize: fontSize,
-                  height: (lineHeight / fontSize),
-                  leading: 0,
-                  forceStrutHeight: true,
-                  leadingDistribution: TextLeadingDistribution.even,
-                ),
-              ),
-      ),
-    );
-  }
-
-  // Helpers
-  TextStyle _metaStyle(Color color) =>
-      GoogleFonts.courierPrime(fontSize: 14, color: color);
-
-  Widget _metaSeparator(Color color) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 8),
-    child: Text(
-      '·',
-      style: TextStyle(color: color, fontWeight: FontWeight.bold),
-    ),
-  );
-
-  Widget _buildWeatherSelector(Color color) {
-    if (!_session.isEditing) {
-      return Text(
-        _session.weather.name.toUpperCase(),
-        style: _metaStyle(color),
-      );
-    }
-
-    final settings = Provider.of<SettingsProvider>(context, listen: false);
-    final theme = settings.currentTheme;
-    final tc = AppTheme.getEditorTheme(theme);
-
-    // Dropdown Menu Style
-    final Color dropdownBg = tc['dropdownBg'];
-    final Color dropdownText = tc['dropdownText'];
-
-    return DropdownButton<WeatherType>(
-      value: _session.weather,
-      underline: const SizedBox(),
-      icon: const SizedBox(),
-      dropdownColor: dropdownBg,
-      isDense: true,
-      alignment: AlignmentDirectional.center, // Center text in button
-      // The text shown on the button (when closed)
-      selectedItemBuilder: (BuildContext context) {
-        return WeatherType.values.map((w) {
-          return Container(
-            alignment: Alignment.center,
-            child: Text(w.name.toUpperCase(), style: _metaStyle(color)),
-          );
-        }).toList();
-      },
-      items: WeatherType.values
-          .map(
-            (w) => DropdownMenuItem(
-              value: w,
-              alignment: AlignmentDirectional.center,
-              child: Text(
-                w.name.toUpperCase(),
-                style: GoogleFonts.courierPrime(
-                  fontSize: 14,
-                  color: dropdownText,
-                ),
-              ),
-            ),
-          )
-          .toList(),
-      onChanged: (val) {
-        if (val != null) setState(() => _session.weather = val);
-      },
-    );
-  }
-
-  Widget _buildMoodSelector(Color color) {
-    if (!_session.isEditing) {
-      return Text(_session.mood.name.toUpperCase(), style: _metaStyle(color));
-    }
-
-    final settings = Provider.of<SettingsProvider>(context, listen: false);
-    final theme = settings.currentTheme;
-    final tc = AppTheme.getEditorTheme(theme);
-
-    final Color menuBg = tc['dropdownBg'];
-    final Color menuText = tc['dropdownText'];
-
-    return PopupMenuButton<MoodType>(
-      initialValue: _session.mood,
-      color: menuBg,
-      padding: EdgeInsets.zero,
-      tooltip: '',
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      onSelected: (val) => setState(() => _session.mood = val),
-      itemBuilder: (context) => MoodType.values
-          .map(
-            (m) => PopupMenuItem(
-              value: m,
-              child: Text(
-                m.name.toUpperCase(),
-                style: GoogleFonts.courierPrime(fontSize: 14, color: menuText),
-              ),
-            ),
-          )
-          .toList(),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-        child: Text(
-          _session.mood.name.toUpperCase(),
-          style: _metaStyle(color).copyWith(fontWeight: FontWeight.w600),
-        ),
-      ),
     );
   }
 
@@ -1102,122 +617,6 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
             as RenderRepaintBoundary?;
     if (boundary == null) return null;
     return boundary.toImage(pixelRatio: pixelRatio);
-  }
-
-  // --- New Helper Methods for CustomScrollView Refactor ---
-
-  Widget _buildContentSliver(Color textColor, String theme) {
-    if (_session.isEditing) {
-      return SliverToBoxAdapter(child: _buildEditorField(textColor, theme));
-    } else {
-      // Split content into lines for performance
-      // 在预览模式下，使用截断的文本，这会生成非常少的 lines，极大提升首屏渲染性能
-      final text = _isPreviewMode
-          ? _session.previewController.text
-          : _session.contentController.text;
-      final lines = text.split('\n');
-      if (lines.isEmpty) lines.add('');
-
-      const double fontSize = 18.0;
-      const double lineHeight = 32.0;
-
-      final style = GoogleFonts.notoSerifSc(
-        fontSize: fontSize,
-        height: lineHeight / fontSize,
-        color: textColor,
-      );
-
-      final tc = AppTheme.getEditorTheme(theme);
-
-      return SliverList(
-        delegate: SliverChildBuilderDelegate((context, index) {
-          final line = lines[index];
-          final bool hideLines = Provider.of<SettingsProvider>(
-            context,
-          ).compatibilityMode;
-
-          return CustomPaint(
-            foregroundPainter: LinedPaperPainter(
-              lineColor: hideLines ? Colors.transparent : tc['lineColor'],
-              lineHeight: lineHeight,
-            ),
-            child: Container(
-              constraints: const BoxConstraints(minHeight: lineHeight),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 0,
-              ), // Already padded by PaperSheetWidget
-              alignment: Alignment.centerLeft, // Ensure text starts from left
-              child: GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _session.isEditing = true;
-                  });
-                  Future.delayed(const Duration(milliseconds: 50), () {
-                    if (!context.mounted) return;
-                    FocusScope.of(context).requestFocus(_focusNode);
-                  });
-                },
-                child: Text(
-                  line.isEmpty ? ' ' : line,
-                  style: style,
-                  strutStyle: StrutStyle(
-                    fontFamily: GoogleFonts.notoSerifSc().fontFamily,
-                    fontSize: fontSize,
-                    height: lineHeight / fontSize,
-                    forceStrutHeight: true,
-                  ),
-                ),
-              ),
-            ),
-          );
-        }, childCount: lines.length),
-      );
-    }
-  }
-
-  Widget _buildEditorField(Color textColor, String theme) {
-    const double fontSize = 18.0;
-    const double lineHeight = 32.0;
-    final bool hideLines = Provider.of<SettingsProvider>(
-      context,
-    ).compatibilityMode;
-
-    final tc = AppTheme.getEditorTheme(theme);
-    return CustomPaint(
-      foregroundPainter: LinedPaperPainter(
-        lineColor: hideLines ? Colors.transparent : tc['lineColor'],
-        lineHeight: lineHeight,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 0),
-        child: TextField(
-          controller: _isPreviewMode
-              ? _session.previewController
-              : _session.contentController, // 预览模式使用截断文本
-          focusNode: _focusNode,
-          maxLines: null,
-          style: GoogleFonts.notoSerifSc(
-            fontSize: fontSize,
-            color: textColor,
-            height: lineHeight / fontSize,
-          ),
-          strutStyle: StrutStyle(
-            fontFamily: GoogleFonts.notoSerifSc().fontFamily,
-            fontSize: fontSize,
-            height: (lineHeight / fontSize),
-            leading: 0,
-            forceStrutHeight: true,
-          ),
-          decoration: const InputDecoration(
-            border: InputBorder.none,
-            contentPadding: EdgeInsets.zero,
-            isCollapsed: true,
-            isDense: true,
-          ),
-          cursorColor: textColor,
-        ),
-      ),
-    );
   }
 
   List<Widget> _buildExportChunks(
@@ -1349,7 +748,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                 // Add a bit of lined paper to fill the gap if last chunk was short?
                 // No, simply finish.
                 const SizedBox(height: 20),
-                _buildBrandingFooter(secondaryColor),
+                EditorBrandingFooter(secondaryColor: secondaryColor),
                 const SizedBox(height: 40), // Bottom Padding
               ],
             ),
@@ -1407,34 +806,6 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
       ),
     );
   }
-}
-
-class LinedPaperPainter extends CustomPainter {
-  final Color lineColor;
-  final double lineHeight;
-
-  LinedPaperPainter({required this.lineColor, required this.lineHeight});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = lineColor
-      ..strokeWidth = 1.0;
-
-    // Start drawing lines from top
-    // We want the text to sit ON the line. Text height is fixed via StrutStyle.
-    // Draw lines exactly at multiples of lineHeight (bottom of each line box)
-    for (
-      double y = lineHeight;
-      y <= size.height + lineHeight;
-      y += lineHeight
-    ) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class _ExportRibbonPainter extends CustomPainter {

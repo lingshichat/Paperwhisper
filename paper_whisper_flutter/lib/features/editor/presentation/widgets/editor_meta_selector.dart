@@ -1,0 +1,196 @@
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+import '../../../../config/app_theme.dart';
+import '../../../../models/diary_entry.dart';
+import '../../../../widgets/skeuomorphic_date_picker.dart';
+
+/// 编辑器元信息选择器：日期 / 天气 / 心情。
+///
+/// 保持原页面实现与文案：编辑态使用 SkeuomorphicDatePicker 弹窗、
+/// DropdownButton（天气）与 PopupMenuButton（心情），只读态渲染纯文本。
+/// 变更通过回调上报，由页面写入会话并触发重建；本组件不持有会话状态。
+///
+/// 日期选择弹窗属于组件自身的局部交互 UI（与 Dropdown/Menu 同类），
+/// 不涉及业务导航。
+class EditorMetaSelector extends StatelessWidget {
+  /// 当前主题名（Dropdown/Menu 配色入口）。
+  final String theme;
+
+  /// 元信息文本颜色（原 _metaStyle 的 color，页面传入 secondaryColor）。
+  final Color metaTextColor;
+
+  /// 是否处于编辑态。
+  final bool isEditing;
+
+  /// 当前日期字符串（yyyy-MM-dd）。
+  final String dateString;
+
+  /// 当前天气。
+  final WeatherType weather;
+
+  /// 当前心情。
+  final MoodType mood;
+
+  /// 日期选择回调（页面写入会话并 setState）。
+  final ValueChanged<DateTime> onDateChanged;
+
+  /// 天气变更回调。
+  final ValueChanged<WeatherType> onWeatherChanged;
+
+  /// 心情变更回调。
+  final ValueChanged<MoodType> onMoodChanged;
+
+  const EditorMetaSelector({
+    super.key,
+    required this.theme,
+    required this.metaTextColor,
+    required this.isEditing,
+    required this.dateString,
+    required this.weather,
+    required this.mood,
+    required this.onDateChanged,
+    required this.onWeatherChanged,
+    required this.onMoodChanged,
+  });
+
+  /// 元信息文本样式（导出 header 复用，保持单一实现源）。
+  static TextStyle metaStyle(Color color) =>
+      GoogleFonts.courierPrime(fontSize: 14, color: color);
+
+  /// 元信息分隔符（导出 header 复用，保持单一实现源）。
+  static Widget metaSeparator(Color color) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 8),
+    child: Text(
+      '·',
+      style: TextStyle(color: color, fontWeight: FontWeight.bold),
+    ),
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        GestureDetector(
+          onTap: () async {
+            DateTime initialDate;
+            try {
+              initialDate = DateTime.parse(dateString);
+            } catch (_) {
+              initialDate = DateTime.now();
+            }
+
+            // 选择结果经回调暂存：SkeuomorphicDatePicker 在选中后延迟 200ms
+            // 自行关闭对话框，这里不主动 pop，保留原有交互时序。
+            DateTime? selectedDate;
+            await showDialog<void>(
+              context: context,
+              builder: (ctx) => SkeuomorphicDatePicker(
+                initialDate: initialDate,
+                onDateSelected: (date) => selectedDate = date,
+              ),
+            );
+            final selected = selectedDate;
+            if (selected == null) return; // 未选择（点遮罩/返回关闭）：不更新
+            if (!context.mounted) return; // await 后 context 可能已失效
+            onDateChanged(selected);
+          },
+          child: Text(dateString, style: metaStyle(metaTextColor)),
+        ),
+        metaSeparator(metaTextColor),
+        _buildWeatherSelector(),
+        metaSeparator(metaTextColor),
+        _buildMoodSelector(),
+      ],
+    );
+  }
+
+  Widget _buildWeatherSelector() {
+    if (!isEditing) {
+      return Text(weather.name.toUpperCase(), style: metaStyle(metaTextColor));
+    }
+
+    final tc = AppTheme.getEditorTheme(theme);
+
+    // Dropdown Menu Style
+    final Color dropdownBg = tc['dropdownBg'];
+    final Color dropdownText = tc['dropdownText'];
+
+    return DropdownButton<WeatherType>(
+      value: weather,
+      underline: const SizedBox(),
+      icon: const SizedBox(),
+      dropdownColor: dropdownBg,
+      isDense: true,
+      alignment: AlignmentDirectional.center, // Center text in button
+      // The text shown on the button (when closed)
+      selectedItemBuilder: (BuildContext context) {
+        return WeatherType.values.map((w) {
+          return Container(
+            alignment: Alignment.center,
+            child: Text(w.name.toUpperCase(), style: metaStyle(metaTextColor)),
+          );
+        }).toList();
+      },
+      items: WeatherType.values
+          .map(
+            (w) => DropdownMenuItem(
+              value: w,
+              alignment: AlignmentDirectional.center,
+              child: Text(
+                w.name.toUpperCase(),
+                style: GoogleFonts.courierPrime(
+                  fontSize: 14,
+                  color: dropdownText,
+                ),
+              ),
+            ),
+          )
+          .toList(),
+      onChanged: (val) {
+        if (val != null) onWeatherChanged(val);
+      },
+    );
+  }
+
+  Widget _buildMoodSelector() {
+    if (!isEditing) {
+      return Text(mood.name.toUpperCase(), style: metaStyle(metaTextColor));
+    }
+
+    final tc = AppTheme.getEditorTheme(theme);
+
+    final Color menuBg = tc['dropdownBg'];
+    final Color menuText = tc['dropdownText'];
+
+    return PopupMenuButton<MoodType>(
+      initialValue: mood,
+      color: menuBg,
+      padding: EdgeInsets.zero,
+      tooltip: '',
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      onSelected: onMoodChanged,
+      itemBuilder: (context) => MoodType.values
+          .map(
+            (m) => PopupMenuItem(
+              value: m,
+              child: Text(
+                m.name.toUpperCase(),
+                style: GoogleFonts.courierPrime(fontSize: 14, color: menuText),
+              ),
+            ),
+          )
+          .toList(),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+        child: Text(
+          mood.name.toUpperCase(),
+          style: metaStyle(metaTextColor).copyWith(fontWeight: FontWeight.w600),
+        ),
+      ),
+    );
+  }
+}
