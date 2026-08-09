@@ -23,7 +23,10 @@ void main() {
 
   group('SyncTrustSnapshotStore', () {
     test('键名保持 sync_trust_snapshot（兼容红线）', () {
-      expect(SyncTrustSnapshotStore.syncTrustSnapshotKey, 'sync_trust_snapshot');
+      expect(
+        SyncTrustSnapshotStore.syncTrustSnapshotKey,
+        'sync_trust_snapshot',
+      );
     });
 
     test('load 在无记录时返回 null', () async {
@@ -82,20 +85,25 @@ void main() {
 
       await store.save(snapshot);
 
-      final raw = jsonDecode(
-        prefs.getString(SyncTrustSnapshotStore.syncTrustSnapshotKey)!,
-      ) as Map<String, dynamic>;
-      expect(raw.keys, containsAll(<String>[
-        'state',
-        'pendingDiaryCount',
-        'pendingMomentCount',
-        'pendingImageCount',
-        'pendingAudioCount',
-        'lastSuccessfulSyncAt',
-        'lastSuccessfulSyncPlatform',
-        'failureReason',
-        'configurationInvalid',
-      ]));
+      final raw =
+          jsonDecode(
+                prefs.getString(SyncTrustSnapshotStore.syncTrustSnapshotKey)!,
+              )
+              as Map<String, dynamic>;
+      expect(
+        raw.keys,
+        containsAll(<String>[
+          'state',
+          'pendingDiaryCount',
+          'pendingMomentCount',
+          'pendingImageCount',
+          'pendingAudioCount',
+          'lastSuccessfulSyncAt',
+          'lastSuccessfulSyncPlatform',
+          'failureReason',
+          'configurationInvalid',
+        ]),
+      );
       expect(raw['state'], 'syncedSuccessfully');
       expect(raw['lastSuccessfulSyncPlatform'], 'webdav');
     });

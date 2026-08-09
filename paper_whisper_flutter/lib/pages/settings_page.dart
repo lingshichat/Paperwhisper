@@ -70,10 +70,9 @@ class _SettingsPageState extends State<SettingsPage>
   Future<void> _checkAllPermissions() async {
     // Check key permissions
     final pStorage = await Permission.manageExternalStorage.status;
-    final pPhotos =
-        await Permission
-            .photos
-            .status; // Android 13+ specific usually, or generic
+    final pPhotos = await Permission
+        .photos
+        .status; // Android 13+ specific usually, or generic
     final pNotification = await Permission.notification.status;
 
     setState(() {
@@ -96,9 +95,8 @@ class _SettingsPageState extends State<SettingsPage>
   }
 
   // 共享 MomentService 注入 StorageService（不维护写 Manifest 的独立实例）
-  StorageService get _storageService => StorageService(
-    momentService: context.read<MomentService>(),
-  );
+  StorageService get _storageService =>
+      StorageService(momentService: context.read<MomentService>());
 
   Future<void> _loadStorageInfo() async {
     final service = _storageService;
@@ -311,10 +309,9 @@ class _SettingsPageState extends State<SettingsPage>
             _buildDivider(themeConfig),
             _buildSettingsItem(
               context: context,
-              icon:
-                  _isAllGranted
-                      ? Icons.verified_user_outlined
-                      : Icons.gpp_maybe_outlined,
+              icon: _isAllGranted
+                  ? Icons.verified_user_outlined
+                  : Icons.gpp_maybe_outlined,
               title: '系统权限管理',
               subtitle: _permSummary,
               textColor: textColor,
@@ -355,10 +352,9 @@ class _SettingsPageState extends State<SettingsPage>
               title: '常见问题',
               subtitle: '查看使用指南与疑问解答',
               textColor: textColor,
-              onTap:
-                  () => _launchUrl(
-                    'https://lingshichat.feishu.cn/docx/JvzDdhLXEo3OVaxWEc9cygDqnMc?from=from_copylink',
-                  ),
+              onTap: () => _launchUrl(
+                'https://lingshichat.feishu.cn/docx/JvzDdhLXEo3OVaxWEc9cygDqnMc?from=from_copylink',
+              ),
             ),
             _buildDivider(themeConfig),
             _buildSettingsItem(
@@ -367,10 +363,9 @@ class _SettingsPageState extends State<SettingsPage>
               title: '意见反馈',
               subtitle: '提交Bug或功能建议',
               textColor: textColor,
-              onTap:
-                  () => _launchUrl(
-                    'https://lingshichat.feishu.cn/share/base/form/shrcnx9xnwJU6cxmz6F5tLNQzi2',
-                  ),
+              onTap: () => _launchUrl(
+                'https://lingshichat.feishu.cn/share/base/form/shrcnx9xnwJU6cxmz6F5tLNQzi2',
+              ),
             ),
           ],
         ),
@@ -385,12 +380,9 @@ class _SettingsPageState extends State<SettingsPage>
               context: context,
               icon: Icons.system_update_outlined,
               title: '检测更新',
-              subtitle:
-                  _isCheckingUpdate
-                      ? '检测中...'
-                      : (_currentVersion != null
-                          ? 'v$_currentVersion'
-                          : '点击检查新版本'),
+              subtitle: _isCheckingUpdate
+                  ? '检测中...'
+                  : (_currentVersion != null ? 'v$_currentVersion' : '点击检查新版本'),
               textColor: textColor,
               isLoading: _isCheckingUpdate,
               onTap: _isCheckingUpdate ? () {} : () => _checkForUpdate(context),
@@ -402,10 +394,9 @@ class _SettingsPageState extends State<SettingsPage>
               title: '用户协议',
               subtitle: '查阅用户服务协议',
               textColor: textColor,
-              onTap:
-                  () => _launchUrl(
-                    'https://lingshichat.feishu.cn/docx/ODY0dLSF4okfuzximQuctlMon7g?from=from_copylink',
-                  ),
+              onTap: () => _launchUrl(
+                'https://lingshichat.feishu.cn/docx/ODY0dLSF4okfuzximQuctlMon7g?from=from_copylink',
+              ),
             ),
             _buildDivider(themeConfig),
             _buildSettingsItem(
@@ -414,10 +405,9 @@ class _SettingsPageState extends State<SettingsPage>
               title: '隐私政策',
               subtitle: '了解不仅限于数据的隐私保护',
               textColor: textColor,
-              onTap:
-                  () => _launchUrl(
-                    'https://lingshichat.feishu.cn/docx/Gd6sdvdmRonHO9x6fMccUr3qnXg?from=from_copylink',
-                  ),
+              onTap: () => _launchUrl(
+                'https://lingshichat.feishu.cn/docx/Gd6sdvdmRonHO9x6fMccUr3qnXg?from=from_copylink',
+              ),
             ),
             _buildDivider(themeConfig),
             _buildSettingsItem(
@@ -609,8 +599,10 @@ class _SettingsPageState extends State<SettingsPage>
   // --- Existing View Logic ---
 
   void _showPermissionManager(BuildContext context) {
-    final theme =
-        Provider.of<SettingsProvider>(context, listen: false).currentTheme;
+    final theme = Provider.of<SettingsProvider>(
+      context,
+      listen: false,
+    ).currentTheme;
     final themeConfig = AppTheme.getSettingsTheme(theme);
     final Color sheetDividerColor =
         themeConfig['sheetInfoDividerColor'] as Color;
@@ -618,49 +610,48 @@ class _SettingsPageState extends State<SettingsPage>
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder:
-          (ctx) => _buildSkeuomorphicBottomSheet(
+      builder: (ctx) => _buildSkeuomorphicBottomSheet(
+        context,
+        title: '应用权限管理',
+        children: [
+          _buildPermissionRow(
             context,
-            title: '应用权限管理',
-            children: [
-              _buildPermissionRow(
-                context,
-                '文件存储 (核心)',
-                '用于日记数据的读取与备份',
-                Icons.folder_copy_outlined,
-                _permStatuses['storage'],
-                Permission.manageExternalStorage,
-                isCritical: true,
-              ),
-              Divider(color: sheetDividerColor, height: 1),
-              _buildPermissionRow(
-                context,
-                '相册访问',
-                '用于在日记中插入图片',
-                Icons.photo_library_outlined,
-                _permStatuses['photos'],
-                Permission.photos,
-              ),
-              Divider(color: sheetDividerColor, height: 1),
-              _buildPermissionRow(
-                context,
-                '通知提醒',
-                '显示数据同步进度与状态',
-                Icons.notifications_outlined,
-                _permStatuses['notification'],
-                Permission.notification,
-              ),
-              const SizedBox(height: 20),
-              SkeuomorphicDialogButton(
-                label: '前往系统设置页',
-                isPrimary: false,
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  openAppSettings();
-                },
-              ),
-            ],
+            '文件存储 (核心)',
+            '用于日记数据的读取与备份',
+            Icons.folder_copy_outlined,
+            _permStatuses['storage'],
+            Permission.manageExternalStorage,
+            isCritical: true,
           ),
+          Divider(color: sheetDividerColor, height: 1),
+          _buildPermissionRow(
+            context,
+            '相册访问',
+            '用于在日记中插入图片',
+            Icons.photo_library_outlined,
+            _permStatuses['photos'],
+            Permission.photos,
+          ),
+          Divider(color: sheetDividerColor, height: 1),
+          _buildPermissionRow(
+            context,
+            '通知提醒',
+            '显示数据同步进度与状态',
+            Icons.notifications_outlined,
+            _permStatuses['notification'],
+            Permission.notification,
+          ),
+          const SizedBox(height: 20),
+          SkeuomorphicDialogButton(
+            label: '前往系统设置页',
+            isPrimary: false,
+            onPressed: () {
+              Navigator.pop(ctx);
+              openAppSettings();
+            },
+          ),
+        ],
+      ),
     );
   }
 
@@ -680,10 +671,9 @@ class _SettingsPageState extends State<SettingsPage>
     bool isGranted = status?.isGranted == true;
     bool isLimited = status?.isLimited == true;
 
-    Color statusColor =
-        isGranted
-            ? Colors.green
-            : (isCritical ? Colors.red : Colors.orange.shade800);
+    Color statusColor = isGranted
+        ? Colors.green
+        : (isCritical ? Colors.red : Colors.orange.shade800);
     String statusText = isGranted ? '已获取' : (isLimited ? '部分允许' : '未获取');
 
     return ListTile(
@@ -1071,69 +1061,68 @@ class _SettingsPageState extends State<SettingsPage>
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder:
-          (ctx) => _buildSkeuomorphicBottomSheet(
-            context,
-            title: '选择主题',
-            children: [
-              _buildRadioItem(
-                ctx,
-                '复古纸张',
-                'default',
-                settings.currentTheme,
-                (val) => settings.setTheme(val),
-                closeOnSelect: false,
-              ),
-              _buildRadioItem(
-                ctx,
-                '海底花海',
-                'sea_flower',
-                settings.currentTheme,
-                (val) => settings.setTheme(val),
-                closeOnSelect: false,
-              ),
-              _buildRadioItem(
-                ctx,
-                '午夜星尘',
-                'midnight',
-                settings.currentTheme,
-                (val) => settings.setTheme(val),
-                closeOnSelect: false,
-              ),
-              _buildRadioItem(
-                ctx,
-                '琥珀光圈',
-                'amber_lens',
-                settings.currentTheme,
-                (val) => settings.setTheme(val),
-                closeOnSelect: false,
-              ),
-              _buildRadioItem(
-                ctx,
-                '雨后天空',
-                'after_rain',
-                settings.currentTheme,
-                (val) => settings.setTheme(val),
-                closeOnSelect: false,
-              ),
-              _buildRadioItem(
-                ctx,
-                '黄昏之时',
-                'twilight',
-                settings.currentTheme,
-                (val) => settings.setTheme(val),
-                closeOnSelect: false,
-              ),
-              _buildRadioItem(
-                ctx,
-                '言叶之庭',
-                'garden_of_words',
-                settings.currentTheme,
-                (val) => settings.setTheme(val),
-                closeOnSelect: false,
-              ),
-            ],
+      builder: (ctx) => _buildSkeuomorphicBottomSheet(
+        context,
+        title: '选择主题',
+        children: [
+          _buildRadioItem(
+            ctx,
+            '复古纸张',
+            'default',
+            settings.currentTheme,
+            (val) => settings.setTheme(val),
+            closeOnSelect: false,
           ),
+          _buildRadioItem(
+            ctx,
+            '海底花海',
+            'sea_flower',
+            settings.currentTheme,
+            (val) => settings.setTheme(val),
+            closeOnSelect: false,
+          ),
+          _buildRadioItem(
+            ctx,
+            '午夜星尘',
+            'midnight',
+            settings.currentTheme,
+            (val) => settings.setTheme(val),
+            closeOnSelect: false,
+          ),
+          _buildRadioItem(
+            ctx,
+            '琥珀光圈',
+            'amber_lens',
+            settings.currentTheme,
+            (val) => settings.setTheme(val),
+            closeOnSelect: false,
+          ),
+          _buildRadioItem(
+            ctx,
+            '雨后天空',
+            'after_rain',
+            settings.currentTheme,
+            (val) => settings.setTheme(val),
+            closeOnSelect: false,
+          ),
+          _buildRadioItem(
+            ctx,
+            '黄昏之时',
+            'twilight',
+            settings.currentTheme,
+            (val) => settings.setTheme(val),
+            closeOnSelect: false,
+          ),
+          _buildRadioItem(
+            ctx,
+            '言叶之庭',
+            'garden_of_words',
+            settings.currentTheme,
+            (val) => settings.setTheme(val),
+            closeOnSelect: false,
+          ),
+        ],
+      ),
     );
   }
 
@@ -1141,27 +1130,26 @@ class _SettingsPageState extends State<SettingsPage>
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder:
-          (ctx) => _buildSkeuomorphicBottomSheet(
-            context,
-            title: '选择启动页',
-            children: [
-              _buildRadioItem(
-                ctx,
-                '专注书写',
-                'writer',
-                settings.startupPage,
-                (val) => settings.setStartupPage(val),
-              ),
-              _buildRadioItem(
-                ctx,
-                '随心记',
-                'moments',
-                settings.startupPage,
-                (val) => settings.setStartupPage(val),
-              ),
-            ],
+      builder: (ctx) => _buildSkeuomorphicBottomSheet(
+        context,
+        title: '选择启动页',
+        children: [
+          _buildRadioItem(
+            ctx,
+            '专注书写',
+            'writer',
+            settings.startupPage,
+            (val) => settings.setStartupPage(val),
           ),
+          _buildRadioItem(
+            ctx,
+            '随心记',
+            'moments',
+            settings.startupPage,
+            (val) => settings.setStartupPage(val),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1178,172 +1166,171 @@ class _SettingsPageState extends State<SettingsPage>
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder:
-          (ctx) => _buildSkeuomorphicBottomSheet(
-            context,
-            title: '用户数据管理',
-            children: [
-              ListTile(
-                leading: Icon(Icons.delete_sweep, color: sheetTextColor),
-                title: Text(
-                  '清理无用图片 (深度清理)',
-                  style: GoogleFonts.notoSerifSc(color: sheetTextColor),
-                ),
-                subtitle: Text(
-                  '扫描并删除未被任何随心记引用的冗余图片',
-                  style: GoogleFonts.notoSerifSc(
-                    color: sheetTextColor.withValues(alpha: 0.6),
-                    fontSize: 12,
-                  ),
-                ),
-                onTap: () async {
-                  Navigator.pop(ctx);
-                  SkeuomorphicToast.info(context, '正在深度清理...');
-                  int freed = await _storageService.cleanOrphanImages();
-                  await _loadStorageInfo(); // Refresh
-                  if (context.mounted) {
-                    SkeuomorphicToast.success(
-                      context,
-                      '清理完成，释放 ${_formatSize(freed)} 空间',
-                    );
-                  }
-                },
+      builder: (ctx) => _buildSkeuomorphicBottomSheet(
+        context,
+        title: '用户数据管理',
+        children: [
+          ListTile(
+            leading: Icon(Icons.delete_sweep, color: sheetTextColor),
+            title: Text(
+              '清理无用图片 (深度清理)',
+              style: GoogleFonts.notoSerifSc(color: sheetTextColor),
+            ),
+            subtitle: Text(
+              '扫描并删除未被任何随心记引用的冗余图片',
+              style: GoogleFonts.notoSerifSc(
+                color: sheetTextColor.withValues(alpha: 0.6),
+                fontSize: 12,
               ),
-              Divider(color: sheetTextColor.withValues(alpha: 0.1)),
-              ListTile(
-                leading: Icon(Icons.cleaning_services, color: sheetTextColor),
-                title: Text(
-                  '立即清理缓存',
-                  style: GoogleFonts.notoSerifSc(color: sheetTextColor),
-                ),
-                subtitle: Text(
-                  '清理产生的临时文件 (不影响数据)',
-                  style: GoogleFonts.notoSerifSc(
-                    color: sheetTextColor.withValues(alpha: 0.6),
-                    fontSize: 12,
-                  ),
-                ),
-                onTap: () async {
-                  Navigator.pop(ctx);
-                  await _storageService.cleanTemporaryCache();
-                  await _loadStorageInfo(); // Refresh
-                  if (context.mounted) {
-                    SkeuomorphicToast.success(context, '缓存已清理');
-                  }
-                },
+            ),
+            onTap: () async {
+              Navigator.pop(ctx);
+              SkeuomorphicToast.info(context, '正在深度清理...');
+              int freed = await _storageService.cleanOrphanImages();
+              await _loadStorageInfo(); // Refresh
+              if (context.mounted) {
+                SkeuomorphicToast.success(
+                  context,
+                  '清理完成，释放 ${_formatSize(freed)} 空间',
+                );
+              }
+            },
+          ),
+          Divider(color: sheetTextColor.withValues(alpha: 0.1)),
+          ListTile(
+            leading: Icon(Icons.cleaning_services, color: sheetTextColor),
+            title: Text(
+              '立即清理缓存',
+              style: GoogleFonts.notoSerifSc(color: sheetTextColor),
+            ),
+            subtitle: Text(
+              '清理产生的临时文件 (不影响数据)',
+              style: GoogleFonts.notoSerifSc(
+                color: sheetTextColor.withValues(alpha: 0.6),
+                fontSize: 12,
               ),
-              const SizedBox(height: 10),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: infoBgColor,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: infoBorderColor),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            ),
+            onTap: () async {
+              Navigator.pop(ctx);
+              await _storageService.cleanTemporaryCache();
+              await _loadStorageInfo(); // Refresh
+              if (context.mounted) {
+                SkeuomorphicToast.success(context, '缓存已清理');
+              }
+            },
+          ),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: infoBgColor,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: infoBorderColor),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.perm_device_information,
-                          size: 16,
-                          color: sheetTextColor.withValues(alpha: 0.7),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          '系统运行数据 (App必须)',
-                          style: GoogleFonts.notoSerifSc(
-                            color: sheetTextColor.withValues(alpha: 0.8),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
+                    Icon(
+                      Icons.perm_device_information,
+                      size: 16,
+                      color: sheetTextColor.withValues(alpha: 0.7),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(width: 8),
                     Text(
-                      '包含字体缓存 (Support) 及 App 资源文件 (Doc)。\n此部分数据维持 App 正常运行，无需清理。',
+                      '系统运行数据 (App必须)',
                       style: GoogleFonts.notoSerifSc(
-                        color: sheetTextColor.withValues(alpha: 0.6),
-                        fontSize: 11,
-                        height: 1.4,
+                        color: sheetTextColor.withValues(alpha: 0.8),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Divider(color: infoDividerColor, height: 1),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          '占用空间: $_internalStats',
-                          style: GoogleFonts.notoSerifSc(
-                            color: sheetTextColor.withValues(alpha: 0.5),
-                            fontSize: 10,
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (_hasInternalClutter)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: InkWell(
-                          onTap: () async {
-                            Navigator.pop(ctx);
-                            SkeuomorphicToast.info(context, '正在清理私有残留...');
-                            int freed =
-                                await _storageService.cleanInternalClutter();
-                            await _loadStorageInfo();
-                            if (context.mounted) {
-                              SkeuomorphicToast.success(
-                                context,
-                                '清理了 ${_formatSize(freed)} 旧数据',
-                              );
-                            }
-                          },
-                          child: Text(
-                            '>> 发现残留数据，点击清理',
-                            style: GoogleFonts.notoSerifSc(
-                              color: Colors.red,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                      ),
-                    if (_internalStats.contains('Support') &&
-                        !(_internalStats.contains('0 B')))
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: InkWell(
-                          onTap: () async {
-                            Navigator.pop(ctx);
-                            SkeuomorphicToast.info(context, '正在清理字体缓存...');
-                            await _storageService.cleanFontCache();
-                            await _loadStorageInfo();
-                            if (context.mounted) {
-                              SkeuomorphicToast.success(
-                                context,
-                                '字体缓存已清除 (下次启动将自动重新下载)',
-                              );
-                            }
-                          },
-                          child: Text(
-                            '>> 强制清除字体缓存 (修复显示异常)',
-                            style: GoogleFonts.notoSerifSc(
-                              color: Colors.orange[800],
-                              fontWeight: FontWeight.bold,
-                              fontSize: 10,
-                            ),
-                          ),
-                        ),
-                      ),
                   ],
                 ),
-              ),
-            ],
+                const SizedBox(height: 8),
+                Text(
+                  '包含字体缓存 (Support) 及 App 资源文件 (Doc)。\n此部分数据维持 App 正常运行，无需清理。',
+                  style: GoogleFonts.notoSerifSc(
+                    color: sheetTextColor.withValues(alpha: 0.6),
+                    fontSize: 11,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Divider(color: infoDividerColor, height: 1),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '占用空间: $_internalStats',
+                      style: GoogleFonts.notoSerifSc(
+                        color: sheetTextColor.withValues(alpha: 0.5),
+                        fontSize: 10,
+                      ),
+                    ),
+                  ],
+                ),
+                if (_hasInternalClutter)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: InkWell(
+                      onTap: () async {
+                        Navigator.pop(ctx);
+                        SkeuomorphicToast.info(context, '正在清理私有残留...');
+                        int freed = await _storageService
+                            .cleanInternalClutter();
+                        await _loadStorageInfo();
+                        if (context.mounted) {
+                          SkeuomorphicToast.success(
+                            context,
+                            '清理了 ${_formatSize(freed)} 旧数据',
+                          );
+                        }
+                      },
+                      child: Text(
+                        '>> 发现残留数据，点击清理',
+                        style: GoogleFonts.notoSerifSc(
+                          color: Colors.red,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ),
+                if (_internalStats.contains('Support') &&
+                    !(_internalStats.contains('0 B')))
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: InkWell(
+                      onTap: () async {
+                        Navigator.pop(ctx);
+                        SkeuomorphicToast.info(context, '正在清理字体缓存...');
+                        await _storageService.cleanFontCache();
+                        await _loadStorageInfo();
+                        if (context.mounted) {
+                          SkeuomorphicToast.success(
+                            context,
+                            '字体缓存已清除 (下次启动将自动重新下载)',
+                          );
+                        }
+                      },
+                      child: Text(
+                        '>> 强制清除字体缓存 (修复显示异常)',
+                        style: GoogleFonts.notoSerifSc(
+                          color: Colors.orange[800],
+                          fontWeight: FontWeight.bold,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
+        ],
+      ),
     );
   }
 
@@ -1473,20 +1460,18 @@ class _SettingsPageState extends State<SettingsPage>
     final themeConfig = AppTheme.getSettingsTheme(settings.currentTheme);
     final isSelected = value == groupValue;
 
-    final Color bgColor =
-        isSelected
-            ? themeConfig['optionSelectedBgColor'] as Color
-            : themeConfig['optionUnselectedBgColor'] as Color;
-    final Color textColor =
-        isSelected
-            ? themeConfig['optionSelectedTextColor'] as Color
-            : themeConfig['optionUnselectedTextColor'] as Color;
-    final BoxShadow? shadow =
-        isSelected
-            ? themeConfig['optionSelectedShadow'] as BoxShadow?
-            : themeConfig['optionUnselectedShadow'] as BoxShadow?;
-    final Border? border =
-        isSelected ? null : themeConfig['optionUnselectedBorder'] as Border?;
+    final Color bgColor = isSelected
+        ? themeConfig['optionSelectedBgColor'] as Color
+        : themeConfig['optionUnselectedBgColor'] as Color;
+    final Color textColor = isSelected
+        ? themeConfig['optionSelectedTextColor'] as Color
+        : themeConfig['optionUnselectedTextColor'] as Color;
+    final BoxShadow? shadow = isSelected
+        ? themeConfig['optionSelectedShadow'] as BoxShadow?
+        : themeConfig['optionUnselectedShadow'] as BoxShadow?;
+    final Border? border = isSelected
+        ? null
+        : themeConfig['optionUnselectedBorder'] as Border?;
 
     return GestureDetector(
       onTap: () {

@@ -11,7 +11,6 @@ import '../config/app_theme.dart';
 import '../widgets/vintage_stamp.dart';
 import '../widgets/mood_badge_ring.dart';
 
-
 class StatisticsPage extends StatefulWidget {
   const StatisticsPage({super.key});
 
@@ -28,7 +27,7 @@ class _StatisticsPageState extends State<StatisticsPage>
   bool _isLoading = true;
   late PageController _pageController;
   int _currentPage = 0;
-  
+
   // 心情分布筛选
   String _moodFilter = '本月'; // '本月', '本年', '全部'
 
@@ -103,9 +102,7 @@ class _StatisticsPageState extends State<StatisticsPage>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(
-            color: colorScheme.primary,
-          ),
+          CircularProgressIndicator(color: colorScheme.primary),
           const SizedBox(height: 16),
           Text(
             '正在翻开纪念册...',
@@ -129,10 +126,7 @@ class _StatisticsPageState extends State<StatisticsPage>
             controller: _pageController,
             onPageChanged: _onPageChanged,
             physics: const BouncingScrollPhysics(),
-            children: [
-              _buildFirstPage(theme),
-              _buildSecondPage(theme),
-            ],
+            children: [_buildFirstPage(theme), _buildSecondPage(theme)],
           ),
         ),
         _buildPageHint(theme),
@@ -366,11 +360,7 @@ class _StatisticsPageState extends State<StatisticsPage>
       onTap: onTap,
       child: Column(
         children: [
-          Icon(
-            icon,
-            size: 20,
-            color: accentColor.withValues(alpha: 0.7),
-          ),
+          Icon(icon, size: 20, color: accentColor.withValues(alpha: 0.7)),
           const SizedBox(height: 6),
           Text(
             value,
@@ -396,7 +386,7 @@ class _StatisticsPageState extends State<StatisticsPage>
   // 本月关键词模块 - 简洁版
   Widget _buildMonthlyKeyword(String theme) {
     final keyword = _getMonthlyKeyword();
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
@@ -423,59 +413,39 @@ class _StatisticsPageState extends State<StatisticsPage>
   Map<String, String> _getMonthlyKeyword() {
     // 根据数据生成本月关键词
     if (_stats.totalDiaries + _stats.totalMoments == 0) {
-      return {
-        'title': '静待花开 🌱',
-        'desc': '开始你的第一篇记录吧',
-      };
+      return {'title': '静待花开 🌱', 'desc': '开始你的第一篇记录吧'};
     }
 
     // 检查连续写作天数
     if (_stats.continuousDays >= 30) {
-      return {
-        'title': '笔耕不辍 ✍️',
-        'desc': '坚持就是胜利，你做到了！',
-      };
+      return {'title': '笔耕不辍 ✍️', 'desc': '坚持就是胜利，你做到了！'};
     }
 
     // 检查字数
     if (_stats.totalWords > 50000) {
-      return {
-        'title': '文思泉涌 📝',
-        'desc': '你的文字如泉涌般流淌',
-      };
+      return {'title': '文思泉涌 📝', 'desc': '你的文字如泉涌般流淌'};
     }
 
     // 检查图片数量
     if (_stats.totalMomentImages > 50) {
-      return {
-        'title': '光影收藏家 📸',
-        'desc': '用镜头记录生活的美好',
-      };
+      return {'title': '光影收藏家 📸', 'desc': '用镜头记录生活的美好'};
     }
 
     // 检查心情分布
     if (_stats.moodDistribution.isNotEmpty) {
-      final maxMood = _stats.moodDistribution.entries
-          .reduce((a, b) => a.value > b.value ? a : b);
+      final maxMood = _stats.moodDistribution.entries.reduce(
+        (a, b) => a.value > b.value ? a : b,
+      );
       if (maxMood.key.toString().contains('happy')) {
-        return {
-          'title': '快乐源泉 😊',
-          'desc': '最近心情不错呢，加油鸭！',
-        };
+        return {'title': '快乐源泉 😊', 'desc': '最近心情不错呢，加油鸭！'};
       }
       if (maxMood.key.toString().contains('calm')) {
-        return {
-          'title': '心如止水 🍃',
-          'desc': '享受这份宁静与平和',
-        };
+        return {'title': '心如止水 🍃', 'desc': '享受这份宁静与平和'};
       }
     }
 
     // 默认
-    return {
-      'title': '成长路上 🌟',
-      'desc': '每一篇记录都是成长的足迹',
-    };
+    return {'title': '成长路上 🌟', 'desc': '每一篇记录都是成长的足迹'};
   }
 
   // ==================== 第二页：详细数据 ====================
@@ -604,11 +574,7 @@ class _StatisticsPageState extends State<StatisticsPage>
       children: [
         Row(
           children: [
-            Icon(
-              Icons.mood,
-              size: 16,
-              color: _getAccentColor(theme),
-            ),
+            Icon(Icons.mood, size: 16, color: _getAccentColor(theme)),
             const SizedBox(width: 8),
             Text(
               '心情分布',
@@ -707,8 +673,9 @@ class _StatisticsPageState extends State<StatisticsPage>
       return '还没有记录心情哦~';
     }
 
-    final maxMood = _stats.moodDistribution.entries
-        .reduce((a, b) => a.value > b.value ? a : b);
+    final maxMood = _stats.moodDistribution.entries.reduce(
+      (a, b) => a.value > b.value ? a : b,
+    );
     final moodName = maxMood.key.toString().split('.').last;
 
     switch (moodName) {
@@ -730,11 +697,7 @@ class _StatisticsPageState extends State<StatisticsPage>
   Widget _buildSectionTitle(String theme, String title, IconData icon) {
     return Row(
       children: [
-        Icon(
-          icon,
-          size: 16,
-          color: _getAccentColor(theme),
-        ),
+        Icon(icon, size: 16, color: _getAccentColor(theme)),
         const SizedBox(width: 8),
         Text(
           title,

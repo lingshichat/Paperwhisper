@@ -827,42 +827,45 @@ void main() {
       expect(notifications, contains('开始同步 1 个变更...'));
     });
 
-    test('image download timeout records failedDownloads when remote image hangs', () async {
-      // 远端存在被引用但本地缺失的图片，下载永不完成 →
-      // Runner 的 imageDownloadTimeout 触发 TimeoutException 进入 failedDownloads
-      final fakeMoments = FakeMomentService(
-        baseDir,
-        referencedImages: const <String>{'hang.jpg'},
-      );
-      await fakeMoments.init();
-      storage = FakeCloudStorageService(
-        hangingDownloadFor: const <String>{'hang.jpg'},
-      );
-      storage.remoteFiles['${WebDavSyncService.momentsImagesPath}hang.jpg'] =
-          'image-bytes';
+    test(
+      'image download timeout records failedDownloads when remote image hangs',
+      () async {
+        // 远端存在被引用但本地缺失的图片，下载永不完成 →
+        // Runner 的 imageDownloadTimeout 触发 TimeoutException 进入 failedDownloads
+        final fakeMoments = FakeMomentService(
+          baseDir,
+          referencedImages: const <String>{'hang.jpg'},
+        );
+        await fakeMoments.init();
+        storage = FakeCloudStorageService(
+          hangingDownloadFor: const <String>{'hang.jpg'},
+        );
+        storage.remoteFiles['${WebDavSyncService.momentsImagesPath}hang.jpg'] =
+            'image-bytes';
 
-      await buildRunner(
-        storageOverride: storage,
-        momentOverride: fakeMoments,
-        imageDownloadTimeout: const Duration(milliseconds: 50),
-      );
-      diaryService = await buildDiaryService();
+        await buildRunner(
+          storageOverride: storage,
+          momentOverride: fakeMoments,
+          imageDownloadTimeout: const Duration(milliseconds: 50),
+        );
+        diaryService = await buildDiaryService();
 
-      final outcome = await runner.run(
-        isAuto: true,
-        diaryService: diaryService,
-      );
+        final outcome = await runner.run(
+          isAuto: true,
+          diaryService: diaryService,
+        );
 
-      expect(outcome.failedDownloads, greaterThan(0));
-      expect(outcome.hasFailures, isTrue);
-      expect(
-        outcome.errors.any((e) => e.contains('image download')),
-        isTrue,
-        reason: '超时应计入图片下载失败分类',
-      );
-      // 超时失败不计入已完成图片数
-      expect(outcome.processedImages, 0);
-    });
+        expect(outcome.failedDownloads, greaterThan(0));
+        expect(outcome.hasFailures, isTrue);
+        expect(
+          outcome.errors.any((e) => e.contains('image download')),
+          isTrue,
+          reason: '超时应计入图片下载失败分类',
+        );
+        // 超时失败不计入已完成图片数
+        expect(outcome.processedImages, 0);
+      },
+    );
 
     test('batch processes uploads serially in manifest order', () async {
       await buildRunner();

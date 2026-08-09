@@ -1,6 +1,5 @@
 import 'dart:io';
 
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:paper_whisper_flutter/config/theme/theme_registry.dart';
@@ -128,7 +127,10 @@ void main() {
       final provider = buildProvider(
         result: const SyncRunResult(status: SyncRunStatus.success),
       );
-      final coordinator = TestableSyncUiCoordinator(ctx, permissionResult: true);
+      final coordinator = TestableSyncUiCoordinator(
+        ctx,
+        permissionResult: true,
+      );
 
       final result = await coordinator.runManualSync(provider);
 
@@ -149,7 +151,10 @@ void main() {
           processedAudio: 4,
         ),
       );
-      final coordinator = TestableSyncUiCoordinator(ctx, permissionResult: true);
+      final coordinator = TestableSyncUiCoordinator(
+        ctx,
+        permissionResult: true,
+      );
 
       await coordinator.runManualSync(provider);
       await tester.pump();
@@ -164,7 +169,10 @@ void main() {
       final provider = buildProvider(
         result: const SyncRunResult(status: SyncRunStatus.success),
       );
-      final coordinator = TestableSyncUiCoordinator(ctx, permissionResult: true);
+      final coordinator = TestableSyncUiCoordinator(
+        ctx,
+        permissionResult: true,
+      );
 
       await coordinator.runManualSync(provider);
       await tester.pump();
@@ -182,7 +190,10 @@ void main() {
           failureMessage: '网络异常，请稍后重试',
         ),
       );
-      final coordinator = TestableSyncUiCoordinator(ctx, permissionResult: true);
+      final coordinator = TestableSyncUiCoordinator(
+        ctx,
+        permissionResult: true,
+      );
 
       await coordinator.runManualSync(provider);
       await tester.pump();
@@ -200,7 +211,10 @@ void main() {
           pendingCount: 7,
         ),
       );
-      final coordinator = TestableSyncUiCoordinator(ctx, permissionResult: true);
+      final coordinator = TestableSyncUiCoordinator(
+        ctx,
+        permissionResult: true,
+      );
 
       await coordinator.runManualSync(provider);
       await tester.pump();
@@ -215,7 +229,10 @@ void main() {
       final provider = buildProvider(
         result: const SyncRunResult(status: SyncRunStatus.alreadySyncing),
       );
-      final coordinator = TestableSyncUiCoordinator(ctx, permissionResult: true);
+      final coordinator = TestableSyncUiCoordinator(
+        ctx,
+        permissionResult: true,
+      );
 
       await coordinator.runManualSync(provider);
       await tester.pump();
@@ -233,7 +250,10 @@ void main() {
           failureMessage: '网络异常，请稍后重试',
         ),
       );
-      final coordinator = TestableSyncUiCoordinator(ctx, permissionResult: true);
+      final coordinator = TestableSyncUiCoordinator(
+        ctx,
+        permissionResult: true,
+      );
 
       await coordinator.runManualSync(provider);
       await tester.pump();
@@ -245,7 +265,10 @@ void main() {
 
     testWidgets('notEnabled / proRequired 静默不弹 Toast', (tester) async {
       final ctx = await pumpHarness(tester);
-      final coordinator = TestableSyncUiCoordinator(ctx, permissionResult: true);
+      final coordinator = TestableSyncUiCoordinator(
+        ctx,
+        permissionResult: true,
+      );
 
       final notEnabled = buildProvider(
         result: const SyncRunResult(status: SyncRunStatus.notEnabled),
@@ -271,7 +294,10 @@ void main() {
       // 卸载整个树，使捕获的 context 失效
       await tester.pumpWidget(const SizedBox());
 
-      final coordinator = TestableSyncUiCoordinator(ctx, permissionResult: true);
+      final coordinator = TestableSyncUiCoordinator(
+        ctx,
+        permissionResult: true,
+      );
       final result = await coordinator.runManualSync(provider);
 
       expect(result.status, SyncRunStatus.permissionDenied);
@@ -285,7 +311,10 @@ void main() {
     testWidgets('启用自动同步：显示准备文案并触发 requestAutoSync', (tester) async {
       final ctx = await pumpHarness(tester);
       final provider = buildProvider(config: configuredConfig());
-      final coordinator = TestableSyncUiCoordinator(ctx, permissionResult: true);
+      final coordinator = TestableSyncUiCoordinator(
+        ctx,
+        permissionResult: true,
+      );
 
       await coordinator.handleSaveAutoSync(
         provider: provider,
@@ -303,12 +332,13 @@ void main() {
       expect(provider.autoSyncRequests, 1);
     });
 
-    testWidgets('启用自动同步且 preparingToastAsInfo：准备文案为 info 级别', (
-      tester,
-    ) async {
+    testWidgets('启用自动同步且 preparingToastAsInfo：准备文案为 info 级别', (tester) async {
       final ctx = await pumpHarness(tester);
       final provider = buildProvider(config: configuredConfig());
-      final coordinator = TestableSyncUiCoordinator(ctx, permissionResult: true);
+      final coordinator = TestableSyncUiCoordinator(
+        ctx,
+        permissionResult: true,
+      );
 
       await coordinator.handleSaveAutoSync(
         provider: provider,
@@ -323,12 +353,13 @@ void main() {
       expect(find.byIcon(Icons.info_outline), findsOneWidget);
     });
 
-    testWidgets('启用自动同步但权限拒绝：显示准备文案但不触发自动同步', (
-      tester,
-    ) async {
+    testWidgets('启用自动同步但权限拒绝：显示准备文案但不触发自动同步', (tester) async {
       final ctx = await pumpHarness(tester);
       final provider = buildProvider(config: configuredConfig());
-      final coordinator = TestableSyncUiCoordinator(ctx, permissionResult: false);
+      final coordinator = TestableSyncUiCoordinator(
+        ctx,
+        permissionResult: false,
+      );
 
       await coordinator.handleSaveAutoSync(
         provider: provider,
@@ -342,9 +373,7 @@ void main() {
       expect(provider.autoSyncRequests, 0);
     });
 
-    testWidgets('未启用自动同步但有 pending：显示待同步提示（info 级别）', (
-      tester,
-    ) async {
+    testWidgets('未启用自动同步但有 pending：显示待同步提示（info 级别）', (tester) async {
       final ctx = await pumpHarness(tester);
       final provider = buildProvider(
         config: configuredConfig(autoSync: false),
@@ -353,7 +382,10 @@ void main() {
           pendingDiaryCount: 3,
         ),
       );
-      final coordinator = TestableSyncUiCoordinator(ctx, permissionResult: true);
+      final coordinator = TestableSyncUiCoordinator(
+        ctx,
+        permissionResult: true,
+      );
 
       await coordinator.handleSaveAutoSync(
         provider: provider,
@@ -368,9 +400,7 @@ void main() {
       expect(provider.autoSyncRequests, 0);
     });
 
-    testWidgets('无 pending 且未启用自动同步：显示保存成功文案（success 级别）', (
-      tester,
-    ) async {
+    testWidgets('无 pending 且未启用自动同步：显示保存成功文案（success 级别）', (tester) async {
       final ctx = await pumpHarness(tester);
       final provider = buildProvider(
         config: configuredConfig(autoSync: false),
@@ -378,7 +408,10 @@ void main() {
           state: SyncTrustState.syncedSuccessfully,
         ),
       );
-      final coordinator = TestableSyncUiCoordinator(ctx, permissionResult: true);
+      final coordinator = TestableSyncUiCoordinator(
+        ctx,
+        permissionResult: true,
+      );
 
       await coordinator.handleSaveAutoSync(
         provider: provider,
@@ -399,7 +432,10 @@ void main() {
 
       await tester.pumpWidget(const SizedBox());
 
-      final coordinator = TestableSyncUiCoordinator(ctx, permissionResult: true);
+      final coordinator = TestableSyncUiCoordinator(
+        ctx,
+        permissionResult: true,
+      );
       await coordinator.handleSaveAutoSync(
         provider: provider,
         savedToast: '日记已保存',
@@ -416,7 +452,10 @@ void main() {
     testWidgets('自动同步已配置且权限允许：触发 requestAutoSync', (tester) async {
       final ctx = await pumpHarness(tester);
       final provider = buildProvider(config: configuredConfig());
-      final coordinator = TestableSyncUiCoordinator(ctx, permissionResult: true);
+      final coordinator = TestableSyncUiCoordinator(
+        ctx,
+        permissionResult: true,
+      );
 
       await coordinator.requestAutoSyncIfConfigured(provider);
 
@@ -426,7 +465,10 @@ void main() {
     testWidgets('未开启自动同步：不触发', (tester) async {
       final ctx = await pumpHarness(tester);
       final provider = buildProvider(config: configuredConfig(autoSync: false));
-      final coordinator = TestableSyncUiCoordinator(ctx, permissionResult: true);
+      final coordinator = TestableSyncUiCoordinator(
+        ctx,
+        permissionResult: true,
+      );
 
       await coordinator.requestAutoSyncIfConfigured(provider);
 
@@ -436,7 +478,10 @@ void main() {
     testWidgets('权限拒绝：不触发', (tester) async {
       final ctx = await pumpHarness(tester);
       final provider = buildProvider(config: configuredConfig());
-      final coordinator = TestableSyncUiCoordinator(ctx, permissionResult: false);
+      final coordinator = TestableSyncUiCoordinator(
+        ctx,
+        permissionResult: false,
+      );
 
       await coordinator.requestAutoSyncIfConfigured(provider);
 
