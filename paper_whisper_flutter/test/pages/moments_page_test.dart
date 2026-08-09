@@ -38,12 +38,13 @@ import '../support/sync_test_fakes.dart';
 ///   会话去重 + 失败回滚，语义等价原 static `_hasCheckedUpdate`），
 ///   测试不断言更新弹窗行为。
 /// - 免费额度（`PaymentService.canUseProFeatures` 恒为 true，硬编码）
-///   使「当日 3 条」限制分支不可达，无法通过注入覆盖，故无额度用例；
-///   该分支的提取与测试留待重构后注入点就绪。
-/// - 发送失败路径（saveMoment 抛错）页面无 catch，异常成为未处理异步
-///   错误并直接使 widget 测试失败（无法用 takeException 稳定捕获），
-///   故不设独立用例；待 MomentSendPipeline 提供 typed failure 结果后
-///   再补行为刻画测试。
+///   使「当日 3 条」限制分支在 widget 层不可达；额度决策已下沉到
+///   MomentSendPipeline（seam 注入），由
+///   `test/features/moments/moment_send_pipeline_test.dart` 覆盖
+///   quota/success/failure 三分支。
+/// - 发送失败路径：MomentSendPipeline 返回 typed failure，页面展示
+///   失败 Toast；重构前该路径是无 catch 的未处理异步错误，无法用
+///   takeException 稳定捕获，故此前无独立用例。
 /// - 带图片的 moment 依赖真实文件 IO（fake async 下悬挂），图片场景
 ///   只断言渲染无异常，不断言图片解码结果。
 void main() {
@@ -429,6 +430,38 @@ void main() {
 
       expect(find.text('已保存，尚有 3 项待同步'), findsOneWidget);
       expect(syncProvider.requestAutoSyncCallCount, 0);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('发送失败（保存抛错）：typed 失败反馈，不崩溃且输入区可用', (tester) async {
+      momentService.saveError = Exception('磁盘写入失败');
+      final syncProvider = makeSyncProvider();
+      await pumpMomentsPage(
+        tester,
+        syncProvider: syncProvider,
+        physicalSize: const Size(1080, 2400),
+        devicePixelRatio: 3.0,
+      );
+
+      final inputField = find.descendant(
+        of: find.byType(MomentInputWidget),
+        matching: find.byType(TextField),
+      );
+      await tester.enterText(inputField, '会失败的内容');
+      await tester.pump();
+      await tester.tap(find.byIcon(Icons.send));
+      await tester.pumpAndSettle();
+
+      // 尝试保存过一次，但失败内容未进入列表
+      expect(momentService.saveCallCount, 1);
+      expect(find.text('发送失败，请稍后重试'), findsOneWidget);
+      expect(find.text('会失败的内容'), findsNothing);
+      // 无未处理异步异常（重构前该路径直接使 widget 测试失败）
+      expect(tester.takeException(), isNull);
+      // 输入区仍可用，可继续输入重试
+      await tester.enterText(inputField, '重试内容');
+      await tester.pump();
+      expect(find.text('重试内容'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   });

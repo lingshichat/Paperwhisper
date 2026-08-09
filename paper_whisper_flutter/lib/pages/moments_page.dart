@@ -25,6 +25,14 @@ import '../pages/premium_membership_page.dart';
 import '../widgets/slide_page_route.dart';
 import '../features/update/application/update_check_coordinator.dart';
 import '../widgets/update_dialog.dart'; // Added
+import '../features/moments/application/moment_index.dart';
+import '../features/moments/application/moment_send_pipeline.dart';
+import '../features/moments/application/moments_timeline_controller.dart';
+import '../features/moments/presentation/widgets/moments_desktop_header.dart';
+import '../features/moments/presentation/widgets/moments_empty_state.dart';
+import '../features/moments/presentation/widgets/moments_limit_banner.dart';
+import '../features/moments/presentation/widgets/moments_search_results.dart';
+import '../features/moments/presentation/widgets/moments_waterfall.dart';
 
 class MomentsPage extends StatefulWidget {
   const MomentsPage({super.key});
@@ -37,25 +45,13 @@ class _MomentsPageState extends State<MomentsPage> {
   // 共享 MomentService（composition root 注入），避免页面维护写
   // Manifest 的独立实例。
   late final MomentService _momentService;
-  List<Moment> _latestMoments = [];
-  Map<String, List<Moment>> _momentsByDay = {};
-  Map<String, int> _imageCountByDay = {};
+  late final MomentsTimelineController _timeline;
+  MomentIndex _index = MomentIndex.build(const []);
   String _cachedSearchQuery = '';
   int _momentsRevision = 0;
   int _cachedSearchRevision = -1;
   List<Moment> _cachedFilteredMoments = const [];
   Directory? _baseDir;
-  DateTime _selectedDate = DateTime.now();
-
-  late PageController _pageController;
-  late FixedExtentScrollController _rulerController;
-
-  final int _dayRange = 3650;
-  late DateTime _startDate;
-
-  // Flags to prevent circular sync
-  bool _isRulerActive = false;
-  bool _isPageActive = false;
 
   // Search State
   bool _isSearching = false;
@@ -70,8 +66,7 @@ class _MomentsPageState extends State<MomentsPage> {
   void initState() {
     super.initState();
     _momentService = context.read<MomentService>();
-    _initDates();
-    _initControllers();
+    _timeline = MomentsTimelineController();
     _loadData();
 
     // Listen to focus changes to rebuild UI (toggle dismiss layer)
@@ -114,76 +109,11 @@ class _MomentsPageState extends State<MomentsPage> {
     }
   }
 
-  void _initDates() {
-    // Same normalization logic as Ruler
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    _startDate = today.subtract(const Duration(days: 365 * 5));
-
-    // Initial Index
-    final selectedNormalized = DateTime(
-      _selectedDate.year,
-      _selectedDate.month,
-      _selectedDate.day,
-    );
-    int initialIndex = selectedNormalized.difference(_startDate).inDays;
-    if (initialIndex < 0) initialIndex = 0;
-
-    _pageController = PageController(initialPage: initialIndex);
-    _rulerController = FixedExtentScrollController(initialItem: initialIndex);
-  }
-
-  void _initControllers() {
-    // Sync Ruler -> Page (When user scrolls ruler)
-    // Note: ListWheelScrollView physics might fight if we jump too often?
-    // Let's us notification listener on Ruler side or just listener on controller?
-    // Controller listener doesn't tell us source.
-    // RulerDatePicker exposes controller. We need to wrap RulerDatePicker in NotificationListener
-    // to detect if user is touching it.
-
-    // Actually simpler: In build method, wrap RulerDatePicker with NotificationListener.
-  }
-
   @override
   void dispose() {
-    _pageController.dispose();
-    _rulerController.dispose();
+    _timeline.dispose();
     _inputFocusNode.dispose(); // Dispose focus node
     super.dispose();
-  }
-
-  String _dayKey(DateTime date) => '${date.year}-${date.month}-${date.day}';
-
-  _MomentLookupCache _buildMomentLookupCache(List<Moment> moments) {
-    final latestMoments = List<Moment>.from(moments)
-      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    final momentsByDay = <String, List<Moment>>{};
-    final imageCountByDay = <String, int>{};
-
-    for (final moment in moments) {
-      final key = _dayKey(moment.createdAt);
-      momentsByDay.putIfAbsent(key, () => <Moment>[]).add(moment);
-      imageCountByDay[key] = (imageCountByDay[key] ?? 0) + moment.images.length;
-    }
-
-    for (final dailyMoments in momentsByDay.values) {
-      dailyMoments.sort((a, b) => a.createdAt.compareTo(b.createdAt));
-    }
-
-    return _MomentLookupCache(
-      latestMoments: latestMoments,
-      momentsByDay: momentsByDay,
-      imageCountByDay: imageCountByDay,
-    );
-  }
-
-  List<Moment> _getMomentsForDate(DateTime date) {
-    return _momentsByDay[_dayKey(date)] ?? const [];
-  }
-
-  // 计算指定日期随心记中的图片总数
-  int _getImageCountForDate(DateTime date) {
-    return _imageCountByDay[_dayKey(date)] ?? 0;
   }
 
   List<Moment> _getFilteredMoments(String query) {
@@ -194,7 +124,7 @@ class _MomentsPageState extends State<MomentsPage> {
       return _cachedFilteredMoments;
     }
 
-    final filteredMoments = _latestMoments
+    final filteredMoments = _index.latestMoments
         .where((moment) => moment.content.contains(query))
         .toList(growable: false);
 
@@ -205,18 +135,18 @@ class _MomentsPageState extends State<MomentsPage> {
   }
 
   void _onDateChanged(DateTime date, {bool animate = true}) {
-    if (_isSameDay(date, _selectedDate)) return;
+    if (_timeline.isSameDay(date, _timeline.selectedDate)) return;
 
     setState(() {
-      _selectedDate = date;
+      _timeline.selectDate(date);
     });
 
     // If caused by explicit selection (e.g. tap on ruler item not implemented yet but if any), sync page
     if (animate) {
-      int index = date.difference(_startDate).inDays;
-      if (_pageController.hasClients &&
-          _pageController.page?.round() != index) {
-        _pageController.animateToPage(
+      int index = _timeline.indexForDate(date);
+      if (_timeline.pageController.hasClients &&
+          _timeline.pageController.page?.round() != index) {
+        _timeline.pageController.animateToPage(
           index,
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOut,
@@ -227,8 +157,12 @@ class _MomentsPageState extends State<MomentsPage> {
     }
   }
 
-  bool _isSameDay(DateTime a, DateTime b) {
-    return a.year == b.year && a.month == b.month && a.day == b.day;
+  /// 跳转赞助页（额度弹窗与额度提示条共用）。
+  void _openPremiumMembership() {
+    Navigator.push(
+      context,
+      SlidePageRoute(page: const PremiumMembershipPage()),
+    );
   }
 
   Future<void> _handleSend(
@@ -238,12 +172,25 @@ class _MomentsPageState extends State<MomentsPage> {
     String? audioTitle,
     int? audioDuration,
   }) async {
-    // 会员 / 试用：免费用户当日限 3 条
-    final pay = Provider.of<PaymentService>(context, listen: false);
-    if (!pay.canUseProFeatures) {
-      final todayCount = _getMomentsForDate(DateTime.now()).length;
-      if (todayCount >= 3) {
-        if (!mounted) return;
+    // 发送管线 context-free：额度 → 图片/audio 落盘 → Moment 保存，
+    // 返回 typed 结果；失败不清输入且不产生未处理异步错误。
+    final pipeline = MomentSendPipeline(
+      momentService: _momentService,
+      canUseProFeatures: () => context.read<PaymentService>().canUseProFeatures,
+      todayMomentCount: () => _index.momentsForDate(DateTime.now()).length,
+    );
+    final result = await pipeline.send(
+      content: content,
+      images: [for (final img in images) File(img.path)],
+      audioPath: audioPath,
+      audioTitle: audioTitle,
+      audioDuration: audioDuration,
+    );
+    if (!mounted) return;
+
+    switch (result) {
+      case MomentSendQuotaExceeded():
+        // 免费额度弹窗（原「今日额度已用完」对话框）
         final go = await showDialog<bool>(
           context: context,
           builder: (ctx) => SkeuomorphicDialog(
@@ -264,68 +211,25 @@ class _MomentsPageState extends State<MomentsPage> {
           ),
         );
         if (go == true && mounted) {
-          Navigator.push(
-            context,
-            SlidePageRoute(page: const PremiumMembershipPage()),
-          );
+          _openPremiumMembership();
         }
-        return;
-      }
-    }
-
-    // 1. Save images
-    List<String> savedPaths = [];
-    for (var img in images) {
-      String path = await _momentService.saveImage(File(img.path));
-      savedPaths.add(path);
-    }
-
-    // 2. Save Audio
-    String? savedAudioPath;
-    if (audioPath != null) {
-      try {
-        savedAudioPath = await _momentService.saveAudio(audioPath);
-      } catch (e) {
-        debugPrint("Error saving audio: $e");
-      }
-    }
-
-    // 3. Create Moment
-    // ...
-
-    Moment newMoment = Moment.create(
-      content: content,
-      images: savedPaths,
-      audioPath: savedAudioPath,
-      audioTitle: audioTitle,
-      audioDuration: audioDuration,
-      // Default weather/mood for quick input? Or random? Or none.
-    );
-    // Adjust timestamp
-    // Moment.create uses DateTime.now(). We should probably allow overriding.
-    // Since Moment.create doesn't support custom date in my previous impl, check model.
-    // If model has only 'create' factory, I might need to edit it manually or just let it be Now.
-    // Let's stick to "Now" for simplicity, or if Moment model allows, set createdAt.
-    // Checking previous context... Moment model has createdAt final.
-    // I can't easily change it without refactoring Moment.
-    // But since it's "Suixinji" (Spontaneous), "Now" makes sense.
-    // If user is viewing yesterday and types, does it go to yesterday?
-    // Flomo usually acts as Inbox, always Now.
-    // BUT user wants typical journal backdating often.
-    // Let's assume "Now" for this iteration to match Flomo behavior unless specified.
-
-    await _momentService.saveMoment(newMoment);
-    await _loadData(); // visual refresh
-
-    if (mounted) {
-      final syncProvider = context.read<SyncProvider>();
-      // 保存后自动同步决策与即时 pending 提示统一由 SyncUiCoordinator 处理。
-      await SyncUiCoordinator(context).handleSaveAutoSync(
-        provider: syncProvider,
-        savedToast: '记录已保存',
-        preparingToast: '记录已保存，准备同步...',
-        preparingToastAsInfo: true,
-      );
+      case MomentSendSuccess():
+        await _loadData(); // visual refresh
+        if (!mounted) return;
+        final syncProvider = context.read<SyncProvider>();
+        // 保存后自动同步决策与即时 pending 提示统一由 SyncUiCoordinator
+        // 处理（内部消费 context-free 的 SaveSyncCoordinator 决策）。
+        await SyncUiCoordinator(context).handleSaveAutoSync(
+          provider: syncProvider,
+          savedToast: '记录已保存',
+          preparingToast: '记录已保存，准备同步...',
+          preparingToastAsInfo: true,
+        );
+      case MomentSendFailure():
+        // typed 失败反馈：不再成为未处理异步错误，仅提示 Toast。
+        // 输入清空由 MomentInputWidget 在触发发送后同步完成（重构前行为），
+        // 与成败无关，此处不处理输入状态。
+        SkeuomorphicToast.error(context, '发送失败，请稍后重试');
     }
   }
 
@@ -409,7 +313,7 @@ class _MomentsPageState extends State<MomentsPage> {
     if (result != null) {
       try {
         await _momentService.exportDailySummary(
-          _selectedDate,
+          _timeline.selectedDate,
           customTitle: result,
         );
 
@@ -418,7 +322,8 @@ class _MomentsPageState extends State<MomentsPage> {
         final syncProvider = context.read<SyncProvider>();
         await syncProvider.refreshTrustSnapshot();
         if (!mounted) return;
-        // 聚合导出后的自动同步请求（权限前置）由 SyncUiCoordinator 处理。
+        // 聚合导出后的自动同步请求（权限前置）由 SyncUiCoordinator 处理，
+        // 配置门禁消费 SaveSyncCoordinator.shouldAutoSync。
         await SyncUiCoordinator(
           context,
         ).requestAutoSyncIfConfigured(syncProvider);
@@ -444,12 +349,10 @@ class _MomentsPageState extends State<MomentsPage> {
   Future<void> _loadData() async {
     await _momentService.init();
     final moments = await _momentService.getMoments();
-    final lookupCache = _buildMomentLookupCache(moments);
+    final index = MomentIndex.build(moments);
     if (mounted) {
       setState(() {
-        _latestMoments = lookupCache.latestMoments;
-        _momentsByDay = lookupCache.momentsByDay;
-        _imageCountByDay = lookupCache.imageCountByDay;
+        _index = index;
         _momentsRevision++;
         _cachedSearchRevision = -1;
         _baseDir = _momentService.dataDir;
@@ -515,7 +418,9 @@ class _MomentsPageState extends State<MomentsPage> {
           (payment) => payment.canUseProFeatures,
         );
         final showLimitBanner =
-            !canUse && _getMomentsForDate(DateTime.now()).length >= 3;
+            !canUse &&
+            _index.momentsForDate(DateTime.now()).length >=
+                MomentSendPipeline.freeDailyLimit;
 
         // 简化 content 结构：直接使用 SafeArea + Column，避免嵌套 Stack 导致的渲染问题
         final Widget content = SafeArea(
@@ -528,7 +433,15 @@ class _MomentsPageState extends State<MomentsPage> {
                 Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    _buildDesktopHeader(appBarTextColor, appBarIconColor),
+                    MomentsDesktopHeader(
+                      selectedDate: _timeline.selectedDate,
+                      imageCount: _index.imageCountForDate(
+                        _timeline.selectedDate,
+                      ),
+                      textColor: appBarTextColor,
+                      iconColor: appBarIconColor,
+                      onGenerate: _handleAggregation,
+                    ),
                     // 恢复尺子
                     SizedBox(
                       height: 85,
@@ -544,10 +457,10 @@ class _MomentsPageState extends State<MomentsPage> {
                           return false;
                         },
                         child: RulerDatePicker(
-                          selectedDate: _selectedDate,
+                          selectedDate: _timeline.selectedDate,
                           onDateChanged: (d) =>
                               _onDateChanged(d, animate: false), // 不驱动 PageView
-                          controller: _rulerController,
+                          controller: _timeline.rulerController,
                           accentColor: rulerAccent,
                           backgroundColor: rulerBg,
                           textColor: rulerTextColor,
@@ -566,9 +479,12 @@ class _MomentsPageState extends State<MomentsPage> {
               // If searching, show result list. Else show regular layout.
               if (isSearchActive)
                 Expanded(
-                  child: _buildSearchResults(
-                    filteredMoments,
+                  child: MomentsSearchResults(
+                    moments: filteredMoments,
+                    baseDir: _baseDir,
                     textColor: rulerTextColor,
+                    bottomPadding: _inputHeight + 20,
+                    onDelete: (moment) => _handleMomentDeleted(moment.uuid),
                   ),
                 )
               else if (isDesktop)
@@ -577,10 +493,19 @@ class _MomentsPageState extends State<MomentsPage> {
                   child: Stack(
                     children: [
                       // Grid - 联动尺子日期
-                      _buildDesktopWaterfall(
-                        context,
-                        _getMomentsForDate(_selectedDate),
-                      ),
+                      _index.momentsForDate(_timeline.selectedDate).isEmpty
+                          ? MomentsEmptyState(
+                              date: DateTime.now(),
+                              theme: theme,
+                            )
+                          : MomentsWaterfall(
+                              moments: _index.momentsForDate(
+                                _timeline.selectedDate,
+                              ),
+                              baseDir: _baseDir,
+                              onDelete: (moment) =>
+                                  _handleMomentDeleted(moment.uuid),
+                            ),
 
                       // Floating Input (Bottom Center) - 拟物化悬浮岛设计
                       Align(
@@ -590,7 +515,10 @@ class _MomentsPageState extends State<MomentsPage> {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              if (showLimitBanner) _buildLimitBanner(context),
+                              if (showLimitBanner)
+                                MomentsLimitBanner(
+                                  onUpgrade: _openPremiumMembership,
+                                ),
                               Container(
                                 width: 600,
                                 decoration: BoxDecoration(
@@ -633,26 +561,24 @@ class _MomentsPageState extends State<MomentsPage> {
                   onNotification: (notification) {
                     if (notification.depth == 0 &&
                         notification is ScrollUpdateNotification) {
-                      if (_isPageActive) return false;
-                      _isRulerActive = true;
-
-                      if (_pageController.hasClients &&
-                          _rulerController.hasClients) {
-                        double rulerOffset = _rulerController.offset;
-                        double page = rulerOffset / 70.0;
+                      if (!_timeline.shouldProcessRulerScroll()) return false;
+                      if (_timeline.pageController.hasClients &&
+                          _timeline.rulerController.hasClients) {
+                        double rulerOffset = _timeline.rulerController.offset;
+                        double page = _timeline.pageForRulerOffset(rulerOffset);
                         double pageWidth =
-                            _pageController.position.viewportDimension;
-                        _pageController.jumpTo(page * pageWidth);
+                            _timeline.pageController.position.viewportDimension;
+                        _timeline.pageController.jumpTo(page * pageWidth);
                       }
                     } else if (notification is ScrollEndNotification) {
-                      _isRulerActive = false;
+                      _timeline.rulerScrollEnded();
                     }
                     return false;
                   },
                   child: RulerDatePicker(
-                    selectedDate: _selectedDate,
+                    selectedDate: _timeline.selectedDate,
                     onDateChanged: (d) => _onDateChanged(d),
-                    controller: _rulerController,
+                    controller: _timeline.rulerController,
                     accentColor: rulerAccent,
                     backgroundColor: rulerBg,
                     textColor: rulerTextColor,
@@ -671,23 +597,28 @@ class _MomentsPageState extends State<MomentsPage> {
                     onNotification: (notification) {
                       if (notification.depth == 0 &&
                           notification is ScrollUpdateNotification) {
-                        if (_isRulerActive) return false;
-                        _isPageActive = true;
-
-                        if (_pageController.hasClients &&
-                            _rulerController.hasClients) {
-                          double page = _pageController.page ?? 0;
-                          double rulerOffset = page * 70.0;
-                          _rulerController.jumpTo(rulerOffset);
+                        if (!_timeline.shouldProcessPageScroll()) return false;
+                        if (_timeline.pageController.hasClients &&
+                            _timeline.rulerController.hasClients) {
+                          double page = _timeline.pageController.page ?? 0;
+                          double rulerOffset = _timeline.rulerOffsetForPage(
+                            page,
+                          );
+                          _timeline.rulerController.jumpTo(rulerOffset);
                         }
                       } else if (notification is ScrollEndNotification) {
-                        _isPageActive = false;
-                        if (!_isRulerActive && _pageController.hasClients) {
-                          int pageIndex = _pageController.page?.round() ?? 0;
-                          DateTime targetDate = _startDate.add(
-                            Duration(days: pageIndex),
+                        _timeline.pageScrollEnded();
+                        if (!_timeline.isRulerActive &&
+                            _timeline.pageController.hasClients) {
+                          int pageIndex =
+                              _timeline.pageController.page?.round() ?? 0;
+                          DateTime targetDate = _timeline.dateForIndex(
+                            pageIndex,
                           );
-                          if (!_isSameDay(targetDate, _selectedDate)) {
+                          if (!_timeline.isSameDay(
+                            targetDate,
+                            _timeline.selectedDate,
+                          )) {
                             _onDateChanged(targetDate, animate: false);
                           }
                         }
@@ -695,18 +626,18 @@ class _MomentsPageState extends State<MomentsPage> {
                       return false;
                     },
                     child: PageView.builder(
-                      controller: _pageController,
-                      itemCount: _dayRange,
+                      controller: _timeline.pageController,
+                      itemCount: MomentsTimelineController.dayRange,
                       physics: const BouncingScrollPhysics(),
                       onPageChanged: (index) {
                         // Optional: Could trigger haptic feedback here
                       },
                       itemBuilder: (context, index) {
-                        DateTime date = _startDate.add(Duration(days: index));
-                        List<Moment> moments = _getMomentsForDate(date);
+                        DateTime date = _timeline.dateForIndex(index);
+                        List<Moment> moments = _index.momentsForDate(date);
 
                         if (moments.isEmpty) {
-                          return _buildEmptyStateForDate(date);
+                          return MomentsEmptyState(date: date, theme: theme);
                         }
 
                         return ListView.builder(
@@ -775,11 +706,11 @@ class _MomentsPageState extends State<MomentsPage> {
             autoFocus: true,
           );
         } else {
-          final imageCount = _getImageCountForDate(_selectedDate);
+          final imageCount = _index.imageCountForDate(_timeline.selectedDate);
           headerTitle = Column(
             children: [
               Text(
-                "${_selectedDate.year}年${_selectedDate.month}月",
+                "${_timeline.selectedDate.year}年${_timeline.selectedDate.month}月",
                 style: GoogleFonts.notoSerifSc(
                   color: appBarTextColor.withValues(alpha: 0.8),
                   fontSize: 13,
@@ -944,7 +875,10 @@ class _MomentsPageState extends State<MomentsPage> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          if (showLimitBanner) _buildLimitBanner(bodyContext),
+                          if (showLimitBanner)
+                            MomentsLimitBanner(
+                              onUpgrade: _openPremiumMembership,
+                            ),
                           MomentInputWidget(
                             onSend: _handleSend,
                             focusNode: _inputFocusNode,
@@ -970,279 +904,4 @@ class _MomentsPageState extends State<MomentsPage> {
       },
     );
   }
-
-  Widget _buildLimitBanner(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFF8D6E63).withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFF5D4037)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.lock_outline, color: Colors.white70, size: 20),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              '今日随心记已用完 (3/3)，赞助后解锁无限创作',
-              style: GoogleFonts.notoSerifSc(color: Colors.white, fontSize: 13),
-            ),
-          ),
-          GestureDetector(
-            onTap: () => Navigator.push(
-              context,
-              SlidePageRoute(page: const PremiumMembershipPage()),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: Text(
-                '去赞助',
-                style: GoogleFonts.notoSerifSc(
-                  color: const Color(0xFFFFE0B2),
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSearchResults(List<Moment> filteredMoments, {Color? textColor}) {
-    // 使用透明容器，确保背景可以穿透显示
-    return Container(
-      color: Colors.transparent, // 透明背景
-      child: filteredMoments.isEmpty
-          ? Center(
-              child: Opacity(
-                opacity: 0.7,
-                child: Text(
-                  '没有找到相关记忆...',
-                  style: GoogleFonts.notoSerifSc(
-                    color: textColor?.withValues(alpha: 0.7) ?? Colors.white70,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
-            )
-          : ListView.builder(
-              padding: EdgeInsets.only(top: 20, bottom: _inputHeight + 20),
-              itemCount: filteredMoments.length,
-              itemBuilder: (context, i) {
-                return MomentCard(
-                  moment: filteredMoments[i],
-                  baseDir: _baseDir,
-                  onDelete: () async {
-                    await _handleMomentDeleted(filteredMoments[i].uuid);
-                  },
-                );
-              },
-            ),
-    );
-  }
-
-  Widget _buildDesktopHeader(Color textColor, Color iconColor) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05), // Subtle bg for header
-        border: Border(
-          bottom: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
-        ),
-      ),
-      child: Row(
-        children: [
-          // Leading (empty or back?) - No drawer icon needed
-          const SizedBox(
-            width: 48,
-          ), // Spacer to center title if needed, or just let it adjust
-
-          Expanded(
-            child: Column(
-              children: [
-                Text(
-                  "${_selectedDate.year}年${_selectedDate.month}月",
-                  style: GoogleFonts.notoSerifSc(
-                    color: textColor.withValues(alpha: 0.8),
-                    fontSize: 13,
-                  ),
-                ),
-                Builder(
-                  builder: (context) {
-                    final imageCount = _getImageCountForDate(_selectedDate);
-                    return Row(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          "随心记",
-                          style: GoogleFonts.notoSerifSc(
-                            color: textColor,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                        if (imageCount > 0) ...[
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: iconColor.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.image, size: 10, color: iconColor),
-                                const SizedBox(width: 2),
-                                Text(
-                                  '$imageCount',
-                                  style: GoogleFonts.notoSerifSc(
-                                    color: iconColor,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ],
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-
-          IconButton(
-            key: const ValueKey('desktop_generate_btn'),
-            icon: Icon(Icons.description_outlined, color: iconColor),
-            tooltip: '生成今日日记',
-            onPressed: _handleAggregation,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyStateForDate(DateTime date) {
-    final bool isToday = _isSameDay(date, DateTime.now());
-    final theme = Provider.of<SettingsProvider>(
-      context,
-      listen: false,
-    ).currentTheme;
-    final themeConfig = AppTheme.getMomentsTheme(theme);
-    final Color iconColor = themeConfig['emptyStateIconColor'] as Color;
-    final Color textColor = themeConfig['emptyStateTextColor'] as Color;
-
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            isToday ? Icons.lightbulb_outline : Icons.edit_note,
-            size: 80,
-            color: iconColor,
-          ),
-          const SizedBox(height: 24),
-          Text(
-            isToday ? "这一天不仅是空白，更是无限可能" : "这天没有留下记录",
-            textAlign: TextAlign.center,
-            style: GoogleFonts.notoSerifSc(
-              fontSize: 16,
-              color: textColor,
-              height: 1.5,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDesktopWaterfall(BuildContext context, List<Moment> moments) {
-    if (moments.isEmpty) {
-      // Just pick a random date or today for empty state logic
-      return _buildEmptyStateForDate(DateTime.now());
-    }
-
-    // Sort by latest first for waterfall (Spontaneous inputs matter most)
-    final sortedMoments = List<Moment>.from(moments);
-    sortedMoments.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final width = constraints.maxWidth;
-        // Logic from DiaryListPage
-        int columnCount = 1;
-        if (width > 1200) {
-          // Slightly wider for moments card
-          columnCount = 3;
-        } else if (width > 750) {
-          columnCount = 2;
-        }
-
-        // Masonry Logic
-        List<List<Moment>> columns = List.generate(columnCount, (_) => []);
-        for (int i = 0; i < sortedMoments.length; i++) {
-          columns[i % columnCount].add(sortedMoments[i]);
-        }
-
-        return SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(
-            40,
-            20,
-            40,
-            100,
-          ), // Bottom padding for input widget
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              for (int i = 0; i < columnCount; i++)
-                Expanded(
-                  child: Padding(
-                    padding: i < columnCount - 1
-                        ? const EdgeInsets.only(right: 24)
-                        : EdgeInsets.zero,
-                    child: Column(
-                      children: columns[i].map((moment) {
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 24),
-                          child: MomentCard(
-                            moment: moment,
-                            baseDir: _baseDir,
-                            onDelete: () async {
-                              await _handleMomentDeleted(moment.uuid);
-                            },
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _MomentLookupCache {
-  final List<Moment> latestMoments;
-  final Map<String, List<Moment>> momentsByDay;
-  final Map<String, int> imageCountByDay;
-
-  const _MomentLookupCache({
-    required this.latestMoments,
-    required this.momentsByDay,
-    required this.imageCountByDay,
-  });
 }
