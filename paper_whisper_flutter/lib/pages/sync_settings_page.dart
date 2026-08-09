@@ -10,6 +10,7 @@ import '../providers/sync_provider.dart';
 import '../services/payment_service.dart';
 import '../features/sync/presentation/sync_ui_coordinator.dart';
 import '../features/sync/presentation/sync_status_formatter.dart';
+import '../features/sync_settings/application/sync_settings_form_controller.dart';
 import '../widgets/skeuomorphic_toast.dart';
 import 'premium_membership_page.dart';
 import '../widgets/slide_page_route.dart';
@@ -23,19 +24,10 @@ class SyncSettingsPage extends StatefulWidget {
 
 class _SyncSettingsPageState extends State<SyncSettingsPage> {
   final _formKey = GlobalKey<FormState>();
-  late TextEditingController _serverController;
-  late TextEditingController _usernameController;
-  late TextEditingController _passwordController;
 
-  // S3 Controllers
-  late TextEditingController _s3EndPointController;
-  late TextEditingController _s3AccessKeyController;
-  late TextEditingController _s3SecretKeyController;
-  late TextEditingController _s3BucketController;
-  late TextEditingController _s3RegionController;
+  /// 表单控制器：持有 8 个输入控制器与 autoSync/compressImages/syncType 草稿状态。
+  late final SyncSettingsFormController controller;
 
-  bool _autoSync = false;
-  bool _compressImages = true;
   bool _isLoading = false;
   bool _isBootstrapping = true;
 
@@ -43,74 +35,52 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
   void initState() {
     super.initState();
     final config = Provider.of<SyncProvider>(context, listen: false).config;
-    _serverController = TextEditingController(text: config.serverUrl);
-    _usernameController = TextEditingController(text: config.username);
-    _passwordController = TextEditingController(text: config.password);
-
-    _s3EndPointController = TextEditingController(text: config.s3EndPoint);
-    _s3AccessKeyController = TextEditingController(text: config.s3AccessKey);
-    _s3SecretKeyController = TextEditingController(text: config.s3SecretKey);
-    _s3BucketController = TextEditingController(text: config.s3BucketName);
-    _s3RegionController = TextEditingController(text: config.s3Region ?? '');
-
-    _autoSync = config.autoSync;
-    _compressImages = config.compressImages;
-
+    controller = SyncSettingsFormController(config: config);
     Future<void>.microtask(_loadInitialConfig);
   }
 
   @override
   void dispose() {
-    _serverController.dispose();
-    _usernameController.dispose();
-    _passwordController.dispose();
-    _s3EndPointController.dispose();
-    _s3AccessKeyController.dispose();
-    _s3SecretKeyController.dispose();
-    _s3BucketController.dispose();
-    _s3RegionController.dispose();
+    controller.dispose();
     super.dispose();
   }
 
   Future<void> _saveAndTest() async {
     if (_isBootstrapping) return;
     if (!_formKey.currentState!.validate()) return;
-
     setState(() => _isLoading = true);
 
     final provider = Provider.of<SyncProvider>(context, listen: false);
-    final newConfig = _buildDraftConfig(provider, enabled: true);
+    final outcome = await controller.saveAndTest(
+      SyncProviderGatewayImpl(provider),
+    );
 
-    try {
-      await provider.saveConfig(newConfig);
-      final success = await provider.connect();
-
-      if (!mounted) return;
-
-      setState(() => _isLoading = false);
-      if (success) {
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+    switch (outcome) {
+      case SyncFormActionSaved():
         SkeuomorphicToast.success(context, '连接成功，配置已保存');
-      } else {
+      case SyncFormActionTestFailed(:final lastError):
         SkeuomorphicToast.error(
           context,
-          provider.lastError.isEmpty ? '连接失败，请检查配置' : provider.lastError,
+          lastError.isEmpty ? '连接失败，请检查配置' : lastError,
         );
-      }
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-      SkeuomorphicToast.error(context, '保存失败，请稍后重试');
+      case SyncFormActionInvalid():
+        break;
+      case SyncFormActionError():
+        SkeuomorphicToast.error(context, '保存失败，请稍后重试');
     }
   }
 
   Future<void> _syncNow() async {
     if (_isBootstrapping) return;
     if (!_formKey.currentState!.validate()) return;
-
     setState(() => _isLoading = true);
     final provider = Provider.of<SyncProvider>(context, listen: false);
     try {
-      await provider.saveConfig(_buildDraftConfig(provider, enabled: true));
+      await provider.saveConfig(
+        controller.buildConfig(base: provider.config, enabled: true),
+      );
       if (!mounted) return;
       // 手动同步的权限前置与结果 Toast 反馈由 SyncUiCoordinator 处理。
       await SyncUiCoordinator(context).runManualSync(provider);
@@ -128,20 +98,20 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
 
   Future<void> _disableSync() async {
     if (_isBootstrapping) return;
-
     setState(() => _isLoading = true);
     final provider = Provider.of<SyncProvider>(context, listen: false);
-    try {
-      await provider.saveConfig(_buildDraftConfig(provider, enabled: false));
-      if (!mounted) return;
-      SkeuomorphicToast.info(context, '已停用同步，内容将继续保留在本地');
-    } catch (e) {
-      if (!mounted) return;
-      SkeuomorphicToast.error(context, '停用同步失败，请稍后重试');
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+    final outcome = await controller.disableSync(
+      SyncProviderGatewayImpl(provider),
+    );
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+    switch (outcome) {
+      case SyncFormActionSaved():
+        SkeuomorphicToast.info(context, '已停用同步，内容将继续保留在本地');
+      case SyncFormActionInvalid():
+      case SyncFormActionTestFailed():
+      case SyncFormActionError():
+        SkeuomorphicToast.error(context, '停用同步失败，请稍后重试');
     }
   }
 
@@ -152,64 +122,16 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
     } catch (e) {
       debugPrint('Sync settings bootstrap skipped: $e');
     }
-
     if (!mounted) return;
-    final config = provider.config;
     setState(() {
-      _serverController.text = config.serverUrl;
-      _usernameController.text = config.username;
-      _passwordController.text = config.password;
-      _s3EndPointController.text = config.s3EndPoint;
-      _s3AccessKeyController.text = config.s3AccessKey;
-      _s3SecretKeyController.text = config.s3SecretKey;
-      _s3BucketController.text = config.s3BucketName;
-      _s3RegionController.text = config.s3Region ?? '';
-      _autoSync = config.autoSync;
-      _compressImages = config.compressImages;
+      controller.hydrate(provider.config);
       _isBootstrapping = false;
     });
-  }
-
-  SyncConfig _buildDraftConfig(SyncProvider provider, {required bool enabled}) {
-    return provider.config.copyWith(
-      serverUrl: _serverController.text.trim(),
-      username: _usernameController.text.trim(),
-      password: _passwordController.text.trim(),
-      autoSync: _autoSync,
-      compressImages: _compressImages,
-      enabled: enabled,
-      s3EndPoint: _s3EndPointController.text.trim(),
-      s3AccessKey: _s3AccessKeyController.text.trim(),
-      s3SecretKey: _s3SecretKeyController.text.trim(),
-      s3BucketName: _s3BucketController.text.trim(),
-      s3Region: _s3RegionController.text.trim().isEmpty
-          ? null
-          : _s3RegionController.text.trim(),
-    );
-  }
-
-  String? _validateRequiredField(String? value, String message) {
-    if (value == null || value.trim().isEmpty) {
-      return message;
-    }
-    return null;
-  }
-
-  String? _validateServerUrl(String? value) {
-    final trimmed = value?.trim() ?? '';
-    if (trimmed.isEmpty) {
-      return '请输入服务器地址';
-    }
-    if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
-      return '服务器地址需以 http:// 或 https:// 开头';
-    }
-    return null;
   }
 
   Widget _buildLockCard(BuildContext context, Map<String, dynamic> tc) {
     final textColor = tc['textColor'] as Color;
     final lockBtnColor = tc['lockBtnColor'] as Color;
-
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -283,9 +205,16 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
     // 统一配置获取
     final themeConfig = AppTheme.getSettingsTheme(theme);
     final tc = AppTheme.getSyncSettingsTheme(theme);
+    // 开关配色：优先主题配置，兜底同步页 accent（两处 SwitchListTile 共用）。
+    final activeThumbColor = themeConfig.isNotEmpty
+        ? themeConfig['activeSwitchColor']
+        : tc['accentColor'];
+    final activeTrackColor = themeConfig.isNotEmpty
+        ? themeConfig['activeTrackColor']
+        : (tc['accentColor'] as Color).withValues(alpha: 0.5);
 
-    final Color titleColor = tc['titleColor'];
-    final Color textColor = tc['textColor'];
+    final titleColor = tc['titleColor'];
+    final textColor = tc['textColor'];
 
     return Stack(
       children: [
@@ -296,7 +225,6 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
 
         // 2. Visual Effects
         ...AppTheme.getBackgroundOverlays(theme),
-
         // 3. 内容
         Scaffold(
           backgroundColor: Colors.transparent,
@@ -333,108 +261,106 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               // 协议选择器 (拟物化滑块)
-                              _buildSlidingSwitch(provider, tc),
+                              _buildSlidingSwitch(tc),
 
                               _buildTrustStatusCard(provider, tc, textColor),
                               const SizedBox(height: 24),
 
-                              if (provider.config.syncType ==
-                                  SyncType.webdav) ...[
+                              if (controller.syncType == SyncType.webdav) ...[
                                 _buildSectionTitle('WebDAV 服务器配置', textColor),
                                 const SizedBox(height: 16),
                                 _buildTextField(
-                                  controller: _serverController,
+                                  controller: controller.serverController,
                                   label: '服务器地址',
                                   hint: '例如: https://dav.jianguoyun.com/dav/',
                                   tc: tc,
                                   themeConfig: themeConfig,
                                   icon: Icons.link,
-                                  validator: _validateServerUrl,
+                                  validator: controller.validateServerUrl,
                                 ),
                                 const SizedBox(height: 16),
                                 _buildTextField(
-                                  controller: _usernameController,
+                                  controller: controller.usernameController,
                                   label: '账号 (Email)',
                                   hint: '您的 WebDAV 账号邮箱',
                                   tc: tc,
                                   themeConfig: themeConfig,
                                   icon: Icons.person_outline,
-                                  validator: (value) =>
-                                      _validateRequiredField(value, '请输入账号'),
+                                  validator: (value) => controller
+                                      .validateRequired(value, '请输入账号'),
                                 ),
                                 const SizedBox(height: 16),
                                 _buildTextField(
-                                  controller: _passwordController,
+                                  controller: controller.passwordController,
                                   label: '密码 / 应用授权码',
                                   hint: '坚果云请使用"第三方应用密码"',
                                   tc: tc,
                                   themeConfig: themeConfig,
                                   icon: Icons.lock_outline,
                                   obscureText: true,
-                                  validator: (value) => _validateRequiredField(
-                                    value,
-                                    '请输入密码或应用授权码',
-                                  ),
+                                  validator: (value) => controller
+                                      .validateRequired(value, '请输入密码或应用授权码'),
                                 ),
                               ] else ...[
                                 _buildSectionTitle('S3 对象存储配置', textColor),
                                 const SizedBox(height: 16),
                                 _buildTextField(
-                                  controller: _s3EndPointController,
+                                  controller: controller.s3EndPointController,
                                   label: 'Endpoint (API 地址)',
                                   hint:
                                       '例如: play.min.io 或 oss-cn-hangzhou.aliyuncs.com',
                                   tc: tc,
                                   themeConfig: themeConfig,
                                   icon: Icons.dns_outlined,
-                                  validator: (value) => _validateRequiredField(
-                                    value,
-                                    '请输入 Endpoint 地址',
-                                  ),
+                                  validator: (value) =>
+                                      controller.validateRequired(
+                                        value,
+                                        '请输入 Endpoint 地址',
+                                      ),
                                 ),
                                 const SizedBox(height: 16),
                                 _buildTextField(
-                                  controller: _s3BucketController,
+                                  controller: controller.s3BucketController,
                                   label: 'Bucket (存储桶名称)',
                                   hint: '例如: paper-whisper-backup',
                                   tc: tc,
                                   themeConfig: themeConfig,
                                   icon: Icons.folder_open_outlined,
-                                  validator: (value) => _validateRequiredField(
-                                    value,
-                                    '请输入 Bucket 名称',
-                                  ),
+                                  validator: (value) => controller
+                                      .validateRequired(value, '请输入 Bucket 名称'),
                                 ),
                                 const SizedBox(height: 16),
                                 _buildTextField(
-                                  controller: _s3AccessKeyController,
+                                  controller: controller.s3AccessKeyController,
                                   label: 'Access Key (访问密钥)',
                                   hint: 'AK...',
                                   tc: tc,
                                   themeConfig: themeConfig,
                                   icon: Icons.vpn_key_outlined,
-                                  validator: (value) => _validateRequiredField(
-                                    value,
-                                    '请输入 Access Key',
-                                  ),
+                                  validator: (value) =>
+                                      controller.validateRequired(
+                                        value,
+                                        '请输入 Access Key',
+                                      ),
                                 ),
                                 const SizedBox(height: 16),
                                 _buildTextField(
-                                  controller: _s3SecretKeyController,
+                                  controller: controller.s3SecretKeyController,
                                   label: 'Secret Key (私有密钥)',
                                   hint: 'SK...',
                                   tc: tc,
                                   themeConfig: themeConfig,
                                   icon: Icons.password_outlined,
                                   obscureText: true,
-                                  validator: (value) => _validateRequiredField(
-                                    value,
-                                    '请输入 Secret Key',
-                                  ),
+                                  validator: (value) =>
+                                      controller.validateRequired(
+                                        value,
+                                        '请输入 Secret Key',
+                                      ),
                                 ),
                                 const SizedBox(height: 16),
                                 _buildTextField(
-                                  controller: _s3RegionController,
+                                  controller: controller.s3RegionController,
                                   label: 'Region (区域 - 可选)',
                                   hint: '默认自动，如 us-east-1',
                                   tc: tc,
@@ -457,16 +383,12 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                                 child: Material(
                                   color: Colors.transparent,
                                   child: SwitchListTile(
-                                    value: _autoSync,
-                                    onChanged: (val) =>
-                                        setState(() => _autoSync = val),
-                                    activeThumbColor: themeConfig.isNotEmpty
-                                        ? themeConfig['activeSwitchColor']
-                                        : tc['accentColor'],
-                                    activeTrackColor: themeConfig.isNotEmpty
-                                        ? themeConfig['activeTrackColor']
-                                        : (tc['accentColor'] as Color)
-                                              .withValues(alpha: 0.5),
+                                    value: controller.autoSync,
+                                    onChanged: (val) => setState(
+                                      () => controller.autoSync = val,
+                                    ),
+                                    activeThumbColor: activeThumbColor,
+                                    activeTrackColor: activeTrackColor,
                                     title: Text(
                                       '开启自动同步',
                                       style: GoogleFonts.notoSerifSc(
@@ -508,16 +430,12 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                                 child: Material(
                                   color: Colors.transparent,
                                   child: SwitchListTile(
-                                    value: _compressImages,
-                                    onChanged: (val) =>
-                                        setState(() => _compressImages = val),
-                                    activeThumbColor: themeConfig.isNotEmpty
-                                        ? themeConfig['activeSwitchColor']
-                                        : tc['accentColor'],
-                                    activeTrackColor: themeConfig.isNotEmpty
-                                        ? themeConfig['activeTrackColor']
-                                        : (tc['accentColor'] as Color)
-                                              .withValues(alpha: 0.5),
+                                    value: controller.compressImages,
+                                    onChanged: (val) => setState(
+                                      () => controller.compressImages = val,
+                                    ),
+                                    activeThumbColor: activeThumbColor,
+                                    activeTrackColor: activeTrackColor,
                                     title: Text(
                                       '开启图片压缩',
                                       style: GoogleFonts.notoSerifSc(
@@ -587,7 +505,6 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.center,
                                     children: [
-                                      // Action Text
                                       Text(
                                         provider.progressMessage.isEmpty
                                             ? '正在处理...'
@@ -603,7 +520,6 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                                       ),
                                       const SizedBox(height: 12),
 
-                                      // Progress Bar
                                       ClipRRect(
                                         borderRadius: BorderRadius.circular(4),
                                         child: LinearProgressIndicator(
@@ -618,7 +534,6 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                                         ),
                                       ),
 
-                                      // Speed & ETA Text
                                       Padding(
                                         padding: const EdgeInsets.only(top: 8),
                                         child: Row(
@@ -664,11 +579,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                                 ),
 
                               const SizedBox(height: 40),
-                              _buildTips(
-                                textColor,
-                                tc,
-                                provider.config.syncType,
-                              ),
+                              _buildTips(textColor, tc, controller.syncType),
                             ],
                           ),
                         ),
@@ -696,34 +607,19 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
     Color textColor,
   ) {
     final snapshot = provider.trustSnapshot;
+    final icon = switch (snapshot.state) {
+      SyncTrustState.notEnabled => Icons.cloud_off_outlined,
+      SyncTrustState.localChangesPending => Icons.schedule_outlined,
+      SyncTrustState.syncing => Icons.sync,
+      SyncTrustState.syncedSuccessfully => Icons.verified_outlined,
+      SyncTrustState.syncFailed => Icons.error_outline,
+      SyncTrustState.needsAttention => Icons.warning_amber_rounded,
+    };
 
-    IconData icon;
-    switch (snapshot.state) {
-      case SyncTrustState.notEnabled:
-        icon = Icons.cloud_off_outlined;
-        break;
-      case SyncTrustState.localChangesPending:
-        icon = Icons.schedule_outlined;
-        break;
-      case SyncTrustState.syncing:
-        icon = Icons.sync;
-        break;
-      case SyncTrustState.syncedSuccessfully:
-        icon = Icons.verified_outlined;
-        break;
-      case SyncTrustState.syncFailed:
-        icon = Icons.error_outline;
-        break;
-      case SyncTrustState.needsAttention:
-        icon = Icons.warning_amber_rounded;
-        break;
-    }
-
-    // 状态卡文案（title + lines）逐字委托 SyncStatusFormatter
-    // （sync_settings 风格：分钟补零）；icon 与颜色仍由页面决定。
+    // 状态卡文案逐字委托 SyncStatusFormatter（sync_settings 风格：分钟补零）；
+    // icon 与颜色仍由页面决定。
     final cardText = const SyncStatusFormatter().buildStatusCard(snapshot);
-    final String title = cardText.title;
-    final lines = cardText.lines;
+    final title = cardText.title;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -764,9 +660,9 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                if (lines.isNotEmpty) ...[
+                if (cardText.lines.isNotEmpty) ...[
                   const SizedBox(height: 8),
-                  ...lines.map(
+                  ...cardText.lines.map(
                     (line) => Padding(
                       padding: const EdgeInsets.only(bottom: 4),
                       child: Text(
@@ -800,7 +696,6 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
   }) {
     final textColor = tc['textColor'] as Color;
     final hintColor = textColor.withValues(alpha: 0.5);
-
     final borderSide = BorderSide(
       color: themeConfig.isNotEmpty
           ? themeConfig['groupDecoration'].border.top.color
@@ -879,7 +774,6 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
     final textColor = isPrimary
         ? Colors.white
         : tc['secondaryBtnTextColor'] as Color;
-
     final boxShadows = isPrimary
         ? [
             BoxShadow(
@@ -926,7 +820,15 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
     );
   }
 
-  Widget _buildSlidingSwitch(SyncProvider provider, Map<String, dynamic> tc) {
+  /// 协议切换：先更新草稿协议（与 controller 同源），再持久化；
+  /// 保存为 fire-and-forget，失败时由下次进入页面的 hydrate 回填真实协议。
+  void _selectProtocol(SyncType type) {
+    setState(() => controller.setSyncType(type));
+    final provider = Provider.of<SyncProvider>(context, listen: false);
+    provider.saveConfig(provider.config.copyWith(syncType: type));
+  }
+
+  Widget _buildSlidingSwitch(Map<String, dynamic> tc) {
     final trackColor = tc['switchTrackColor'] as Color;
     final thumbColor = tc['switchThumbColor'] as Color;
     final activeTextColor = tc['switchActiveText'] as Color;
@@ -935,8 +837,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
         tc['slidingSwitchShadowOpacity'] as double;
     final double thumbShadowOpacity = tc['thumbShadowOpacity'] as double;
 
-    final isWebDav = provider.config.syncType == SyncType.webdav;
-
+    final isWebDav = controller.syncType == SyncType.webdav;
     return Center(
       child: Container(
         height: 44,
@@ -955,9 +856,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
         ),
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final width = constraints.maxWidth;
-            final segmentWidth = width / 2;
-
+            final segmentWidth = constraints.maxWidth / 2;
             return Stack(
               children: [
                 // 1. Thumb (Animated)
@@ -995,26 +894,14 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                       isWebDav,
                       activeTextColor,
                       inactiveTextColor,
-                      () {
-                        if (!isWebDav) {
-                          provider.saveConfig(
-                            provider.config.copyWith(syncType: SyncType.webdav),
-                          );
-                        }
-                      },
+                      () => _selectProtocol(SyncType.webdav),
                     ),
                     _buildSwitchLabel(
                       'S3 存储',
                       !isWebDav,
                       activeTextColor,
                       inactiveTextColor,
-                      () {
-                        if (isWebDav) {
-                          provider.saveConfig(
-                            provider.config.copyWith(syncType: SyncType.s3),
-                          );
-                        }
-                      },
+                      () => _selectProtocol(SyncType.s3),
                     ),
                   ],
                 ),
@@ -1057,21 +944,15 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
     Map<String, dynamic> tc,
     SyncType syncType,
   ) {
-    String tips;
-    if (syncType == SyncType.webdav) {
-      tips =
-          '1. 推荐使用坚果云 WebDAV 服务。\n'
-          '2. 坚果云服务器地址通常为：https://dav.jianguoyun.com/dav/ \n'
-          '3. 密码必须使用坚果云生成的"第三方应用密码"，不可使用登录密码。\n'
-          '4. 同步策略：本地和云端双向合并，默认保留最新的修改。';
-    } else {
-      tips =
-          '1. 支持 MinIO, AWS S3, 阿里云 OSS 等兼容 S3 的对象存储。\n'
-          '2. Endpoint 为 API 域名 (例如 play.min.io)，Bucket 需提前创建。\n'
-          '3. 请确保 Access Key 和 Secret Key 拥有该 Bucket 的读写权限。\n'
-          '4. 开启"图片压缩"可显著节省存储空间和流量。';
-    }
-
+    final tips = syncType == SyncType.webdav
+        ? '1. 推荐使用坚果云 WebDAV 服务。\n'
+              '2. 坚果云服务器地址通常为：https://dav.jianguoyun.com/dav/ \n'
+              '3. 密码必须使用坚果云生成的"第三方应用密码"，不可使用登录密码。\n'
+              '4. 同步策略：本地和云端双向合并，默认保留最新的修改。'
+        : '1. 支持 MinIO, AWS S3, 阿里云 OSS 等兼容 S3 的对象存储。\n'
+              '2. Endpoint 为 API 域名 (例如 play.min.io)，Bucket 需提前创建。\n'
+              '3. 请确保 Access Key 和 Secret Key 拥有该 Bucket 的读写权限。\n'
+              '4. 开启"图片压缩"可显著节省存储空间和流量。';
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(

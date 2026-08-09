@@ -305,13 +305,94 @@ void main() {
         'us-east-1',
       );
 
-      // 切回 WebDAV
+      // 切回 WebDAV：三字段保值（引导填充值不被切协议清空）
       await tester.tap(find.text('WebDAV'));
       await tester.pump();
       await tester.pump();
       expect(provider.lastSavedConfig!.syncType, SyncType.webdav);
       expect(find.text('WebDAV 服务器配置'), findsOneWidget);
       expect(find.text('S3 对象存储配置'), findsNothing);
+      final webdavFields = find.byType(TextFormField);
+      expect(
+        tester.widget<TextFormField>(webdavFields.at(0)).controller!.text,
+        'https://dav.example.com/',
+      );
+      expect(
+        tester.widget<TextFormField>(webdavFields.at(2)).controller!.text,
+        'bootstrap-pass',
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('bootstrap 引导填充 8 字段，切协议保值（S3 起始）', (tester) async {
+      final provider = TestSyncProvider(
+        snapshot: const SyncTrustSnapshot(state: SyncTrustState.notEnabled),
+        tempDirs: tempDirs,
+        config: SyncConfig(
+          enabled: true,
+          syncType: SyncType.s3,
+          serverUrl: 'https://dav.example.com/',
+          username: 'dav-user',
+          password: 'dav-pass',
+          s3EndPoint: 'play.min.io',
+          s3AccessKey: 'AK123',
+          s3SecretKey: 'SK456',
+          s3BucketName: 'bucket-name',
+          s3Region: 'us-east-1',
+        ),
+      );
+
+      await tester.pumpWidget(buildSyncSettingsApp(provider: provider));
+      await tester.pump();
+      await tester.pump();
+
+      // S3 初始：5 字段已填充
+      var fields = find.byType(TextFormField);
+      expect(fields, findsNWidgets(5));
+      expect(
+        tester.widget<TextFormField>(fields.at(0)).controller!.text,
+        'play.min.io',
+      );
+      expect(
+        tester.widget<TextFormField>(fields.at(4)).controller!.text,
+        'us-east-1',
+      );
+
+      // 切到 WebDAV：3 字段保值（引导值不丢失）
+      await tester.tap(find.text('WebDAV'));
+      await tester.pump();
+      await tester.pump();
+      fields = find.byType(TextFormField);
+      expect(fields, findsNWidgets(3));
+      expect(
+        tester.widget<TextFormField>(fields.at(0)).controller!.text,
+        'https://dav.example.com/',
+      );
+      expect(
+        tester.widget<TextFormField>(fields.at(1)).controller!.text,
+        'dav-user',
+      );
+      expect(
+        tester.widget<TextFormField>(fields.at(2)).controller!.text,
+        'dav-pass',
+      );
+      expect(provider.lastSavedConfig!.syncType, SyncType.webdav);
+
+      // 切回 S3：5 字段仍保值
+      await tester.tap(find.text('S3 存储'));
+      await tester.pump();
+      await tester.pump();
+      fields = find.byType(TextFormField);
+      expect(fields, findsNWidgets(5));
+      expect(
+        tester.widget<TextFormField>(fields.at(0)).controller!.text,
+        'play.min.io',
+      );
+      expect(
+        tester.widget<TextFormField>(fields.at(4)).controller!.text,
+        'us-east-1',
+      );
+      expect(provider.lastSavedConfig!.syncType, SyncType.s3);
       expect(tester.takeException(), isNull);
     });
 
