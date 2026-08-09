@@ -139,23 +139,6 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('自定义 trailing 覆盖默认箭头', (tester) async {
-      await tester.pumpWidget(
-        wrap(
-          const SettingsItem(
-            icon: Icons.update_outlined,
-            title: '更新',
-            subtitle: '检测新版本',
-            textColor: Color(0xFF3E3A36),
-            trailing: Icon(Icons.badge_outlined),
-          ),
-        ),
-      );
-
-      expect(find.byIcon(Icons.badge_outlined), findsOneWidget);
-      expect(find.byIcon(Icons.arrow_forward_ios), findsNothing);
-    });
-
     testWidgets('onTap 为 null 时禁用点击', (tester) async {
       await tester.pumpWidget(
         wrap(
@@ -272,7 +255,7 @@ void main() {
     });
   });
 
-  group('SettingsOptionTile / SettingsRadioItem', () {
+  group('SettingsOptionTile', () {
     Widget optionWrap(Widget child) => wrap(
       SettingsBottomSheetFrame(
         title: '选择',
@@ -344,39 +327,6 @@ void main() {
       await tester.tap(find.text('选项A'));
       await tester.pump();
       expect(tapped, 1);
-    });
-
-    testWidgets('RadioItem 按 groupValue 判定选中并回调新值', (tester) async {
-      String? selected;
-      final builder = ValueNotifier<String>('a');
-
-      await tester.pumpWidget(
-        ValueListenableBuilder<String>(
-          valueListenable: builder,
-          builder: (context, groupValue, _) => optionWrap(
-            SettingsRadioItem(
-              label: '选项B',
-              value: 'b',
-              groupValue: groupValue,
-              onChanged: (v) {
-                selected = v;
-                builder.value = v;
-              },
-              closeOnSelect: false,
-              selectedBackgroundColor: const Color(0xFF8D6E63),
-              unselectedBackgroundColor: const Color(0xFFFFFFFF),
-              selectedTextColor: const Color(0xFFFFFFFF),
-              unselectedTextColor: textColor,
-            ),
-          ),
-        ),
-      );
-
-      expect(find.byIcon(Icons.check), findsNothing);
-      await tester.tap(find.text('选项B'));
-      await tester.pump();
-      expect(selected, 'b');
-      expect(find.byIcon(Icons.check), findsOneWidget);
     });
   });
 

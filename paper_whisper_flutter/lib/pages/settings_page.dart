@@ -15,7 +15,9 @@ import '../features/permissions/application/permission_coordinator.dart';
 import '../features/settings/application/settings_permission_controller.dart';
 import '../features/settings/application/settings_storage_controller.dart';
 import '../features/settings/application/settings_update_controller.dart';
+import '../features/settings/presentation/widgets/settings_choice_sheet.dart';
 import '../features/settings/presentation/widgets/settings_permission_content.dart';
+import '../features/settings/presentation/widgets/settings_primitives.dart';
 import '../features/settings/presentation/widgets/settings_storage_content.dart';
 import '../features/sync/presentation/sync_status_formatter.dart';
 import '../widgets/update_dialog.dart';
@@ -183,15 +185,14 @@ class _SettingsPageState extends State<SettingsPage>
       padding: const EdgeInsets.all(20),
       children: [
         // 1. 核心服务 (Core)
-        _buildSectionHeader('账号与会员', textColor),
-        _buildGroupContainer(
-          themeConfig,
+        SettingsSectionHeader(title: '账号与会员', textColor: textColor),
+        SettingsGroupContainer(
+          decoration: themeConfig['groupDecoration'] as BoxDecoration,
           children: [
             // [NEW] Premium Membership Entry
             Consumer<PaymentService>(
               builder: (ctx, pay, _) {
-                return _buildSettingsItem(
-                  context: context,
+                return SettingsItem(
                   icon: pay.isSponsor ? Icons.favorite : Icons.coffee,
                   title: pay.isSponsor ? '特别支持者' : '支持开发者',
                   subtitle: pay.isSponsor ? '已点亮勋章 - 感谢有你' : '用爱发电，请我喝杯咖啡',
@@ -205,9 +206,8 @@ class _SettingsPageState extends State<SettingsPage>
                 );
               },
             ),
-            _buildDivider(themeConfig),
-            _buildSettingsItem(
-              context: context,
+            SettingsDivider(color: themeConfig['dividerColor'] as Color),
+            SettingsItem(
               icon: Icons.cloud_sync_outlined,
               title: '数据同步',
               subtitle: _getSyncStatusText(context),
@@ -224,61 +224,58 @@ class _SettingsPageState extends State<SettingsPage>
         const SizedBox(height: 24),
 
         // 2. 外观与体验 (Appearance & Experience)
-        _buildSectionHeader('外观与体验', textColor),
-        _buildGroupContainer(
-          themeConfig,
+        SettingsSectionHeader(title: '外观与体验', textColor: textColor),
+        SettingsGroupContainer(
+          decoration: themeConfig['groupDecoration'] as BoxDecoration,
           children: [
-            _buildSettingsItem(
-              context: context,
+            SettingsItem(
               icon: Icons.palette_outlined,
               title: '主题风格',
               subtitle: _getThemeName(settings.currentTheme),
               textColor: textColor,
               onTap: () => _showThemePicker(context, settings),
             ),
-            _buildDivider(themeConfig),
-            _buildSwitchItem(
-              context: context,
+            SettingsDivider(color: themeConfig['dividerColor'] as Color),
+            SettingsSwitchItem(
               icon: Icons.brightness_auto_outlined,
               title: '跟随系统深色模式',
               subtitle: '开启后，深色模式自动使用午夜星尘主题',
               value: settings.followSystemTheme,
               onChanged: (val) => settings.setFollowSystemTheme(val),
-              themeConfig: themeConfig,
               textColor: textColor,
+              activeThumbColor: themeConfig['activeSwitchColor'] as Color,
+              activeTrackColor: themeConfig['activeTrackColor'] as Color,
             ),
-            _buildDivider(themeConfig),
-            _buildSettingsItem(
-              context: context,
+            SettingsDivider(color: themeConfig['dividerColor'] as Color),
+            SettingsItem(
               icon: Icons.start_outlined,
               title: '启动页',
               subtitle: _getStartupPageName(settings.startupPage),
               textColor: textColor,
               onTap: () => _showStartupPagePicker(context, settings),
             ),
-            _buildDivider(themeConfig),
+            SettingsDivider(color: themeConfig['dividerColor'] as Color),
             // Compatibility Mode Switch
-            _buildSwitchItem(
-              context: context,
+            SettingsSwitchItem(
               icon: Icons.layers_clear_outlined,
               title: '兼容模式',
               subtitle: '隐藏信纸横线，仅显示文字',
               value: settings.compatibilityMode,
               onChanged: (val) => settings.setCompatibilityMode(val),
-              themeConfig: themeConfig,
               textColor: textColor,
+              activeThumbColor: themeConfig['activeSwitchColor'] as Color,
+              activeTrackColor: themeConfig['activeTrackColor'] as Color,
             ),
           ],
         ),
         const SizedBox(height: 24),
 
         // 3. 数据与隐私 (Data & Privacy)
-        _buildSectionHeader('数据与隐私', textColor),
-        _buildGroupContainer(
-          themeConfig,
+        SettingsSectionHeader(title: '数据与隐私', textColor: textColor),
+        SettingsGroupContainer(
+          decoration: themeConfig['groupDecoration'] as BoxDecoration,
           children: [
-            _buildSettingsItem(
-              context: context,
+            SettingsItem(
               icon: Icons.lock_outline,
               title: '密码锁',
               subtitle: '生物识别与密码保护',
@@ -290,9 +287,8 @@ class _SettingsPageState extends State<SettingsPage>
                 );
               },
             ),
-            _buildDivider(themeConfig),
-            _buildSettingsItem(
-              context: context,
+            SettingsDivider(color: themeConfig['dividerColor'] as Color),
+            SettingsItem(
               icon: (_permissionController?.snapshot?.isAllGranted ?? false)
                   ? Icons.verified_user_outlined
                   : Icons.gpp_maybe_outlined,
@@ -301,18 +297,16 @@ class _SettingsPageState extends State<SettingsPage>
               textColor: textColor,
               onTap: () => _showPermissionManager(context),
             ),
-            _buildDivider(themeConfig),
-            _buildSettingsItem(
-              context: context,
+            SettingsDivider(color: themeConfig['dividerColor'] as Color),
+            SettingsItem(
               icon: Icons.sd_storage_outlined,
               title: '存储空间管理',
               subtitle: _storageController?.snapshot?.summary ?? '计算中...',
               textColor: textColor,
               onTap: () => _showStorageManager(context, themeConfig),
             ),
-            _buildDivider(themeConfig),
-            _buildSettingsItem(
-              context: context,
+            SettingsDivider(color: themeConfig['dividerColor'] as Color),
+            SettingsItem(
               icon: Icons.delete_outline,
               title: '回收站',
               subtitle: '找回误删的日记',
@@ -326,12 +320,11 @@ class _SettingsPageState extends State<SettingsPage>
         const SizedBox(height: 24),
 
         // 4. 帮助与反馈 (Help & Feedback)
-        _buildSectionHeader('帮助与反馈', textColor),
-        _buildGroupContainer(
-          themeConfig,
+        SettingsSectionHeader(title: '帮助与反馈', textColor: textColor),
+        SettingsGroupContainer(
+          decoration: themeConfig['groupDecoration'] as BoxDecoration,
           children: [
-            _buildSettingsItem(
-              context: context,
+            SettingsItem(
               icon: Icons.help_outline,
               title: '常见问题',
               subtitle: '查看使用指南与疑问解答',
@@ -340,9 +333,8 @@ class _SettingsPageState extends State<SettingsPage>
                 'https://lingshichat.feishu.cn/docx/JvzDdhLXEo3OVaxWEc9cygDqnMc?from=from_copylink',
               ),
             ),
-            _buildDivider(themeConfig),
-            _buildSettingsItem(
-              context: context,
+            SettingsDivider(color: themeConfig['dividerColor'] as Color),
+            SettingsItem(
               icon: Icons.feedback_outlined,
               title: '意见反馈',
               subtitle: '提交Bug或功能建议',
@@ -356,12 +348,11 @@ class _SettingsPageState extends State<SettingsPage>
         const SizedBox(height: 24),
 
         // 5. 关于 (About)
-        _buildSectionHeader('关于', textColor),
-        _buildGroupContainer(
-          themeConfig,
+        SettingsSectionHeader(title: '关于', textColor: textColor),
+        SettingsGroupContainer(
+          decoration: themeConfig['groupDecoration'] as BoxDecoration,
           children: [
-            _buildSettingsItem(
-              context: context,
+            SettingsItem(
               icon: Icons.system_update_outlined,
               title: '检测更新',
               subtitle: (_updateController?.checking ?? false)
@@ -375,9 +366,8 @@ class _SettingsPageState extends State<SettingsPage>
                   ? () {}
                   : _checkForUpdate,
             ),
-            _buildDivider(themeConfig),
-            _buildSettingsItem(
-              context: context,
+            SettingsDivider(color: themeConfig['dividerColor'] as Color),
+            SettingsItem(
               icon: Icons.description_outlined,
               title: '用户协议',
               subtitle: '查阅用户服务协议',
@@ -386,9 +376,8 @@ class _SettingsPageState extends State<SettingsPage>
                 'https://lingshichat.feishu.cn/docx/ODY0dLSF4okfuzximQuctlMon7g?from=from_copylink',
               ),
             ),
-            _buildDivider(themeConfig),
-            _buildSettingsItem(
-              context: context,
+            SettingsDivider(color: themeConfig['dividerColor'] as Color),
+            SettingsItem(
               icon: Icons.privacy_tip_outlined,
               title: '隐私政策',
               subtitle: '了解不仅限于数据的隐私保护',
@@ -397,9 +386,8 @@ class _SettingsPageState extends State<SettingsPage>
                 'https://lingshichat.feishu.cn/docx/Gd6sdvdmRonHO9x6fMccUr3qnXg?from=from_copylink',
               ),
             ),
-            _buildDivider(themeConfig),
-            _buildSettingsItem(
-              context: context,
+            SettingsDivider(color: themeConfig['dividerColor'] as Color),
+            SettingsItem(
               icon: Icons.info_outline,
               title: '关于纸语PaperWhisper',
               subtitle: '纸本无言，因你而语',
@@ -412,9 +400,8 @@ class _SettingsPageState extends State<SettingsPage>
               },
             ),
             if (kDebugMode) ...[
-              _buildDivider(themeConfig),
-              _buildSettingsItem(
-                context: context,
+              SettingsDivider(color: themeConfig['dividerColor'] as Color),
+              SettingsItem(
                 icon: Icons.science_outlined,
                 title: '开发测试：更新弹窗',
                 subtitle: '仅调试构建可见，快速验证更新流程',
@@ -429,158 +416,43 @@ class _SettingsPageState extends State<SettingsPage>
     );
   }
 
-  // --- Helpers ---
+  // --- S2a 展示组件适配（极薄 themeConfig→props 转发，不复制 Widget 树） ---
 
-  Widget _buildSectionHeader(String title, Color textColor) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 10, bottom: 8),
-      child: Text(
-        title,
-        style: GoogleFonts.notoSerifSc(
-          fontSize: 14,
-          fontWeight: FontWeight.bold,
-          color: textColor.withValues(alpha: 0.7),
-        ),
+  Widget _sheetFrame(
+    Map<String, dynamic> themeConfig,
+    String title,
+    List<Widget> children,
+  ) {
+    return SettingsBottomSheetFrame(
+      title: title,
+      titleColor: themeConfig['sheetTitleColor'] as Color,
+      backgroundColor: themeConfig['sheetBackgroundColor'] as Color,
+      tapeColor: themeConfig['sheetTapeColor'] as Color,
+      shadows: List<BoxShadow>.from(
+        themeConfig['sheetShadows'] as List<dynamic>,
       ),
+      border: themeConfig['sheetBorder'] as BoxBorder?,
+      showTape: themeConfig['sheetShowTape'] as bool,
+      children: children,
     );
   }
 
-  Widget _buildGroupContainer(
-    Map<String, dynamic> themeConfig, {
-    required List<Widget> children,
-  }) {
-    return Container(
-      decoration: themeConfig['groupDecoration'] as BoxDecoration,
-      clipBehavior: Clip.antiAlias,
-      child: Column(children: children),
-    );
-  }
-
-  Widget _buildDivider(Map<String, dynamic> themeConfig) {
-    return Divider(
-      height: 1,
-      thickness: 1,
-      color: themeConfig['dividerColor'] as Color,
-    );
-  }
-
-  Widget _buildSettingsItem({
-    required BuildContext context,
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required Color textColor,
-    required VoidCallback onTap,
-    bool isLoading = false,
-  }) {
-    // Note: Background is now handled by Group Container. Inner items are transparent.
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          child: Row(
-            children: [
-              Icon(icon, color: textColor.withValues(alpha: 0.8), size: 24),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: GoogleFonts.notoSerifSc(
-                        fontSize: 16,
-                        color: textColor,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: GoogleFonts.notoSerifSc(
-                        fontSize: 13,
-                        color: textColor.withValues(alpha: 0.6),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (isLoading)
-                SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      textColor.withValues(alpha: 0.6),
-                    ),
-                  ),
-                )
-              else
-                Icon(
-                  Icons.arrow_forward_ios,
-                  color: textColor.withValues(alpha: 0.4),
-                  size: 14,
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSwitchItem({
-    required BuildContext context,
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required bool value,
-    required Function(bool) onChanged,
-    required Map<String, dynamic> themeConfig,
-    required Color textColor,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        child: Row(
-          children: [
-            Icon(icon, color: textColor.withValues(alpha: 0.8), size: 24),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: GoogleFonts.notoSerifSc(
-                      fontSize: 16,
-                      color: textColor,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: GoogleFonts.notoSerifSc(
-                      fontSize: 13,
-                      color: textColor.withValues(alpha: 0.6),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Switch(
-              value: value,
-              onChanged: onChanged,
-              activeThumbColor: themeConfig['activeSwitchColor'] as Color,
-              activeTrackColor: themeConfig['activeTrackColor'] as Color,
-            ),
-          ],
-        ),
-      ),
+  /// 选择弹层样式：主题/启动页共用同一组 option 主题键，一次适配。
+  SettingsChoiceSheetStyle _choiceStyle(Map<String, dynamic> tc) {
+    return SettingsChoiceSheetStyle(
+      backgroundColor: tc['sheetBackgroundColor'] as Color,
+      titleColor: tc['sheetTitleColor'] as Color,
+      tapeColor: tc['sheetTapeColor'] as Color,
+      shadows: (tc['sheetShadows'] as List<dynamic>).cast<BoxShadow>(),
+      border: tc['sheetBorder'] as BoxBorder?,
+      showTape: tc['sheetShowTape'] as bool,
+      selectedBackgroundColor: tc['optionSelectedBgColor'] as Color,
+      unselectedBackgroundColor: tc['optionUnselectedBgColor'] as Color,
+      selectedTextColor: tc['optionSelectedTextColor'] as Color,
+      unselectedTextColor: tc['optionUnselectedTextColor'] as Color,
+      selectedShadow: tc['optionSelectedShadow'] as BoxShadow?,
+      unselectedShadow: tc['optionUnselectedShadow'] as BoxShadow?,
+      unselectedBorder: tc['optionUnselectedBorder'] as Border?,
     );
   }
 
@@ -599,29 +471,25 @@ class _SettingsPageState extends State<SettingsPage>
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => _buildSkeuomorphicBottomSheet(
-        context,
-        title: '应用权限管理',
-        children: [
-          SettingsPermissionContent(
-            // 未加载时用兜底快照保持原 null status 视觉（三行均「未获取」）。
-            snapshot:
-                _permissionController?.snapshot ?? _kDeniedPermissionFallback,
-            textColor: sheetTextColor,
-            dividerColor: sheetDividerColor,
-            onRequest: (kind) => _handlePermissionRequest(ctx, kind),
-          ),
-          const SizedBox(height: 20),
-          SkeuomorphicDialogButton(
-            label: '前往系统设置页',
-            isPrimary: false,
-            onPressed: () {
-              Navigator.pop(ctx);
-              openAppSettings();
-            },
-          ),
-        ],
-      ),
+      builder: (ctx) => _sheetFrame(themeConfig, '应用权限管理', [
+        SettingsPermissionContent(
+          // 未加载时用兜底快照保持原 null status 视觉（三行均「未获取」）。
+          snapshot:
+              _permissionController?.snapshot ?? _kDeniedPermissionFallback,
+          textColor: sheetTextColor,
+          dividerColor: sheetDividerColor,
+          onRequest: (kind) => _handlePermissionRequest(ctx, kind),
+        ),
+        const SizedBox(height: 20),
+        SkeuomorphicDialogButton(
+          label: '前往系统设置页',
+          isPrimary: false,
+          onPressed: () {
+            Navigator.pop(ctx);
+            openAppSettings();
+          },
+        ),
+      ]),
     );
   }
 
@@ -938,97 +806,48 @@ class _SettingsPageState extends State<SettingsPage>
   }
 
   void _showThemePicker(BuildContext context, SettingsProvider settings) {
+    final style = _choiceStyle(
+      AppTheme.getSettingsTheme(settings.currentTheme),
+    );
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => _buildSkeuomorphicBottomSheet(
-        context,
+      builder: (ctx) => SettingsChoiceSheet<String>(
         title: '选择主题',
-        children: [
-          _buildRadioItem(
-            ctx,
-            '复古纸张',
-            'default',
-            settings.currentTheme,
-            (val) => settings.setTheme(val),
-            closeOnSelect: false,
-          ),
-          _buildRadioItem(
-            ctx,
-            '海底花海',
-            'sea_flower',
-            settings.currentTheme,
-            (val) => settings.setTheme(val),
-            closeOnSelect: false,
-          ),
-          _buildRadioItem(
-            ctx,
-            '午夜星尘',
-            'midnight',
-            settings.currentTheme,
-            (val) => settings.setTheme(val),
-            closeOnSelect: false,
-          ),
-          _buildRadioItem(
-            ctx,
-            '琥珀光圈',
-            'amber_lens',
-            settings.currentTheme,
-            (val) => settings.setTheme(val),
-            closeOnSelect: false,
-          ),
-          _buildRadioItem(
-            ctx,
-            '雨后天空',
-            'after_rain',
-            settings.currentTheme,
-            (val) => settings.setTheme(val),
-            closeOnSelect: false,
-          ),
-          _buildRadioItem(
-            ctx,
-            '黄昏之时',
-            'twilight',
-            settings.currentTheme,
-            (val) => settings.setTheme(val),
-            closeOnSelect: false,
-          ),
-          _buildRadioItem(
-            ctx,
-            '言叶之庭',
-            'garden_of_words',
-            settings.currentTheme,
-            (val) => settings.setTheme(val),
-            closeOnSelect: false,
-          ),
+        // 7 主题 ID / 中文名顺序与 AppTheme 常量逐一对应（不含改 Map）。
+        options: const [
+          SettingsChoiceOption(label: '复古纸张', value: 'default'),
+          SettingsChoiceOption(label: '海底花海', value: 'sea_flower'),
+          SettingsChoiceOption(label: '午夜星尘', value: 'midnight'),
+          SettingsChoiceOption(label: '琥珀光圈', value: 'amber_lens'),
+          SettingsChoiceOption(label: '雨后天空', value: 'after_rain'),
+          SettingsChoiceOption(label: '黄昏之时', value: 'twilight'),
+          SettingsChoiceOption(label: '言叶之庭', value: 'garden_of_words'),
         ],
+        selected: settings.currentTheme,
+        onSelected: (val) => settings.setTheme(val),
+        closeOnSelect: false,
+        style: style,
       ),
     );
   }
 
   void _showStartupPagePicker(BuildContext context, SettingsProvider settings) {
+    final style = _choiceStyle(
+      AppTheme.getSettingsTheme(settings.currentTheme),
+    );
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => _buildSkeuomorphicBottomSheet(
-        context,
+      builder: (ctx) => SettingsChoiceSheet<String>(
         title: '选择启动页',
-        children: [
-          _buildRadioItem(
-            ctx,
-            '专注书写',
-            'writer',
-            settings.startupPage,
-            (val) => settings.setStartupPage(val),
-          ),
-          _buildRadioItem(
-            ctx,
-            '随心记',
-            'moments',
-            settings.startupPage,
-            (val) => settings.setStartupPage(val),
-          ),
+        options: const [
+          SettingsChoiceOption(label: '专注书写', value: 'writer'),
+          SettingsChoiceOption(label: '随心记', value: 'moments'),
         ],
+        selected: settings.startupPage,
+        onSelected: (val) => settings.setStartupPage(val),
+        style: style,
       ),
     );
   }
@@ -1048,25 +867,21 @@ class _SettingsPageState extends State<SettingsPage>
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => _buildSkeuomorphicBottomSheet(
-        context,
-        title: '用户数据管理',
-        children: [
-          SettingsStorageContent(
-            // 未加载时保持原默认视觉（internalStats 空串 / 无残留入口）。
-            internalStats: snap?.internalStats ?? '',
-            hasInternalClutter: snap?.hasInternalClutter ?? false,
-            textColor: sheetTextColor,
-            infoBackgroundColor: infoBgColor,
-            infoBorderColor: infoBorderColor,
-            infoDividerColor: infoDividerColor,
-            onCleanOrphanImages: () => _cleanOrphanImages(ctx),
-            onCleanTemporaryCache: () => _cleanTemporaryCache(ctx),
-            onCleanInternalClutter: () => _cleanInternalClutter(ctx),
-            onCleanFontCache: () => _cleanFontCache(ctx),
-          ),
-        ],
-      ),
+      builder: (ctx) => _sheetFrame(themeConfig, '用户数据管理', [
+        SettingsStorageContent(
+          // 未加载时保持原默认视觉（internalStats 空串 / 无残留入口）。
+          internalStats: snap?.internalStats ?? '',
+          hasInternalClutter: snap?.hasInternalClutter ?? false,
+          textColor: sheetTextColor,
+          infoBackgroundColor: infoBgColor,
+          infoBorderColor: infoBorderColor,
+          infoDividerColor: infoDividerColor,
+          onCleanOrphanImages: () => _cleanOrphanImages(ctx),
+          onCleanTemporaryCache: () => _cleanTemporaryCache(ctx),
+          onCleanInternalClutter: () => _cleanInternalClutter(ctx),
+          onCleanFontCache: () => _cleanFontCache(ctx),
+        ),
+      ]),
     );
   }
 
@@ -1125,190 +940,5 @@ class _SettingsPageState extends State<SettingsPage>
     if (mounted) {
       SkeuomorphicToast.success(context, '字体缓存已清除 (下次启动将自动重新下载)');
     }
-  }
-
-  Widget _buildSkeuomorphicBottomSheet(
-    BuildContext context, {
-    required String title,
-    required List<Widget> children,
-  }) {
-    final settings = Provider.of<SettingsProvider>(context, listen: false);
-    final themeConfig = AppTheme.getSettingsTheme(settings.currentTheme);
-    final bgColor = themeConfig['sheetBackgroundColor'] as Color;
-    final titleColor = themeConfig['sheetTitleColor'] as Color;
-    final tapeColor = themeConfig['sheetTapeColor'] as Color;
-    final List<BoxShadow> shadows = List<BoxShadow>.from(
-      themeConfig['sheetShadows'] as List<dynamic>,
-    );
-    final BoxBorder? border = themeConfig['sheetBorder'] as BoxBorder?;
-    final bool showTape = themeConfig['sheetShowTape'] as bool;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        boxShadow: shadows,
-        border: border,
-      ),
-      padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
-      child: Stack(
-        clipBehavior: Clip.none,
-        alignment: Alignment.topCenter,
-        children: [
-          // Tape Decoration (Top Center)
-          if (showTape)
-            Positioned(
-              top: -15,
-              child: Transform.rotate(
-                angle: -0.02,
-                child: Container(
-                  width: 80,
-                  height: 25,
-                  decoration: BoxDecoration(
-                    color: tapeColor,
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Colors.black12,
-                        blurRadius: 2,
-                        offset: Offset(0, 1),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
-          // Handle for other themes
-          if (!showTape)
-            Container(
-              margin: const EdgeInsets.only(top: 12),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: titleColor.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-
-          Padding(
-            padding: const EdgeInsets.only(top: 40), // Space for tape/handle
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch, // Stretch items
-              children: [
-                Text(
-                  title,
-                  style: GoogleFonts.notoSerifSc(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: titleColor,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                Flexible(
-                  child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: children,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRadioItem(
-    BuildContext context,
-    String label,
-    String value,
-    String groupValue,
-    Function(String) onChanged, {
-    bool closeOnSelect = true,
-  }) {
-    return _buildOptionTile(
-      context,
-      label,
-      value,
-      groupValue,
-      onChanged,
-      closeOnSelect: closeOnSelect,
-    );
-  }
-
-  Widget _buildOptionTile(
-    BuildContext context,
-    String label,
-    String value,
-    String groupValue,
-    Function(String) onChanged, {
-    bool closeOnSelect = true,
-  }) {
-    final settings = Provider.of<SettingsProvider>(context, listen: false);
-    final themeConfig = AppTheme.getSettingsTheme(settings.currentTheme);
-    final isSelected = value == groupValue;
-
-    final Color bgColor = isSelected
-        ? themeConfig['optionSelectedBgColor'] as Color
-        : themeConfig['optionUnselectedBgColor'] as Color;
-    final Color textColor = isSelected
-        ? themeConfig['optionSelectedTextColor'] as Color
-        : themeConfig['optionUnselectedTextColor'] as Color;
-    final BoxShadow? shadow = isSelected
-        ? themeConfig['optionSelectedShadow'] as BoxShadow?
-        : themeConfig['optionUnselectedShadow'] as BoxShadow?;
-    final Border? border = isSelected
-        ? null
-        : themeConfig['optionUnselectedBorder'] as Border?;
-
-    return GestureDetector(
-      onTap: () {
-        onChanged(value);
-        if (closeOnSelect) {
-          Navigator.pop(context);
-        }
-        // Play click sound?
-      },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(4), // Dialog style small radius
-          boxShadow: shadow != null ? [shadow] : null,
-          border: border,
-        ),
-        child: Row(
-          mainAxisAlignment:
-              MainAxisAlignment.center, // Center text like a button
-          children: [
-            Text(
-              label,
-              style: GoogleFonts.notoSerifSc(
-                fontSize: 16,
-                color: textColor,
-                fontWeight: FontWeight.bold, // Always bold like buttons
-              ),
-            ),
-            // Optional: Add Check icon if selected?
-            // Dialog buttons usually don't have check icons, just distinct style.
-            // But for selection, a check might be nice.
-            if (isSelected) ...[
-              const SizedBox(width: 8),
-              Icon(
-                Icons.check,
-                size: 18,
-                color: textColor.withValues(alpha: 0.8),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
   }
 }

@@ -69,7 +69,7 @@ class SettingsDivider extends StatelessWidget {
   }
 }
 
-/// 设置项：图标 + 标题/副标题 + trailing（默认箭头，loading 时显示进度）。
+/// 设置项：图标 + 标题/副标题 + 默认箭头（loading 时显示进度）。
 ///
 /// 背景由外层 Group Container 承担，内部保持透明；
 /// [onTap] 为 null 时 InkWell 禁用。
@@ -81,7 +81,6 @@ class SettingsItem extends StatelessWidget {
     required this.subtitle,
     required this.textColor,
     this.onTap,
-    this.trailing,
     this.isLoading = false,
   });
 
@@ -90,7 +89,6 @@ class SettingsItem extends StatelessWidget {
   final String subtitle;
   final Color textColor;
   final VoidCallback? onTap;
-  final Widget? trailing;
   final bool isLoading;
 
   @override
@@ -140,8 +138,6 @@ class SettingsItem extends StatelessWidget {
                     ),
                   ),
                 )
-              else if (trailing != null)
-                trailing!
               else
                 Icon(
                   Icons.arrow_forward_ios,
@@ -327,59 +323,6 @@ class SettingsBottomSheetFrame extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-/// 单选选项：由 [SettingsOptionTile] 包装，按 value/groupValue 判定选中。
-class SettingsRadioItem extends StatelessWidget {
-  const SettingsRadioItem({
-    super.key,
-    required this.label,
-    required this.value,
-    required this.groupValue,
-    required this.onChanged,
-    this.closeOnSelect = true,
-    required this.selectedBackgroundColor,
-    required this.unselectedBackgroundColor,
-    required this.selectedTextColor,
-    required this.unselectedTextColor,
-    this.selectedShadow,
-    this.unselectedShadow,
-    this.unselectedBorder,
-  });
-
-  final String label;
-  final String value;
-  final String groupValue;
-  final ValueChanged<String> onChanged;
-  final bool closeOnSelect;
-  final Color selectedBackgroundColor;
-  final Color unselectedBackgroundColor;
-  final Color selectedTextColor;
-  final Color unselectedTextColor;
-  final BoxShadow? selectedShadow;
-  final BoxShadow? unselectedShadow;
-  final Border? unselectedBorder;
-
-  @override
-  Widget build(BuildContext context) {
-    return SettingsOptionTile(
-      label: label,
-      isSelected: value == groupValue,
-      onTap: () {
-        onChanged(value);
-        if (closeOnSelect) {
-          Navigator.pop(context);
-        }
-      },
-      selectedBackgroundColor: selectedBackgroundColor,
-      unselectedBackgroundColor: unselectedBackgroundColor,
-      selectedTextColor: selectedTextColor,
-      unselectedTextColor: unselectedTextColor,
-      selectedShadow: selectedShadow,
-      unselectedShadow: unselectedShadow,
-      unselectedBorder: unselectedBorder,
     );
   }
 }
