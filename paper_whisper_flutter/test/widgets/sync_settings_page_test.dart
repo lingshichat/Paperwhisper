@@ -49,10 +49,7 @@ void main() {
         lastSuccessfulSyncAt: DateTime(2026, 3, 12, 9, 30),
         lastSuccessfulSyncPlatform: 's3',
       );
-      final provider = TestSyncProvider(
-        snapshot: snapshot,
-        tempDirs: tempDirs,
-      );
+      final provider = TestSyncProvider(snapshot: snapshot, tempDirs: tempDirs);
 
       await tester.pumpWidget(buildSyncSettingsApp(provider: provider));
       await tester.pump();
@@ -68,9 +65,7 @@ void main() {
       tester,
     ) async {
       final provider = TestSyncProvider(
-        snapshot: const SyncTrustSnapshot(
-          state: SyncTrustState.notEnabled,
-        ),
+        snapshot: const SyncTrustSnapshot(state: SyncTrustState.notEnabled),
         tempDirs: tempDirs,
       );
 
@@ -95,9 +90,7 @@ void main() {
       tester,
     ) async {
       final provider = TestSyncProvider(
-        snapshot: const SyncTrustSnapshot(
-          state: SyncTrustState.notEnabled,
-        ),
+        snapshot: const SyncTrustSnapshot(state: SyncTrustState.notEnabled),
         tempDirs: tempDirs,
       );
 
@@ -113,10 +106,120 @@ void main() {
       expect(provider.connectCallCount, 1);
       expect(provider.syncCallCount, 0);
     });
+
+    testWidgets(
+      'renders sync toggles on Windows desktop and Android phone without '
+      'framework exceptions or overflow',
+      (tester) async {
+        // 记录原始 view 参数，测试结束时恢复，避免污染其他测试
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        // 阶段 1：Windows 桌面尺寸（1280x720 @1.0）
+        tester.view.physicalSize = const Size(1280, 720);
+        tester.view.devicePixelRatio = 1.0;
+
+        final provider = TestSyncProvider(
+          snapshot: const SyncTrustSnapshot(state: SyncTrustState.notEnabled),
+          tempDirs: tempDirs,
+        );
+
+        await tester.pumpWidget(
+          buildSyncSettingsApp(
+            provider: provider,
+            platform: TargetPlatform.windows,
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        // 结构断言：两处 SwitchListTile 与文案必须存在，构建无异常/溢出
+        expect(find.byType(SwitchListTile), findsNWidgets(2));
+        expect(find.text('开启自动同步'), findsOneWidget);
+        expect(find.text('开启图片压缩'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+
+        // 交互断言：依次点击两个开关，值翻转且不抛异常
+        final autoSwitch = find.byType(SwitchListTile).at(0);
+        final compressSwitch = find.byType(SwitchListTile).at(1);
+
+        await tester.ensureVisible(autoSwitch);
+        await tester.pump();
+        final autoBefore = tester.widget<SwitchListTile>(autoSwitch).value;
+        await tester.tap(autoSwitch);
+        await tester.pump();
+        expect(
+          tester.widget<SwitchListTile>(autoSwitch).value,
+          isNot(autoBefore),
+        );
+
+        await tester.ensureVisible(compressSwitch);
+        await tester.pump();
+        final compressBefore = tester
+            .widget<SwitchListTile>(compressSwitch)
+            .value;
+        await tester.tap(compressSwitch);
+        await tester.pump();
+        expect(
+          tester.widget<SwitchListTile>(compressSwitch).value,
+          isNot(compressBefore),
+        );
+        expect(tester.takeException(), isNull);
+
+        // 阶段 2：Android 手机尺寸（1080x2400 @3.0 → 逻辑 360x800）
+        tester.view.physicalSize = const Size(1080, 2400);
+        tester.view.devicePixelRatio = 3.0;
+
+        await tester.pumpWidget(
+          buildSyncSettingsApp(
+            provider: provider,
+            platform: TargetPlatform.android,
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        // 窄屏下同样必须无溢出、无异常
+        expect(find.byType(SwitchListTile), findsNWidgets(2));
+        expect(find.text('开启自动同步'), findsOneWidget);
+        expect(find.text('开启图片压缩'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+
+        await tester.ensureVisible(autoSwitch);
+        await tester.pump();
+        final androidAutoBefore = tester
+            .widget<SwitchListTile>(autoSwitch)
+            .value;
+        await tester.tap(autoSwitch);
+        await tester.pump();
+        expect(
+          tester.widget<SwitchListTile>(autoSwitch).value,
+          isNot(androidAutoBefore),
+        );
+
+        await tester.ensureVisible(compressSwitch);
+        await tester.pump();
+        final androidCompressBefore = tester
+            .widget<SwitchListTile>(compressSwitch)
+            .value;
+        await tester.tap(compressSwitch);
+        await tester.pump();
+        expect(
+          tester.widget<SwitchListTile>(compressSwitch).value,
+          isNot(androidCompressBefore),
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 }
 
-Widget buildSyncSettingsApp({required SyncProvider provider}) {
+Widget buildSyncSettingsApp({
+  required SyncProvider provider,
+  TargetPlatform? platform,
+}) {
   return MultiProvider(
     providers: [
       ChangeNotifierProvider<SettingsProvider>(
@@ -125,7 +228,11 @@ Widget buildSyncSettingsApp({required SyncProvider provider}) {
       ChangeNotifierProvider<SyncProvider>.value(value: provider),
       ChangeNotifierProvider<PaymentService>.value(value: PaymentService()),
     ],
-    child: const MaterialApp(home: SyncSettingsPage()),
+    child: MaterialApp(
+      // 测试注入目标平台：ThemeData(platform:) 决定主题与部件平台行为
+      theme: platform == null ? null : ThemeData(platform: platform),
+      home: const SyncSettingsPage(),
+    ),
   );
 }
 
@@ -135,14 +242,15 @@ class TestSyncProvider extends SyncProvider {
     required List<Directory> tempDirs,
     SyncConfig? config,
   }) : _snapshot = snapshot,
-       _config = config ??
+       _config =
+           config ??
            SyncConfig(
-         enabled: true,
-         autoSync: true,
-         serverUrl: 'https://dav.example.com/',
-         username: 'demo',
-         password: 'secret',
-       ),
+             enabled: true,
+             autoSync: true,
+             serverUrl: 'https://dav.example.com/',
+             username: 'demo',
+             password: 'secret',
+           ),
        super(
          momentService: _createMomentService(tempDirs),
          secretStore: SyncSecretStore.fake(),
