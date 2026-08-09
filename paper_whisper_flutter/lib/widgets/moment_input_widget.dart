@@ -1,12 +1,9 @@
 import 'dart:async';
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:record/record.dart';
-import 'package:audioplayers/audioplayers.dart';
-
-import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart';
@@ -14,6 +11,7 @@ import '../providers/sync_provider.dart';
 import '../widgets/skeuomorphic_dialog.dart';
 import '../widgets/skeuomorphic_toast.dart';
 import '../config/app_theme.dart';
+import '../features/moments/application/moment_recorder_controller.dart';
 import 'cassette_wheel.dart';
 
 class MomentInputWidget extends StatefulWidget {
@@ -27,11 +25,16 @@ class MomentInputWidget extends StatefulWidget {
   onSend;
   final FocusNode? focusNode;
 
+  /// 可选注入的录音控制器（测试 seam）。生产不传，页面自建并持有；
+  /// 注入时页面只订阅状态流与标题监听、不负责释放。
+  final MomentRecorderController? recorder;
+
   const MomentInputWidget({
     super.key,
     required this.onSend,
     this.focusNode,
     this.onHeightChanged,
+    this.recorder,
   });
 
   final ValueChanged<double>? onHeightChanged;
@@ -46,22 +49,15 @@ class _MomentInputWidgetState extends State<MomentInputWidget>
   final List<XFile> _selectedImages = [];
   final ImagePicker _picker = ImagePicker();
 
-  // Audio Recording State
-  final AudioRecorder _audioRecorder = AudioRecorder();
-  bool _isRecording = false;
-  String? _audioPath;
-  Duration _recordDuration = Duration.zero;
-  Timer? _timer;
+  // 录音/预览：状态与动作全部委托 MomentRecorderController（context-free）。
+  // 生产自建（owned，dispose 释放）；测试可注入（页面不释放）。
+  late final MomentRecorderController _recorder;
+  late final bool _ownsRecorder;
+  StreamSubscription<MomentRecorderState>? _recorderStateSub;
+  bool _wasRecording = false;
 
   // Animation for Tape
   late AnimationController _tapeController;
-
-  // Audio Preview
-  final AudioPlayer _previewPlayer = AudioPlayer();
-  bool _isPreviewPlaying = false;
-
-  // Audio Title
-  final TextEditingController _audioTitleController = TextEditingController();
 
   // Global Key to preserve TextField state
   final GlobalKey _inputFieldKey = GlobalKey();
@@ -69,19 +65,17 @@ class _MomentInputWidgetState extends State<MomentInputWidget>
   @override
   void initState() {
     super.initState();
-    _audioTitleController.addListener(() {
-      setState(() {});
-    });
-
-    _previewPlayer.onPlayerStateChanged.listen((state) {
-      if (mounted) {
-        setState(() => _isPreviewPlaying = state == PlayerState.playing);
-      }
-    });
-
-    _previewPlayer.onPlayerComplete.listen((_) {
-      if (mounted) setState(() => _isPreviewPlaying = false);
-    });
+    final injected = widget.recorder;
+    if (injected != null) {
+      _recorder = injected;
+      _ownsRecorder = false;
+    } else {
+      _recorder = MomentRecorderController();
+      _ownsRecorder = true;
+    }
+    _recorder.initialize();
+    _recorder.audioTitleController.addListener(_onAudioTitleChanged);
+    _recorderStateSub = _recorder.stateStream.listen(_onRecorderState);
 
     // Tape Animation (Infinite rotation when recording)
     _tapeController = AnimationController(
@@ -90,8 +84,28 @@ class _MomentInputWidgetState extends State<MomentInputWidget>
     );
   }
 
+  /// 标题输入变化 → 刷新（原 `_audioTitleController.addListener`）。
+  void _onAudioTitleChanged() {
+    if (mounted) setState(() {});
+  }
+
+  /// 录音状态流 → 磁带旋转随录制状态启停 + 刷新（原 Timer/预览订阅
+  /// 的 setState 汇总点）。
+  void _onRecorderState(MomentRecorderState state) {
+    if (!mounted) return;
+    if (state.isRecording != _wasRecording) {
+      if (state.isRecording) {
+        _tapeController.repeat(); // Start Spinning
+      } else {
+        _tapeController.stop(); // Stop Spinning
+      }
+      _wasRecording = state.isRecording;
+    }
+    setState(() {});
+  }
+
   Future<void> _toggleRecording() async {
-    if (_isRecording) {
+    if (_recorder.state.isRecording) {
       await _stopRecording();
     } else {
       await _startRecording();
@@ -99,68 +113,40 @@ class _MomentInputWidgetState extends State<MomentInputWidget>
   }
 
   Future<void> _startRecording() async {
-    try {
-      if (await _audioRecorder.hasPermission()) {
-        final tempDir = await getTemporaryDirectory();
-        final path =
-            '${tempDir.path}/temp_record_${DateTime.now().millisecondsSinceEpoch}.m4a';
-
-        await _audioRecorder.start(const RecordConfig(), path: path);
-
-        _tapeController.repeat(); // Start Spinning
-
-        setState(() {
-          _isRecording = true;
-          _recordDuration = Duration.zero;
-        });
-
-        _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-          setState(() {
-            _recordDuration += const Duration(seconds: 1);
-          });
-        });
-      } else {
+    final result = await _recorder.start();
+    switch (result) {
+      case MomentRecorderPermissionDenied():
         if (mounted) SkeuomorphicToast.error(context, '请授予麦克风权限');
-      }
-    } catch (e) {
-      debugPrint("Start recording error: $e");
+      case MomentRecorderFailure():
+        // 控制器已 debugPrint；UI 不新增文案（与原 catch 分支一致）。
+        break;
+      case MomentRecorderHandled():
+        break; // 录制状态经 stateStream 刷新
     }
   }
 
   Future<void> _stopRecording() async {
-    try {
-      final path = await _audioRecorder.stop();
-      _timer?.cancel();
-      _tapeController.stop(); // Stop Spinning
-
-      setState(() {
-        _isRecording = false;
-        _audioPath = path;
-      });
-    } catch (e) {
-      debugPrint("Stop recording error: $e");
-    }
+    await _recorder.stop();
   }
 
   void _cancelRecording() async {
-    // Stop without saving
-    if (_isRecording) {
-      await _audioRecorder.stop();
-      _timer?.cancel();
-      _tapeController.stop();
-      setState(() {
-        _isRecording = false;
-        _recordDuration = Duration.zero;
-      });
-    }
+    await _recorder.cancel();
   }
 
   void _deleteAudio() {
-    setState(() {
-      _audioPath = null;
-      _audioTitleController.clear();
-      _recordDuration = Duration.zero;
-    });
+    _recorder.deleteAudio(); // 清空经 stateStream 刷新
+  }
+
+  Future<void> _togglePreview() async {
+    final result = await _recorder.togglePreview();
+    switch (result) {
+      case MomentRecorderPermissionDenied():
+        if (mounted) SkeuomorphicToast.error(context, '请授予麦克风权限');
+      case MomentRecorderFailure():
+        break; // 控制器已 debugPrint；UI 不新增文案
+      case MomentRecorderHandled():
+        break; // 预览状态经 stateStream 刷新
+    }
   }
 
   void _pickImages() async {
@@ -177,27 +163,26 @@ class _MomentInputWidgetState extends State<MomentInputWidget>
     if (webDavConfigured && !hasShownPrompt) {
       bool? confirmCompression = await showDialog<bool>(
         context: context,
-        builder:
-            (ctx) => SkeuomorphicDialog(
-              title: '图片上传设置',
-              headerIcon: Icons.cloud_upload,
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [Text('检测到您已开启 WebDAV 同步。为节省您的云端流量，建议开启图片压缩。')],
-              ),
-              actions: [
-                SkeuomorphicDialogButton(
-                  label: '使用原图',
-                  isPrimary: false,
-                  onPressed: () => Navigator.pop(ctx, false),
-                ),
-                SkeuomorphicDialogButton(
-                  label: '开启压缩',
-                  onPressed: () => Navigator.pop(ctx, true),
-                ),
-              ],
+        builder: (ctx) => SkeuomorphicDialog(
+          title: '图片上传设置',
+          headerIcon: Icons.cloud_upload,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: const [Text('检测到您已开启 WebDAV 同步。为节省您的云端流量，建议开启图片压缩。')],
+          ),
+          actions: [
+            SkeuomorphicDialogButton(
+              label: '使用原图',
+              isPrimary: false,
+              onPressed: () => Navigator.pop(ctx, false),
             ),
+            SkeuomorphicDialogButton(
+              label: '开启压缩',
+              onPressed: () => Navigator.pop(ctx, true),
+            ),
+          ],
+        ),
       );
 
       if (confirmCompression != null) {
@@ -225,50 +210,51 @@ class _MomentInputWidgetState extends State<MomentInputWidget>
   }
 
   void _handleSend() {
+    final state = _recorder.state;
     if (_controller.text.trim().isEmpty &&
         _selectedImages.isEmpty &&
-        _audioPath == null) {
+        state.audioPath == null) {
       return;
     }
 
-    String? finalAudioTitle = _audioTitleController.text.trim();
+    String? finalAudioTitle = _recorder.audioTitleController.text.trim();
     // Logic: Default title if empty
-    if (_audioPath != null && finalAudioTitle.isEmpty) {
+    if (state.audioPath != null && finalAudioTitle.isEmpty) {
       finalAudioTitle = "语音随记";
     }
 
     String content = _controller.text;
     // Logic: Default content if empty
-    if (content.isEmpty && _audioPath != null) {
+    if (content.isEmpty && state.audioPath != null) {
       content = finalAudioTitle;
     }
 
     widget.onSend(
       content,
       List.from(_selectedImages),
-      audioPath: _audioPath,
+      audioPath: state.audioPath,
       audioTitle: finalAudioTitle.isNotEmpty ? finalAudioTitle : null,
-      audioDuration: _audioPath != null ? _recordDuration.inSeconds : null,
+      audioDuration: state.audioPath != null
+          ? state.recordDuration.inSeconds
+          : null,
     );
 
     widget.focusNode?.unfocus();
     _controller.clear();
-    _audioTitleController.clear();
+    // 复刻原清理段：标题/路径/时长/预览标记（含"语音随记"默认标题）。
+    _recorder.clearAfterSend();
     setState(() {
       _selectedImages.clear();
-      _audioPath = null;
-      _recordDuration = Duration.zero;
-      _isPreviewPlaying = false;
     });
   }
 
   @override
   void dispose() {
+    _recorderStateSub?.cancel();
+    _recorder.audioTitleController.removeListener(_onAudioTitleChanged);
+    // 只释放自建的控制器；注入的由测试/外部负责。
+    if (_ownsRecorder) _recorder.dispose();
     _controller.dispose();
-    _audioTitleController.dispose();
-    _audioRecorder.dispose();
-    _previewPlayer.dispose();
-    _timer?.cancel();
     _tapeController.dispose();
     super.dispose();
   }
@@ -284,6 +270,7 @@ class _MomentInputWidgetState extends State<MomentInputWidget>
     final recordingColor = themeConfig['recordingColor'] as Color;
     final cancelColor = themeConfig['cancelColor'] as Color;
     final boxShadows = themeConfig['containerShadows'] as List<BoxShadow>;
+    final isRecording = _recorder.state.isRecording;
 
     return Container(
       decoration: BoxDecoration(
@@ -317,10 +304,9 @@ class _MomentInputWidgetState extends State<MomentInputWidget>
                   duration: const Duration(milliseconds: 300),
                   curve: Curves.easeOutCubic,
                   alignment: Alignment.topCenter,
-                  child:
-                      _isRecording
-                          ? _buildCassetteDeck(themeConfig)
-                          : _buildTextInputArea(themeConfig),
+                  child: isRecording
+                      ? _buildCassetteDeck(themeConfig)
+                      : _buildTextInputArea(themeConfig),
                 ),
 
                 const SizedBox(height: 12),
@@ -332,17 +318,17 @@ class _MomentInputWidgetState extends State<MomentInputWidget>
                     Row(
                       children: [
                         _buildToolButton(
-                          icon:
-                              _isRecording
-                                  ? Icons.stop_circle_outlined
-                                  : Icons.mic_none,
-                          iconColor: _isRecording ? recordingColor : iconColor,
-                          size: _isRecording ? 28 : 24,
-                          onTap:
-                              _isRecording ? _stopRecording : _toggleRecording,
+                          icon: isRecording
+                              ? Icons.stop_circle_outlined
+                              : Icons.mic_none,
+                          iconColor: isRecording ? recordingColor : iconColor,
+                          size: isRecording ? 28 : 24,
+                          onTap: isRecording
+                              ? _stopRecording
+                              : _toggleRecording,
                         ),
                         const SizedBox(width: 8),
-                        if (_isRecording)
+                        if (isRecording)
                           _buildTextToolButton(
                             label: '取消',
                             textColor: cancelColor,
@@ -447,9 +433,8 @@ class _MomentInputWidgetState extends State<MomentInputWidget>
                       right: 0,
                       top: 0,
                       child: GestureDetector(
-                        onTap:
-                            () =>
-                                setState(() => _selectedImages.removeAt(index)),
+                        onTap: () =>
+                            setState(() => _selectedImages.removeAt(index)),
                         child: Container(
                           decoration: BoxDecoration(
                             color: imageRemoveBgColor,
@@ -505,7 +490,8 @@ class _MomentInputWidgetState extends State<MomentInputWidget>
               ),
 
               // Audio Attachment View
-              if (_audioPath != null) _buildMiniCassette(themeConfig),
+              if (_recorder.state.audioPath != null)
+                _buildMiniCassette(themeConfig),
             ],
           ),
         ),
@@ -523,8 +509,9 @@ class _MomentInputWidgetState extends State<MomentInputWidget>
     final bridgeColor = themeConfig['cassetteBridgeColor'] as Color;
     final counterColor = themeConfig['cassetteCounterColor'] as Color;
     final screwColor = themeConfig['cassetteScrewColor'] as Color;
+    final recordDuration = _recorder.state.recordDuration;
     String durationStr =
-        "${_recordDuration.inMinutes.toString().padLeft(2, '0')}:${(_recordDuration.inSeconds % 60).toString().padLeft(2, '0')}";
+        "${recordDuration.inMinutes.toString().padLeft(2, '0')}:${(recordDuration.inSeconds % 60).toString().padLeft(2, '0')}";
 
     // Compact, Centered Cassette
     return Center(
@@ -632,16 +619,9 @@ class _MomentInputWidgetState extends State<MomentInputWidget>
       child: Row(
         children: [
           GestureDetector(
-            onTap: () async {
-              if (_audioPath == null) return;
-              if (_isPreviewPlaying) {
-                await _previewPlayer.pause();
-              } else {
-                await _previewPlayer.play(DeviceFileSource(_audioPath!));
-              }
-            },
+            onTap: _togglePreview,
             child: Icon(
-              _isPreviewPlaying
+              _recorder.state.isPreviewPlaying
                   ? Icons.pause_circle_filled
                   : Icons.play_circle_fill,
               color: miniPlayColor,
@@ -651,7 +631,7 @@ class _MomentInputWidgetState extends State<MomentInputWidget>
           const SizedBox(width: 8),
           Expanded(
             child: TextField(
-              controller: _audioTitleController,
+              controller: _recorder.audioTitleController,
               style: TextStyle(color: miniTextColor, fontSize: 13),
               decoration: InputDecoration(
                 hintText: "音频标题...",
