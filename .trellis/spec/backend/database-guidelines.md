@@ -195,12 +195,112 @@ Then namespace the local sync baseline keys:
 
 ---
 
+## Scenario: Shared Manifest Mutation And Sync Ownership
+
+### 1. Scope / Trigger
+
+This contract applies whenever code creates a diary/moment service, mutates `local_manifest.json` or `local_moments_manifest.json`, or adds a new sync/page/statistics/storage consumer. It prevents independent in-memory snapshots from overwriting each other.
+
+### 2. Signatures
+
+Production manifest mutations are asynchronous and must be awaited:
+
+```dart
+Future<void> updateItem(
+  String filename, {
+  required bool isDeleted,
+  int? timestamp,
+});
+
+Future<void> removeItem(
+  String filename, {
+  int? expectedVersionTimestamp,
+});
+
+Future<void> ensureConsistency(Directory dataDir);
+```
+
+Manifest-owning services are explicit dependencies:
+
+```dart
+DiaryProvider({required DiaryService service, ...});
+SyncProvider({required MomentService momentService, ...});
+StorageService({required MomentService momentService});
+```
+
+### 3. Contracts
+
+- `main.dart` creates exactly one production `DiaryService` and one `MomentService(diaryService: diaryService)`.
+- Every page, provider, statistics flow, storage flow, and sync runner receives those instances through Provider or constructors.
+- Manifest mutations for the same absolute file path share one process-wide FIFO queue, including across different `ManifestService` instances.
+- A queued mutation reloads the latest disk snapshot before applying its item-level change.
+- For the same filename, the greater `versionTimestamp` wins; an older non-deleted item cannot revive a newer deletion or overwrite a newer normal item.
+- `removeItem` must carry the caller-observed version when cleaning ghosts and must not remove a newer disk version or an item whose local file exists.
+- If a disk snapshot exists but cannot be read or decoded, skip the mutation and preserve the file. A missing file is a valid empty baseline.
+- `SyncManifest` / `SyncItem` JSON keys and timestamp semantics remain unchanged.
+
+### 4. Validation & Error Matrix
+
+| Condition | Required behavior |
+|---|---|
+| Two instances update different items concurrently | Final disk manifest contains both items |
+| Newer item is followed by an older stale write | Keep the newer timestamp and fields |
+| Newer deletion is followed by an older live item | Keep the deletion; never revive it |
+| Ghost removal races with a newer local save | Preserve the newer item |
+| Manifest JSON is unreadable/corrupt | Log and skip the write; do not replace it with an empty snapshot |
+| One queued write fails | Later writes still enter and run on the queue |
+| `await updateItem/removeItem` completes | The successful disk mutation is already observable from a new service instance |
+
+### 5. Good / Base / Bad Cases
+
+- Good: A page save and an automatic sync mutate the same manifest concurrently; both changes remain after a fresh reload.
+- Base: A single service updates one item and the awaited Future completes after disk persistence.
+- Bad: A page or provider constructs another `MomentService()` and later saves its stale full manifest over the composition-root instance.
+
+### 6. Tests Required
+
+- Two-instance different-item union, same-item timestamp winner, and deletion non-revival.
+- Conditional `removeItem(expectedVersionTimestamp:)` racing a newer update.
+- Corrupt JSON preservation and queue recovery after failure.
+- `ensureConsistency` racing an explicit update.
+- Fresh-instance disk assertions after every awaited mutation; do not assert only an instance's memory cache.
+- `MomentService.exportDailySummary` must write through the injected shared `DiaryService` and register the diary manifest item.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```dart
+class MomentsPageState extends State<MomentsPage> {
+  final MomentService momentService = MomentService();
+}
+
+manifestService.updateItem(filename, isDeleted: false); // not awaited
+```
+
+#### Correct
+
+```dart
+late final MomentService momentService;
+
+@override
+void initState() {
+  super.initState();
+  momentService = context.read<MomentService>();
+}
+
+await manifestService.updateItem(filename, isDeleted: false);
+```
+
+---
+
 ## Real Code Examples
 
 - [`diary_service.dart`](../../paper_whisper_flutter/lib/services/diary_service.dart) — resolves `diary_data`, parses `*.txt` files with `DiaryEntry.fromFileContent(...)`, and persists `diary_cache.json`
 - [`moment_service.dart`](../../paper_whisper_flutter/lib/services/moment_service.dart) — resolves `moments_data`, keeps JSON payloads at the root, and manages sibling `images/` + `audio/` folders
 - [`trash_service.dart`](../../paper_whisper_flutter/lib/services/trash_service.dart) — records soft-delete metadata as JSON and falls back from rename to copy-delete when moving files across boundaries
-- [`sync_provider.dart`](../../paper_whisper_flutter/lib/providers/sync_provider.dart) — stores scoped manifests and `sync_trust_snapshot` payloads in `SharedPreferences` rather than a shared global key
+- [`sync_scope_cache_store.dart`](../../paper_whisper_flutter/lib/features/sync/data/sync_scope_cache_store.dart) — stores scoped manifests, media-name baselines, and per-target timestamps without putting SharedPreferences access in the provider
+- [`manifest_service.dart`](../../paper_whisper_flutter/lib/services/manifest_service.dart) — serializes item-level mutations by normalized manifest path and reloads the latest disk snapshot before each write
 
 ---
 
@@ -212,3 +312,6 @@ Then namespace the local sync baseline keys:
 4. **Losing data during migration** — Always copy first, verify, then mark migrated
 5. **Reading all files synchronously** — Use async I/O for large directories
 6. **Using one shared sync baseline across WebDAV and S3** — Always scope sync caches by remote target identity
+7. **Creating multiple services that write the same manifest** — Create them once in the composition root and inject them
+8. **Calling manifest mutations without `await`** — The returned Future is the persistence boundary and must complete before teardown or dependent work
+9. **Saving a stale full manifest snapshot** — Use item-level queued mutations based on the latest disk snapshot

@@ -6,22 +6,34 @@
 
 ## Overview
 
-PaperWhisper uses **Provider** (`package:provider`) as its sole state management solution. The app has 4 providers registered at the root level via `MultiProvider`:
+PaperWhisper uses **Provider** (`package:provider`) as its sole state management solution. The root graph registers two shared service instances and four reactive providers:
 
 ```dart
+final diaryService = DiaryService();
+final momentService = MomentService(diaryService: diaryService);
+
 MultiProvider(
   providers: [
-    ChangeNotifierProvider(create: (_) => SettingsProvider()),
-    ChangeNotifierProvider(create: (_) => DiaryProvider(diaryService, initialEntries)),
+    Provider<DiaryService>.value(value: diaryService),
+    Provider<MomentService>.value(value: momentService),
+    ChangeNotifierProvider(create: (_) => SettingsProvider(...)),
+    ChangeNotifierProvider(
+      create: (_) => DiaryProvider(
+        service: diaryService,
+        initialEntries: initialEntries,
+      ),
+    ),
     ChangeNotifierProxyProvider<DiaryProvider, SyncProvider>(
-      create: (_) => SyncProvider(),
-      update: (_, diary, syncProvider) => syncProvider!..updateDiaryProvider(diary),
+      create: (_) => SyncProvider(momentService: momentService),
+      update: (_, diary, sync) => sync!..updateDiaryProvider(diary),
     ),
     ChangeNotifierProvider.value(value: PaymentService()),
   ],
   ...
 )
 ```
+
+`DiaryService` and `MomentService` are registered as non-reactive dependencies so every page, provider, statistics flow, storage flow, and sync run uses the same manifest-owning instances.
 
 ---
 
@@ -96,7 +108,7 @@ Consumer<SettingsProvider>(
 ### ProxyProvider (dependent providers):
 ```dart
 ChangeNotifierProxyProvider<DiaryProvider, SyncProvider>(
-  create: (_) => SyncProvider(),
+  create: (_) => SyncProvider(momentService: momentService),
   update: (_, diary, syncProvider) => syncProvider!..updateDiaryProvider(diary),
 )
 ```
@@ -105,25 +117,41 @@ ChangeNotifierProxyProvider<DiaryProvider, SyncProvider>(
 
 ## Service Singletons vs Providers
 
-**Important distinction**: Services are singletons used for I/O operations but are NOT reactive. Providers wrap services and add reactivity.
+Services perform I/O but are not reactive. Stateful file services must be created once in the composition root and injected through `Provider<T>` or constructors; pages must not construct another service that writes the same manifest.
 
 ```
-UI ← watches → Provider ← calls → Service ← does → I/O (file, network)
+UI ← watches → Provider ← calls → shared Service ← does → I/O
+                         ↑
+                 composition root owns it
 ```
 
 Example flow:
-1. User taps "Save" → calls `context.read<DiaryProvider>().saveEntry(entry)`
-2. `DiaryProvider.saveEntry()` → calls `DiaryService().saveEntry(entry)` (file I/O)
-3. `DiaryProvider` → calls `notifyListeners()` → UI rebuilds
+1. `main.dart` creates one `DiaryService` and one `MomentService(diaryService: ...)`.
+2. `DiaryProvider`, `SyncProvider`, pages, statistics, and storage receive those exact instances.
+3. User taps Save → `DiaryProvider.saveEntry()` writes through the shared `DiaryService`.
+4. `DiaryProvider` calls `notifyListeners()` and sync pending calculation reads the same manifest state.
+
+Constructors for manifest-owning consumers require explicit dependencies:
+
+```dart
+DiaryProvider(service: diaryService)
+SyncProvider(momentService: momentService)
+StorageService(momentService: momentService)
+StatisticsService(
+  diaryService: diaryService,
+  momentService: momentService,
+)
+```
 
 ---
 
 ## Real Code Examples
 
-- [`main.dart`](../../paper_whisper_flutter/lib/main.dart) — root `MultiProvider` wiring for `SettingsProvider`, `DiaryProvider`, `SyncProvider`, and `PaymentService`
+- [`main.dart`](../../paper_whisper_flutter/lib/main.dart) — owns the shared `DiaryService` / `MomentService` instances and registers both services plus the reactive providers
+- [`sync_provider.dart`](../../paper_whisper_flutter/lib/providers/sync_provider.dart) — exposes context-free sync commands and delegates persistence, state calculation, scheduling, notifications, and transfer algorithms to `features/sync/`
+- [`sync_ui_coordinator.dart`](../../paper_whisper_flutter/lib/features/sync/presentation/sync_ui_coordinator.dart) — translates typed sync results into permission dialogs and toasts without putting `BuildContext` in the provider
 - [`editor_page.dart`](../../paper_whisper_flutter/lib/pages/editor_page.dart) — uses `context.read<SyncProvider>()` for save-triggered side effects without subscribing the whole page to sync rebuilds
 - [`settings_page.dart`](../../paper_whisper_flutter/lib/pages/settings_page.dart) — scopes premium badge rebuilds with `Consumer<PaymentService>` instead of rebuilding the whole settings screen
-- [`sidebar_widget.dart`](../../paper_whisper_flutter/lib/widgets/sidebar_widget.dart) — uses `context.watch<DiaryProvider>()` where the widget really needs reactive diary data
 
 ---
 
@@ -141,6 +169,27 @@ Screens such as `SettingsPage` and `SyncSettingsPage` should render from `provid
 - `lastSuccessfulSyncPlatform`
 - `failureReason`
 - `configurationInvalid`
+
+### Context-Free Command Boundary
+
+`SyncProvider` must not import `BuildContext`, Widget APIs, permission handlers, notification plugins, or `SharedPreferences`. Its UI-facing commands are typed and context-free:
+
+```dart
+Future<SyncRunResult> sync({bool isAuto = false});
+Future<AutoSyncDecision?> requestAutoSync({
+  bool fromLifecycle = false,
+  bool force = false,
+});
+```
+
+`SyncUiCoordinator` is the presentation boundary for a single sync action. It owns notification permission prompts, dialogs, and toasts, and translates `SyncRunResult` into existing user-facing text. Delayed auto-sync timers must never capture a page context.
+
+```dart
+final coordinator = SyncUiCoordinator(context);
+await coordinator.runManualSync(context.read<SyncProvider>());
+```
+
+The future phase-4 `SaveSyncCoordinator` may centralize cross-feature save policy, but it must consume these same context-free provider commands instead of moving UI dependencies back into `SyncProvider`.
 
 ### UI rules
 
@@ -162,6 +211,8 @@ Screens such as `SettingsPage` and `SyncSettingsPage` should render from `provid
 
 1. **Using `context.watch` when no rebuild is needed** — Use `context.read` for fire-and-forget calls
 2. **Calling `notifyListeners()` in a loop** — Batch updates, call once at the end
-3. **Putting I/O logic in Provider instead of Service** — Provider should delegate to Service
-4. **Creating new Provider for throwaway state** — Use local `StatefulWidget` state instead
-5. **Not using `ChangeNotifierProxyProvider` for dependent providers** — Leads to stale references
+3. **Putting I/O or UI logic in Provider** — Provider delegates I/O to services and UI feedback to coordinators
+4. **Creating a manifest-owning service inside a page/provider** — Inject the composition-root instance instead
+5. **Capturing `BuildContext` in delayed auto-sync callbacks** — Schedule a context-free provider command and render results from state/typed results
+6. **Creating new Provider for throwaway state** — Use local `StatefulWidget` state instead
+7. **Not using `ChangeNotifierProxyProvider` for dependent providers** — Leads to stale references
