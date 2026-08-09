@@ -11,14 +11,14 @@ import 'package:paper_whisper_flutter/models/sync_trust_snapshot.dart';
 import 'package:paper_whisper_flutter/providers/diary_provider.dart';
 import 'package:paper_whisper_flutter/providers/sync_provider.dart';
 import 'package:paper_whisper_flutter/services/cloud_storage_service.dart';
-import 'package:paper_whisper_flutter/services/diary_service.dart';
-import 'package:paper_whisper_flutter/services/manifest_service.dart';
 import 'package:paper_whisper_flutter/services/moment_service.dart';
 import 'package:paper_whisper_flutter/services/s3_sync_service.dart';
 import 'package:paper_whisper_flutter/services/sync_secret_store.dart';
-import 'package:paper_whisper_flutter/services/trash_service.dart';
 import 'package:paper_whisper_flutter/services/webdav_sync_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../support/sync_test_fakes.dart'
+    show FakeDiaryService, FakeMomentService;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -188,7 +188,10 @@ void main() {
           timestamp: 123456789,
         );
 
-        final diaryProvider = DiaryProvider(diaryService, <DiaryEntry>[]);
+        final diaryProvider = DiaryProvider(
+          service: diaryService,
+          initialEntries: <DiaryEntry>[],
+        );
         final provider = SyncProvider(
           webDavService: FakeWebDavSyncService(failUploadFor: filename),
           momentService: FakeMomentService(tempDir),
@@ -243,7 +246,10 @@ void main() {
         // 日记侧为空，确保失败只来自图片上传阶段
         final diaryService = FakeDiaryService(tempDir);
         await diaryService.init();
-        final diaryProvider = DiaryProvider(diaryService, <DiaryEntry>[]);
+        final diaryProvider = DiaryProvider(
+          service: diaryService,
+          initialEntries: <DiaryEntry>[],
+        );
 
         final provider = SyncProvider(
           webDavService: FakeWebDavSyncService(failUploadFor: imageName),
@@ -353,7 +359,10 @@ void main() {
           timestamp: 22334455,
         );
 
-        final diaryProvider = DiaryProvider(diaryService, <DiaryEntry>[]);
+        final diaryProvider = DiaryProvider(
+          service: diaryService,
+          initialEntries: <DiaryEntry>[],
+        );
         final provider = SyncProvider(
           webDavService: FakeWebDavSyncService(),
           s3Service: FakeS3SyncService(),
@@ -417,7 +426,10 @@ void main() {
           timestamp: 99887766,
         );
 
-        final diaryProvider = DiaryProvider(diaryService, <DiaryEntry>[]);
+        final diaryProvider = DiaryProvider(
+          service: diaryService,
+          initialEntries: <DiaryEntry>[],
+        );
         final provider = SyncProvider(
           webDavService: FakeWebDavSyncService(),
           s3Service: FakeS3SyncService(),
@@ -446,171 +458,192 @@ void main() {
       },
     );
 
-    test('sync returns connectionFailed result when connection fails', () async {
-      final provider = SyncProvider(
-        webDavService: FakeWebDavSyncService(
-          connectResult: false,
-          connectionError: 'SocketException: Failed host lookup',
-        ),
-        momentService: FakeMomentService(tempDir),
-        secretStore: SyncSecretStore.fake(),
-        initializeNotifications: false,
-      );
+    test(
+      'sync returns connectionFailed result when connection fails',
+      () async {
+        final provider = SyncProvider(
+          webDavService: FakeWebDavSyncService(
+            connectResult: false,
+            connectionError: 'SocketException: Failed host lookup',
+          ),
+          momentService: FakeMomentService(tempDir),
+          secretStore: SyncSecretStore.fake(),
+          initializeNotifications: false,
+        );
 
-      await provider.saveConfig(
-        SyncConfig(
-          enabled: true,
-          autoSync: true,
-          serverUrl: 'https://dav.example.com/',
-          username: 'demo',
-          password: 'secret',
-        ),
-      );
+        await provider.saveConfig(
+          SyncConfig(
+            enabled: true,
+            autoSync: true,
+            serverUrl: 'https://dav.example.com/',
+            username: 'demo',
+            password: 'secret',
+          ),
+        );
 
-      final result = await provider.sync();
+        final result = await provider.sync();
 
-      expect(result.status, SyncRunStatus.connectionFailed);
-      expect(result.failureMessage, '网络异常，请稍后重试');
-      expect(provider.trustSnapshot.state, SyncTrustState.syncFailed);
-    });
+        expect(result.status, SyncRunStatus.connectionFailed);
+        expect(result.failureMessage, '网络异常，请稍后重试');
+        expect(provider.trustSnapshot.state, SyncTrustState.syncFailed);
+      },
+    );
 
-    test('sync returns alreadySyncing result while a sync is in progress', () async {
-      final provider = SyncProvider(
-        webDavService: FakeWebDavSyncService(),
-        momentService: FakeMomentService(tempDir),
-        secretStore: SyncSecretStore.fake(),
-        initializeNotifications: false,
-      );
+    test(
+      'sync returns alreadySyncing result while a sync is in progress',
+      () async {
+        final provider = SyncProvider(
+          webDavService: FakeWebDavSyncService(),
+          momentService: FakeMomentService(tempDir),
+          secretStore: SyncSecretStore.fake(),
+          initializeNotifications: false,
+        );
 
-      await provider.saveConfig(
-        SyncConfig(
-          enabled: true,
-          autoSync: true,
-          serverUrl: 'https://dav.example.com/',
-          username: 'demo',
-          password: 'secret',
-        ),
-      );
+        await provider.saveConfig(
+          SyncConfig(
+            enabled: true,
+            autoSync: true,
+            serverUrl: 'https://dav.example.com/',
+            username: 'demo',
+            password: 'secret',
+          ),
+        );
 
-      // 将信任态置为 syncing（模拟正在执行的同步），重入保护应返回 typed result
-      await provider.refreshTrustSnapshot(
-        overrideState: SyncTrustState.syncing,
-      );
+        // 将信任态置为 syncing（模拟正在执行的同步），重入保护应返回 typed result
+        await provider.refreshTrustSnapshot(
+          overrideState: SyncTrustState.syncing,
+        );
 
-      final result = await provider.sync();
+        final result = await provider.sync();
 
-      expect(result.status, SyncRunStatus.alreadySyncing);
-      expect(result.failureMessage, isEmpty);
-    });
+        expect(result.status, SyncRunStatus.alreadySyncing);
+        expect(result.failureMessage, isEmpty);
+      },
+    );
 
-    test('sync returns success result with zero changes on a clean state', () async {
-      final diaryService = FakeDiaryService(tempDir);
-      await diaryService.init();
-      final diaryProvider = DiaryProvider(diaryService, <DiaryEntry>[]);
-      final provider = SyncProvider(
-        webDavService: FakeWebDavSyncService(),
-        momentService: FakeMomentService(tempDir),
-        secretStore: SyncSecretStore.fake(),
-        initializeNotifications: false,
-      );
-      provider.updateDiaryProvider(diaryProvider);
+    test(
+      'sync returns success result with zero changes on a clean state',
+      () async {
+        final diaryService = FakeDiaryService(tempDir);
+        await diaryService.init();
+        final diaryProvider = DiaryProvider(
+          service: diaryService,
+          initialEntries: <DiaryEntry>[],
+        );
+        final provider = SyncProvider(
+          webDavService: FakeWebDavSyncService(),
+          momentService: FakeMomentService(tempDir),
+          secretStore: SyncSecretStore.fake(),
+          initializeNotifications: false,
+        );
+        provider.updateDiaryProvider(diaryProvider);
 
-      await provider.saveConfig(
-        SyncConfig(
-          enabled: true,
-          autoSync: true,
-          serverUrl: 'https://dav.example.com/',
-          username: 'demo',
-          password: 'secret',
-        ),
-      );
+        await provider.saveConfig(
+          SyncConfig(
+            enabled: true,
+            autoSync: true,
+            serverUrl: 'https://dav.example.com/',
+            username: 'demo',
+            password: 'secret',
+          ),
+        );
 
-      final result = await provider.sync();
+        final result = await provider.sync();
 
-      expect(result.status, SyncRunStatus.success);
-      expect(result.hasChanges, isFalse);
-      expect(result.processedDiaries, 0);
-      expect(result.processedMoments, 0);
-      expect(provider.trustSnapshot.state, SyncTrustState.syncedSuccessfully);
-      expect(provider.trustSnapshot.totalPendingCount, 0);
-      expect(provider.lastSyncTime, isNotNull);
-    });
+        expect(result.status, SyncRunStatus.success);
+        expect(result.hasChanges, isFalse);
+        expect(result.processedDiaries, 0);
+        expect(result.processedMoments, 0);
+        expect(provider.trustSnapshot.state, SyncTrustState.syncedSuccessfully);
+        expect(provider.trustSnapshot.totalPendingCount, 0);
+        expect(provider.lastSyncTime, isNotNull);
+      },
+    );
 
-    test('requestAutoSync schedules a debounced sync when auto sync is enabled', () async {
-      final provider = SyncProvider(
-        webDavService: FakeWebDavSyncService(),
-        momentService: FakeMomentService(tempDir),
-        secretStore: SyncSecretStore.fake(),
-        initializeNotifications: false,
-      );
+    test(
+      'requestAutoSync schedules a debounced sync when auto sync is enabled',
+      () async {
+        final provider = SyncProvider(
+          webDavService: FakeWebDavSyncService(),
+          momentService: FakeMomentService(tempDir),
+          secretStore: SyncSecretStore.fake(),
+          initializeNotifications: false,
+        );
 
-      await provider.saveConfig(
-        SyncConfig(
-          enabled: true,
-          autoSync: true,
-          serverUrl: 'https://dav.example.com/',
-          username: 'demo',
-          password: 'secret',
-        ),
-      );
+        await provider.saveConfig(
+          SyncConfig(
+            enabled: true,
+            autoSync: true,
+            serverUrl: 'https://dav.example.com/',
+            username: 'demo',
+            password: 'secret',
+          ),
+        );
 
-      // 首次触发（无上次同步时间）不受冷却限制，返回防抖排定决策
-      final decision = await provider.requestAutoSync(fromLifecycle: true);
+        // 首次触发（无上次同步时间）不受冷却限制，返回防抖排定决策
+        final decision = await provider.requestAutoSync(fromLifecycle: true);
 
-      expect(decision, AutoSyncDecision.scheduled);
-      // 先排空 saveConfig 后台 connect 的异步链，再释放调度器取消 30s 防抖
-      await pumpEventQueue();
-      provider.dispose();
-    });
+        expect(decision, AutoSyncDecision.scheduled);
+        // 先排空 saveConfig 后台 connect 的异步链，再释放调度器取消 30s 防抖
+        await pumpEventQueue();
+        provider.dispose();
+      },
+    );
 
-    test('requestAutoSync force triggers immediately even when auto sync is off', () async {
-      final provider = TestableSyncProvider(
-        webDavService: FakeWebDavSyncService(),
-        momentService: FakeMomentService(tempDir),
-        secretStore: SyncSecretStore.fake(),
-        initializeNotifications: false,
-      );
+    test(
+      'requestAutoSync force triggers immediately even when auto sync is off',
+      () async {
+        final provider = TestableSyncProvider(
+          webDavService: FakeWebDavSyncService(),
+          momentService: FakeMomentService(tempDir),
+          secretStore: SyncSecretStore.fake(),
+          initializeNotifications: false,
+        );
 
-      await provider.saveConfig(
-        SyncConfig(
-          enabled: true,
-          autoSync: false,
-          serverUrl: 'https://dav.example.com/',
-          username: 'demo',
-          password: 'secret',
-        ),
-      );
+        await provider.saveConfig(
+          SyncConfig(
+            enabled: true,
+            autoSync: false,
+            serverUrl: 'https://dav.example.com/',
+            username: 'demo',
+            password: 'secret',
+          ),
+        );
 
-      final decision = await provider.requestAutoSync(force: true);
+        final decision = await provider.requestAutoSync(force: true);
 
-      expect(decision, AutoSyncDecision.triggeredNow);
-      await pumpEventQueue();
-      expect(provider.syncCallCount, 1);
-    });
+        expect(decision, AutoSyncDecision.triggeredNow);
+        await pumpEventQueue();
+        expect(provider.syncCallCount, 1);
+      },
+    );
 
-    test('requestAutoSync returns null and marks needsAttention when credentials missing', () async {
-      final provider = SyncProvider(
-        webDavService: FakeWebDavSyncService(),
-        momentService: FakeMomentService(tempDir),
-        secretStore: SyncSecretStore.fake(),
-        initializeNotifications: false,
-      );
+    test(
+      'requestAutoSync returns null and marks needsAttention when credentials missing',
+      () async {
+        final provider = SyncProvider(
+          webDavService: FakeWebDavSyncService(),
+          momentService: FakeMomentService(tempDir),
+          secretStore: SyncSecretStore.fake(),
+          initializeNotifications: false,
+        );
 
-      await provider.saveConfig(
-        SyncConfig(
-          enabled: true,
-          autoSync: true,
-          serverUrl: 'https://dav.example.com/',
-          username: '',
-          password: '',
-        ),
-      );
+        await provider.saveConfig(
+          SyncConfig(
+            enabled: true,
+            autoSync: true,
+            serverUrl: 'https://dav.example.com/',
+            username: '',
+            password: '',
+          ),
+        );
 
-      final decision = await provider.requestAutoSync(fromLifecycle: true);
+        final decision = await provider.requestAutoSync(fromLifecycle: true);
 
-      expect(decision, isNull);
-      expect(provider.trustSnapshot.state, SyncTrustState.needsAttention);
-    });
+        expect(decision, isNull);
+        expect(provider.trustSnapshot.state, SyncTrustState.needsAttention);
+      },
+    );
   });
 }
 
@@ -620,7 +653,7 @@ class TestableSyncProvider extends SyncProvider {
   TestableSyncProvider({
     super.webDavService,
     super.s3Service,
-    super.momentService,
+    required super.momentService,
     super.secretStore,
     super.notificationService,
     super.initializeNotifications,
@@ -725,54 +758,6 @@ class FakeWebDavSyncService extends WebDavSyncService {
   Future<void> ensureDirectoryExists(String remotePath) async {}
 }
 
-class FakeDiaryService extends DiaryService {
-  FakeDiaryService(this.rootDir);
-
-  final Directory rootDir;
-  final ManifestService _manifestService = ManifestService();
-  final TrashService _trashService = TrashService();
-  Directory? _dataDir;
-  bool _initialized = false;
-
-  @override
-  Directory? get dataDir => _dataDir;
-
-  @override
-  String get currentDataPath => _dataDir?.path ?? 'Unknown';
-
-  @override
-  ManifestService get manifestService => _manifestService;
-
-  @override
-  TrashService get trashService => _trashService;
-
-  @override
-  void reset() {
-    _initialized = false;
-    _dataDir = null;
-  }
-
-  @override
-  Future<void> init() async {
-    if (_initialized) return;
-
-    _dataDir = Directory(path.join(rootDir.path, 'diary_data'));
-    await _dataDir!.create(recursive: true);
-    await _manifestService.init(_dataDir!);
-    await _trashService.init(_dataDir!);
-    _initialized = true;
-  }
-
-  @override
-  Future<List<DiaryEntry>> getEntries() async => <DiaryEntry>[];
-
-  @override
-  Future<void> saveCache(List<DiaryEntry> entries) async {}
-
-  @override
-  Future<List<DiaryEntry>?> loadCache() async => null;
-}
-
 class FakeS3SyncService extends S3SyncService {
   FakeS3SyncService({
     this.failUploadFor,
@@ -869,56 +854,4 @@ class FakeS3SyncService extends S3SyncService {
 
   @override
   Future<void> ensureDirectoryExists(String remotePath) async {}
-}
-
-class FakeMomentService extends MomentService {
-  FakeMomentService(this.rootDir);
-
-  final Directory rootDir;
-  final ManifestService _manifestService = ManifestService();
-  Directory? _dataDir;
-  Directory? _imagesDir;
-  Directory? _audioDir;
-  bool _initialized = false;
-
-  @override
-  Directory? get dataDir => _dataDir;
-
-  @override
-  Directory? get imagesDir => _imagesDir;
-
-  @override
-  Directory? get audioDir => _audioDir;
-
-  @override
-  ManifestService get manifestService => _manifestService;
-
-  @override
-  void reset() {
-    _initialized = false;
-    _dataDir = null;
-    _imagesDir = null;
-    _audioDir = null;
-  }
-
-  @override
-  Future<void> init() async {
-    if (_initialized) return;
-
-    _dataDir = Directory(path.join(rootDir.path, 'moments_data'));
-    _imagesDir = Directory(path.join(_dataDir!.path, 'images'));
-    _audioDir = Directory(path.join(_dataDir!.path, 'audio'));
-
-    await _dataDir!.create(recursive: true);
-    await _imagesDir!.create(recursive: true);
-    await _audioDir!.create(recursive: true);
-    await _manifestService.init(
-      _dataDir!,
-      manifestFileName: 'local_moments_manifest.json',
-    );
-    _initialized = true;
-  }
-
-  @override
-  Future<Set<String>> getAllReferencedImages() async => <String>{};
 }

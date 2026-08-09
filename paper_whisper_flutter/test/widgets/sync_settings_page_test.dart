@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:path/path.dart' as path;
 import 'package:paper_whisper_flutter/config/theme/theme_registry.dart';
 import 'package:paper_whisper_flutter/features/sync/application/sync_run_result.dart';
 import 'package:paper_whisper_flutter/models/sync_config.dart';
@@ -10,7 +9,6 @@ import 'package:paper_whisper_flutter/models/sync_trust_snapshot.dart';
 import 'package:paper_whisper_flutter/pages/sync_settings_page.dart';
 import 'package:paper_whisper_flutter/providers/settings_provider.dart';
 import 'package:paper_whisper_flutter/providers/sync_provider.dart';
-import 'package:paper_whisper_flutter/services/manifest_service.dart';
 import 'package:paper_whisper_flutter/services/moment_service.dart';
 import 'package:paper_whisper_flutter/services/payment_service.dart';
 import 'package:paper_whisper_flutter/services/sync_secret_store.dart';
@@ -268,7 +266,9 @@ class TestSyncProvider extends SyncProvider {
       'sync_settings_page_test',
     );
     tempDirs.add(rootDir);
-    return FakeMomentService(rootDir);
+    // 使用真实 MomentService（debug 数据目录注入），避免子类重声明
+    // 私有字段（_dataDir/_imagesDir/_audioDir）遮蔽父类实现的模式。
+    return MomentService(debugDataDir: rootDir);
   }
 
   @override
@@ -303,58 +303,4 @@ class TestSyncProvider extends SyncProvider {
     syncCallCount++;
     return const SyncRunResult(status: SyncRunStatus.success);
   }
-}
-
-class FakeMomentService extends MomentService {
-  FakeMomentService(this.rootDir);
-
-  final Directory rootDir;
-  final ManifestService _manifestService = ManifestService();
-  Directory? _dataDir;
-  Directory? _imagesDir;
-  Directory? _audioDir;
-  bool _initialized = false;
-
-  @override
-  Directory? get dataDir => _dataDir;
-
-  @override
-  Directory? get imagesDir => _imagesDir;
-
-  @override
-  Directory? get audioDir => _audioDir;
-
-  @override
-  ManifestService get manifestService => _manifestService;
-
-  @override
-  void reset() {
-    _initialized = false;
-    _dataDir = null;
-    _imagesDir = null;
-    _audioDir = null;
-  }
-
-  @override
-  Future<void> init() async {
-    if (_initialized) {
-      return;
-    }
-
-    _dataDir = Directory(path.join(rootDir.path, 'moments_data'));
-    _imagesDir = Directory(path.join(_dataDir!.path, 'images'));
-    _audioDir = Directory(path.join(_dataDir!.path, 'audio'));
-
-    await _dataDir!.create(recursive: true);
-    await _imagesDir!.create(recursive: true);
-    await _audioDir!.create(recursive: true);
-    await _manifestService.init(
-      _dataDir!,
-      manifestFileName: 'local_moments_manifest.json',
-    );
-    _initialized = true;
-  }
-
-  @override
-  Future<Set<String>> getAllReferencedImages() async => <String>{};
 }

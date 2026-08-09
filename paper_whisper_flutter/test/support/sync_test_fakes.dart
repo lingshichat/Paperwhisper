@@ -250,6 +250,8 @@ class FakeMomentService extends MomentService {
 
   /// 覆写公开归档操作：记录调用并执行可控的本地文件删除与 Manifest
   /// 更新（isDeleted=true），不依赖父类私有字段（_dataDir/_trashService）。
+  /// 与真实实现一致，updateItem 必须 await：否则写盘进入串行队列后仍在
+  /// 异步进行，测试 tearDown 删除临时目录时会撞上文件占用（Windows）。
   @override
   Future<void> archiveMomentByFilename(
     String filename, {
@@ -260,7 +262,7 @@ class FakeMomentService extends MomentService {
     if (await file.exists()) {
       await file.delete();
     }
-    _manifestService.updateItem(
+    await _manifestService.updateItem(
       filename,
       isDeleted: true,
       timestamp: manifestTimestamp,

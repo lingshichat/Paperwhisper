@@ -2,8 +2,11 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as path;
+import 'package:paper_whisper_flutter/models/diary_entry.dart';
 import 'package:paper_whisper_flutter/models/moment.dart';
 import 'package:paper_whisper_flutter/models/trash_record.dart';
+import 'package:paper_whisper_flutter/services/diary_service.dart';
+import 'package:paper_whisper_flutter/services/manifest_service.dart';
 import 'package:paper_whisper_flutter/services/moment_service.dart';
 
 void main() {
@@ -144,5 +147,132 @@ void main() {
         expect(await service.trashService.hasRecord(filename), isTrue);
       },
     );
+
+    test(
+      'exportDailySummary writes through the injected DiaryService instance',
+      () async {
+        final diaryService = RecordingDiaryService(rootDir);
+        await diaryService.init();
+
+        final exporting = MomentService(
+          debugDataDir: dataDir,
+          diaryService: diaryService,
+        );
+        await exporting.init();
+
+        await exporting.saveMoment(
+          Moment(
+            uuid: 'summary-day',
+            content: '今天心情不错',
+            images: const <String>[],
+            createdAt: DateTime(2026, 3, 12, 9, 0),
+          ),
+        );
+        await exporting.saveMoment(
+          Moment(
+            uuid: 'other-day',
+            content: '不该出现在今天的聚合里',
+            images: const <String>[],
+            createdAt: DateTime(2026, 3, 13, 9, 0),
+          ),
+        );
+
+        final filename = await exporting.exportDailySummary(
+          DateTime(2026, 3, 12),
+        );
+
+        // 固定文件名允许覆盖
+        expect(filename, '2026-03-12_moments_summary.txt');
+        // 写入发生在注入的共享 DiaryService 上（若仍局部 new 则此处为空）
+        expect(diaryService.savedEntries, hasLength(1));
+        final entry = diaryService.savedEntries.single;
+        expect(entry.title, '2026年3月12日 随心记聚合');
+        expect(entry.content, contains('今天心情不错'));
+        expect(entry.content, isNot(contains('不该出现在今天的聚合里')));
+        // 共享 DiaryService 的 manifest 同步登记（无独立实例状态分歧）
+        final item = diaryService
+            .manifestService
+            .manifest
+            .items['2026-03-12_moments_summary.txt'];
+        expect(item, isNotNull);
+        expect(item!.isDeleted, isFalse);
+      },
+    );
+
+    test(
+      'exportDailySummary returns null without an injected DiaryService',
+      () async {
+        final standalone = MomentService(debugDataDir: dataDir);
+        await standalone.init();
+        await standalone.saveMoment(
+          Moment(
+            uuid: 'no-diary',
+            content: '没有注入 DiaryService',
+            images: const <String>[],
+            createdAt: DateTime(2026, 3, 12, 9, 0),
+          ),
+        );
+
+        final result = await standalone.exportDailySummary(
+          DateTime(2026, 3, 12),
+        );
+
+        expect(result, isNull, reason: '未注入共享 DiaryService 时聚合导出应安全跳过');
+      },
+    );
   });
+}
+
+/// 完整公开 fake：覆写 [DiaryService] 全部相关公开操作，不依赖父类私有字段。
+/// 用于验证 [MomentService.exportDailySummary] 把日记写入路由到注入实例。
+class RecordingDiaryService extends DiaryService {
+  RecordingDiaryService(this.rootDir);
+
+  final Directory rootDir;
+  final List<DiaryEntry> savedEntries = <DiaryEntry>[];
+  final ManifestService _manifestService = ManifestService();
+  Directory? _base;
+  bool _initialized = false;
+
+  @override
+  Directory? get dataDir => _base;
+
+  @override
+  String get currentDataPath => _base?.path ?? 'Unknown';
+
+  @override
+  ManifestService get manifestService => _manifestService;
+
+  @override
+  void reset() {
+    _initialized = false;
+    _base = null;
+  }
+
+  @override
+  Future<void> init() async {
+    if (_initialized) return;
+    _base = Directory(path.join(rootDir.path, 'diary_data'));
+    await _base!.create(recursive: true);
+    await _manifestService.init(_base!);
+    _initialized = true;
+  }
+
+  @override
+  Future<String> saveEntry(DiaryEntry entry) async {
+    savedEntries.add(entry);
+    final file = File(path.join(_base!.path, entry.filename));
+    await file.writeAsString(entry.toFileContent());
+    await _manifestService.updateItem(entry.filename, isDeleted: false);
+    return entry.filename;
+  }
+
+  @override
+  Future<List<DiaryEntry>> getEntries() async => <DiaryEntry>[];
+
+  @override
+  Future<void> saveCache(List<DiaryEntry> entries) async {}
+
+  @override
+  Future<List<DiaryEntry>?> loadCache() async => null;
 }
