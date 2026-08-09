@@ -25,11 +25,11 @@ import '../support/editor_test_fakes.dart';
 /// 交互、草稿恢复、debounce 与切后台自动保存、保存/删除/返回确认、
 /// 同步反馈三分支、dispose 与导出入口。
 ///
-/// 导出说明：产品侧导出 seam（DiaryExportService）尚未提取，完整导出
-/// 链路（分块计算、RepaintBoundary 捕获、拼接、文件写入）依赖
-/// GoogleFonts.pendingFonts / toImage，在 widget 测试 fake async 下
-/// 会悬挂或不可复现。本批只稳定刻画导出入口与长图生成覆盖层样式；
-/// 导出行为细节留给 `DiaryExportService` 单测（提取后补充）。
+/// 导出说明：完整导出链路（分块计算、RepaintBoundary 捕获、拼接、文件
+/// 写入）已随阶段 3 提取为 DiaryExportService，行为由
+/// test/features/editor/diary_export_service_test.dart 单测覆盖；本页
+/// widget 测试仍受 fake async 下 GoogleFonts.pendingFonts / toImage
+/// 悬挂限制，只稳定刻画导出入口与长图生成覆盖层样式。
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -814,9 +814,9 @@ void main() {
       expect(tester.takeException(), isNull);
 
       // 完整导出链路（分块计算、RepaintBoundary 捕获、拼接、文件写入）
-      // 依赖 GoogleFonts.pendingFonts / toImage，在 widget 测试 fake
-      // async 下会悬挂或不可复现；该行为留给 DiaryExportService 单测
-      // （产品 seam 提取后补充），这里不触发捕获完成路径。
+      // 已由 DiaryExportService 承载并由其单测覆盖；widget 测试 fake
+      // async 下 GoogleFonts.pendingFonts / toImage 仍会悬挂，这里
+      // 不触发捕获完成路径。
       // 仅推进时间消化页面内部可能存在的 800ms 延迟 Timer，避免
       // pending timer；页面销毁由 pumpEditorPage 的 addTearDown 兜底
       // （_captureAndSave 的 finally 受 mounted 保护）。
