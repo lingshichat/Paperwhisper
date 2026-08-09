@@ -9,10 +9,14 @@ import 'package:path/path.dart' as path;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import '../features/sync/application/auto_sync_scheduler.dart';
 import '../features/sync/application/sync_error_classifier.dart';
+import '../features/sync/application/sync_progress_tracker.dart';
 import '../features/sync/application/sync_run_outcome.dart';
+import '../features/sync/application/sync_trust_engine.dart';
 import '../features/sync/data/sync_config_store.dart';
 import '../features/sync/data/sync_scope_cache_store.dart';
+import '../features/sync/presentation/sync_notification_service.dart';
 import '../models/sync_config.dart';
 import '../services/webdav_sync_service.dart';
 import '../services/diary_service.dart';
@@ -55,7 +59,11 @@ class SyncProvider with ChangeNotifier {
 
   late final SyncConfigStore _configStore;
   late final SyncScopeCacheStore _scopeCacheStore;
+  late final SyncNotificationService _notificationService;
+  late final SyncProgressTracker _progressTracker;
+  late final AutoSyncScheduler _autoSyncScheduler;
   final SyncErrorClassifier _errorClassifier = const SyncErrorClassifier();
+  final SyncTrustEngine _trustEngine = const SyncTrustEngine();
 
   DiaryProvider? _diaryProvider;
 
@@ -68,31 +76,12 @@ class SyncProvider with ChangeNotifier {
   String? _lastSuccessfulSyncPlatform;
   SyncTrustSnapshot _trustSnapshot = SyncTrustSnapshot.notEnabled;
 
-  // Progress & Speed State
-  double _currentFileProgress = 0.0;
-  String _currentFileSpeed = '';
-  int _lastBytesCount = 0;
-  DateTime? _lastSpeedUpdate;
-
-  // Total Progress & ETA State
-  int _totalOps = 0;
-  int _processedOps = 0;
-  DateTime? _batchStartTime;
-  String _etaMessage = '';
-
-  Timer? _autoSyncTimer;
-
   @override
   void dispose() {
-    // 取消待执行的自动同步定时器，避免全局单例销毁后回调残留
-    _autoSyncTimer?.cancel();
-    _autoSyncTimer = null;
+    // 释放自动同步调度器（取消防抖定时器），避免全局单例销毁后回调残留
+    _autoSyncScheduler.dispose();
     super.dispose();
   }
-
-  static const int _notificationId = 888;
-  static const String _channelId = 'paper_whisper_sync';
-  static const String _channelName = 'Sync Status';
 
   // Statistics
   int _statDiaries = 0;
@@ -112,19 +101,14 @@ class SyncProvider with ChangeNotifier {
     return _config.enabled && _config.hasRequiredCredentials;
   }
 
-  double get currentFileProgress => _currentFileProgress;
-  String get currentFileSpeed => _currentFileSpeed;
+  double get currentFileProgress => _progressTracker.currentFileProgress;
+  String get currentFileSpeed => _progressTracker.currentFileSpeed;
 
   /// Total Progress (0.0 - 1.0)
   /// Formula: (processed + currentFilePart) / total
-  double get totalProgress {
-    if (_totalOps == 0) return 0.0;
-    // Cap currentFileProgress to 1.0 just in case
-    double filePart = _currentFileProgress.clamp(0.0, 1.0);
-    return (_processedOps + filePart) / _totalOps;
-  }
+  double get totalProgress => _progressTracker.totalProgress;
 
-  String get etaMessage => _etaMessage;
+  String get etaMessage => _progressTracker.etaMessage;
 
   late Future<void> _initFuture;
 
@@ -148,9 +132,18 @@ class SyncProvider with ChangeNotifier {
            notificationsPlugin ?? FlutterLocalNotificationsPlugin() {
     _configStore = SyncConfigStore(secretStore: _secretStore);
     _scopeCacheStore = SyncScopeCacheStore();
+    _notificationService = SyncNotificationService(
+      plugin: _notificationsPlugin,
+    );
+    _progressTracker = SyncProgressTracker(onChanged: notifyListeners);
+    _autoSyncScheduler = AutoSyncScheduler(
+      onTrigger: () => sync(isAuto: true).catchError((e) {
+        debugPrint('AutoSync caught error: $e');
+      }),
+    );
     _initFuture = _loadConfig();
     if (initializeNotifications) {
-      _initNotifications();
+      unawaited(_notificationService.init());
     }
   }
 
@@ -163,113 +156,9 @@ class SyncProvider with ChangeNotifier {
 
   Future<void> waitUntilReady() => _initFuture;
 
-  // Helper to reset transfer stats
-  void _resetTransferStats(int totalOperations) {
-    _currentFileProgress = 0.0;
-    _currentFileSpeed = '';
-    _lastBytesCount = 0;
-    _lastSpeedUpdate = null;
-
-    _totalOps = totalOperations;
-    _processedOps = 0;
-    _batchStartTime = DateTime.now();
-    _etaMessage = '计算中...';
-    notifyListeners();
-  }
-
-  void _onTransferProgress(int count, int total) {
-    // debugPrint('SyncProgress: $count / $total'); // Reduce log noise
-
-    final now = DateTime.now();
-
-    // Calculate Progress
-    if (total > 0) {
-      _currentFileProgress = count / total;
-    } else {
-      _currentFileProgress = 0.0;
-    }
-
-    // Initial speed display
-    if (_currentFileSpeed.isEmpty) {
-      _currentFileSpeed = "计算中...";
-    }
-
-    // Update Speed & ETA every 500ms
-    if (_lastSpeedUpdate == null ||
-        now.difference(_lastSpeedUpdate!).inMilliseconds >= 500) {
-      _updateSpeedAndETA(now, count);
-      _lastSpeedUpdate = now;
-      _lastBytesCount = count;
-      notifyListeners();
-    }
-  }
-
-  void _updateSpeedAndETA(DateTime now, int count) {
-    // 1. Calculate Instant Speed
-    if (_lastSpeedUpdate != null && count > _lastBytesCount) {
-      final diffMs = now.difference(_lastSpeedUpdate!).inMilliseconds;
-      if (diffMs > 0) {
-        final bytesDiff = count - _lastBytesCount;
-        final speedBytesPerSec = (bytesDiff / diffMs) * 1000;
-        _currentFileSpeed = _formatSpeed(speedBytesPerSec);
-      }
-    }
-
-    // 2. Calculate ETA based on Item Count
-    // (Since we don't know total bytes size for downloads)
-    if (_batchStartTime != null &&
-        _processedOps > 0 &&
-        _totalOps > _processedOps) {
-      final elapsedMs = now.difference(_batchStartTime!).inMilliseconds;
-      // Time per item = elapsed / processed
-      final msPerItem = elapsedMs / _processedOps; // Simple average
-      final remainingItems = _totalOps - _processedOps;
-
-      // Deduct current item progress from remaining time?
-      // Let's keep it simple: ETA based on full completed items is more stable.
-      // Refined: time = avg * (remaining - currentPart)
-      final estimatedRemainingMs =
-          msPerItem * (remainingItems - _currentFileProgress);
-
-      if (estimatedRemainingMs > 0) {
-        final duration = Duration(milliseconds: estimatedRemainingMs.toInt());
-        if (duration.inHours > 0) {
-          _etaMessage =
-              '剩余 ${duration.inHours} 小时 ${duration.inMinutes % 60} 分';
-        } else if (duration.inMinutes > 0) {
-          _etaMessage =
-              '剩余 ${duration.inMinutes} 分 ${duration.inSeconds % 60} 秒';
-        } else {
-          _etaMessage = '剩余 ${duration.inSeconds} 秒';
-        }
-      }
-    } else if (_processedOps == 0) {
-      _etaMessage = '计算中...';
-    } else {
-      _etaMessage = '即将完成';
-    }
-  }
-
-  String _formatSpeed(double bytesPerSec) {
-    if (bytesPerSec < 1024) return "${bytesPerSec.toStringAsFixed(0)} B/s";
-    if (bytesPerSec < 1024 * 1024) {
-      return "${(bytesPerSec / 1024).toStringAsFixed(1)} KB/s";
-    }
-    return "${(bytesPerSec / (1024 * 1024)).toStringAsFixed(1)} MB/s";
-  }
-
   // Helper to update progress message and notify UI
   void _updateProgress(String message) {
     _progressMessage = message;
-    notifyListeners();
-  }
-
-  // Helper to reset just the current file stats (for loop iteration)
-  void _resetCurrentFileStats() {
-    _currentFileProgress = 0.0;
-    _currentFileSpeed = '';
-    _lastBytesCount = 0;
-    _lastSpeedUpdate = null;
     notifyListeners();
   }
 
@@ -433,61 +322,34 @@ class SyncProvider with ChangeNotifier {
     final pendingCounts = await _calculatePendingCounts();
     final hasPendingChanges = pendingCounts.total > 0;
 
-    SyncTrustState nextState = overrideState ?? _trustSnapshot.state;
-    bool nextConfigurationInvalid = configurationInvalid;
-    String? nextFailureReason = failureReason;
-
-    if (!_config.enabled) {
-      nextState = SyncTrustState.notEnabled;
-      nextConfigurationInvalid = false;
-      if (clearFailureReason && nextFailureReason == null) {
-        nextFailureReason = null;
-      }
-    } else if (!_config.hasRequiredCredentials) {
-      nextState = SyncTrustState.needsAttention;
-      nextConfigurationInvalid = true;
-      nextFailureReason ??= _errorClassifier.configurationIssueMessage(
+    final resolution = _trustEngine.resolve(
+      enabled: _config.enabled,
+      hasRequiredCredentials: _config.hasRequiredCredentials,
+      hasPendingChanges: hasPendingChanges,
+      hasLastSyncTime: _currentScopeLastSyncTime != null,
+      currentState: _trustSnapshot.state,
+      configIssueMessage: _errorClassifier.configurationIssueMessage(
         enabled: _config.enabled,
-      );
-    } else if (overrideState == SyncTrustState.needsAttention) {
-      nextState = SyncTrustState.needsAttention;
-      nextConfigurationInvalid = configurationInvalid;
-    } else if (overrideState == SyncTrustState.syncing) {
-      nextState = SyncTrustState.syncing;
-      nextConfigurationInvalid = false;
-    } else if (failureReason != null) {
-      nextState = SyncTrustState.syncFailed;
-      nextConfigurationInvalid = configurationInvalid;
-    } else if (hasPendingChanges) {
-      nextState = SyncTrustState.localChangesPending;
-      nextConfigurationInvalid = false;
-      if (clearFailureReason) {
-        nextFailureReason = null;
-      }
-    } else if (_currentScopeLastSyncTime != null) {
-      nextState = SyncTrustState.syncedSuccessfully;
-      nextConfigurationInvalid = false;
-      if (clearFailureReason) {
-        nextFailureReason = null;
-      }
-    } else {
-      nextState = SyncTrustState.needsAttention;
-      nextConfigurationInvalid = false;
-      nextFailureReason = clearFailureReason ? null : nextFailureReason;
-    }
+      ),
+      overrideState: overrideState,
+      failureReason: failureReason,
+      configurationInvalid: configurationInvalid,
+      clearFailureReason: clearFailureReason,
+    );
 
     await _updateTrustSnapshot(
       _trustSnapshot.copyWith(
-        state: nextState,
+        state: resolution.state,
         pendingDiaryCount: pendingCounts.diaries,
         pendingMomentCount: pendingCounts.moments,
         pendingImageCount: pendingCounts.images,
         pendingAudioCount: pendingCounts.audio,
         lastSuccessfulSyncAt: _lastSyncTime,
         lastSuccessfulSyncPlatform: _lastSuccessfulSyncPlatform,
-        failureReason: nextFailureReason,
-        configurationInvalid: nextConfigurationInvalid,
-        clearFailureReason: clearFailureReason && nextFailureReason == null,
+        failureReason: resolution.failureReason,
+        configurationInvalid: resolution.configurationInvalid,
+        clearFailureReason:
+            clearFailureReason && resolution.failureReason == null,
       ),
       notify: notify,
     );
@@ -519,19 +381,6 @@ class SyncProvider with ChangeNotifier {
       _config,
       await _getLocalAudioNames(),
     );
-  }
-
-  Future<void> _initNotifications() async {
-    const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('@mipmap/launcher_icon');
-
-    // Darwin (iOS) settings can be added here
-    final InitializationSettings initializationSettings =
-        InitializationSettings(android: initializationSettingsAndroid);
-
-    if (Platform.isAndroid || Platform.isIOS) {
-      await _notificationsPlugin.initialize(settings: initializationSettings);
-    }
   }
 
   Future<void> _loadConfig() async {
@@ -726,45 +575,26 @@ class SyncProvider with ChangeNotifier {
 
     // Force Sync: Skip checks, run immediately
     if (force) {
-      debugPrint('Force Sync requested. Skipping debounce and cooldown.');
-      if (_autoSyncTimer?.isActive ?? false) _autoSyncTimer!.cancel();
-      // 页面已销毁时不传 context，仅保留静默同步
-      if (syncContext != null && !syncContext.mounted) {
-        sync(isAuto: true).catchError((e) {
+      if (syncContext != null && syncContext.mounted) {
+        // context 可用：保留 UI 反馈路径（兼容编排），取消待执行防抖后直接同步
+        debugPrint('Force Sync requested. Skipping debounce and cooldown.');
+        _autoSyncScheduler.cancel();
+        sync(isAuto: true, context: syncContext).catchError((e) {
           debugPrint('Force Sync caught error: $e');
         });
         return;
       }
-      // Pass context for feedback
-      sync(isAuto: true, context: syncContext).catchError((e) {
-        debugPrint('Force Sync caught error: $e');
-      });
+      // context 为 null 或页面已销毁：仅保留静默同步，由调度器立即触发
+      _autoSyncScheduler.request(fromLifecycle: false, force: true);
       return;
     }
 
-    // Cooldown verification for lifecycle events
-    if (fromLifecycle && _currentScopeLastSyncTime != null) {
-      final diff = DateTime.now().difference(_currentScopeLastSyncTime!);
-      if (diff.inMinutes < 5) {
-        debugPrint(
-          'AutoSync suppressed (Cooldown: ${5 - diff.inMinutes}m remaining)',
-        );
-        return;
-      }
-    }
-
-    debugPrint('AutoSync requested. Debouncing...');
-    if (_autoSyncTimer?.isActive ?? false) _autoSyncTimer!.cancel();
-
-    _autoSyncTimer = Timer(const Duration(seconds: 30), () {
-      debugPrint('AutoSync triggered!');
-      // Context might be stale here if widget disposed, so usually we don't pass context
-      // from a delayed timer unless we are sure.
-      // Safe to pass null for pure auto sync.
-      sync(isAuto: true).catchError((e) {
-        debugPrint('AutoSync caught error: $e');
-      });
-    });
+    // 非 force：冷却判断与 30s 防抖决策由调度器统一处理
+    _autoSyncScheduler.request(
+      fromLifecycle: fromLifecycle,
+      force: false,
+      lastSuccessfulSyncAt: _currentScopeLastSyncTime,
+    );
   }
 
   /// 检查并请求通知权限（强制）
@@ -1080,7 +910,7 @@ class SyncProvider with ChangeNotifier {
         toUpload.length +
         toDeleteLocal.length +
         toTrashRemote.length;
-    _resetTransferStats(totalOps);
+    _progressTracker.reset(totalOps);
 
     if (!isAuto && totalOps > 0) {
       _showNotification(processed, totalOps, body: "开始同步 $totalOps 个变更...");
@@ -1098,7 +928,7 @@ class SyncProvider with ChangeNotifier {
           isDeleted: false,
         );
         processed++;
-        _processedOps++;
+        _progressTracker.markItemProcessed();
         if (!isAuto) {
           _showNotification(processed, totalOps, body: "下载: $filename");
         }
@@ -1127,7 +957,7 @@ class SyncProvider with ChangeNotifier {
         );
         nextRemoteManifest.updateItem(mergedItems[filename]!);
         processed++;
-        _processedOps++;
+        _progressTracker.markItemProcessed();
         if (!isAuto) {
           _showNotification(processed, totalOps, body: "上传: $filename");
         }
@@ -1150,7 +980,7 @@ class SyncProvider with ChangeNotifier {
           isDeleted: true,
         );
         processed++;
-        _processedOps++;
+        _progressTracker.markItemProcessed();
       } catch (e) {
         outcome.addDeleteFailure('diary local archive $filename: $e');
       }
@@ -1169,14 +999,14 @@ class SyncProvider with ChangeNotifier {
           mergedItems[filename]!.copyWith(isDeleted: true),
         );
         processed++;
-        _processedOps++;
+        _progressTracker.markItemProcessed();
       } catch (e) {
         if (_errorClassifier.isRemoteSourceAlreadyMissing(e)) {
           nextRemoteManifest.updateItem(
             mergedItems[filename]!.copyWith(isDeleted: true),
           );
           processed++;
-          _processedOps++;
+          _progressTracker.markItemProcessed();
           return;
         }
         outcome.addDeleteFailure('diary remote archive $filename: $e');
@@ -1382,19 +1212,19 @@ class SyncProvider with ChangeNotifier {
         toUpload.length +
         toDeleteLocal.length +
         toTrashRemote.length;
-    _resetTransferStats(totalOps);
+    _progressTracker.reset(totalOps);
 
     if (!isAuto && totalOps > 0) {
       _showNotification(processed, totalOps, body: "同步随心记 ($totalOps)...");
     }
 
     await _processBatch(toDownload, (filename) async {
-      _resetCurrentFileStats();
+      _progressTracker.resetCurrentFile();
       try {
         await _storageService.downloadFile(
           WebDavSyncService.momentsBasePath + filename,
           path.join(service.dataDir!.path, filename),
-          onProgress: _onTransferProgress,
+          onProgress: _progressTracker.onFileProgress,
         );
         service.manifestService.updateItem(
           filename,
@@ -1402,7 +1232,7 @@ class SyncProvider with ChangeNotifier {
           isDeleted: false,
         );
         processed++;
-        _processedOps++;
+        _progressTracker.markItemProcessed();
         if (!isAuto) {
           _showNotification(processed, totalOps, body: "随心记下载: $filename");
         }
@@ -1424,16 +1254,16 @@ class SyncProvider with ChangeNotifier {
         return;
       }
 
-      _resetCurrentFileStats();
+      _progressTracker.resetCurrentFile();
       try {
         await _storageService.uploadFile(
           file.path,
           WebDavSyncService.momentsBasePath + filename,
-          onProgress: _onTransferProgress,
+          onProgress: _progressTracker.onFileProgress,
         );
         nextRemoteManifest.updateItem(mergedItems[filename]!);
         processed++;
-        _processedOps++;
+        _progressTracker.markItemProcessed();
         if (!isAuto) {
           _showNotification(processed, totalOps, body: "随心记上传: $filename");
         }
@@ -1449,7 +1279,7 @@ class SyncProvider with ChangeNotifier {
           manifestTimestamp: mergedItems[filename]!.versionTimestamp,
         );
         processed++;
-        _processedOps++;
+        _progressTracker.markItemProcessed();
         if (!isAuto) {
           _showNotification(processed, totalOps, body: "随心记归档: $filename");
         }
@@ -1471,14 +1301,14 @@ class SyncProvider with ChangeNotifier {
           mergedItems[filename]!.copyWith(isDeleted: true),
         );
         processed++;
-        _processedOps++;
+        _progressTracker.markItemProcessed();
       } catch (e) {
         if (_errorClassifier.isRemoteSourceAlreadyMissing(e)) {
           nextRemoteManifest.updateItem(
             mergedItems[filename]!.copyWith(isDeleted: true),
           );
           processed++;
-          _processedOps++;
+          _progressTracker.markItemProcessed();
           return;
         }
         outcome.addDeleteFailure('moment remote archive $filename: $e');
@@ -1739,7 +1569,7 @@ class SyncProvider with ChangeNotifier {
   }
 
   // ==========================================
-  // 通知管理
+  // 通知管理（薄包装：进度文案更新留在本类，插件调用委托给 SyncNotificationService）
   // ==========================================
   Future<void> _showNotification(
     int? progress,
@@ -1750,64 +1580,19 @@ class SyncProvider with ChangeNotifier {
     // Update local UI state
     if (body != null) _updateProgress(body);
 
-    if (!Platform.isAndroid && !Platform.isIOS) return;
-
-    final AndroidNotificationDetails androidPlatformChannelSpecifics =
-        AndroidNotificationDetails(
-          _channelId,
-          _channelName,
-          channelDescription: '显示同步状态和进度',
-          importance:
-              Importance.low, // Low = no sound/vibrate, good for progress
-          priority: Priority.low,
-          onlyAlertOnce: true,
-          showProgress: true,
-          maxProgress: max ?? 100,
-          progress: progress ?? 0,
-          indeterminate: indeterminate || (progress == null && max == null),
-          ongoing: true, // Prevent swipe away
-          autoCancel: false,
-        );
-
-    final NotificationDetails platformChannelSpecifics = NotificationDetails(
-      android: androidPlatformChannelSpecifics,
-    );
-
-    await _notificationsPlugin.show(
-      id: _notificationId,
-      title: 'PaperWhisper 云同步',
-      body: body ?? '正在同步中...',
-      notificationDetails: platformChannelSpecifics,
+    await _notificationService.showProgress(
+      progress,
+      max,
+      body: body,
+      indeterminate: indeterminate,
     );
   }
 
-  Future<void> _showCompletionNotification(String message) async {
-    if (!Platform.isAndroid && !Platform.isIOS) return;
-
-    final AndroidNotificationDetails androidPlatformChannelSpecifics =
-        AndroidNotificationDetails(
-          _channelId,
-          _channelName,
-          channelDescription: '显示同步状态和进度',
-          importance: Importance.defaultImportance,
-          priority: Priority.defaultPriority,
-          ongoing: false,
-          autoCancel: true,
-        );
-    final NotificationDetails platformChannelSpecifics = NotificationDetails(
-      android: androidPlatformChannelSpecifics,
-    );
-
-    await _notificationsPlugin.show(
-      id: _notificationId,
-      title: '同步完成',
-      body: message,
-      notificationDetails: platformChannelSpecifics,
-    );
+  Future<void> _showCompletionNotification(String message) {
+    return _notificationService.showCompletion(message);
   }
 
-  Future<void> _cancelNotification() async {
-    if (!Platform.isAndroid && !Platform.isIOS) return;
-    await _notificationsPlugin.cancel(id: _notificationId);
+  Future<void> _cancelNotification() {
+    return _notificationService.cancel();
   }
 }
