@@ -1,5 +1,4 @@
 import 'dart:ui' as ui;
-import 'package:image/image.dart' as img; // Added for splitting
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -16,13 +15,10 @@ import '../widgets/slide_page_route.dart'; // Needed for "Save As New" navigatio
 import '../widgets/skeuomorphic_date_picker.dart';
 import '../features/editor/application/editor_save_coordinator.dart';
 import '../features/editor/application/editor_session_controller.dart';
+import '../features/editor/data/diary_export_service.dart';
 import '../features/sync/presentation/sync_ui_coordinator.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:path/path.dart' as path;
-import 'dart:io';
 import '../widgets/export_success_dialog.dart';
 import 'package:flutter/rendering.dart'; // For RenderRepaintBoundary
-import 'package:permission_handler/permission_handler.dart';
 
 class EditorPage extends StatefulWidget {
   final DiaryEntry? entry;
@@ -1042,125 +1038,42 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   }
 
   // Export Logic
+  // 导出服务：分块计划、捕获编排、拼接与写入（context-free）
+  final DiaryExportService _exportService = const DiaryExportService();
+  // 当前导出计划（_isCaptureMode 期间由 _captureAndSave 生成）
+  DiaryExportChunkPlan? _exportPlan;
+  // 导出分块捕获 key（展示层持有，供 RepaintBoundary 查找）
   List<GlobalKey> _exportKeys = [];
 
   Future<void> _captureAndSave() async {
     try {
-      // 1. Prepare Data & Keys
-      final String textToExport = _session.contentController.text;
-
-      final List<String> lines = textToExport.split('\n');
-      if (lines.isEmpty) lines.add('');
-
-      const int linesPerChunk =
-          40; // 40 lines * 32px = 1280px height (plus padding) -> Safe
-      int textChunkCount = (lines.length / linesPerChunk).ceil();
-      if (textChunkCount == 0) textChunkCount = 1;
-
-      // Chunks: 1 Header + N Body + 1 Footer
-      int totalChunks = 1 + textChunkCount + 1;
-
-      _exportKeys = List.generate(totalChunks, (_) => GlobalKey());
+      // 1. 分块计划与捕获 key（展示层负责 RepaintBoundary 查找）
+      final DiaryExportChunkPlan plan = _exportService.buildChunkPlan(
+        _session.contentController.text,
+      );
+      _exportPlan = plan;
+      _exportKeys = List.generate(plan.totalChunks, (_) => GlobalKey());
 
       setState(() => _isCaptureMode = true);
 
-      // 2. Preload fonts
+      // 2. 预加载导出字体（避免捕获时字体 pending 截断）
       await GoogleFonts.pendingFonts([
         GoogleFonts.notoSerifSc(),
         GoogleFonts.courierPrime(),
       ]);
 
-      // 3. Wait for Layout
+      // 3. 等待导出视图完成布局
       await Future.delayed(const Duration(milliseconds: 800));
 
-      // 4. Capture All Chunks
-      List<img.Image> capturedImages = [];
-      double totalHeight = 0;
-      double maxWidth = 0;
-
-      for (int i = 0; i < totalChunks; i++) {
-        GlobalKey key = _exportKeys[i];
-        RenderRepaintBoundary? boundary =
-            key.currentContext?.findRenderObject() as RenderRepaintBoundary?;
-        if (boundary == null) continue;
-
-        // Use pixelRatio 2.0 or 3.0 depending on need. 2.0 is usually enough for reading, 3.0 is crisp.
-        // Since we split, we can afford 3.0 easily.
-        double pixelRatio = 3.0;
-        ui.Image image = await boundary.toImage(pixelRatio: pixelRatio);
-
-        var byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-        if (byteData == null) continue;
-
-        var pngBytes = byteData.buffer.asUint8List();
-        img.Image? decoded = img.decodePng(pngBytes);
-
-        if (decoded != null) {
-          capturedImages.add(decoded);
-          totalHeight += decoded.height;
-          if (decoded.width > maxWidth) maxWidth = decoded.width.toDouble();
-        }
-      }
-
-      if (capturedImages.isEmpty) {
-        throw Exception("No content captured");
-      }
-
-      // 5. Stitch
-      // Create canvas
-      img.Image stitchCanvas = img.Image(
-        width: maxWidth.toInt(),
-        height: totalHeight.toInt(),
+      // 4. 捕获、拼接、编码、路径解析与文件写入由导出服务完成
+      final DiaryExportResult result = await _exportService.export(
+        plan: plan,
+        baseName: widget.entry?.filename ?? 'new',
+        capture: _captureExportChunk,
       );
 
-      // Fill background (Optional, but images should normally cover it.
-      // If there are gaps/transparency, we might want a base color.)
-      // But our chunks should include the paper color.
-
-      int currentY = 0;
-      for (var imgPart in capturedImages) {
-        img.compositeImage(stitchCanvas, imgPart, dstX: 0, dstY: currentY);
-        currentY += imgPart.height;
-      }
-
-      // 6. Save
-      final directory = await getApplicationDocumentsDirectory();
-      String exportPath;
-      if (Platform.isAndroid) {
-        if (await Permission.manageExternalStorage.isGranted) {
-          exportPath = '/storage/emulated/0/Pictures/PaperWhisper';
-        } else {
-          final extDir = await getExternalStorageDirectory();
-          exportPath = path.join(extDir?.path ?? directory.path, 'Exports');
-        }
-      } else {
-        exportPath = path.join(directory.path, 'PaperWhisper_Exports');
-      }
-
-      final exportDir = Directory(exportPath);
-      if (!await exportDir.exists()) {
-        try {
-          await exportDir.create(recursive: true);
-        } catch (_) {}
-      }
-
-      // Save as single large image (stitched)
-      // Or if user wants to split for sharing? The specific requirements was to fix "garbled first image".
-      // Stitched image might still be huge (height > 10000).
-      // JPG handles large dimensions better than PNG implementation in some viewers?
-      // Let's stick to the request: "Fix garbled image". Stitching solves the rendering artifact.
-      // We can offer split *after* stitching if it's super huge?
-      // But for now, let's output the stitched file.
-
-      String fileName =
-          'diary_${widget.entry?.filename ?? "new"}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final file = File(path.join(exportDir.path, fileName));
-
-      // Encode to JPG (Quality 90)
-      await file.writeAsBytes(img.encodeJpg(stitchCanvas, quality: 90));
-
       if (mounted) {
-        await showExportSuccessDialog(context, file.path);
+        await showExportSuccessDialog(context, result.filePath);
       }
     } catch (e) {
       debugPrint("Export error: $e");
@@ -1168,8 +1081,27 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         SkeuomorphicToast.error(context, '导出失败: $e');
       }
     } finally {
-      if (mounted) setState(() => _isCaptureMode = false);
+      // 无论捕获/写入成功与否，都恢复临时导出 UI 状态并释放本次分块文本
+      if (mounted) {
+        setState(() {
+          _isCaptureMode = false;
+          _exportPlan = null;
+        });
+      }
     }
+  }
+
+  /// 捕获指定分块：查找 RepaintBoundary 并转 ui.Image（不可捕获返回 null）。
+  Future<ui.Image?> _captureExportChunk(
+    int chunkIndex,
+    double pixelRatio,
+  ) async {
+    if (chunkIndex >= _exportKeys.length) return null;
+    final RenderRepaintBoundary? boundary =
+        _exportKeys[chunkIndex].currentContext?.findRenderObject()
+            as RenderRepaintBoundary?;
+    if (boundary == null) return null;
+    return boundary.toImage(pixelRatio: pixelRatio);
   }
 
   // --- New Helper Methods for CustomScrollView Refactor ---
@@ -1294,6 +1226,8 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     String theme,
   ) {
     if (_exportKeys.isEmpty) return [];
+    final plan = _exportPlan;
+    if (plan == null) return [];
 
     List<Widget> chunks = [];
     int keyIndex = 0;
@@ -1376,22 +1310,9 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
       );
     }
 
-    // --- Body Chunks ---
+    // --- Body Chunks (文本切片由导出服务的分块计划提供) ---
 
-    final String textToExport = _session.contentController.text;
-
-    final List<String> lines = textToExport.split('\n');
-    if (lines.isEmpty) lines.add('');
-
-    const int linesPerChunk = 40;
-
-    for (int i = 0; i < lines.length; i += linesPerChunk) {
-      int end = (i + linesPerChunk < lines.length)
-          ? i + linesPerChunk
-          : lines.length;
-      List<String> chunkLines = lines.sublist(i, end);
-      String chunkText = chunkLines.join('\n');
-
+    for (final String chunkText in plan.bodyChunkTexts) {
       if (keyIndex < _exportKeys.length) {
         chunks.add(
           RepaintBoundary(
