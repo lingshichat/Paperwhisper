@@ -15,6 +15,7 @@ import '../widgets/skeuomorphic_toast.dart';
 import '../services/draft_service.dart'; // Added
 import '../widgets/slide_page_route.dart'; // Needed for "Save As New" navigation
 import '../widgets/skeuomorphic_date_picker.dart';
+import '../features/sync/presentation/sync_ui_coordinator.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 import 'dart:io';
@@ -357,28 +358,13 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
 
       if (mounted) {
         final syncProvider = context.read<SyncProvider>();
-        await syncProvider.refreshTrustSnapshot();
-        if (!mounted) return;
-        final pendingCount = syncProvider.trustSnapshot.totalPendingCount;
-
-        if (syncProvider.config.enabled &&
-            syncProvider.config.autoSync &&
-            syncProvider.isConfigured) {
-          SkeuomorphicToast.success(context, '日记已保存，准备同步...');
-          if (!mounted) return;
-          final granted = await syncProvider.checkNotificationPermission(
-            context,
-          );
-          if (mounted && granted) {
-            unawaited(syncProvider.requestAutoSync(context: context));
-          }
-        } else if (syncProvider.config.enabled && pendingCount > 0) {
-          if (!mounted) return;
-          SkeuomorphicToast.info(context, '已保存，尚有 $pendingCount 项待同步');
-        } else {
-          if (!mounted) return;
-          SkeuomorphicToast.success(context, '日记已保存');
-        }
+        // 保存后自动同步决策与即时 pending 提示统一由 SyncUiCoordinator
+        // 处理（权限说明、Dialog/Toast 不经过 Provider）。
+        await SyncUiCoordinator(context).handleSaveAutoSync(
+          provider: syncProvider,
+          savedToast: '日记已保存',
+          preparingToast: '日记已保存，准备同步...',
+        );
         if (!mounted) return;
         Navigator.pop(context);
       }

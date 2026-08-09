@@ -11,10 +11,16 @@
 ///
 /// 状态变更通过 [onChanged] 回调对外通知（由 Provider 注入
 /// `notifyListeners`），跟踪器本身不依赖 ChangeNotifier。
+///
+/// 时间读取经 [clock] 注入（默认 `DateTime.now`），便于测试注入
+/// 确定性时钟；计算公式与节流窗口不受影响。
 class SyncProgressTracker {
-  SyncProgressTracker({void Function()? onChanged}) : _onChanged = onChanged;
+  SyncProgressTracker({void Function()? onChanged, DateTime Function()? clock})
+    : _onChanged = onChanged,
+      _clock = clock ?? DateTime.now;
 
   final void Function()? _onChanged;
+  final DateTime Function() _clock;
 
   // 单文件传输统计
   double _currentFileProgress = 0.0;
@@ -53,7 +59,7 @@ class SyncProgressTracker {
 
     _totalOps = totalOperations;
     _processedOps = 0;
-    _batchStartTime = DateTime.now();
+    _batchStartTime = _clock();
     _etaMessage = '计算中...';
     _onChanged?.call();
   }
@@ -61,7 +67,7 @@ class SyncProgressTracker {
   /// 单文件进度回调（作为 upload/download 的 onProgress 传入）。
   /// 每 500ms 节流刷新速度与 ETA。
   void onFileProgress(int count, int total) {
-    final now = DateTime.now();
+    final now = _clock();
 
     // Calculate Progress
     if (total > 0) {

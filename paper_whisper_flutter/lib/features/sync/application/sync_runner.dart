@@ -52,12 +52,21 @@ class SyncRunner {
     required SyncProgressTracker progressTracker,
     required SyncErrorClassifier errorClassifier,
     required SyncNotificationCallback onNotify,
+    this.batchDelay = const Duration(seconds: 1),
+    this.imageDownloadTimeout = const Duration(seconds: 15),
   }) : _storage = storage,
        _momentService = momentService,
        _scopeCacheStore = scopeCacheStore,
        _progressTracker = progressTracker,
        _errorClassifier = errorClassifier,
        _onNotify = onNotify;
+
+  /// 每批操作之间的等待间隔，规避坚果云等 WebDAV 服务的限流（默认 1s，
+  /// 对应原 `_processBatch` 的硬编码 1000ms）。测试可注入更短时长加速用例。
+  final Duration batchDelay;
+
+  /// 图片下载超时（默认 15s，对应原 `_syncMomentImages` 的硬编码值）。
+  final Duration imageDownloadTimeout;
 
   final CloudStorageService _storage;
   final MomentService _momentService;
@@ -157,9 +166,9 @@ class SyncRunner {
 
       await Future.wait(batch.map((item) => action(item)));
 
-      // 增加 1000ms 间隔，避免触发 API 速率限制 (坚果云极其敏感)
+      // 增加 batchDelay 间隔，避免触发 API 速率限制 (坚果云极其敏感)
       if (i + batchSize < items.length) {
-        await Future.delayed(const Duration(milliseconds: 1000));
+        await Future.delayed(batchDelay);
       }
     }
   }
@@ -769,7 +778,7 @@ class SyncRunner {
               WebDavSyncService.momentsImagesPath + name,
               localFile.path,
             )
-            .timeout(const Duration(seconds: 15));
+            .timeout(imageDownloadTimeout);
         processed++;
         if (!isAuto) _notify(processed, total, body: "图片下载: $name");
       } catch (e) {

@@ -8,6 +8,7 @@ import '../models/sync_trust_snapshot.dart';
 import '../providers/settings_provider.dart';
 import '../providers/sync_provider.dart';
 import '../services/payment_service.dart';
+import '../features/sync/presentation/sync_ui_coordinator.dart';
 import '../widgets/skeuomorphic_toast.dart';
 import 'premium_membership_page.dart';
 import '../widgets/slide_page_route.dart';
@@ -110,8 +111,10 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
     try {
       await provider.saveConfig(_buildDraftConfig(provider, enabled: true));
       if (!mounted) return;
-      await provider.sync(context: context);
+      // 手动同步的权限前置与结果 Toast 反馈由 SyncUiCoordinator 处理。
+      await SyncUiCoordinator(context).runManualSync(provider);
     } catch (e) {
+      // 仅意外异常走此路径；连接失败等已由协调器按 typed result 反馈。
       if (mounted) {
         SkeuomorphicToast.error(context, '同步启动失败，请稍后重试');
       }

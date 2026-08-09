@@ -15,6 +15,7 @@ import '../providers/settings_provider.dart'; // Added
 import '../providers/sync_provider.dart'; // Added
 import '../config/app_theme.dart'; // Added
 import '../widgets/skeuomorphic_toast.dart'; // Added
+import '../features/sync/presentation/sync_ui_coordinator.dart';
 import '../widgets/skeuomorphic_dialog.dart'; // Added
 
 import '../providers/diary_provider.dart'; // Added
@@ -315,26 +316,13 @@ class _MomentsPageState extends State<MomentsPage> {
 
     if (mounted) {
       final syncProvider = context.read<SyncProvider>();
-      await syncProvider.refreshTrustSnapshot();
-      if (!mounted) return;
-      final pendingCount = syncProvider.trustSnapshot.totalPendingCount;
-
-      if (syncProvider.config.enabled &&
-          syncProvider.config.autoSync &&
-          syncProvider.isConfigured) {
-        SkeuomorphicToast.info(context, '记录已保存，准备同步...');
-        if (!mounted) return;
-        final granted = await syncProvider.checkNotificationPermission(context);
-        if (mounted && granted) {
-          unawaited(syncProvider.requestAutoSync(context: context));
-        }
-      } else if (syncProvider.config.enabled && pendingCount > 0) {
-        if (!mounted) return;
-        SkeuomorphicToast.info(context, '已保存，尚有 $pendingCount 项待同步');
-      } else {
-        if (!mounted) return;
-        SkeuomorphicToast.success(context, '记录已保存');
-      }
+      // 保存后自动同步决策与即时 pending 提示统一由 SyncUiCoordinator 处理。
+      await SyncUiCoordinator(context).handleSaveAutoSync(
+        provider: syncProvider,
+        savedToast: '记录已保存',
+        preparingToast: '记录已保存，准备同步...',
+        preparingToastAsInfo: true,
+      );
     }
   }
 
@@ -427,14 +415,10 @@ class _MomentsPageState extends State<MomentsPage> {
         final syncProvider = context.read<SyncProvider>();
         await syncProvider.refreshTrustSnapshot();
         if (!mounted) return;
-        if (syncProvider.config.autoSync && syncProvider.isConfigured) {
-          final granted = await syncProvider.checkNotificationPermission(
-            context,
-          );
-          if (mounted && granted) {
-            unawaited(syncProvider.requestAutoSync(context: context));
-          }
-        }
+        // 聚合导出后的自动同步请求（权限前置）由 SyncUiCoordinator 处理。
+        await SyncUiCoordinator(
+          context,
+        ).requestAutoSyncIfConfigured(syncProvider);
         if (!mounted) return;
         SkeuomorphicToast.success(context, '生成成功，正在跳转...');
 

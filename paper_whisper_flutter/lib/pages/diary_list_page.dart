@@ -20,6 +20,7 @@ import '../widgets/skeuomorphic_dialog.dart'; // Updated import
 import '../widgets/skeuomorphic_search_bar.dart';
 import '../widgets/month_divider.dart';
 import '../widgets/skeuomorphic_toast.dart';
+import '../features/sync/presentation/sync_ui_coordinator.dart';
 import 'editor_page.dart';
 import 'diary_card.dart';
 import 'sync_settings_page.dart';
@@ -892,7 +893,8 @@ class _DiaryListPageState extends State<DiaryListPage>
                 }
                 return;
               }
-              await syncProvider.sync(context: context);
+              // 手动同步的权限前置与结果 Toast 反馈由 SyncUiCoordinator 处理。
+              await SyncUiCoordinator(context).runManualSync(syncProvider);
             },
             child: _uiItems.isEmpty
                 ? SingleChildScrollView(
