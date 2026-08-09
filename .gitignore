@@ -38,6 +38,7 @@ config.json
 .agents/
 .claude/
 .opencode/
+.rtk/
 AGENTS.md
 # OS
 .DS_Store
