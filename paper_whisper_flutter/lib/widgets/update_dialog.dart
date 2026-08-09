@@ -1,17 +1,7 @@
-import 'dart:io';
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/update_info.dart';
-import '../services/update_service.dart';
-
-/// 下载状态枚举
-enum _DownloadState {
-  idle, // 初始状态：显示"立即更新"+"备用下载"
-  downloading, // 下载中：显示进度条+百分比+"取消下载"
-  downloaded, // 下载完成：显示"立即安装"
-  error, // 下载失败：显示错误信息+"重试"+"浏览器下载"
-}
+import '../features/update/application/update_download_controller.dart';
 
 /// 拟物化更新弹窗
 /// 显示新版本信息，提供应用内下载、安装和备用下载选项
@@ -20,11 +10,15 @@ class UpdateDialog extends StatefulWidget {
   final String currentVersion;
   final VoidCallback? onLater;
 
+  /// 下载控制器（测试可注入替身；生产由 State 自建，所有权单一）。
+  final UpdateDownloadController? controller;
+
   const UpdateDialog({
     super.key,
     required this.updateInfo,
     required this.currentVersion,
     this.onLater,
+    this.controller,
   });
 
   /// 显示更新弹窗
@@ -36,13 +30,11 @@ class UpdateDialog extends StatefulWidget {
     return showDialog(
       context: context,
       barrierDismissible: !updateInfo.isForceUpdate,
-      builder:
-          (context) => UpdateDialog(
-            updateInfo: updateInfo,
-            currentVersion: currentVersion,
-            onLater:
-                updateInfo.isForceUpdate ? null : () => Navigator.pop(context),
-          ),
+      builder: (context) => UpdateDialog(
+        updateInfo: updateInfo,
+        currentVersion: currentVersion,
+        onLater: updateInfo.isForceUpdate ? null : () => Navigator.pop(context),
+      ),
     );
   }
 
@@ -51,178 +43,38 @@ class UpdateDialog extends StatefulWidget {
 }
 
 class _UpdateDialogState extends State<UpdateDialog> {
-  final UpdateService _updateService = UpdateService();
-
-  _DownloadState _state = _DownloadState.idle;
-  CancelToken? _cancelToken;
-  int _received = 0;
-  int _total = 0;
-  String? _downloadedPath;
-  String? _errorMessage;
-  String? _installMessage;
+  /// 下载控制器：生产默认自建（所有权归 State），测试可注入替身。
+  late final UpdateDownloadController _controller =
+      widget.controller ?? UpdateDownloadController();
 
   @override
   void dispose() {
-    // 组件销毁时取消正在进行的下载
-    _cancelToken?.cancel('对话框已关闭');
+    // 组件销毁时取消正在进行的下载；仅释放自建控制器
+    if (widget.controller == null) {
+      _controller.dispose();
+    }
     super.dispose();
   }
 
-  /// 开始下载更新
-  Future<void> _startDownload() async {
-    final platform = _updateService.currentPlatform;
-    final url = widget.updateInfo.getDownloadUrl(platform);
-    if (url == null || url.isEmpty) {
-      if (mounted) {
-        setState(() {
-          _state = _DownloadState.error;
-          _errorMessage = '未找到当前平台的下载链接';
-        });
-      }
-      return;
-    }
+  /// 开始下载更新（委托控制器，UI 经 Listenable 消费状态）
+  Future<void> _startDownload() => _controller.start(widget.updateInfo);
 
-    _cancelToken = CancelToken();
-    if (mounted) {
-      setState(() {
-        _state = _DownloadState.downloading;
-        _received = 0;
-        _total = 0;
-        _downloadedPath = null;
-        _errorMessage = null;
-        _installMessage = null;
-      });
-    }
-
-    try {
-      final path = await _updateService.downloadUpdate(
-        url: url,
-        onProgress: (received, total) {
-          if (mounted) {
-            setState(() {
-              _received = received;
-              _total = total;
-            });
-          }
-        },
-        cancelToken: _cancelToken,
-      );
-
-      if (mounted) {
-        setState(() {
-          _state = _DownloadState.downloaded;
-          _downloadedPath = path;
-          _errorMessage = null;
-          _installMessage = null;
-        });
-      }
-    } on DioException catch (e) {
-      if (!mounted) return;
-      if (CancelToken.isCancel(e)) {
-        // 用户主动取消，回到初始状态
-        setState(() {
-          _state = _DownloadState.idle;
-          _received = 0;
-          _total = 0;
-          _errorMessage = null;
-          _installMessage = null;
-        });
-      } else {
-        setState(() {
-          _state = _DownloadState.error;
-          _downloadedPath = null;
-          _errorMessage = _formatDioError(e);
-          _installMessage = null;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _state = _DownloadState.error;
-          _downloadedPath = null;
-          _errorMessage = '下载失败: $e';
-          _installMessage = null;
-        });
-      }
-    } finally {
-      _cancelToken = null;
-    }
-  }
-
-  /// 取消下载，清理临时文件
-  void _cancelDownload() {
-    _cancelToken?.cancel('用户取消下载');
-  }
+  /// 取消下载（状态回 idle 由 Dio cancel 回调驱动）
+  void _cancelDownload() => _controller.cancel();
 
   /// 安装已下载的更新包
-  Future<void> _installUpdate() async {
-    final path = _downloadedPath;
-    if (path == null) return;
-    if (mounted) {
-      setState(() {
-        _installMessage = null;
-      });
-    }
-
-    try {
-      final result = await _updateService.installUpdate(path);
-      if (!mounted) return;
-
-      switch (result.status) {
-        case UpdateInstallStatus.launched:
-          setState(() {
-            _installMessage = null;
-          });
-          break;
-        case UpdateInstallStatus.permissionDenied:
-        case UpdateInstallStatus.unsupportedPlatform:
-        case UpdateInstallStatus.failed:
-          setState(() {
-            _installMessage = result.message ?? '安装失败，请稍后重试';
-          });
-          break;
-      }
-    } catch (_) {
-      if (mounted) {
-        setState(() {
-          _installMessage = '安装失败，请稍后重试';
-        });
-      }
-    }
-  }
+  Future<void> _installUpdate() => _controller.install();
 
   /// 备用下载：跳转浏览器（保持现有行为）
   Future<void> _fallbackDownload({bool useBackup = false}) async {
-    await _updateService.openDownloadUrl(
-      widget.updateInfo,
-      useBackup: useBackup,
-    );
-  }
-
-  /// 格式化 Dio 异常为用户友好的提示信息
-  String _formatDioError(DioException e) {
-    switch (e.type) {
-      case DioExceptionType.connectionTimeout:
-      case DioExceptionType.sendTimeout:
-      case DioExceptionType.receiveTimeout:
-        return '网络超时，请检查网络连接后重试';
-      case DioExceptionType.connectionError:
-        return '网络连接失败，请检查网络设置';
-      case DioExceptionType.badResponse:
-        return '服务器异常 (${e.response?.statusCode})';
-      default:
-        // 检查是否为存储空间不足
-        if (e.error is FileSystemException) {
-          return '存储空间不足，请清理后重试';
-        }
-        return '下载失败: ${e.message ?? '未知错误'}';
-    }
+    await _controller.fallback(widget.updateInfo, useBackup: useBackup);
   }
 
   @override
   Widget build(BuildContext context) {
-    final platform = _updateService.currentPlatform;
-    final hasBackup = widget.updateInfo.hasBackupUrl(platform);
+    final hasBackup = widget.updateInfo.hasBackupUrl(
+      _controller.currentPlatform,
+    );
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -321,20 +173,19 @@ class _UpdateDialogState extends State<UpdateDialog> {
                         child: SingleChildScrollView(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
-                            children:
-                                widget.updateInfo.changelog.map((item) {
-                                  return Padding(
-                                    padding: const EdgeInsets.only(bottom: 6),
-                                    child: Text(
-                                      item,
-                                      style: GoogleFonts.notoSerifSc(
-                                        fontSize: 13,
-                                        color: const Color(0xFF4E342E),
-                                        height: 1.4,
-                                      ),
-                                    ),
-                                  );
-                                }).toList(),
+                            children: widget.updateInfo.changelog.map((item) {
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 6),
+                                child: Text(
+                                  item,
+                                  style: GoogleFonts.notoSerifSc(
+                                    fontSize: 13,
+                                    color: const Color(0xFF4E342E),
+                                    height: 1.4,
+                                  ),
+                                ),
+                              );
+                            }).toList(),
                           ),
                         ),
                       ),
@@ -344,7 +195,12 @@ class _UpdateDialogState extends State<UpdateDialog> {
                 ],
 
                 // 按钮区域：根据下载状态显示不同 UI
-                _buildActionArea(hasBackup),
+                // 剩余高度不足时按钮区整体可滚动，避免长 changelog + 高按钮区溢出
+                Flexible(
+                  child: SingleChildScrollView(
+                    child: _buildActionArea(hasBackup),
+                  ),
+                ),
               ],
             ),
           ),
@@ -375,18 +231,24 @@ class _UpdateDialogState extends State<UpdateDialog> {
     );
   }
 
-  /// 根据当前下载状态构建操作区域
+  /// 根据当前下载状态构建操作区域（订阅控制器状态快照）
   Widget _buildActionArea(bool hasBackup) {
-    switch (_state) {
-      case _DownloadState.idle:
-        return _buildIdleActions(hasBackup);
-      case _DownloadState.downloading:
-        return _buildDownloadingActions();
-      case _DownloadState.downloaded:
-        return _buildDownloadedActions(hasBackup);
-      case _DownloadState.error:
-        return _buildErrorActions(hasBackup);
-    }
+    return ListenableBuilder(
+      listenable: _controller,
+      builder: (context, _) {
+        final state = _controller.state;
+        switch (state.phase) {
+          case UpdateDownloadPhase.idle:
+            return _buildIdleActions(hasBackup);
+          case UpdateDownloadPhase.downloading:
+            return _buildDownloadingActions(state);
+          case UpdateDownloadPhase.downloaded:
+            return _buildDownloadedActions(state, hasBackup);
+          case UpdateDownloadPhase.error:
+            return _buildErrorActions(state, hasBackup);
+        }
+      },
+    );
   }
 
   /// 初始状态：「立即更新」+「备用下载」+「暂不更新」
@@ -436,16 +298,16 @@ class _UpdateDialogState extends State<UpdateDialog> {
   }
 
   /// 下载中：进度条 + 百分比 + 「取消下载」
-  Widget _buildDownloadingActions() {
+  Widget _buildDownloadingActions(UpdateDownloadState state) {
     // 计算下载百分比
-    final double progress = _total > 0 ? _received / _total : 0;
-    final String percentText =
-        _total > 0 ? '${(progress * 100).toStringAsFixed(1)}%' : '正在连接...';
-    final String sizeText =
-        _total > 0
-            ? '${(_received / 1024 / 1024).toStringAsFixed(1)} / ${(_total / 1024 / 1024).toStringAsFixed(1)} MB'
-            : '';
-    final String statusText = _buildDownloadStatusText(progress);
+    final double progress = state.progress;
+    final String percentText = state.total > 0
+        ? '${(progress * 100).toStringAsFixed(1)}%'
+        : '正在连接...';
+    final String sizeText = state.total > 0
+        ? '${(state.received / 1024 / 1024).toStringAsFixed(1)} / ${(state.total / 1024 / 1024).toStringAsFixed(1)} MB'
+        : '';
+    final String statusText = _buildDownloadStatusText(progress, state.total);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -511,8 +373,8 @@ class _UpdateDialogState extends State<UpdateDialog> {
     );
   }
 
-  String _buildDownloadStatusText(double progress) {
-    if (_total <= 0) {
+  String _buildDownloadStatusText(double progress, int total) {
+    if (total <= 0) {
       return '正在建立连接';
     }
     if (progress < 0.2) {
@@ -528,8 +390,8 @@ class _UpdateDialogState extends State<UpdateDialog> {
   }
 
   /// 下载完成：「立即安装」+「备用下载」
-  Widget _buildDownloadedActions(bool hasBackup) {
-    final String? installMessage = _installMessage;
+  Widget _buildDownloadedActions(UpdateDownloadState state, bool hasBackup) {
+    final String? installMessage = state.installMessage;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -588,13 +450,13 @@ class _UpdateDialogState extends State<UpdateDialog> {
   }
 
   /// 下载失败：错误信息 + 「重试」+「浏览器下载」
-  Widget _buildErrorActions(bool hasBackup) {
+  Widget _buildErrorActions(UpdateDownloadState state, bool hasBackup) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         // 错误信息
         _buildMessageBox(
-          message: _errorMessage ?? '下载失败',
+          message: state.error ?? '下载失败',
           icon: Icons.error_outline,
           color: const Color(0xFFBF360C),
         ),
