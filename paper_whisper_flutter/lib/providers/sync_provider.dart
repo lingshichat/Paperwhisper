@@ -9,6 +9,10 @@ import 'package:path/path.dart' as path;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import '../features/sync/application/sync_error_classifier.dart';
+import '../features/sync/application/sync_run_outcome.dart';
+import '../features/sync/data/sync_config_store.dart';
+import '../features/sync/data/sync_scope_cache_store.dart';
 import '../models/sync_config.dart';
 import '../services/webdav_sync_service.dart';
 import '../services/diary_service.dart';
@@ -23,34 +27,6 @@ import '../services/s3_sync_service.dart';
 import '../services/cloud_storage_service.dart';
 
 enum SyncStatus { none, syncing, success, failed }
-
-class SyncRunOutcome {
-  int failedUploads = 0;
-  int failedDownloads = 0;
-  int failedDeletes = 0;
-  int skippedOperations = 0;
-  final List<String> errors = <String>[];
-
-  bool get hasFailures =>
-      failedUploads > 0 || failedDownloads > 0 || failedDeletes > 0;
-
-  bool get hasUnresolvedWork => hasFailures || skippedOperations > 0;
-
-  void addUploadFailure(String message) {
-    failedUploads++;
-    errors.add(message);
-  }
-
-  void addDownloadFailure(String message) {
-    failedDownloads++;
-    errors.add(message);
-  }
-
-  void addDeleteFailure(String message) {
-    failedDeletes++;
-    errors.add(message);
-  }
-}
 
 class _PendingCounts {
   final int diaries;
@@ -69,24 +45,17 @@ class _PendingCounts {
 }
 
 class SyncProvider with ChangeNotifier {
-  static const String _syncConfigKey = 'sync_config';
   static const String _syncTrustSnapshotKey = 'sync_trust_snapshot';
-  static const String _lastSyncTimeKey = 'last_sync_time';
-  static const String _currentScopeLastSyncTimeKey = 'last_sync_time_scope';
-  static const String _lastKnownRemoteManifestKey =
-      'last_known_remote_manifest';
-  static const String _lastKnownMomentsManifestKey =
-      'last_known_moments_manifest';
-  static const String _lastKnownMomentImagesKey =
-      'last_known_remote_moment_images';
-  static const String _lastKnownMomentAudioKey =
-      'last_known_remote_moment_audio';
 
   final WebDavSyncService _webDavService;
   final S3SyncService _s3Service;
   final MomentService _momentService;
   final SyncSecretStore _secretStore;
   final FlutterLocalNotificationsPlugin _notificationsPlugin;
+
+  late final SyncConfigStore _configStore;
+  late final SyncScopeCacheStore _scopeCacheStore;
+  final SyncErrorClassifier _errorClassifier = const SyncErrorClassifier();
 
   DiaryProvider? _diaryProvider;
 
@@ -177,6 +146,8 @@ class SyncProvider with ChangeNotifier {
        _secretStore = secretStore ?? SyncSecretStore.secure(),
        _notificationsPlugin =
            notificationsPlugin ?? FlutterLocalNotificationsPlugin() {
+    _configStore = SyncConfigStore(secretStore: _secretStore);
+    _scopeCacheStore = SyncScopeCacheStore();
     _initFuture = _loadConfig();
     if (initializeNotifications) {
       _initNotifications();
@@ -345,180 +316,6 @@ class SyncProvider with ChangeNotifier {
     }
   }
 
-  String _configurationIssueMessage() {
-    if (!_config.enabled) {
-      return '同步未启用';
-    }
-    return '配置异常，请检查账号或服务器地址';
-  }
-
-  bool _isLikelyConfigurationFailure(String? errorText) {
-    final normalized = (errorText ?? '').toLowerCase();
-    if (normalized.isEmpty) {
-      return false;
-    }
-
-    return normalized.contains('401') ||
-        normalized.contains('403') ||
-        normalized.contains('unauthorized') ||
-        normalized.contains('forbidden') ||
-        normalized.contains('invalidaccesskey') ||
-        normalized.contains('invalidaccesskeyid') ||
-        normalized.contains('signature') ||
-        normalized.contains('access denied') ||
-        normalized.contains('missing credentials') ||
-        normalized.contains('bucket does not exist') ||
-        normalized.contains('nosuchbucket');
-  }
-
-  String _buildConnectionFailureMessage(String? errorText) {
-    final normalized = (errorText ?? '').toLowerCase();
-    if (_isLikelyConfigurationFailure(normalized)) {
-      return _configurationIssueMessage();
-    }
-    if (normalized.contains('socketexception') ||
-        normalized.contains('timeout') ||
-        normalized.contains('timed out') ||
-        normalized.contains('network') ||
-        normalized.contains('failed host lookup') ||
-        normalized.contains('connection refused') ||
-        normalized.contains('connection reset')) {
-      return '网络异常，请稍后重试';
-    }
-    return '连接失败，请稍后重试';
-  }
-
-  bool _isRemoteSourceAlreadyMissing(Object error) {
-    final text = error.toString();
-    return text.contains('404') ||
-        text.contains('Not Found') ||
-        text.contains('NoSuchKey') ||
-        text.contains('Copy Source must exist') ||
-        text.contains('source bucket and key');
-  }
-
-  String _buildSyncScopeId([SyncConfig? config]) {
-    final activeConfig = config ?? _config;
-    final rawScope = activeConfig.syncType == SyncType.webdav
-        ? 'webdav|${activeConfig.serverUrl.trim().toLowerCase()}|${activeConfig.username.trim().toLowerCase()}'
-        : 's3|${activeConfig.s3EndPoint.trim().toLowerCase()}|${activeConfig.s3BucketName.trim().toLowerCase()}|${activeConfig.s3AccessKey.trim().toLowerCase()}|${(activeConfig.s3Region ?? '').trim().toLowerCase()}';
-
-    return base64UrlEncode(utf8.encode(rawScope)).replaceAll('=', '');
-  }
-
-  String _scopeStorageKey(String baseKey, [SyncConfig? config]) {
-    return '${baseKey}_${_buildSyncScopeId(config)}';
-  }
-
-  SyncManifest _decodeManifest(String? jsonStr) {
-    if (jsonStr == null || jsonStr.isEmpty) {
-      return SyncManifest(lastSyncTimestamp: 0, items: {});
-    }
-
-    try {
-      return SyncManifest.fromJson(jsonDecode(jsonStr) as Map<String, dynamic>);
-    } catch (e) {
-      debugPrint('Sync manifest cache decode failed: $e');
-      return SyncManifest(lastSyncTimestamp: 0, items: {});
-    }
-  }
-
-  Future<SyncManifest> _loadCachedManifest(String key) async {
-    final prefs = await SharedPreferences.getInstance();
-    return _decodeManifest(prefs.getString(_scopeStorageKey(key)));
-  }
-
-  Future<void> _saveCachedManifest(String key, SyncManifest manifest) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_scopeStorageKey(key), jsonEncode(manifest.toJson()));
-  }
-
-  Future<Set<String>> _loadCachedNameSet(String key) async {
-    final prefs = await SharedPreferences.getInstance();
-    return (prefs.getStringList(_scopeStorageKey(key)) ?? <String>[]).toSet();
-  }
-
-  Future<void> _saveCachedNameSet(String key, Set<String> values) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(_scopeStorageKey(key), values.toList()..sort());
-  }
-
-  Future<void> _loadCurrentScopeLastSyncTime(SharedPreferences prefs) async {
-    final timeStr = prefs.getString(
-      _scopeStorageKey(_currentScopeLastSyncTimeKey),
-    );
-    _currentScopeLastSyncTime = timeStr == null
-        ? null
-        : DateTime.tryParse(timeStr);
-  }
-
-  Future<void> _persistCurrentScopeLastSyncTime(
-    SharedPreferences prefs,
-    DateTime value,
-  ) async {
-    await prefs.setString(
-      _scopeStorageKey(_currentScopeLastSyncTimeKey),
-      value.toIso8601String(),
-    );
-  }
-
-  Future<void> _migrateLegacyScopeCacheIfNeeded(SharedPreferences prefs) async {
-    final scopedDiaryKey = _scopeStorageKey(_lastKnownRemoteManifestKey);
-    final scopedMomentKey = _scopeStorageKey(_lastKnownMomentsManifestKey);
-    final scopedImageKey = _scopeStorageKey(_lastKnownMomentImagesKey);
-    final scopedAudioKey = _scopeStorageKey(_lastKnownMomentAudioKey);
-    final scopedTimeKey = _scopeStorageKey(_currentScopeLastSyncTimeKey);
-
-    final legacyDiary = prefs.getString(_lastKnownRemoteManifestKey);
-    if (!prefs.containsKey(scopedDiaryKey) && legacyDiary != null) {
-      await prefs.setString(scopedDiaryKey, legacyDiary);
-    }
-
-    final legacyMoments = prefs.getString(_lastKnownMomentsManifestKey);
-    if (!prefs.containsKey(scopedMomentKey) && legacyMoments != null) {
-      await prefs.setString(scopedMomentKey, legacyMoments);
-    }
-
-    final legacyImages = prefs.getStringList(_lastKnownMomentImagesKey);
-    if (!prefs.containsKey(scopedImageKey) && legacyImages != null) {
-      await prefs.setStringList(scopedImageKey, legacyImages);
-    }
-
-    final legacyAudio = prefs.getStringList(_lastKnownMomentAudioKey);
-    if (!prefs.containsKey(scopedAudioKey) && legacyAudio != null) {
-      await prefs.setStringList(scopedAudioKey, legacyAudio);
-    }
-
-    final legacyTime = prefs.getString(_lastSyncTimeKey);
-    if (!prefs.containsKey(scopedTimeKey) && legacyTime != null) {
-      await prefs.setString(scopedTimeKey, legacyTime);
-    }
-
-    await prefs.remove(_lastKnownRemoteManifestKey);
-    await prefs.remove(_lastKnownMomentsManifestKey);
-    await prefs.remove(_lastKnownMomentImagesKey);
-    await prefs.remove(_lastKnownMomentAudioKey);
-  }
-
-  Future<void> _persistSecrets(SyncConfig config) async {
-    await _secretStore.writeWebDavPassword(config.password);
-    await _secretStore.writeS3SecretKey(config.s3SecretKey);
-  }
-
-  Future<SyncConfig> _hydrateConfigSecrets(SyncConfig config) async {
-    try {
-      final webDavPassword = await _secretStore.readWebDavPassword();
-      final s3SecretKey = await _secretStore.readS3SecretKey();
-      return config.copyWith(
-        password: webDavPassword ?? config.password,
-        s3SecretKey: s3SecretKey ?? config.s3SecretKey,
-      );
-    } catch (e) {
-      debugPrint('Error loading sync secrets: $e');
-      return config;
-    }
-  }
-
   int _countPendingManifestItems(SyncManifest local, SyncManifest remote) {
     final localKeys = local.items.keys.toSet();
     int pendingCount = 0;
@@ -569,8 +366,9 @@ class SyncProvider with ChangeNotifier {
           diaryService.dataDir!,
         );
       }
-      final cachedDiaryManifest = await _loadCachedManifest(
-        _lastKnownRemoteManifestKey,
+      final cachedDiaryManifest = await _scopeCacheStore.loadCachedManifest(
+        SyncScopeCacheStore.lastKnownRemoteManifestKey,
+        _config,
       );
       pendingDiaryCount = _countPendingManifestItems(
         diaryService.manifestService.manifest,
@@ -586,8 +384,9 @@ class SyncProvider with ChangeNotifier {
       );
     }
 
-    final cachedMomentManifest = await _loadCachedManifest(
-      _lastKnownMomentsManifestKey,
+    final cachedMomentManifest = await _scopeCacheStore.loadCachedManifest(
+      SyncScopeCacheStore.lastKnownMomentsManifestKey,
+      _config,
     );
     final pendingMomentCount = _countPendingManifestItems(
       _momentService.manifestService.manifest,
@@ -595,14 +394,20 @@ class SyncProvider with ChangeNotifier {
     );
 
     final localImages = await _momentService.getAllReferencedImages();
-    final cachedImages = await _loadCachedNameSet(_lastKnownMomentImagesKey);
+    final cachedImages = await _scopeCacheStore.loadCachedNameSet(
+      SyncScopeCacheStore.lastKnownMomentImagesKey,
+      _config,
+    );
     final pendingImageCount = _countPendingAssetNames(
       localImages,
       cachedImages,
     );
 
     final localAudio = await _getLocalAudioNames();
-    final cachedAudio = await _loadCachedNameSet(_lastKnownMomentAudioKey);
+    final cachedAudio = await _scopeCacheStore.loadCachedNameSet(
+      SyncScopeCacheStore.lastKnownMomentAudioKey,
+      _config,
+    );
     final pendingAudioCount = _countPendingAssetNames(localAudio, cachedAudio);
 
     return _PendingCounts(
@@ -641,7 +446,9 @@ class SyncProvider with ChangeNotifier {
     } else if (!_config.hasRequiredCredentials) {
       nextState = SyncTrustState.needsAttention;
       nextConfigurationInvalid = true;
-      nextFailureReason ??= _configurationIssueMessage();
+      nextFailureReason ??= _errorClassifier.configurationIssueMessage(
+        enabled: _config.enabled,
+      );
     } else if (overrideState == SyncTrustState.needsAttention) {
       nextState = SyncTrustState.needsAttention;
       nextConfigurationInvalid = configurationInvalid;
@@ -690,45 +497,28 @@ class SyncProvider with ChangeNotifier {
     if (_diaryProvider != null) {
       final diaryManifest = _diaryProvider!.service.manifestService.manifest
           .clone();
-      await _saveCachedManifest(_lastKnownRemoteManifestKey, diaryManifest);
+      await _scopeCacheStore.saveCachedManifest(
+        SyncScopeCacheStore.lastKnownRemoteManifestKey,
+        _config,
+        diaryManifest,
+      );
     }
 
-    await _saveCachedManifest(
-      _lastKnownMomentsManifestKey,
+    await _scopeCacheStore.saveCachedManifest(
+      SyncScopeCacheStore.lastKnownMomentsManifestKey,
+      _config,
       _momentService.manifestService.manifest.clone(),
     );
-    await _saveCachedNameSet(
-      _lastKnownMomentImagesKey,
+    await _scopeCacheStore.saveCachedNameSet(
+      SyncScopeCacheStore.lastKnownMomentImagesKey,
+      _config,
       await _momentService.getAllReferencedImages(),
     );
-    await _saveCachedNameSet(
-      _lastKnownMomentAudioKey,
+    await _scopeCacheStore.saveCachedNameSet(
+      SyncScopeCacheStore.lastKnownMomentAudioKey,
+      _config,
       await _getLocalAudioNames(),
     );
-  }
-
-  String _buildUserSafeFailureReason(SyncRunOutcome outcome) {
-    if (_trustSnapshot.configurationInvalid ||
-        !_config.hasRequiredCredentials) {
-      return '配置异常，请检查账号或服务器地址';
-    }
-
-    final errorText = outcome.errors.join(' ');
-    if (errorText.contains('401') || errorText.contains('Unauthorized')) {
-      return '配置异常，请检查账号或服务器地址';
-    }
-    if (errorText.contains('403') || errorText.contains('Forbidden')) {
-      return '同步失败，内容仍保留在本地';
-    }
-    if (errorText.contains('SocketException') ||
-        errorText.contains('Network') ||
-        errorText.contains('Timeout')) {
-      return '网络异常，请稍后重试';
-    }
-    if (outcome.skippedOperations > 0) {
-      return '尚有内容待同步';
-    }
-    return '同步失败，内容仍保留在本地';
   }
 
   Future<void> _initNotifications() async {
@@ -745,18 +535,9 @@ class SyncProvider with ChangeNotifier {
   }
 
   Future<void> _loadConfig() async {
-    final prefs = await SharedPreferences.getInstance();
-    await migrateLegacySyncSecrets(prefs, _secretStore);
-    final jsonStr = prefs.getString(_syncConfigKey);
-    if (jsonStr != null) {
-      try {
-        _config = SyncConfig.fromJson(jsonDecode(jsonStr));
-      } catch (e) {
-        debugPrint('Error loading sync config: $e');
-      }
-    }
-    _config = await _hydrateConfigSecrets(_config);
+    _config = await _configStore.load();
 
+    final prefs = await SharedPreferences.getInstance();
     final snapshotJson = prefs.getString(_syncTrustSnapshotKey);
     if (snapshotJson != null) {
       try {
@@ -769,13 +550,11 @@ class SyncProvider with ChangeNotifier {
     }
 
     _lastSuccessfulSyncPlatform = _trustSnapshot.lastSuccessfulSyncPlatform;
-    final timeStr = prefs.getString(_lastSyncTimeKey);
-    if (timeStr != null) {
-      _lastSyncTime = DateTime.tryParse(timeStr);
-    }
+    _lastSyncTime = await _scopeCacheStore.readGlobalLastSyncTime();
 
-    await _migrateLegacyScopeCacheIfNeeded(prefs);
-    await _loadCurrentScopeLastSyncTime(prefs);
+    await _scopeCacheStore.migrateLegacyScopeCacheIfNeeded(_config);
+    _currentScopeLastSyncTime = await _scopeCacheStore
+        .loadCurrentScopeLastSyncTime(_config);
 
     if (_lastSyncTime != null && _trustSnapshot.lastSuccessfulSyncAt == null) {
       _trustSnapshot = _trustSnapshot.copyWith(
@@ -800,12 +579,11 @@ class SyncProvider with ChangeNotifier {
 
   Future<void> saveConfig(SyncConfig newConfig) async {
     await _initFuture;
-    final prefs = await SharedPreferences.getInstance();
 
-    await _persistSecrets(newConfig);
+    await _configStore.save(newConfig);
     _config = newConfig;
-    await prefs.setString(_syncConfigKey, jsonEncode(_config.toJson()));
-    await _loadCurrentScopeLastSyncTime(prefs);
+    _currentScopeLastSyncTime = await _scopeCacheStore
+        .loadCurrentScopeLastSyncTime(_config);
     await refreshTrustSnapshot(
       clearFailureReason: true,
       configurationInvalid: !_config.hasRequiredCredentials && _config.enabled,
@@ -839,7 +617,9 @@ class SyncProvider with ChangeNotifier {
     }
 
     if (!_config.hasRequiredCredentials) {
-      final message = _configurationIssueMessage();
+      final message = _errorClassifier.configurationIssueMessage(
+        enabled: _config.enabled,
+      );
       _lastError = message;
       await refreshTrustSnapshot(
         overrideState: SyncTrustState.needsAttention,
@@ -872,14 +652,19 @@ class SyncProvider with ChangeNotifier {
 
     if (!success) {
       final errorText = _storageService.lastConnectionError;
-      final message = _buildConnectionFailureMessage(errorText);
+      final message = _errorClassifier.buildConnectionFailureMessage(
+        errorText,
+        enabled: _config.enabled,
+      );
       _lastError = message;
       await refreshTrustSnapshot(
-        overrideState: _isLikelyConfigurationFailure(errorText)
+        overrideState: _errorClassifier.isLikelyConfigurationFailure(errorText)
             ? SyncTrustState.needsAttention
             : SyncTrustState.syncFailed,
         failureReason: message,
-        configurationInvalid: _isLikelyConfigurationFailure(errorText),
+        configurationInvalid: _errorClassifier.isLikelyConfigurationFailure(
+          errorText,
+        ),
       );
       return false;
     }
@@ -889,14 +674,20 @@ class SyncProvider with ChangeNotifier {
       final tested = await _storageService.testConnection();
       if (!tested) {
         final errorText = _storageService.lastConnectionError;
-        final message = _buildConnectionFailureMessage(errorText);
+        final message = _errorClassifier.buildConnectionFailureMessage(
+          errorText,
+          enabled: _config.enabled,
+        );
         _lastError = message;
         await refreshTrustSnapshot(
-          overrideState: _isLikelyConfigurationFailure(errorText)
+          overrideState:
+              _errorClassifier.isLikelyConfigurationFailure(errorText)
               ? SyncTrustState.needsAttention
               : SyncTrustState.syncFailed,
           failureReason: message,
-          configurationInvalid: _isLikelyConfigurationFailure(errorText),
+          configurationInvalid: _errorClassifier.isLikelyConfigurationFailure(
+            errorText,
+          ),
         );
       }
       return tested;
@@ -925,7 +716,9 @@ class SyncProvider with ChangeNotifier {
     if (!_config.hasRequiredCredentials) {
       await refreshTrustSnapshot(
         overrideState: SyncTrustState.needsAttention,
-        failureReason: _configurationIssueMessage(),
+        failureReason: _errorClassifier.configurationIssueMessage(
+          enabled: _config.enabled,
+        ),
         configurationInvalid: true,
       );
       return;
@@ -1041,7 +834,9 @@ class SyncProvider with ChangeNotifier {
     if (!_config.hasRequiredCredentials) {
       await refreshTrustSnapshot(
         overrideState: SyncTrustState.needsAttention,
-        failureReason: _configurationIssueMessage(),
+        failureReason: _errorClassifier.configurationIssueMessage(
+          enabled: _config.enabled,
+        ),
         configurationInvalid: true,
       );
       return;
@@ -1117,16 +912,22 @@ class SyncProvider with ChangeNotifier {
     await _syncMoments(isAuto, outcome);
 
     final isSuccess = !outcome.hasUnresolvedWork;
-    final failureReason = _buildUserSafeFailureReason(outcome);
+    final failureReason = _errorClassifier.buildUserSafeFailureReason(
+      outcome,
+      configurationInvalid: _trustSnapshot.configurationInvalid,
+      hasRequiredCredentials: _config.hasRequiredCredentials,
+    );
 
     if (isSuccess) {
       await _persistSuccessfulSyncCaches();
       _lastSyncTime = DateTime.now();
       _currentScopeLastSyncTime = _lastSyncTime;
       _lastSuccessfulSyncPlatform = _config.syncType.name;
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_lastSyncTimeKey, _lastSyncTime!.toIso8601String());
-      await _persistCurrentScopeLastSyncTime(prefs, _lastSyncTime!);
+      await _scopeCacheStore.writeGlobalLastSyncTime(_lastSyncTime!);
+      await _scopeCacheStore.persistCurrentScopeLastSyncTime(
+        _config,
+        _lastSyncTime!,
+      );
       await refreshTrustSnapshot(
         overrideState: SyncTrustState.syncedSuccessfully,
         clearFailureReason: true,
@@ -1221,7 +1022,9 @@ class SyncProvider with ChangeNotifier {
     final remoteManifestJsonStr = await _storageService.readRemoteFile(
       '${WebDavSyncService.rootPath}manifest.json',
     );
-    final remoteManifest = _decodeManifest(remoteManifestJsonStr);
+    final remoteManifest = _scopeCacheStore.decodeManifest(
+      remoteManifestJsonStr,
+    );
     final nextRemoteManifest = remoteManifest.clone();
     final mergedItems = _mergeManifests(localManifest, remoteManifest);
 
@@ -1368,7 +1171,7 @@ class SyncProvider with ChangeNotifier {
         processed++;
         _processedOps++;
       } catch (e) {
-        if (_isRemoteSourceAlreadyMissing(e)) {
+        if (_errorClassifier.isRemoteSourceAlreadyMissing(e)) {
           nextRemoteManifest.updateItem(
             mergedItems[filename]!.copyWith(isDeleted: true),
           );
@@ -1521,7 +1324,9 @@ class SyncProvider with ChangeNotifier {
     final remoteManifestJsonStr = await _storageService.readRemoteFile(
       '${WebDavSyncService.rootPath}moments_manifest.json',
     );
-    final remoteManifest = _decodeManifest(remoteManifestJsonStr);
+    final remoteManifest = _scopeCacheStore.decodeManifest(
+      remoteManifestJsonStr,
+    );
     final nextRemoteManifest = remoteManifest.clone();
     final mergedItems = _mergeManifests(localManifest, remoteManifest);
 
@@ -1668,7 +1473,7 @@ class SyncProvider with ChangeNotifier {
         processed++;
         _processedOps++;
       } catch (e) {
-        if (_isRemoteSourceAlreadyMissing(e)) {
+        if (_errorClassifier.isRemoteSourceAlreadyMissing(e)) {
           nextRemoteManifest.updateItem(
             mergedItems[filename]!.copyWith(isDeleted: true),
           );
