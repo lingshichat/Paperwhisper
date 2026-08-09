@@ -35,6 +35,7 @@ import '../features/diary/application/diary_announcement_coordinator.dart';
 import '../features/diary/application/diary_list_filter.dart';
 import '../features/diary/application/diary_timeline_layout_builder.dart';
 import '../features/diary/presentation/widgets/diary_empty_state.dart';
+import '../features/diary/presentation/widgets/diary_update_dialog.dart';
 import 'book_directory_page.dart';
 
 class DiaryListPage extends StatefulWidget {
@@ -264,106 +265,14 @@ class _DiaryListPageState extends State<DiaryListPage>
       context: context,
       barrierDismissible: !info.isForceUpdate,
       barrierColor: Colors.black.withValues(alpha: 0.6), // Consistent opacity
-      builder: (context) => SkeuomorphicDialog(
-        title: isAnnouncement
-            ? (info.title ?? '版本更新 ${info.latestVersion}')
-            : '发现新版本 ${info.latestVersion}',
-        headerIcon: isAnnouncement ? Icons.auto_awesome : Icons.system_update,
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (info.releaseDate != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Text(
-                  '发布日期：${info.releaseDate}',
-                  style: GoogleFonts.notoSerifSc(
-                    fontSize: 12,
-                    color: secondaryColor,
-                  ),
-                ),
-              ),
-            // Changelog List
-            ...info.changelog.map(
-              (line) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // 公告行首图标已由 version.json 自带 emoji，不再额外生成
-                    Text(
-                      '',
-                      style: TextStyle(
-                        fontSize: 14,
-                        height: 1.4,
-                        color: secondaryColor,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        line,
-                        style: GoogleFonts.notoSerifSc(
-                          fontSize: 15,
-                          height: 1.6,
-                          // 颜色继承自 SkeuomorphicDialog 的 DefaultTextStyle
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            if (isAnnouncement) ...[
-              const SizedBox(height: 16),
-              Text(
-                "感谢您与纸语一同成长。",
-                style: GoogleFonts.notoSerifSc(
-                  fontSize: 13,
-                  color: secondaryColor,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-            ],
-          ],
-        ),
-        actions: [
-          if (isAnnouncement)
-            SkeuomorphicDialogButton(
-              label: '开启体验',
-              isPrimary: true,
-              onPressed: () => Navigator.pop(context),
-            )
-          else ...[
-            if (!info.isForceUpdate)
-              SkeuomorphicDialogButton(
-                label: '暂不更新',
-                isPrimary: false,
-                onPressed: () => Navigator.pop(context),
-              ),
-            // 备用下载按钮
-            if (info.hasBackupUrl(UpdateService().currentPlatform))
-              SkeuomorphicDialogButton(
-                label: '备用下载',
-                isPrimary: false,
-                onPressed: () {
-                  Navigator.pop(context);
-                  UpdateService().openDownloadUrl(info, useBackup: true);
-                },
-              ),
-            SkeuomorphicDialogButton(
-              label: '立即更新',
-              isPrimary: true,
-              onPressed: () {
-                if (info.downloadUrl != null) {
-                  Navigator.pop(context);
-                  UpdateService().openDownloadUrl(info);
-                }
-              },
-            ),
-          ],
-        ],
+      builder: (context) => DiaryUpdateDialog(
+        info: info,
+        isAnnouncement: isAnnouncement,
+        secondaryColor: secondaryColor,
+        // 平台与 URL 决策留在页面；组件只消费 hasBackup 布尔与回调
+        hasBackup: info.hasBackupUrl(UpdateService().currentPlatform),
+        onBackup: () => UpdateService().openDownloadUrl(info, useBackup: true),
+        onUpdate: () => UpdateService().openDownloadUrl(info),
       ),
     );
   }
@@ -969,31 +878,4 @@ class _DiaryListPageState extends State<DiaryListPage>
       }
     }
   }
-}
-
-class RuledPaperPainter extends CustomPainter {
-  final Color lineColor;
-  RuledPaperPainter({required this.lineColor});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = lineColor
-      ..strokeWidth = 1;
-
-    double y = 40;
-    while (y < size.height - 20) {
-      canvas.drawLine(Offset(20, y), Offset(size.width - 20, y), paint);
-      y += 28;
-    }
-
-    final marginPaint = Paint()
-      ..color = Colors.red.withValues(alpha: 0.05)
-      ..strokeWidth = 1;
-
-    canvas.drawLine(Offset(40, 0), Offset(40, size.height), marginPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

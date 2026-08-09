@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:paper_whisper_flutter/config/theme/theme_registry.dart';
 import 'package:paper_whisper_flutter/features/diary/presentation/widgets/diary_empty_state.dart';
+import 'package:paper_whisper_flutter/features/diary/presentation/widgets/diary_update_dialog.dart';
 import 'package:paper_whisper_flutter/features/sync/application/sync_run_result.dart';
 import 'package:paper_whisper_flutter/models/diary_entry.dart';
 import 'package:paper_whisper_flutter/models/sync_config.dart';
@@ -716,7 +717,9 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      // 公告弹窗：标题来自 assets/version.json 的 title + 「开启体验」按钮
+      // 公告弹窗：由提取出的 DiaryUpdateDialog 组件承载（内部仍是
+      // SkeuomorphicDialog），标题来自 assets/version.json 的 title
+      expect(find.byType(DiaryUpdateDialog), findsOneWidget);
       expect(find.byType(SkeuomorphicDialog), findsOneWidget);
       expect(find.text('开启体验'), findsOneWidget);
       expect(find.textContaining('感谢您与纸语一同成长'), findsOneWidget);
