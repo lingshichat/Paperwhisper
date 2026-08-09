@@ -212,7 +212,401 @@ void main() {
         expect(tester.takeException(), isNull);
       },
     );
+
+    testWidgets('waitUntilReady 引导填充 WebDAV 三字段', (tester) async {
+      final provider = TestSyncProvider(
+        snapshot: const SyncTrustSnapshot(state: SyncTrustState.notEnabled),
+        tempDirs: tempDirs,
+        config: SyncConfig(
+          enabled: true,
+          autoSync: true,
+          compressImages: false,
+          serverUrl: 'https://dav.example.com/',
+          username: 'bootstrap-user',
+          password: 'bootstrap-pass',
+          s3EndPoint: 'play.min.io',
+          s3AccessKey: 'AK123',
+          s3SecretKey: 'SK456',
+          s3BucketName: 'bucket-name',
+          s3Region: 'us-east-1',
+        ),
+      );
+
+      await tester.pumpWidget(buildSyncSettingsApp(provider: provider));
+      await tester.pump();
+      await tester.pump();
+
+      final fields = find.byType(TextFormField);
+      expect(fields, findsNWidgets(3)); // WebDAV 三字段
+      expect(
+        tester.widget<TextFormField>(fields.at(0)).controller!.text,
+        'https://dav.example.com/',
+      );
+      expect(
+        tester.widget<TextFormField>(fields.at(1)).controller!.text,
+        'bootstrap-user',
+      );
+      expect(
+        tester.widget<TextFormField>(fields.at(2)).controller!.text,
+        'bootstrap-pass',
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('协议切换：WebDAV ↔ S3 字段组切换且保留引导填充', (tester) async {
+      final provider = TestSyncProvider(
+        snapshot: const SyncTrustSnapshot(state: SyncTrustState.notEnabled),
+        tempDirs: tempDirs,
+        config: SyncConfig(
+          enabled: true,
+          serverUrl: 'https://dav.example.com/',
+          username: 'bootstrap-user',
+          password: 'bootstrap-pass',
+          s3EndPoint: 'play.min.io',
+          s3AccessKey: 'AK123',
+          s3SecretKey: 'SK456',
+          s3BucketName: 'bucket-name',
+          s3Region: 'us-east-1',
+        ),
+      );
+
+      await tester.pumpWidget(buildSyncSettingsApp(provider: provider));
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('WebDAV 服务器配置'), findsOneWidget);
+
+      // 切到 S3：saveConfig(syncType: s3) + 五字段渲染且已填充
+      await tester.tap(find.text('S3 存储'));
+      await tester.pump();
+      await tester.pump();
+      expect(provider.lastSavedConfig!.syncType, SyncType.s3);
+      expect(find.text('S3 对象存储配置'), findsOneWidget);
+      expect(find.text('WebDAV 服务器配置'), findsNothing);
+      final s3Fields = find.byType(TextFormField);
+      expect(s3Fields, findsNWidgets(5));
+      expect(
+        tester.widget<TextFormField>(s3Fields.at(0)).controller!.text,
+        'play.min.io',
+      );
+      expect(
+        tester.widget<TextFormField>(s3Fields.at(1)).controller!.text,
+        'bucket-name',
+      );
+      expect(
+        tester.widget<TextFormField>(s3Fields.at(2)).controller!.text,
+        'AK123',
+      );
+      expect(
+        tester.widget<TextFormField>(s3Fields.at(3)).controller!.text,
+        'SK456',
+      );
+      expect(
+        tester.widget<TextFormField>(s3Fields.at(4)).controller!.text,
+        'us-east-1',
+      );
+
+      // 切回 WebDAV
+      await tester.tap(find.text('WebDAV'));
+      await tester.pump();
+      await tester.pump();
+      expect(provider.lastSavedConfig!.syncType, SyncType.webdav);
+      expect(find.text('WebDAV 服务器配置'), findsOneWidget);
+      expect(find.text('S3 对象存储配置'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('URL 校验：非法前缀与空值分别提示且不触发连接', (tester) async {
+      final provider = TestSyncProvider(
+        snapshot: const SyncTrustSnapshot(state: SyncTrustState.notEnabled),
+        tempDirs: tempDirs,
+      );
+
+      await tester.pumpWidget(buildSyncSettingsApp(provider: provider));
+      await tester.pump();
+      await tester.pump();
+
+      final fields = find.byType(TextFormField);
+      await tester.enterText(fields.at(0), 'ftp://invalid');
+      await tester.ensureVisible(find.text('测试连接'));
+      await tester.tap(find.text('测试连接'));
+      await tester.pump();
+      expect(find.text('服务器地址需以 http:// 或 https:// 开头'), findsOneWidget);
+      expect(provider.connectCallCount, 0);
+
+      // 清空 → 必填提示（错误文案撑高布局后按钮可能下移，需重新定位）
+      await tester.enterText(fields.at(0), '');
+      await tester.ensureVisible(find.text('测试连接'));
+      await tester.tap(find.text('测试连接'));
+      await tester.pump();
+      expect(find.text('请输入服务器地址'), findsOneWidget);
+      expect(provider.connectCallCount, 0);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('测试连接成功：保存配置并提示，不触发真实同步', (tester) async {
+      final provider = TestSyncProvider(
+        snapshot: const SyncTrustSnapshot(state: SyncTrustState.notEnabled),
+        tempDirs: tempDirs,
+      );
+
+      await tester.pumpWidget(buildSyncSettingsApp(provider: provider));
+      await tester.pump();
+      await tester.pump();
+
+      await tester.ensureVisible(find.text('测试连接'));
+      await tester.tap(find.text('测试连接'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('连接成功，配置已保存'), findsOneWidget);
+      expect(provider.connectCallCount, 1);
+      expect(provider.syncCallCount, 0);
+      expect(provider.lastSavedConfig!.enabled, isTrue);
+      expect(provider.lastSavedConfig!.serverUrl, 'https://dav.example.com/');
+      await drainSnackBarTimers(tester);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('测试连接失败：提示失败文案且不触发真实同步', (tester) async {
+      final provider = TestSyncProvider(
+        snapshot: const SyncTrustSnapshot(state: SyncTrustState.notEnabled),
+        tempDirs: tempDirs,
+      )..connectResult = false;
+
+      await tester.pumpWidget(buildSyncSettingsApp(provider: provider));
+      await tester.pump();
+      await tester.pump();
+
+      await tester.ensureVisible(find.text('测试连接'));
+      await tester.tap(find.text('测试连接'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('连接失败，请检查配置'), findsOneWidget);
+      expect(provider.connectCallCount, 1);
+      expect(provider.syncCallCount, 0);
+      await drainSnackBarTimers(tester);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('立即同步成功（有变更）：展示分类统计并保存配置', (tester) async {
+      final provider =
+          TestSyncProvider(
+              snapshot: const SyncTrustSnapshot(
+                state: SyncTrustState.notEnabled,
+              ),
+              tempDirs: tempDirs,
+            )
+            ..syncResultBuilder = () => const SyncRunResult(
+              status: SyncRunStatus.success,
+              processedDiaries: 1,
+              processedMoments: 2,
+              processedImages: 3,
+              processedAudio: 4,
+            );
+
+      await tester.pumpWidget(buildSyncSettingsApp(provider: provider));
+      await tester.pump();
+      await tester.pump();
+
+      await tester.ensureVisible(find.text('立即同步'));
+      await tester.tap(find.text('立即同步'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('已同步: 1篇日记, 2篇随心记\n3张图片, 4条语音'), findsOneWidget);
+      expect(provider.syncCallCount, 1);
+      expect(provider.lastSavedConfig!.enabled, isTrue);
+      await drainSnackBarTimers(tester);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('立即同步成功（无变更）：提示「同步完成 (无变更)」', (tester) async {
+      final provider = TestSyncProvider(
+        snapshot: const SyncTrustSnapshot(state: SyncTrustState.notEnabled),
+        tempDirs: tempDirs,
+      );
+
+      await tester.pumpWidget(buildSyncSettingsApp(provider: provider));
+      await tester.pump();
+      await tester.pump();
+
+      await tester.ensureVisible(find.text('立即同步'));
+      await tester.tap(find.text('立即同步'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('同步完成 (无变更)'), findsOneWidget);
+      expect(provider.syncCallCount, 1);
+      await drainSnackBarTimers(tester);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('立即同步失败：提示失败原因', (tester) async {
+      final provider =
+          TestSyncProvider(
+              snapshot: const SyncTrustSnapshot(
+                state: SyncTrustState.notEnabled,
+              ),
+              tempDirs: tempDirs,
+            )
+            ..syncResultBuilder = () => const SyncRunResult(
+              status: SyncRunStatus.failed,
+              failureMessage: 'WebDAV 连接被拒绝',
+            );
+
+      await tester.pumpWidget(buildSyncSettingsApp(provider: provider));
+      await tester.pump();
+      await tester.pump();
+
+      await tester.ensureVisible(find.text('立即同步'));
+      await tester.tap(find.text('立即同步'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('WebDAV 连接被拒绝'), findsOneWidget);
+      expect(provider.syncCallCount, 1);
+      await drainSnackBarTimers(tester);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('立即同步 pending：提示待同步数量', (tester) async {
+      final provider =
+          TestSyncProvider(
+              snapshot: const SyncTrustSnapshot(
+                state: SyncTrustState.notEnabled,
+              ),
+              tempDirs: tempDirs,
+            )
+            ..syncResultBuilder = () => const SyncRunResult(
+              status: SyncRunStatus.pending,
+              pendingCount: 2,
+            );
+
+      await tester.pumpWidget(buildSyncSettingsApp(provider: provider));
+      await tester.pump();
+      await tester.pump();
+
+      await tester.ensureVisible(find.text('立即同步'));
+      await tester.tap(find.text('立即同步'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('尚有 2 项待同步'), findsOneWidget);
+      expect(provider.syncCallCount, 1);
+      await drainSnackBarTimers(tester);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('停用同步：保存 enabled=false 并提示，按钮随状态消失', (tester) async {
+      final provider = TestSyncProvider(
+        snapshot: const SyncTrustSnapshot(state: SyncTrustState.notEnabled),
+        tempDirs: tempDirs,
+      );
+
+      await tester.pumpWidget(buildSyncSettingsApp(provider: provider));
+      await tester.pump();
+      await tester.pump();
+
+      await tester.ensureVisible(find.text('停用同步'));
+      await tester.tap(find.text('停用同步'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('已停用同步，内容将继续保留在本地'), findsOneWidget);
+      expect(provider.lastSavedConfig!.enabled, isFalse);
+      expect(find.text('停用同步'), findsNothing);
+      await drainSnackBarTimers(tester);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('自动同步/图片压缩开关反映到保存的配置', (tester) async {
+      final provider = TestSyncProvider(
+        snapshot: const SyncTrustSnapshot(state: SyncTrustState.notEnabled),
+        tempDirs: tempDirs,
+      );
+
+      await tester.pumpWidget(buildSyncSettingsApp(provider: provider));
+      await tester.pump();
+      await tester.pump();
+
+      // 默认 config：autoSync=true、compressImages=true → 翻转后为 false
+      final autoSwitch = find.byType(SwitchListTile).at(0);
+      final compressSwitch = find.byType(SwitchListTile).at(1);
+      await tester.ensureVisible(autoSwitch);
+      await tester.pump();
+      await tester.tap(autoSwitch);
+      await tester.pump();
+      await tester.ensureVisible(compressSwitch);
+      await tester.pump();
+      await tester.tap(compressSwitch);
+      await tester.pump();
+
+      await tester.ensureVisible(find.text('测试连接'));
+      await tester.tap(find.text('测试连接'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(provider.lastSavedConfig!.autoSync, isFalse);
+      expect(provider.lastSavedConfig!.compressImages, isFalse);
+      expect(provider.syncCallCount, 0);
+      await drainSnackBarTimers(tester);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('信任状态卡：未启用/待同步/已成功/需检查 标题与行文案', (tester) async {
+      final cases = <SyncTrustSnapshot, List<String>>{
+        const SyncTrustSnapshot(state: SyncTrustState.notEnabled): <String>[
+          '同步未启用',
+          '启用后即可把本地内容同步到云端',
+        ],
+        const SyncTrustSnapshot(
+          state: SyncTrustState.localChangesPending,
+          pendingDiaryCount: 2,
+        ): <String>[
+          '本地仍有内容待同步',
+          '尚有 2 项待同步',
+        ],
+        SyncTrustSnapshot(
+          state: SyncTrustState.syncedSuccessfully,
+          lastSuccessfulSyncAt: DateTime(2026, 3, 12, 9, 30),
+          lastSuccessfulSyncPlatform: 's3',
+        ): <String>[
+          '同步状态正常',
+          '最近一次成功同步：2026-3-12 9:30（S3）',
+        ],
+        const SyncTrustSnapshot(state: SyncTrustState.needsAttention): <String>[
+          '需要检查同步配置',
+        ],
+      };
+
+      for (final entry in cases.entries) {
+        final provider = TestSyncProvider(
+          snapshot: entry.key,
+          tempDirs: tempDirs,
+        );
+        await tester.pumpWidget(buildSyncSettingsApp(provider: provider));
+        await tester.pump();
+        await tester.pump();
+        for (final text in entry.value) {
+          expect(find.text(text), findsOneWidget);
+        }
+        // 换 provider 前销毁整棵树，释放上一轮计时器
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump();
+      }
+      expect(tester.takeException(), isNull);
+    });
   });
+}
+
+/// 消化 SnackBar 的 2s 自动关闭计时：先完成入场动画（约 250ms）使计时
+/// 启动，再推进到计时到点与退场动画结束。
+Future<void> drainSnackBarTimers(WidgetTester tester) async {
+  await tester.pump(const Duration(milliseconds: 300));
+  await tester.pump(const Duration(seconds: 2));
+  await tester.pump(const Duration(milliseconds: 400));
+  await tester.pump();
 }
 
 Widget buildSyncSettingsApp({
@@ -261,6 +655,15 @@ class TestSyncProvider extends SyncProvider {
   int connectCallCount = 0;
   int syncCallCount = 0;
 
+  /// [connect] 的返回结果（测试连接成功/失败分支）。
+  bool connectResult = true;
+
+  /// 最近一次 [saveConfig] 保存的配置（断言保存编排与字段透传）。
+  SyncConfig? lastSavedConfig;
+
+  /// 非 null 时 [sync] 返回该结果；否则返回成功（无变更）。
+  SyncRunResult Function()? syncResultBuilder;
+
   static MomentService _createMomentService(List<Directory> tempDirs) {
     final rootDir = Directory.systemTemp.createTempSync(
       'sync_settings_page_test',
@@ -286,6 +689,7 @@ class TestSyncProvider extends SyncProvider {
   @override
   Future<void> saveConfig(SyncConfig newConfig) async {
     _config = newConfig;
+    lastSavedConfig = newConfig;
     notifyListeners();
   }
 
@@ -295,12 +699,13 @@ class TestSyncProvider extends SyncProvider {
     bool awaitInitialization = true,
   }) async {
     connectCallCount++;
-    return true;
+    return connectResult;
   }
 
   @override
   Future<SyncRunResult> sync({bool isAuto = false}) async {
     syncCallCount++;
-    return const SyncRunResult(status: SyncRunStatus.success);
+    return syncResultBuilder?.call() ??
+        const SyncRunResult(status: SyncRunStatus.success);
   }
 }

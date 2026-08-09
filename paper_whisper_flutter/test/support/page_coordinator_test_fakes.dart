@@ -4,12 +4,15 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:paper_whisper_flutter/features/sync/application/auto_sync_scheduler.dart';
 import 'package:paper_whisper_flutter/features/sync/application/sync_run_result.dart';
+import 'package:paper_whisper_flutter/models/diary_entry.dart';
 import 'package:paper_whisper_flutter/models/moment.dart';
 import 'package:paper_whisper_flutter/models/sync_config.dart';
 import 'package:paper_whisper_flutter/models/sync_trust_snapshot.dart';
 import 'package:paper_whisper_flutter/providers/sync_provider.dart';
 import 'package:paper_whisper_flutter/services/moment_service.dart';
 import 'package:paper_whisper_flutter/services/sync_secret_store.dart';
+
+import 'sync_test_fakes.dart';
 
 /// 页面协调器测试（settings / moments）共用的平台 channel mock。
 ///
@@ -188,6 +191,69 @@ class PageCoordinatorFakeMomentService extends MomentService {
     exportCallCount++;
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-'
         '${date.day.toString().padLeft(2, '0')}_moments_summary.txt';
+  }
+}
+
+/// DiaryListPage 行为刻画测试用的内存版 DiaryService。
+///
+/// 真实实现（含 FakeDiaryService 的 debugDataDir 注入）的 init/getEntries
+/// 依赖 dart:io 文件 IO，在 widget 测试的 fake async 区不会推进，会导致
+/// 数据加载悬挂；这里覆写为纯内存实现：
+/// - [init] 空操作、[dataDir] 恒为 null（`DiaryProvider._loadBookMetadata`
+///   会因 dataDir == null 提前返回，避免 book_metadata.json 文件 IO）；
+/// - [getEntries] 返回 [seedEntries] 注入的条目并按日期降序（与真实
+///   DiaryService 排序一致，供 provider 构建 MonthHeader 扁平列表）；
+/// - 保存/删除记录调用计数，供「打开编辑器」等导航链测试断言入口。
+class PageCoordinatorFakeDiaryService extends FakeDiaryService {
+  PageCoordinatorFakeDiaryService(super.rootDir);
+
+  final List<DiaryEntry> _entries = <DiaryEntry>[];
+
+  int saveCallCount = 0;
+  int deleteCallCount = 0;
+  DiaryEntry? lastSavedEntry;
+  String? lastDeletedFilename;
+
+  void seedEntries(List<DiaryEntry> entries) {
+    _entries
+      ..clear()
+      ..addAll(entries);
+  }
+
+  @override
+  Directory? get dataDir => null;
+
+  @override
+  String get currentDataPath => 'test';
+
+  @override
+  Future<void> init() async {
+    // 空实现：避免真实目录创建 / manifest 初始化 IO。
+  }
+
+  @override
+  void reset() {
+    // 空实现：不清理任何状态。
+  }
+
+  @override
+  Future<List<DiaryEntry>> getEntries() async {
+    final sorted = List<DiaryEntry>.of(_entries)
+      ..sort((a, b) => b.dateString.compareTo(a.dateString));
+    return sorted;
+  }
+
+  @override
+  Future<String> saveEntry(DiaryEntry entry) async {
+    saveCallCount++;
+    lastSavedEntry = entry;
+    return entry.filename;
+  }
+
+  @override
+  Future<void> deleteEntry(String filename) async {
+    deleteCallCount++;
+    lastDeletedFilename = filename;
   }
 }
 
