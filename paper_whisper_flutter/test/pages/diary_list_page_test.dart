@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:paper_whisper_flutter/config/theme/theme_registry.dart';
+import 'package:paper_whisper_flutter/features/diary/presentation/widgets/diary_empty_state.dart';
 import 'package:paper_whisper_flutter/features/sync/application/sync_run_result.dart';
 import 'package:paper_whisper_flutter/models/diary_entry.dart';
 import 'package:paper_whisper_flutter/models/sync_config.dart';
@@ -262,6 +263,8 @@ void main() {
       expect(find.text('点击翻阅目录'), findsOneWidget);
       expect(find.text('这里似乎落了一层灰，等待你来翻阅'), findsOneWidget);
       expect(find.text('去擦拭灰尘 (写一篇) →'), findsOneWidget);
+      // 空态已拆分为参数化组件并由页面取色传入 props
+      expect(find.byType(DiaryEmptyState), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 

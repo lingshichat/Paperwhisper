@@ -1,6 +1,5 @@
 import 'dart:ui';
 import 'dart:async';
-import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -15,7 +14,6 @@ import 'package:google_fonts/google_fonts.dart';
 import '../providers/diary_provider.dart';
 import '../providers/sync_provider.dart';
 import '../widgets/book_flip_refresh_widget.dart';
-import '../widgets/dashed_line_painter.dart';
 import '../widgets/skeuomorphic_dialog.dart'; // Updated import
 import '../widgets/skeuomorphic_search_bar.dart';
 import '../widgets/month_divider.dart';
@@ -36,6 +34,7 @@ import '../features/permissions/application/permission_coordinator.dart';
 import '../features/diary/application/diary_announcement_coordinator.dart';
 import '../features/diary/application/diary_list_filter.dart';
 import '../features/diary/application/diary_timeline_layout_builder.dart';
+import '../features/diary/presentation/widgets/diary_empty_state.dart';
 import 'book_directory_page.dart';
 
 class DiaryListPage extends StatefulWidget {
@@ -53,8 +52,6 @@ class _DiaryListPageState extends State<DiaryListPage>
   bool _isSearching = false;
 
   // Filter and Navigation
-  // Filter and Navigation
-  // late int _filterYear; // Removed strict filter
   int _displayYear = DateTime.now().year; // For AppBar display
   final ItemScrollController _itemScrollController = ItemScrollController();
   final ItemPositionsListener _itemPositionsListener =
@@ -70,7 +67,6 @@ class _DiaryListPageState extends State<DiaryListPage>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    // _filterYear = widget.initialYear ?? DateTime.now().year;
     _displayYear = widget.initialYear ?? DateTime.now().year;
 
     _itemPositionsListener.itemPositions.addListener(_onScrollChanged);
@@ -295,11 +291,9 @@ class _DiaryListPageState extends State<DiaryListPage>
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Icon color will be handled by DefaultTextStyle unless specified,
-                    // but let's keep it simple or use secondaryColor for bullet if needed.
-                    // Since _getBulletIcon returns empty string now, this Text is just empty.
+                    // 公告行首图标已由 version.json 自带 emoji，不再额外生成
                     Text(
-                      _getBulletIcon(line),
+                      '',
                       style: TextStyle(
                         fontSize: 14,
                         height: 1.4,
@@ -309,12 +303,11 @@ class _DiaryListPageState extends State<DiaryListPage>
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        _cleanLine(line),
+                        line,
                         style: GoogleFonts.notoSerifSc(
                           fontSize: 15,
                           height: 1.6,
-                          // Remove hardcoded color: const Color(0xFF5D4037),
-                          // so it inherits from SkeuomorphicDialog's DefaultTextStyle
+                          // 颜色继承自 SkeuomorphicDialog 的 DefaultTextStyle
                         ),
                       ),
                     ),
@@ -373,23 +366,6 @@ class _DiaryListPageState extends State<DiaryListPage>
         ],
       ),
     );
-  }
-
-  String _getBulletIcon(String line) {
-    // Basic heuristic: check if line starts with specific emojis
-    // Or just return dot if simple.
-    // The version.json lines already have emojis like "✨ [新增]".
-    // We can just return empty string if the line handles it, or standardized bullet.
-    // The user's requested style had emoji separately.
-    // Let's rely on the text itself having the emoji for now as per version.json content.
-    // But to align with previous code logic '• ', let's see.
-    // version.json: "✨ [新增] ..."
-    // So we don't need extra bullet.
-    return '';
-  }
-
-  String _cleanLine(String line) {
-    return line;
   }
 
   void _showPermissionRationale() async {
@@ -585,19 +561,14 @@ class _DiaryListPageState extends State<DiaryListPage>
 
   @override
   Widget build(BuildContext context) {
-    // We access settings just to trigger rebuilds on theme change if needed
-    // But mostly AppTheme handles the static logic or we use Consumer below
     final settings = Provider.of<SettingsProvider>(context);
     final theme = settings.currentTheme;
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Desktop breakpoint: > 800px (Matches "Tablet/Desktop" logic from plan)
         final bool isDesktop = constraints.maxWidth > 800;
 
-        // Content Area (The Waterfall Layout)
-        // We will put this in a Widget to reuse
-        // Pass width to generate layout
+        // 内容区（瀑布流布局）
         final Widget contentArea = _buildContentArea(
           context,
           theme,
@@ -704,6 +675,8 @@ class _DiaryListPageState extends State<DiaryListPage>
     double availableWidth,
   ) {
     final diaryProvider = Provider.of<DiaryProvider>(context);
+    // 空态取色：页面从 7 主题动态 Map 取色后显式传给 DiaryEmptyState props
+    final dlpThemeEmpty = AppTheme.getDiaryListPageTheme(theme);
 
     // Prepare Data
     List<dynamic> rawFlatEntries = [];
@@ -893,9 +866,18 @@ class _DiaryListPageState extends State<DiaryListPage>
                     physics: const AlwaysScrollableScrollPhysics(),
                     child: SizedBox(
                       height: MediaQuery.of(context).size.height * 0.5,
-                      child: _buildEmptyState(
-                        theme,
-                        diaryProvider.diarySearchQuery,
+                      child: DiaryEmptyState(
+                        query: diaryProvider.diarySearchQuery,
+                        searchTextColor: AppTheme.getTextColor(
+                          theme,
+                        ).withValues(alpha: 0.7),
+                        iconColor:
+                            dlpThemeEmpty['emptyStateIconColor'] as Color,
+                        textColor:
+                            dlpThemeEmpty['emptyStateTextColor'] as Color,
+                        linkColor:
+                            dlpThemeEmpty['emptyStateLinkColor'] as Color,
+                        onCreate: () => _openEditor(null),
                       ),
                     ),
                   )
@@ -915,90 +897,6 @@ class _DiaryListPageState extends State<DiaryListPage>
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildEmptyState(String theme, String query) {
-    if (query.isNotEmpty) {
-      // 搜索无结果状态
-      final Color emptyTextColor = AppTheme.getTextColor(
-        theme,
-      ).withValues(alpha: 0.7);
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.search_off, size: 80, color: emptyTextColor),
-            const SizedBox(height: 24),
-            Text(
-              '没有找到关于"$query"的篇章...',
-              style: GoogleFonts.notoSerifSc(
-                color: emptyTextColor,
-                fontSize: 16,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    // 获取主题适配的颜色
-    final dlpThemeEmpty = AppTheme.getDiaryListPageTheme(theme);
-    final Color iconColor = dlpThemeEmpty['emptyStateIconColor'] as Color;
-    final Color textColor = dlpThemeEmpty['emptyStateTextColor'] as Color;
-    final Color linkColor = dlpThemeEmpty['emptyStateLinkColor'] as Color;
-
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // 蜘蛛网图标 - 使用 CustomPaint 绘制
-          CustomPaint(
-            size: const Size(64, 64), // 设计图中图标不需要太大
-            painter: _SpiderWebIconPainter(color: iconColor),
-          ),
-          const SizedBox(height: 32),
-          Text(
-            '这里似乎落了一层灰，等待你来翻阅',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.notoSerifSc(
-              fontSize: 16,
-              color: textColor,
-              height: 1.5,
-              fontStyle: FontStyle.italic, // 恢复斜体
-            ),
-          ),
-          const SizedBox(height: 48), // 增加间距
-          // "去擦拭灰尘（写一篇）→" 按钮 - 带虚线
-          GestureDetector(
-            onTap: () => _openEditor(null),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  '去擦拭灰尘 (写一篇) →',
-                  style: GoogleFonts.notoSerifSc(
-                    fontSize: 15,
-                    color: linkColor,
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 4), // 文字和虚线的间距
-                SizedBox(
-                  width: 180, // 根据文字长度估算，确保虚线覆盖文字
-                  height: 1,
-                  child: CustomPaint(
-                    painter: DashedLinePainter(
-                      color: linkColor.withValues(alpha: 0.6),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -1098,128 +996,4 @@ class RuledPaperPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-/// 蜘蛛网图标绘制器 - 用于空状态显示
-/// 设计：六边形框架 + 内部蜘蛛网线条，体现"落灰"的意象
-class _SpiderWebIconPainter extends CustomPainter {
-  final Color color;
-
-  _SpiderWebIconPainter({required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth =
-          3.0 // 加粗外框
-      ..strokeJoin = StrokeJoin.round;
-
-    final centerX = size.width / 2;
-    final centerY = size.height / 2;
-
-    // 六边形顶点（从顶部开始顺时针）
-    final double radius = size.width * 0.45;
-    final List<Offset> hexPoints = [];
-    for (int i = 0; i < 6; i++) {
-      final angle = (i * 60 - 90) * math.pi / 180; // 从顶部开始
-      hexPoints.add(
-        Offset(
-          centerX + radius * math.cos(angle),
-          centerY + radius * math.sin(angle),
-        ),
-      );
-    }
-
-    // 绘制六边形外框（拟物化：使用贝塞尔曲线向内凹陷）
-    final hexPath = Path();
-    hexPath.moveTo(hexPoints[0].dx, hexPoints[0].dy);
-    for (int i = 0; i < 6; i++) {
-      // 当前点
-      final p1 = hexPoints[i];
-      // 下一个点
-      final p2 = hexPoints[(i + 1) % 6];
-
-      // 计算中点
-      final midX = (p1.dx + p2.dx) / 2;
-      final midY = (p1.dy + p2.dy) / 2;
-
-      // 计算控制点：向中心凹陷
-      const curveFactor = 0.12; // 外框稍微绷紧一点
-      final controlX = midX + (centerX - midX) * curveFactor;
-      final controlY = midY + (centerY - midY) * curveFactor;
-
-      hexPath.quadraticBezierTo(controlX, controlY, p2.dx, p2.dy);
-    }
-    // hexPath.close(); // Closed by loop logic
-    canvas.drawPath(hexPath, paint);
-
-    // 绘制从中心到六个顶点的辐射线
-    final thinPaint = Paint()
-      ..color = color
-          .withValues(alpha: 0.8) // 稍微加深
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0; // 加粗线条
-
-    final center = Offset(centerX, centerY);
-    for (final point in hexPoints) {
-      canvas.drawLine(center, point, thinPaint);
-    }
-
-    // 绘制内部蜘蛛网同心六边形（2层）
-    final webPaint = Paint()
-      ..color = color.withValues(alpha: 0.6)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5;
-
-    for (double scale in [0.33, 0.66]) {
-      final innerPath = Path();
-      // 计算这一层的顶点
-      final List<Offset> layerPoints = [];
-      for (int i = 0; i < 6; i++) {
-        layerPoints.add(
-          Offset(
-            centerX + (hexPoints[i].dx - centerX) * scale,
-            centerY + (hexPoints[i].dy - centerY) * scale,
-          ),
-        );
-      }
-
-      innerPath.moveTo(layerPoints[0].dx, layerPoints[0].dy);
-
-      for (int i = 0; i < 6; i++) {
-        // 当前点
-        final p1 = layerPoints[i];
-        // 下一个点
-        final p2 = layerPoints[(i + 1) % 6];
-
-        // 计算中点
-        final midX = (p1.dx + p2.dx) / 2;
-        final midY = (p1.dy + p2.dy) / 2;
-
-        // 计算控制点：向中心凹陷
-        // 简单的做法是取中点和中心的连线上的某一点
-        // 凹陷程度因子 (0.0 = 直线, 1.0 = 到中心)
-        const curveFactor = 0.15;
-        final controlX = midX + (centerX - midX) * curveFactor;
-        final controlY = midY + (centerY - midY) * curveFactor;
-
-        innerPath.quadraticBezierTo(controlX, controlY, p2.dx, p2.dy);
-      }
-      // innerPath.close(); // quadraticBezierTo 已经闭合回去了（最后一个点连回第一个点）
-      canvas.drawPath(innerPath, webPaint);
-    }
-
-    // 中心小圆点
-    final dotPaint = Paint()
-      ..color = color.withValues(alpha: 0.8)
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(center, 3, dotPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _SpiderWebIconPainter oldDelegate) {
-    return oldDelegate.color != color;
-  }
 }
