@@ -14,6 +14,7 @@ import '../widgets/skeuomorphic_toast.dart';
 import '../services/draft_service.dart'; // Added
 import '../widgets/slide_page_route.dart'; // Needed for "Save As New" navigation
 import '../widgets/skeuomorphic_date_picker.dart';
+import '../features/editor/application/editor_save_coordinator.dart';
 import '../features/editor/application/editor_session_controller.dart';
 import '../features/sync/presentation/sync_ui_coordinator.dart';
 import 'package:path_provider/path_provider.dart';
@@ -44,6 +45,9 @@ class EditorPage extends StatefulWidget {
 class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   // 编辑会话：编辑状态、草稿生命周期与自动保存编排由控制器持有
   late final EditorSessionController _session;
+
+  // 保存/删除业务编排协调器（context-free，依赖注入 DiaryProvider）
+  EditorSaveCoordinator? _saveCoordinator;
 
   // 懒加载状态
   bool _isPreviewMode = false; // 是否处于首屏预览模式
@@ -85,6 +89,12 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    // 保存/删除编排协调器：依赖注入 DiaryProvider（懒创建，避免在
+    // initState 中读取 InheritedWidget）。
+    _saveCoordinator ??= EditorSaveCoordinator(
+      diaryProvider: context.read<DiaryProvider>(),
+      session: _session,
+    );
     // 获取当前路由的动画对象
     final route = ModalRoute.of(context);
     if (route != null && route is PageRoute && _routeAnimation == null) {
@@ -236,53 +246,49 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   }
 
   void _save() async {
-    // 1. STOP AUTO SAVE! Prevent race condition where auto-save writes draft AFTER we clear it
-    _session.cancelPendingAutoSave();
+    // 保存编排（取消防抖、构建 DiaryEntry、saveEntry、成功清草稿、
+    // 失败保留草稿）在 EditorSaveCoordinator 内完成，页面只翻译结果。
+    final result = await _saveCoordinator!.save();
+    if (!mounted) return;
+    switch (result) {
+      case EditorSaveValidation():
+        // 契约完整性：当前编排不产生该分支，防御忽略
+        return;
+      case EditorSaveFailure(:final error):
+        _showSaveError(error);
+        return;
+      case EditorSaveSuccess():
+        // 保存成功：同步反馈（决策与即时 pending 提示由
+        // SyncUiCoordinator 处理），反馈异常与页面原编排一致走保存失败提示
+        try {
+          final syncProvider = context.read<SyncProvider>();
+          await SyncUiCoordinator(context).handleSaveAutoSync(
+            provider: syncProvider,
+            savedToast: '日记已保存',
+            preparingToast: '日记已保存，准备同步...',
+          );
+          if (!mounted) return;
+          Navigator.pop(context);
+        } catch (e) {
+          _showSaveError(e);
+        }
+        break;
+    }
+  }
 
-    final provider = Provider.of<DiaryProvider>(context, listen: false);
-    final newEntry = DiaryEntry(
-      filename: widget.entry?.filename ?? '',
-      dateString: _session.dateString,
-      title: _session.titleController.text,
-      weather: _session.weather,
-      mood: _session.mood,
-      content: _session.contentController.text,
-      isMarkdown: _session.isMarkdown,
-    );
-
-    try {
-      await provider.saveEntry(newEntry);
-
-      // Save Success: Clear Draft!
-      await _session.clearDraft();
-
-      if (mounted) {
-        final syncProvider = context.read<SyncProvider>();
-        // 保存后自动同步决策与即时 pending 提示统一由 SyncUiCoordinator
-        // 处理（权限说明、Dialog/Toast 不经过 Provider）。
-        await SyncUiCoordinator(context).handleSaveAutoSync(
-          provider: syncProvider,
-          savedToast: '日记已保存',
-          preparingToast: '日记已保存，准备同步...',
-        );
-        if (!mounted) return;
-        Navigator.pop(context);
-      }
-    } catch (e) {
-      debugPrint("Save failed: $e");
-      if (mounted) {
-        SkeuomorphicToast.error(context, '保存失败: $e\n请检查存储权限或稍后重试');
-      }
+  void _showSaveError(Object e) {
+    debugPrint('Save failed: $e');
+    if (mounted) {
+      SkeuomorphicToast.error(context, '保存失败: $e\n请检查存储权限或稍后重试');
     }
   }
 
   void _delete() async {
     if (widget.entry == null) return;
 
-    // STOP AUTO SAVE
+    // 停止防抖（同步）：与原有行为一致，在确认弹窗前取消
     _session.cancelPendingAutoSave();
 
-    final provider = Provider.of<DiaryProvider>(context, listen: false);
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => SkeuomorphicDialog(
@@ -308,15 +314,27 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
       ),
     );
     if (confirm == true) {
-      await provider.deleteEntry(widget.entry!.filename);
-      // Delete success: Also clear draft if any
-      await _session.clearDraft();
-      if (mounted) {
-        final syncProvider = context.read<SyncProvider>();
-        await syncProvider.refreshTrustSnapshot();
+      // 删除编排（确认后的删除、清草稿）在协调器内完成；删除失败不吞
+      // 异常（原页面无 catch，Failure 对象正常不可达），validation 分支
+      // 为契约完整性保留，防御忽略
+      final result = await _saveCoordinator!.delete(widget.entry!.filename);
+      if (!mounted) return;
+      switch (result) {
+        case EditorDeleteValidation():
+          // 契约完整性：当前编排不产生该分支，防御忽略
+          return;
+        case EditorDeleteFailure():
+          // 防御分支：若将来删除改为返回 Failure，展示用户友好提示
+          // （不含原始 stack）
+          SkeuomorphicToast.error(context, '删除失败，请稍后重试');
+          return;
+        case EditorDeleteSuccess():
+          final syncProvider = context.read<SyncProvider>();
+          await syncProvider.refreshTrustSnapshot();
+          if (!mounted) return;
+          Navigator.pop(context);
+          break;
       }
-
-      if (mounted) Navigator.pop(context);
     }
   }
 

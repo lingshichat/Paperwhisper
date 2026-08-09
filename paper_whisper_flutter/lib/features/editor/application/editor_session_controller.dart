@@ -70,10 +70,14 @@ class EditorSessionController {
 
   // 草稿状态
   Timer? _autoSaveTimer;
+  Future<void>? _inFlightAutoSave;
   bool _hasDraftChanges = false;
   bool _hasCheckedDraft = false;
   bool _suppressTextListener = false;
   bool _disposed = false;
+
+  /// 草稿标识（新建为 'new'，编辑为原日记文件名）。
+  String get draftId => _draftId;
 
   /// 是否有未保存的修改（新建：非空内容；编辑：与初始值比较）。
   bool get hasChanges {
@@ -110,12 +114,35 @@ class EditorSessionController {
   }
 
   /// 立即保存草稿（防抖回调或页面切后台时调用）。
+  ///
+  /// 草稿写入失败在此捕获并记录：Timer 回调不会产生 Zone unhandled
+  /// error，失败保留 [_hasDraftChanges] 供后续输入重试；in-flight
+  /// 清理逻辑不受影响，连续调用/取消/dispose 均不会悬挂。
   Future<void> performAutoSave() async {
     if (_disposed || !_hasDraftChanges) return;
     if (titleController.text.isEmpty && contentController.text.isEmpty) {
       return; // 空内容不存
     }
 
+    // 记录进行中的草稿写入，供保存/删除编排前等待落盘，防止
+    // clearDraft 之后被 in-flight 写入重写草稿。
+    final future = _writeDraft();
+    _inFlightAutoSave = future;
+    try {
+      await future;
+    } catch (e) {
+      // 写入失败：保留变更标记允许后续重试；只记录错误类别与对象，
+      // 不打印正文内容，避免草稿隐私泄漏。
+      _hasDraftChanges = true;
+      debugPrint('Draft auto-save failed: ${e.runtimeType}: $e');
+    } finally {
+      if (identical(_inFlightAutoSave, future)) {
+        _inFlightAutoSave = null;
+      }
+    }
+  }
+
+  Future<void> _writeDraft() async {
     final currentEntry = DiaryEntry(
       filename: _draftId == 'new' ? '' : _draftId,
       dateString: dateString,
@@ -128,6 +155,24 @@ class EditorSessionController {
 
     await _draftService.saveDraft(_draftId, currentEntry);
     _hasDraftChanges = false;
+  }
+
+  /// 等待进行中的自动保存草稿写入落盘（保存/删除编排时调用）。
+  ///
+  /// 与 [cancelPendingAutoSave] 配合：先同步取消防抖 Timer，再等待
+  /// in-flight 写入完成，之后 clearDraft 不会被旧草稿重写。草稿写入
+  /// 失败已由 [performAutoSave] 捕获，此处 catch 仅防御 in-flight
+  /// future 重现错误，不阻断保存/删除主流程。
+  Future<void> awaitPendingAutoSave() async {
+    final inFlight = _inFlightAutoSave;
+    _inFlightAutoSave = null;
+    if (inFlight != null) {
+      try {
+        await inFlight;
+      } catch (_) {
+        // 草稿写入失败：不阻断保存/删除主流程
+      }
+    }
   }
 
   /// 将正文最新内容同步到预览控制器（200 字截断，路由 reverse 时调用）。
