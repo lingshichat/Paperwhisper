@@ -262,7 +262,7 @@ class SyncRunner {
           WebDavSyncService.diaryBasePath + filename,
           path.join(service.dataDir!.path, filename),
         );
-        service.manifestService.updateItem(
+        await service.manifestService.updateItem(
           filename,
           timestamp: mergedItems[filename]!.versionTimestamp,
           isDeleted: false,
@@ -314,7 +314,7 @@ class SyncRunner {
 
       try {
         await service.trashService.moveToTrash(file);
-        service.manifestService.updateItem(
+        await service.manifestService.updateItem(
           filename,
           timestamp: mergedItems[filename]!.versionTimestamp,
           isDeleted: true,
@@ -352,7 +352,10 @@ class SyncRunner {
     });
 
     for (final name in ghostItems) {
-      service.manifestService.removeItem(name);
+      await service.manifestService.removeItem(
+        name,
+        expectedVersionTimestamp: mergedItems[name]!.versionTimestamp,
+      );
       nextRemoteManifest.items.remove(name);
     }
 
@@ -418,8 +421,9 @@ class SyncRunner {
   // ==========================================
   Future<void> _syncMoments(bool isAuto, SyncRunOutcome outcome) async {
     try {
-      await _momentService.init();
-      _momentService.reset();
+      // 共享的 MomentService 已在 composition root 初始化；这里仅做
+      // 幂等的首次 init 保护（init 内部 `_dataDir != null` 直接返回），
+      // 移除原 init→reset→init 冗余，避免不必要的 IO 与状态重置。
       await _momentService.init();
       final localDir = _momentService.dataDir;
       if (localDir == null) return;
@@ -531,7 +535,7 @@ class SyncRunner {
           path.join(service.dataDir!.path, filename),
           onProgress: _progressTracker.onFileProgress,
         );
-        service.manifestService.updateItem(
+        await service.manifestService.updateItem(
           filename,
           timestamp: mergedItems[filename]!.versionTimestamp,
           isDeleted: false,
@@ -619,7 +623,10 @@ class SyncRunner {
     });
 
     for (final name in ghostItems) {
-      service.manifestService.removeItem(name);
+      await service.manifestService.removeItem(
+        name,
+        expectedVersionTimestamp: mergedItems[name]!.versionTimestamp,
+      );
       nextRemoteManifest.items.remove(name);
     }
 

@@ -11,9 +11,15 @@ import 'manifest_service.dart';
 import 'trash_service.dart';
 
 class MomentService {
-  MomentService({Directory? debugDataDir}) : _debugDataDir = debugDataDir;
+  MomentService({Directory? debugDataDir, DiaryService? diaryService})
+    : _debugDataDir = debugDataDir,
+      _diaryService = diaryService;
 
   final Directory? _debugDataDir;
+
+  /// 聚合导出使用的共享 DiaryService（由 composition root 注入，
+  /// 不再局部 new，避免写独立 manifest 造成状态分歧）。
+  final DiaryService? _diaryService;
   Directory? _dataDir;
   Directory? _imagesDir;
   Directory? _audioDir;
@@ -180,8 +186,8 @@ class MomentService {
     File file = File(path.join(_dataDir!.path, filename));
     await file.writeAsString(moment.toJsonString());
 
-    // Update Manifest
-    _manifestService.updateItem(filename, isDeleted: false);
+    // Update Manifest (串行队列，可等待)
+    await _manifestService.updateItem(filename, isDeleted: false);
   }
 
   Future<void> deleteMoment(String uuid) async {
@@ -212,7 +218,7 @@ class MomentService {
       }
     }
 
-    _manifestService.updateItem(
+    await _manifestService.updateItem(
       filename,
       isDeleted: true,
       timestamp: manifestTimestamp,
@@ -325,8 +331,13 @@ class MomentService {
       buffer.writeln("\n${'-' * 20}\n");
     }
 
-    // 3. Save via DiaryService
-    final diaryService = DiaryService();
+    // 3. Save via DiaryService (共享注入实例，不再局部 new，
+    //    避免写独立 manifest 造成状态分歧)
+    final diaryService = _diaryService;
+    if (diaryService == null) {
+      debugPrint('exportDailySummary skipped: no DiaryService injected');
+      return null;
+    }
 
     String dateStr =
         "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";

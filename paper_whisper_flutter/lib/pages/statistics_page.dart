@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import '../services/diary_service.dart';
+import '../services/moment_service.dart';
 import '../services/statistics_service.dart';
 import '../providers/settings_provider.dart';
 import '../config/app_theme.dart';
@@ -19,7 +21,9 @@ class StatisticsPage extends StatefulWidget {
 
 class _StatisticsPageState extends State<StatisticsPage>
     with SingleTickerProviderStateMixin {
-  final StatisticsService _statisticsService = StatisticsService();
+  // 共享服务实例（composition root 注入），统计侧不维护会写 Manifest
+  // 的独立 DiaryService/MomentService。
+  late final StatisticsService _statisticsService;
   StatisticsData _stats = StatisticsData();
   bool _isLoading = true;
   late PageController _pageController;
@@ -34,6 +38,10 @@ class _StatisticsPageState extends State<StatisticsPage>
   @override
   void initState() {
     super.initState();
+    _statisticsService = StatisticsService(
+      diaryService: context.read<DiaryService>(),
+      momentService: context.read<MomentService>(),
+    );
     _pageController = PageController();
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 800),

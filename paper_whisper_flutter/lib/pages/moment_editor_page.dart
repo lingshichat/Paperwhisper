@@ -22,13 +22,22 @@ class MomentEditorPage extends StatefulWidget {
 class _MomentEditorPageState extends State<MomentEditorPage> {
   final TextEditingController _contentController = TextEditingController();
   final List<XFile> _images = [];
-  final MomentService _momentService = MomentService();
+
+  // 共享 MomentService（composition root 注入），initState 一次性
+  // context.read，跨 await 不再查询可能已 deactivated 的 context。
+  late final MomentService _momentService;
   final ImagePicker _picker = ImagePicker();
 
   String? _selectedWeather;
   String? _selectedMood;
 
   bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _momentService = context.read<MomentService>();
+  }
 
   final List<String> _weathers = ['☀️', '☁️', '🌧️', '❄️', '🌪️', '🌫️'];
   final List<String> _moods = ['😊', '😂', '🤔', '😢', '😡', '😴', '🥳'];

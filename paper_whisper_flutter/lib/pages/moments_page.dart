@@ -34,7 +34,9 @@ class MomentsPage extends StatefulWidget {
 }
 
 class _MomentsPageState extends State<MomentsPage> {
-  final MomentService _momentService = MomentService();
+  // 共享 MomentService（composition root 注入），避免页面维护写
+  // Manifest 的独立实例。
+  late final MomentService _momentService;
   List<Moment> _latestMoments = [];
   Map<String, List<Moment>> _momentsByDay = {};
   Map<String, int> _imageCountByDay = {};
@@ -70,6 +72,7 @@ class _MomentsPageState extends State<MomentsPage> {
   @override
   void initState() {
     super.initState();
+    _momentService = context.read<MomentService>();
     _initDates();
     _initControllers();
     _loadData();

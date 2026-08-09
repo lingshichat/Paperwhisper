@@ -67,8 +67,16 @@ class StatisticsData {
 }
 
 class StatisticsService {
-  final DiaryService _diaryService = DiaryService();
-  final MomentService _momentService = MomentService();
+  final DiaryService _diaryService;
+  final MomentService _momentService;
+
+  /// 由 composition root 注入共享的 DiaryService/MomentService，
+  /// 避免统计侧维护会写 Manifest 的独立实例。
+  StatisticsService({
+    required DiaryService diaryService,
+    required MomentService momentService,
+  }) : _diaryService = diaryService,
+       _momentService = momentService;
 
   Future<StatisticsData> calculateStatistics() async {
     try {

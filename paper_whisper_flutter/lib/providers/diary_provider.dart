@@ -34,8 +34,12 @@ class DiaryProvider with ChangeNotifier {
   String get searchQuery => _diarySearchQuery;
   int get lastUpdateTick => _lastUpdateTick;
 
-  DiaryProvider([DiaryService? service, List<DiaryEntry>? initialEntries])
-    : _service = service ?? DiaryService() {
+  /// [service] 由 composition root 注入共享 DiaryService（唯一写 Diary
+  /// manifest 的实例），禁止局部 new 造成多实例状态分歧。
+  DiaryProvider({
+    required DiaryService service,
+    List<DiaryEntry>? initialEntries,
+  }) : _service = service {
     if (initialEntries != null && initialEntries.isNotEmpty) {
       _entries = initialEntries;
       _isLoading = false;
@@ -354,8 +358,8 @@ class DiaryProvider with ChangeNotifier {
       );
       await metaFile.writeAsString(jsonStr);
 
-      // Update Manifest for Sync
-      _service.manifestService.updateItem(
+      // Update Manifest for Sync (串行队列，可等待)
+      await _service.manifestService.updateItem(
         'book_metadata.json',
         isDeleted: false,
       );
@@ -395,7 +399,10 @@ class DiaryProvider with ChangeNotifier {
             _bookCoverPaths[year] = newPath;
 
             // Update Manifest for Custom Cover
-            _service.manifestService.updateItem(newFilename, isDeleted: false);
+            await _service.manifestService.updateItem(
+              newFilename,
+              isDeleted: false,
+            );
           }
         } catch (e) {
           debugPrint("Error copying cover image: $e");

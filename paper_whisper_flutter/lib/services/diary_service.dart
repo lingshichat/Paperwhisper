@@ -190,8 +190,8 @@ class DiaryService {
     File file = File(path.join(_dataDir!.path, filename));
     await file.writeAsString(entry.toFileContent());
     
-    // Update Manifest
-    _manifestService.updateItem(filename, isDeleted: false);
+    // Update Manifest (串行队列，可等待)
+    await _manifestService.updateItem(filename, isDeleted: false);
     
     return filename;
   }
@@ -204,7 +204,7 @@ class DiaryService {
       await _trashService.moveToTrash(file);
     }
     
-    _manifestService.updateItem(filename, isDeleted: true);
+    await _manifestService.updateItem(filename, isDeleted: true);
   }
 
   // --- Cache Mechanism for Fast Launch ---

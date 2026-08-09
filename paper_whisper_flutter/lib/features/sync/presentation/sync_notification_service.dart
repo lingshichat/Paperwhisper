@@ -118,24 +118,35 @@ class FlutterLocalNotificationsGateway implements SyncNotificationGateway {
 /// 与原实现逐字保留。插件调用经 [SyncNotificationGateway] 转发，
 /// 测试可注入记录型 fake 断言参数与平台守卫。
 ///
+/// 平台守卫（Android/iOS）默认 [defaultIsSupportedPlatform]；测试可
+/// 通过 [isSupportedPlatform] 谓词注入，无需依赖真实 dart:io 平台。
+///
 /// 迁移来源（原 `sync_provider.dart`）：
 /// - `_initNotifications`            原（727-738）
 /// - `_showNotification` 通知部分     原（1926-1964）
 /// - `_showCompletionNotification`   原（1966-1987）
 /// - `_cancelNotification`           原（1989-1993）
 class SyncNotificationService {
-  SyncNotificationService({SyncNotificationGateway? gateway})
-    : _gateway = gateway ?? FlutterLocalNotificationsGateway();
+  SyncNotificationService({
+    SyncNotificationGateway? gateway,
+    bool Function()? isSupportedPlatform,
+  }) : _gateway = gateway ?? FlutterLocalNotificationsGateway(),
+       _isSupportedPlatform = isSupportedPlatform ?? defaultIsSupportedPlatform;
 
   final SyncNotificationGateway _gateway;
+  final bool Function() _isSupportedPlatform;
 
   static const int notificationId = 888;
   static const String channelId = 'paper_whisper_sync';
   static const String channelName = 'Sync Status';
 
-  /// 初始化通知插件（仅 Android/iOS）。
+  /// 默认平台守卫：仅 Android/iOS 支持 OS 通知。
+  static bool defaultIsSupportedPlatform() =>
+      Platform.isAndroid || Platform.isIOS;
+
+  /// 初始化通知插件（仅受支持平台）。
   Future<void> init() async {
-    if (Platform.isAndroid || Platform.isIOS) {
+    if (_isSupportedPlatform()) {
       await _gateway.init();
     }
   }
@@ -147,7 +158,7 @@ class SyncNotificationService {
     String? body,
     bool indeterminate = false,
   }) async {
-    if (!Platform.isAndroid && !Platform.isIOS) return;
+    if (!_isSupportedPlatform()) return;
     await _gateway.showProgress(
       progress,
       max,
@@ -158,13 +169,13 @@ class SyncNotificationService {
 
   /// 展示同步完成/失败通知。
   Future<void> showCompletion(String message) async {
-    if (!Platform.isAndroid && !Platform.isIOS) return;
+    if (!_isSupportedPlatform()) return;
     await _gateway.showCompletion(message);
   }
 
   /// 取消同步通知。
   Future<void> cancel() async {
-    if (!Platform.isAndroid && !Platform.isIOS) return;
+    if (!_isSupportedPlatform()) return;
     await _gateway.cancel();
   }
 }

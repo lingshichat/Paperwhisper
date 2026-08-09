@@ -20,7 +20,8 @@ class TrashPage extends StatefulWidget {
 }
 
 class _TrashPageState extends State<TrashPage> {
-  final MomentService _momentService = MomentService();
+  // 共享 MomentService（composition root 注入）。
+  late final MomentService _momentService;
 
   List<DiaryEntry> _trashEntries = <DiaryEntry>[];
   List<TrashRecord> _momentRecords = <TrashRecord>[];
@@ -29,6 +30,7 @@ class _TrashPageState extends State<TrashPage> {
   @override
   void initState() {
     super.initState();
+    _momentService = context.read<MomentService>();
     _loadTrash();
   }
 
@@ -82,7 +84,7 @@ class _TrashPageState extends State<TrashPage> {
 
     try {
       await service.trashService.restoreFromTrash(filename, service.dataDir!);
-      service.manifestService.updateItem(filename, isDeleted: false);
+      await service.manifestService.updateItem(filename, isDeleted: false);
 
       if (!mounted) return;
       SkeuomorphicToast.success(context, '已恢复: $filename');
@@ -103,7 +105,7 @@ class _TrashPageState extends State<TrashPage> {
         record,
         _momentService.dataDir!,
       );
-      _momentService.manifestService.updateItem(
+      await _momentService.manifestService.updateItem(
         record.primaryFilename,
         isDeleted: false,
       );

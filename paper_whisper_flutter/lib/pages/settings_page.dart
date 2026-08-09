@@ -11,6 +11,7 @@ import '../models/update_info.dart';
 import '../providers/settings_provider.dart';
 import '../providers/sync_provider.dart';
 import '../services/update_service.dart';
+import '../services/moment_service.dart';
 import '../utils/platform_utils.dart';
 import '../widgets/update_dialog.dart';
 import '../widgets/skeuomorphic_toast.dart';
@@ -94,8 +95,13 @@ class _SettingsPageState extends State<SettingsPage>
     });
   }
 
+  // 共享 MomentService 注入 StorageService（不维护写 Manifest 的独立实例）
+  StorageService get _storageService => StorageService(
+    momentService: context.read<MomentService>(),
+  );
+
   Future<void> _loadStorageInfo() async {
-    final service = StorageService();
+    final service = _storageService;
     final cacheSize = await service.getCacheSize();
     final dataSize = await service.getUserDataSize();
     final path = await service.getDataPath();
@@ -1193,7 +1199,7 @@ class _SettingsPageState extends State<SettingsPage>
                 onTap: () async {
                   Navigator.pop(ctx);
                   SkeuomorphicToast.info(context, '正在深度清理...');
-                  int freed = await StorageService().cleanOrphanImages();
+                  int freed = await _storageService.cleanOrphanImages();
                   await _loadStorageInfo(); // Refresh
                   if (context.mounted) {
                     SkeuomorphicToast.success(
@@ -1219,7 +1225,7 @@ class _SettingsPageState extends State<SettingsPage>
                 ),
                 onTap: () async {
                   Navigator.pop(ctx);
-                  await StorageService().cleanTemporaryCache();
+                  await _storageService.cleanTemporaryCache();
                   await _loadStorageInfo(); // Refresh
                   if (context.mounted) {
                     SkeuomorphicToast.success(context, '缓存已清理');
@@ -1287,7 +1293,7 @@ class _SettingsPageState extends State<SettingsPage>
                             Navigator.pop(ctx);
                             SkeuomorphicToast.info(context, '正在清理私有残留...');
                             int freed =
-                                await StorageService().cleanInternalClutter();
+                                await _storageService.cleanInternalClutter();
                             await _loadStorageInfo();
                             if (context.mounted) {
                               SkeuomorphicToast.success(
@@ -1314,7 +1320,7 @@ class _SettingsPageState extends State<SettingsPage>
                           onTap: () async {
                             Navigator.pop(ctx);
                             SkeuomorphicToast.info(context, '正在清理字体缓存...');
-                            await StorageService().cleanFontCache();
+                            await _storageService.cleanFontCache();
                             await _loadStorageInfo();
                             if (context.mounted) {
                               SkeuomorphicToast.success(

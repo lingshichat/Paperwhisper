@@ -6,6 +6,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'providers/diary_provider.dart';
 import 'services/diary_service.dart';
+import 'services/moment_service.dart';
 import 'providers/settings_provider.dart';
 import 'providers/sync_provider.dart';
 import 'config/app_theme.dart';
@@ -63,7 +64,11 @@ void main() async {
   };
 
   // 并行初始化：极限压缩启动时间
+  // composition root 只创建一份写 Diary manifest 的 DiaryService 与
+  // 一份写 Moment manifest 的 MomentService；MomentService 注入共享
+  // DiaryService 供聚合导出使用（不再局部 new）。
   final diaryService = DiaryService();
+  final momentService = MomentService(diaryService: diaryService);
   final results = await Future.wait([
     SharedPreferences.getInstance(),
     diaryService.init().then(
@@ -95,14 +100,22 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
+        // 共享服务实例：DiaryProvider/SyncProvider/Statistics/Storage/
+        // 页面均通过 Provider 或构造获取同一实例，避免各自维护会写
+        // Manifest 的独立缓存实例造成状态分歧。
+        Provider<DiaryService>.value(value: diaryService),
+        Provider<MomentService>.value(value: momentService),
         ChangeNotifierProvider(
           create: (_) => SettingsProvider(bootstrapData: settingsBootstrapData),
         ),
         ChangeNotifierProvider(
-          create: (_) => DiaryProvider(diaryService, initialEntries),
+          create: (_) => DiaryProvider(
+            service: diaryService,
+            initialEntries: initialEntries,
+          ),
         ),
         ChangeNotifierProxyProvider<DiaryProvider, SyncProvider>(
-          create: (_) => SyncProvider(),
+          create: (_) => SyncProvider(momentService: momentService),
           update: (_, diary, syncProvider) =>
               syncProvider!..updateDiaryProvider(diary),
         ),
@@ -141,7 +154,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      StorageService().cleanTemporaryCache();
+      StorageService(
+        momentService: context.read<MomentService>(),
+      ).cleanTemporaryCache();
 
       // 冷启动锁屏由 SplashPage 处理，此处不再重复触发
       // 仅由 didChangeAppLifecycleState 中的 _checkLock() 处理 resume 时的锁屏

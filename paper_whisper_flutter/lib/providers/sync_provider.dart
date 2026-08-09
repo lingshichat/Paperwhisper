@@ -116,15 +116,15 @@ class SyncProvider with ChangeNotifier {
   }
 
   SyncProvider({
+    required MomentService momentService,
     WebDavSyncService? webDavService,
     S3SyncService? s3Service,
-    MomentService? momentService,
     SyncSecretStore? secretStore,
     SyncNotificationService? notificationService,
     bool initializeNotifications = true,
   }) : _webDavService = webDavService ?? WebDavSyncService(),
        _s3Service = s3Service ?? S3SyncService(),
-       _momentService = momentService ?? MomentService(),
+       _momentService = momentService,
        _secretStore = secretStore ?? SyncSecretStore.secure(),
        _notificationService = notificationService ?? SyncNotificationService() {
     _configStore = SyncConfigStore(secretStore: _secretStore);
