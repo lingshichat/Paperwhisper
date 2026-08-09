@@ -33,6 +33,9 @@ import '../models/update_info.dart';
 import '../services/update_service.dart';
 import '../features/update/application/update_check_coordinator.dart';
 import '../features/permissions/application/permission_coordinator.dart';
+import '../features/diary/application/diary_announcement_coordinator.dart';
+import '../features/diary/application/diary_list_filter.dart';
+import '../features/diary/application/diary_timeline_layout_builder.dart';
 import 'book_directory_page.dart';
 
 class DiaryListPage extends StatefulWidget {
@@ -122,6 +125,8 @@ class _DiaryListPageState extends State<DiaryListPage>
   final UpdateCheckCoordinator _updateCheckCoordinator =
       UpdateCheckCoordinator();
   final PermissionCoordinator _permissionCoordinator = PermissionCoordinator();
+  final DiaryAnnouncementCoordinator _announcementCoordinator =
+      DiaryAnnouncementCoordinator();
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
@@ -220,28 +225,19 @@ class _DiaryListPageState extends State<DiaryListPage>
   }
 
   Future<void> _checkAndShowAnnouncement() async {
-    final prefs = await SharedPreferences.getInstance();
-    final updateService = UpdateService();
-
-    // 1. Get Current Version Dynamically
-    final currentVersion = await updateService.getCurrentVersion();
-    final lastVersion = prefs.getString('last_run_version');
-
-    // 2. Compare Version
-    if (lastVersion != currentVersion) {
-      if (mounted) {
-        // Update stored version
-        await prefs.setString('last_run_version', currentVersion);
-
-        // 3. Load Local Announcement (assets/version.json)
-        final localInfo = await updateService.getLocalUpdateInfo();
-
-        if (localInfo != null) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            _showUnifiedDialog(localInfo, isAnnouncement: true);
-          });
-        }
-      }
+    // 两阶段 typed 协议：prepare 只读版本（不写 key）；页面 await 后
+    // 先 mounted 检查，仅版本变更（Pending）时才 resolve 写 key 并加载
+    // 本地公告，保证「版本读取完成后仍 mounted 才写 key」的旧版语义。
+    final prepared = await _announcementCoordinator.prepare();
+    if (!mounted) return;
+    if (prepared is! DiaryAnnouncementPending) return;
+    final outcome = await _announcementCoordinator.resolve(prepared);
+    if (!mounted) return;
+    if (outcome is DiaryAnnouncementShow) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _showUnifiedDialog(outcome.info, isAnnouncement: true);
+      });
     }
   }
 
@@ -713,17 +709,11 @@ class _DiaryListPageState extends State<DiaryListPage>
     List<dynamic> rawFlatEntries = [];
 
     if (diaryProvider.diarySearchQuery.isNotEmpty) {
-      // Search Mode
-      // We use the provider's query which might be set by Sidebar or Mobile Header
-      final query = diaryProvider.diarySearchQuery;
-      rawFlatEntries = diaryProvider.entries
-          .where(
-            (e) =>
-                e.title.contains(query) ||
-                e.content.contains(query) ||
-                e.dateString.contains(query),
-          )
-          .toList();
+      // Search Mode（过滤语义委托纯函数 DiaryListFilter）
+      rawFlatEntries = DiaryListFilter.filter(
+        entries: diaryProvider.entries,
+        query: diaryProvider.diarySearchQuery,
+      );
     } else {
       // Continuous Flow Mode
       // CURRENT: Use Provider's flat entries directly (sorted descending/Mixed)
@@ -1026,84 +1016,60 @@ class _DiaryListPageState extends State<DiaryListPage>
     String theme,
     DiaryProvider provider,
   ) {
+    // 适配：页面扁平列表（MonthHeader / DiaryEntry 混合）→ 纯数据输入。
+    final inputs = rawItems
+        .map(
+          (item) => item is MonthHeader
+              ? DiaryMonthInput(year: item.year, month: item.month)
+              : DiaryEntryInput(item as DiaryEntry),
+        )
+        .toList();
+
+    // 列数 / contentWidth / 分组缓冲算法委托纯计算，返回 typed plan。
+    final layout = DiaryTimelineLayoutBuilder.build(
+      items: inputs,
+      width: width,
+    );
+
     _uiItems = [];
-    _monthTargetMap = {};
-    _itemYearMap = [];
+    _monthTargetMap = layout.monthTargetMap;
+    _itemYearMap = layout.itemYearMap;
 
-    double contentWidth = width;
-    if (width > 800) {
-      contentWidth -= 300;
-    }
-
-    int columnCount = 1;
-    if (contentWidth > 1100) {
-      columnCount = 3;
-    } else if (contentWidth > 700) {
-      columnCount = 2;
-    }
-
-    List<DiaryEntry> buffer = [];
-
-    // Helper to determine year of items in buffer
-    // All items in buffer should belong to one "block" typically, but let's be safe
-    // Actually, we can just use the year of the first item in buffer
-
-    void flushBuffer() {
-      if (buffer.isNotEmpty) {
-        // Determine year for this row (use first item's year)
-        int rowYear = 0;
-        final parts = buffer.first.dateString.split('-');
-        if (parts.isNotEmpty) rowYear = int.tryParse(parts[0]) ?? 0;
-
-        _uiItems.add(
-          Padding(
-            padding: const EdgeInsets.only(bottom: 30),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children:
-                  buffer
-                      .map(
-                        (e) => Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 15),
-                            child: _buildDiaryCard(context, e, theme),
-                          ),
-                        ),
-                      )
-                      .toList()
-                    ..addAll(
-                      List.generate(
-                        columnCount - buffer.length,
-                        (_) => const Expanded(child: SizedBox()),
+    for (final unit in layout.units) {
+      switch (unit) {
+        case DiaryMonthUnit(:final year, :final month):
+          _uiItems.add(
+            MonthDivider(
+              year: year,
+              month: month,
+              title: provider.getMonthTitle(year, month),
+              theme: theme,
+            ),
+          );
+        case DiaryEntryRowUnit(:final entries):
+          _uiItems.add(
+            Padding(
+              padding: const EdgeInsets.only(bottom: 30),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (final e in entries)
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 15),
+                        child: _buildDiaryCard(context, e, theme),
                       ),
                     ),
+                  ...List.generate(
+                    layout.columnCount - entries.length,
+                    (_) => const Expanded(child: SizedBox()),
+                  ),
+                ],
+              ),
             ),
-          ),
-        );
-        _itemYearMap.add(rowYear);
-        buffer = [];
+          );
       }
     }
-
-    for (var item in rawItems) {
-      if (item is MonthHeader) {
-        flushBuffer();
-        _monthTargetMap['${item.year}_${item.month}'] = _uiItems.length;
-        _uiItems.add(
-          MonthDivider(
-            year: item.year,
-            month: item.month,
-            title: provider.getMonthTitle(item.year, item.month),
-            theme: theme,
-          ),
-        );
-        _itemYearMap.add(item.year);
-      } else if (item is DiaryEntry) {
-        buffer.add(item);
-        if (buffer.length == columnCount) flushBuffer();
-      }
-    }
-    flushBuffer();
   }
 }
 
