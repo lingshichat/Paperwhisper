@@ -42,7 +42,7 @@ class MoodBadgeRing extends StatelessWidget {
     final sortedMoods = moodData.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
-    return Container(
+    return SizedBox(
       width: size,
       height: size,
       child: Stack(
@@ -117,7 +117,8 @@ class MoodBadgeRing extends StatelessWidget {
             final index = entry.key;
             final mood = entry.value;
             final percentage = (mood.value / total * 100).toInt();
-            final angle = (index * 2 * math.pi) / sortedMoods.length - math.pi / 2;
+            final angle =
+                (index * 2 * math.pi) / sortedMoods.length - math.pi / 2;
             final radius = size * 0.32;
             final x = radius * math.cos(angle);
             final y = radius * math.sin(angle);
@@ -134,7 +135,7 @@ class MoodBadgeRing extends StatelessWidget {
                 size: size * 0.16,
               ),
             );
-          }).toList(),
+          }),
         ],
       ),
     );
@@ -146,10 +147,7 @@ class MoodBadgeRing extends StatelessWidget {
         return _MoodRingColors(
           ringColor: const Color(0xFF81C784),
           centerColor: const Color(0xFF4CAF50),
-          centerGradient: [
-            const Color(0xFF37474F),
-            const Color(0xFF263238),
-          ],
+          centerGradient: [const Color(0xFF37474F), const Color(0xFF263238)],
           textColor: const Color(0xFFECEFF1),
           shadowColor: Colors.black,
         );
@@ -157,10 +155,7 @@ class MoodBadgeRing extends StatelessWidget {
         return _MoodRingColors(
           ringColor: const Color(0xFFFF9A6C),
           centerColor: const Color(0xFFFF5252),
-          centerGradient: [
-            const Color(0xFF352044),
-            const Color(0xFF2E1C55),
-          ],
+          centerGradient: [const Color(0xFF352044), const Color(0xFF2E1C55)],
           textColor: const Color(0xFFE4E0EC),
           shadowColor: const Color(0xFFFF5252),
         );
@@ -179,10 +174,7 @@ class MoodBadgeRing extends StatelessWidget {
         return _MoodRingColors(
           ringColor: const Color(0xFFF06292),
           centerColor: const Color(0xFFF8BBD0),
-          centerGradient: [
-            const Color(0xFFFFF5F7),
-            const Color(0xFFFCE4EC),
-          ],
+          centerGradient: [const Color(0xFFFFF5F7), const Color(0xFFFCE4EC)],
           textColor: const Color(0xFF880E4F),
           shadowColor: const Color(0xFFF06292),
         );
@@ -190,10 +182,7 @@ class MoodBadgeRing extends StatelessWidget {
         return _MoodRingColors(
           ringColor: const Color(0xFF7986cb),
           centerColor: const Color(0xFF3949AB),
-          centerGradient: [
-            const Color(0xFF1a237e),
-            const Color(0xFF161b22),
-          ],
+          centerGradient: [const Color(0xFF1a237e), const Color(0xFF161b22)],
           textColor: const Color(0xFFe6edf3),
           shadowColor: const Color(0xFF7986cb),
         );
@@ -201,10 +190,7 @@ class MoodBadgeRing extends StatelessWidget {
         return _MoodRingColors(
           ringColor: const Color(0xFFFF9800),
           centerColor: const Color(0xFFFFB74D),
-          centerGradient: [
-            const Color(0xFF2C2C2C),
-            const Color(0xFF1E1E1E),
-          ],
+          centerGradient: [const Color(0xFF2C2C2C), const Color(0xFF1E1E1E)],
           textColor: const Color(0xFFE0E0E0),
           shadowColor: Colors.black,
         );
@@ -212,10 +198,7 @@ class MoodBadgeRing extends StatelessWidget {
         return _MoodRingColors(
           ringColor: const Color(0xFFC0392B),
           centerColor: const Color(0xFFE74C3C),
-          centerGradient: [
-            const Color(0xFF5D4037),
-            const Color(0xFF4E342E),
-          ],
+          centerGradient: [const Color(0xFF5D4037), const Color(0xFF4E342E)],
           textColor: const Color(0xFFF4ECD8), // 改为浅色文字
           shadowColor: const Color(0xFF3E2723),
         );
@@ -289,11 +272,7 @@ class _MoodBadge extends StatelessWidget {
           ),
         ),
         child: Center(
-          child: Icon(
-            icon,
-            color: Colors.white,
-            size: size * 0.5,
-          ),
+          child: Icon(icon, color: Colors.white, size: size * 0.5),
         ),
       ),
     );
@@ -324,11 +303,7 @@ class MoodBadgeList extends StatelessWidget {
   final Map<String, int> moodData;
   final String theme;
 
-  const MoodBadgeList({
-    super.key,
-    required this.moodData,
-    required this.theme,
-  });
+  const MoodBadgeList({super.key, required this.moodData, required this.theme});
 
   static const Map<String, IconData> _moodIcons = {
     'happy': Icons.sentiment_very_satisfied,

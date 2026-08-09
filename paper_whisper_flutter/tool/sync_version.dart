@@ -1,3 +1,7 @@
+// ignore_for_file: avoid_print
+// 本文件是 CLI 构建脚本（tool/sync_version.dart）：print 是其正常的标准输出通道，
+// 供 CI/构建日志消费，不属于生产 UI 代码，因此不使用 debugPrint 或日志框架。
+
 import 'dart:io';
 import 'dart:convert';
 
@@ -16,10 +20,10 @@ void main() {
 
   final versionContent = versionFile.readAsStringSync();
   final versionMap = jsonDecode(versionContent);
-  
+
   final String version = versionMap['latestVersion'];
   final int buildNumber = versionMap['latestBuildNumber'];
-  
+
   final fullVersion = '$version+$buildNumber';
 
   print('📄 Found version in json: $fullVersion');
@@ -49,18 +53,20 @@ void main() {
   }
 
   if (!updated) {
-    print('⚠️ Warning: Could not find "version:" line in pubspec.yaml to update.');
+    print(
+      '⚠️ Warning: Could not find "version:" line in pubspec.yaml to update.',
+    );
     exit(1);
   }
 
   // 4. 写回 pubspec.yaml
-  pubspecFile.writeAsStringSync(newLines.join('\n') + '\n');
+  pubspecFile.writeAsStringSync('${newLines.join('\n')}\n');
   print('✅ Updated pubspec.yaml to: version: $fullVersion');
 
   // 5. 同步内容到 paper_whisper_flutter/assets/version.json
   final assetsVersionPath = 'assets/version.json';
   final assetsVersionFile = File(assetsVersionPath);
-  
+
   // 直接把读取到的 releases/version.json 原文写入 assets/version.json
   // 这样能确保 changelog 和 downloadUrl 等所有字段都完全一致
   assetsVersionFile.createSync(recursive: true);

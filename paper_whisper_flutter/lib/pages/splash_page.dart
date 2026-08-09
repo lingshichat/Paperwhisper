@@ -72,7 +72,7 @@ class _SplashPageState extends State<SplashPage> {
 
     // 1. 导航到目标页面
     Widget targetPage;
-    
+
     if (widget.showIntro) {
       targetPage = const IntroPage();
     } else {
@@ -89,28 +89,30 @@ class _SplashPageState extends State<SplashPage> {
           break;
       }
     }
-    
-    final bool isLocked = AuthService().isLocked; 
+
+    final bool isLocked = AuthService().isLocked;
 
     // 如果锁定，导航到锁屏页面 (替换 Splash)
     // 解锁后的回调导航到 targetPage
     if (isLocked) {
       Navigator.of(context).pushReplacement(
         PageRouteBuilder(
-          pageBuilder: (ctx, _, __) => _buildLockScreenWrapper(ctx, targetPage),
-          transitionsBuilder: (_, animation, __, child) => FadeTransition(opacity: animation, child: child),
+          pageBuilder: (ctx, _, _) => _buildLockScreenWrapper(ctx, targetPage),
+          transitionsBuilder: (_, animation, _, child) =>
+              FadeTransition(opacity: animation, child: child),
           transitionDuration: const Duration(milliseconds: 300), // 加快转场
         ),
       );
     } else {
-       Navigator.of(context).pushReplacement(
+      Navigator.of(context).pushReplacement(
         PageRouteBuilder(
-          pageBuilder: (_, __, ___) => targetPage,
-          transitionsBuilder: (_, animation, __, child) => FadeTransition(opacity: animation, child: child),
+          pageBuilder: (_, _, _) => targetPage,
+          transitionsBuilder: (_, animation, _, child) =>
+              FadeTransition(opacity: animation, child: child),
           transitionDuration: const Duration(milliseconds: 300), // 加快转场
         ),
       );
-      
+
       // 3. 启动时自动检测更新（仅非引导页时检查）
       if (!widget.showIntro) {
         _checkForUpdateAfterNavigation();
@@ -126,12 +128,13 @@ class _SplashPageState extends State<SplashPage> {
         // 解锁成功，替换为目标页面
         Navigator.of(context).pushReplacement(
           PageRouteBuilder(
-            pageBuilder: (_, __, ___) => targetPage,
-            transitionsBuilder: (_, animation, __, child) => FadeTransition(opacity: animation, child: child),
+            pageBuilder: (_, _, _) => targetPage,
+            transitionsBuilder: (_, animation, _, child) =>
+                FadeTransition(opacity: animation, child: child),
             transitionDuration: const Duration(milliseconds: 300),
           ),
         );
-        
+
         // 检测更新
         if (!widget.showIntro) {
           _checkForUpdateAfterNavigation();
@@ -144,16 +147,16 @@ class _SplashPageState extends State<SplashPage> {
   Future<void> _checkForUpdateAfterNavigation() async {
     // 等待页面动画完成
     await Future.delayed(const Duration(milliseconds: 1000));
-    
+
     if (!mounted) return;
 
     try {
       final updateService = UpdateService();
       final updateInfo = await updateService.checkForUpdate();
-      
+
       if (updateInfo != null && mounted) {
         final currentVersion = await updateService.getCurrentVersion();
-        
+
         // 获取当前 Navigator 的 context
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {

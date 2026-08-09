@@ -42,7 +42,9 @@ class _TrashPageState extends State<TrashPage> {
       await _momentService.init();
 
       final files = await diaryService.trashService.listValidTrashFiles();
-      files.sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
+      files.sort(
+        (a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()),
+      );
 
       final List<DiaryEntry> loadedEntries = <DiaryEntry>[];
       for (final file in files) {
@@ -85,6 +87,7 @@ class _TrashPageState extends State<TrashPage> {
       if (!mounted) return;
       SkeuomorphicToast.success(context, '已恢复: $filename');
       await _loadTrash();
+      if (!mounted) return;
       await Provider.of<DiaryProvider>(context, listen: false).loadEntries();
     } catch (e) {
       if (mounted) {
@@ -96,8 +99,14 @@ class _TrashPageState extends State<TrashPage> {
   Future<void> _restoreMomentRecord(TrashRecord record) async {
     try {
       await _momentService.init();
-      await _momentService.trashService.restoreRecord(record, _momentService.dataDir!);
-      _momentService.manifestService.updateItem(record.primaryFilename, isDeleted: false);
+      await _momentService.trashService.restoreRecord(
+        record,
+        _momentService.dataDir!,
+      );
+      _momentService.manifestService.updateItem(
+        record.primaryFilename,
+        isDeleted: false,
+      );
 
       if (!mounted) return;
       SkeuomorphicToast.success(context, '已恢复随心记');
@@ -130,8 +139,10 @@ class _TrashPageState extends State<TrashPage> {
             isPrimary: true,
             onPressed: () async {
               Navigator.pop(ctx);
-              final service =
-                  Provider.of<DiaryProvider>(context, listen: false).service;
+              final service = Provider.of<DiaryProvider>(
+                context,
+                listen: false,
+              ).service;
 
               try {
                 await service.trashService.deletePermanently(filename);
@@ -173,7 +184,9 @@ class _TrashPageState extends State<TrashPage> {
             onPressed: () async {
               Navigator.pop(ctx);
               try {
-                await _momentService.trashService.deleteRecordPermanently(record);
+                await _momentService.trashService.deleteRecordPermanently(
+                  record,
+                );
                 if (mounted) {
                   SkeuomorphicToast.success(context, '已彻底删除');
                   await _loadTrash();
@@ -226,45 +239,45 @@ class _TrashPageState extends State<TrashPage> {
           body: _isLoading
               ? Center(child: CircularProgressIndicator(color: iconColor))
               : (_trashEntries.isEmpty && _momentRecords.isEmpty)
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.delete_outline,
-                            size: 64,
-                            color: iconColor.withValues(alpha: 0.3),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            '回收站为空',
-                            style: GoogleFonts.notoSerifSc(
-                              color: titleColor.withValues(alpha: 0.5),
-                            ),
-                          ),
-                        ],
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.delete_outline,
+                        size: 64,
+                        color: iconColor.withValues(alpha: 0.3),
                       ),
-                    )
-                  : ListView(
-                      padding: const EdgeInsets.all(16),
-                      children: [
-                        if (_trashEntries.isNotEmpty) ...[
-                          _buildSectionHeader('日记', titleColor),
-                          const SizedBox(height: 12),
-                          ..._trashEntries.map(
-                            (entry) => _buildDiaryTrashItem(context, entry, tc),
-                          ),
-                        ],
-                        if (_momentRecords.isNotEmpty) ...[
-                          if (_trashEntries.isNotEmpty) const SizedBox(height: 16),
-                          _buildSectionHeader('随心记', titleColor),
-                          const SizedBox(height: 12),
-                          ..._momentRecords.map(
-                            (record) => _buildMomentTrashItem(context, record, tc),
-                          ),
-                        ],
-                      ],
-                    ),
+                      const SizedBox(height: 16),
+                      Text(
+                        '回收站为空',
+                        style: GoogleFonts.notoSerifSc(
+                          color: titleColor.withValues(alpha: 0.5),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    if (_trashEntries.isNotEmpty) ...[
+                      _buildSectionHeader('日记', titleColor),
+                      const SizedBox(height: 12),
+                      ..._trashEntries.map(
+                        (entry) => _buildDiaryTrashItem(context, entry, tc),
+                      ),
+                    ],
+                    if (_momentRecords.isNotEmpty) ...[
+                      if (_trashEntries.isNotEmpty) const SizedBox(height: 16),
+                      _buildSectionHeader('随心记', titleColor),
+                      const SizedBox(height: 12),
+                      ..._momentRecords.map(
+                        (record) => _buildMomentTrashItem(context, record, tc),
+                      ),
+                    ],
+                  ],
+                ),
         ),
       ],
     );
@@ -448,7 +461,11 @@ class _TrashPageState extends State<TrashPage> {
                   style: const TextStyle(color: Colors.grey, fontSize: 12),
                 ),
                 const SizedBox(width: 10),
-                Icon(_getWeatherIcon(entry.weather), size: 14, color: Colors.grey),
+                Icon(
+                  _getWeatherIcon(entry.weather),
+                  size: 14,
+                  color: Colors.grey,
+                ),
               ],
             ),
             const SizedBox(height: 10),

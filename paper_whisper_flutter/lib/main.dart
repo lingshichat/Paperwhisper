@@ -40,47 +40,55 @@ void main() async {
   // 2. 配置全局错误捕获 (Crash Reporting)
   FlutterError.onError = (FlutterErrorDetails details) {
     FlutterError.presentError(details); // 依旧打印到控制台
-    AnalyticsService().trackEvent('app_crash', metadata: {
-      'error': details.exceptionAsString(),
-      'stack': details.stack.toString(),
-      'fatal': true,
-    });
+    AnalyticsService().trackEvent(
+      'app_crash',
+      metadata: {
+        'error': details.exceptionAsString(),
+        'stack': details.stack.toString(),
+        'fatal': true,
+      },
+    );
   };
-  
+
   PlatformDispatcher.instance.onError = (error, stack) {
-    AnalyticsService().trackEvent('app_crash', metadata: {
-      'error': error.toString(),
-      'stack': stack.toString(),
-      'fatal': false,
-    });
+    AnalyticsService().trackEvent(
+      'app_crash',
+      metadata: {
+        'error': error.toString(),
+        'stack': stack.toString(),
+        'fatal': false,
+      },
+    );
     return true; // 标记为已处理，防止 App 崩溃退出 (视情况而定)
   };
-  
+
   // 并行初始化：极限压缩启动时间
   final diaryService = DiaryService();
   final results = await Future.wait([
     SharedPreferences.getInstance(),
-    diaryService.init().then((_) => diaryService.loadCache().timeout(
-      const Duration(milliseconds: 150), 
-      onTimeout: () => null
-    )),
+    diaryService.init().then(
+      (_) => diaryService.loadCache().timeout(
+        const Duration(milliseconds: 150),
+        onTimeout: () => null,
+      ),
+    ),
   ]);
-  
+
   final prefs = results[0] as SharedPreferences;
   final List<DiaryEntry>? initialEntries = results[1] as List<DiaryEntry>?;
-  
+
   final bool showIntro = !(prefs.getBool('intro_shown') ?? false);
   AuthService().init(prefs);
   await TrialService().init(prefs);
   await PaymentService().init(prefs); // Init Payment Service
-  
+
   // 启动前同步读取设置，避免首帧先按默认配置构建再整树重建
   final settingsBootstrapData = SettingsBootstrapData.fromPreferences(prefs);
-  
+
   // 检查锁状态
   AuthService().lockApp();
   final bool isLocked = AuthService().isLocked;
-  
+
   // 预热一言 (Fire and forget, 不阻塞)
   HitokotoService().fetchHitokoto();
 
@@ -90,15 +98,20 @@ void main() async {
         ChangeNotifierProvider(
           create: (_) => SettingsProvider(bootstrapData: settingsBootstrapData),
         ),
-        ChangeNotifierProvider(create: (_) => DiaryProvider(diaryService, initialEntries)),
+        ChangeNotifierProvider(
+          create: (_) => DiaryProvider(diaryService, initialEntries),
+        ),
         ChangeNotifierProxyProvider<DiaryProvider, SyncProvider>(
           create: (_) => SyncProvider(),
-          update: (_, diary, syncProvider) => syncProvider!..updateDiaryProvider(diary),
+          update: (_, diary, syncProvider) =>
+              syncProvider!..updateDiaryProvider(diary),
         ),
-        ChangeNotifierProvider.value(value: PaymentService()), // Validate Payment Provider
+        ChangeNotifierProvider.value(
+          value: PaymentService(),
+        ), // Validate Payment Provider
       ],
       child: MyApp(
-        showIntro: showIntro, 
+        showIntro: showIntro,
         startupPage: settingsBootstrapData.startupPage,
         isLocked: isLocked,
       ),
@@ -110,10 +123,10 @@ class MyApp extends StatefulWidget {
   final bool showIntro;
   final String startupPage;
   final bool isLocked;
-  
+
   const MyApp({
-    super.key, 
-    required this.showIntro, 
+    super.key,
+    required this.showIntro,
     required this.startupPage,
     required this.isLocked,
   });
@@ -129,48 +142,46 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       StorageService().cleanTemporaryCache();
-      
+
       // 冷启动锁屏由 SplashPage 处理，此处不再重复触发
       // 仅由 didChangeAppLifecycleState 中的 _checkLock() 处理 resume 时的锁屏
-      
+
       if (mounted) {
-         context.read<SyncProvider>().requestAutoSync(fromLifecycle: true);
+        context.read<SyncProvider>().requestAutoSync(fromLifecycle: true);
       }
     });
   }
-  
-  
-  
+
   void _showLockScreen() {
     if (AuthService().isLockScreenVisible) return;
     navigatorKey.currentState?.push(
       PageRouteBuilder(
         opaque: false,
-        pageBuilder: (_, __, ___) => LockScreen(
+        pageBuilder: (_, _, _) => LockScreen(
           enableBack: false,
           onUnlocked: () => navigatorKey.currentState?.pop(),
         ),
       ),
     );
   }
-  
+
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
-  
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused) {
       AuthService().lockApp();
     }
-    
+
     if (state == AppLifecycleState.resumed) {
-       if (mounted) {
-         context.read<SyncProvider>().requestAutoSync(fromLifecycle: true);
-       }
-       _checkLock();
+      if (mounted) {
+        context.read<SyncProvider>().requestAutoSync(fromLifecycle: true);
+      }
+      _checkLock();
     }
   }
 
@@ -209,10 +220,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          supportedLocales: const [
-             Locale('zh', 'CN'),
-             Locale('en', 'US'),
-          ],
+          supportedLocales: const [Locale('zh', 'CN'), Locale('en', 'US')],
           home: SplashPage(
             showIntro: widget.showIntro,
             startupPage: widget.startupPage,
@@ -227,8 +235,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 class AppScrollBehavior extends MaterialScrollBehavior {
   @override
   Set<PointerDeviceKind> get dragDevices => {
-        PointerDeviceKind.touch,
-        PointerDeviceKind.mouse,
-        PointerDeviceKind.trackpad, 
-      };
+    PointerDeviceKind.touch,
+    PointerDeviceKind.mouse,
+    PointerDeviceKind.trackpad,
+  };
 }

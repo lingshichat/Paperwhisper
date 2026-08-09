@@ -109,6 +109,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
     final provider = Provider.of<SyncProvider>(context, listen: false);
     try {
       await provider.saveConfig(_buildDraftConfig(provider, enabled: true));
+      if (!mounted) return;
       await provider.sync(context: context);
     } catch (e) {
       if (mounted) {
@@ -177,10 +178,9 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
       s3AccessKey: _s3AccessKeyController.text.trim(),
       s3SecretKey: _s3SecretKeyController.text.trim(),
       s3BucketName: _s3BucketController.text.trim(),
-      s3Region:
-          _s3RegionController.text.trim().isEmpty
-              ? null
-              : _s3RegionController.text.trim(),
+      s3Region: _s3RegionController.text.trim().isEmpty
+          ? null
+          : _s3RegionController.text.trim(),
     );
   }
 
@@ -239,11 +239,10 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
               color: lockBtnColor,
               borderRadius: BorderRadius.circular(10),
               child: InkWell(
-                onTap:
-                    () => Navigator.push(
-                      context,
-                      SlidePageRoute(page: const PremiumMembershipPage()),
-                    ),
+                onTap: () => Navigator.push(
+                  context,
+                  SlidePageRoute(page: const PremiumMembershipPage()),
+                ),
                 borderRadius: BorderRadius.circular(10),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
@@ -271,8 +270,10 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
   Widget build(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context);
     final provider = Provider.of<SyncProvider>(context);
-    final canUse =
-        Provider.of<PaymentService>(context, listen: true).canUseProFeatures;
+    final canUse = Provider.of<PaymentService>(
+      context,
+      listen: true,
+    ).canUseProFeatures;
     final theme = settings.currentTheme;
 
     // 统一配置获取
@@ -313,349 +314,362 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
               onPressed: () => Navigator.of(context).pop(),
             ),
           ),
-          body:
-              canUse
-                  ? (_isBootstrapping
-                      ? Center(
+          body: canUse
+              ? (_isBootstrapping
+                    ? Center(
                         child: CircularProgressIndicator(
                           color: tc['accentColor'] as Color,
                         ),
                       )
-                      : SingleChildScrollView(
-                    padding: const EdgeInsets.all(24),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          // 协议选择器 (拟物化滑块)
-                          _buildSlidingSwitch(provider, tc),
+                    : SingleChildScrollView(
+                        padding: const EdgeInsets.all(24),
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              // 协议选择器 (拟物化滑块)
+                              _buildSlidingSwitch(provider, tc),
 
-                          _buildTrustStatusCard(provider, tc, textColor),
-                          const SizedBox(height: 24),
+                              _buildTrustStatusCard(provider, tc, textColor),
+                              const SizedBox(height: 24),
 
-                          if (provider.config.syncType == SyncType.webdav) ...[
-                            _buildSectionTitle('WebDAV 服务器配置', textColor),
-                            const SizedBox(height: 16),
-                            _buildTextField(
-                              controller: _serverController,
-                              label: '服务器地址',
-                              hint: '例如: https://dav.jianguoyun.com/dav/',
-                              tc: tc,
-                              themeConfig: themeConfig,
-                              icon: Icons.link,
-                              validator: _validateServerUrl,
-                            ),
-                            const SizedBox(height: 16),
-                            _buildTextField(
-                              controller: _usernameController,
-                              label: '账号 (Email)',
-                              hint: '您的 WebDAV 账号邮箱',
-                              tc: tc,
-                              themeConfig: themeConfig,
-                              icon: Icons.person_outline,
-                              validator:
-                                  (value) =>
+                              if (provider.config.syncType ==
+                                  SyncType.webdav) ...[
+                                _buildSectionTitle('WebDAV 服务器配置', textColor),
+                                const SizedBox(height: 16),
+                                _buildTextField(
+                                  controller: _serverController,
+                                  label: '服务器地址',
+                                  hint: '例如: https://dav.jianguoyun.com/dav/',
+                                  tc: tc,
+                                  themeConfig: themeConfig,
+                                  icon: Icons.link,
+                                  validator: _validateServerUrl,
+                                ),
+                                const SizedBox(height: 16),
+                                _buildTextField(
+                                  controller: _usernameController,
+                                  label: '账号 (Email)',
+                                  hint: '您的 WebDAV 账号邮箱',
+                                  tc: tc,
+                                  themeConfig: themeConfig,
+                                  icon: Icons.person_outline,
+                                  validator: (value) =>
                                       _validateRequiredField(value, '请输入账号'),
-                            ),
-                            const SizedBox(height: 16),
-                            _buildTextField(
-                              controller: _passwordController,
-                              label: '密码 / 应用授权码',
-                              hint: '坚果云请使用"第三方应用密码"',
-                              tc: tc,
-                              themeConfig: themeConfig,
-                              icon: Icons.lock_outline,
-                              obscureText: true,
-                              validator:
-                                  (value) => _validateRequiredField(
+                                ),
+                                const SizedBox(height: 16),
+                                _buildTextField(
+                                  controller: _passwordController,
+                                  label: '密码 / 应用授权码',
+                                  hint: '坚果云请使用"第三方应用密码"',
+                                  tc: tc,
+                                  themeConfig: themeConfig,
+                                  icon: Icons.lock_outline,
+                                  obscureText: true,
+                                  validator: (value) => _validateRequiredField(
                                     value,
                                     '请输入密码或应用授权码',
                                   ),
-                            ),
-                          ] else ...[
-                            _buildSectionTitle('S3 对象存储配置', textColor),
-                            const SizedBox(height: 16),
-                            _buildTextField(
-                              controller: _s3EndPointController,
-                              label: 'Endpoint (API 地址)',
-                              hint:
-                                  '例如: play.min.io 或 oss-cn-hangzhou.aliyuncs.com',
-                              tc: tc,
-                              themeConfig: themeConfig,
-                              icon: Icons.dns_outlined,
-                              validator:
-                                  (value) => _validateRequiredField(
+                                ),
+                              ] else ...[
+                                _buildSectionTitle('S3 对象存储配置', textColor),
+                                const SizedBox(height: 16),
+                                _buildTextField(
+                                  controller: _s3EndPointController,
+                                  label: 'Endpoint (API 地址)',
+                                  hint:
+                                      '例如: play.min.io 或 oss-cn-hangzhou.aliyuncs.com',
+                                  tc: tc,
+                                  themeConfig: themeConfig,
+                                  icon: Icons.dns_outlined,
+                                  validator: (value) => _validateRequiredField(
                                     value,
                                     '请输入 Endpoint 地址',
                                   ),
-                            ),
-                            const SizedBox(height: 16),
-                            _buildTextField(
-                              controller: _s3BucketController,
-                              label: 'Bucket (存储桶名称)',
-                              hint: '例如: paper-whisper-backup',
-                              tc: tc,
-                              themeConfig: themeConfig,
-                              icon: Icons.folder_open_outlined,
-                              validator:
-                                  (value) => _validateRequiredField(
+                                ),
+                                const SizedBox(height: 16),
+                                _buildTextField(
+                                  controller: _s3BucketController,
+                                  label: 'Bucket (存储桶名称)',
+                                  hint: '例如: paper-whisper-backup',
+                                  tc: tc,
+                                  themeConfig: themeConfig,
+                                  icon: Icons.folder_open_outlined,
+                                  validator: (value) => _validateRequiredField(
                                     value,
                                     '请输入 Bucket 名称',
                                   ),
-                            ),
-                            const SizedBox(height: 16),
-                            _buildTextField(
-                              controller: _s3AccessKeyController,
-                              label: 'Access Key (访问密钥)',
-                              hint: 'AK...',
-                              tc: tc,
-                              themeConfig: themeConfig,
-                              icon: Icons.vpn_key_outlined,
-                              validator:
-                                  (value) => _validateRequiredField(
+                                ),
+                                const SizedBox(height: 16),
+                                _buildTextField(
+                                  controller: _s3AccessKeyController,
+                                  label: 'Access Key (访问密钥)',
+                                  hint: 'AK...',
+                                  tc: tc,
+                                  themeConfig: themeConfig,
+                                  icon: Icons.vpn_key_outlined,
+                                  validator: (value) => _validateRequiredField(
                                     value,
                                     '请输入 Access Key',
                                   ),
-                            ),
-                            const SizedBox(height: 16),
-                            _buildTextField(
-                              controller: _s3SecretKeyController,
-                              label: 'Secret Key (私有密钥)',
-                              hint: 'SK...',
-                              tc: tc,
-                              themeConfig: themeConfig,
-                              icon: Icons.password_outlined,
-                              obscureText: true,
-                              validator:
-                                  (value) => _validateRequiredField(
+                                ),
+                                const SizedBox(height: 16),
+                                _buildTextField(
+                                  controller: _s3SecretKeyController,
+                                  label: 'Secret Key (私有密钥)',
+                                  hint: 'SK...',
+                                  tc: tc,
+                                  themeConfig: themeConfig,
+                                  icon: Icons.password_outlined,
+                                  obscureText: true,
+                                  validator: (value) => _validateRequiredField(
                                     value,
                                     '请输入 Secret Key',
                                   ),
-                            ),
-                            const SizedBox(height: 16),
-                            _buildTextField(
-                              controller: _s3RegionController,
-                              label: 'Region (区域 - 可选)',
-                              hint: '默认自动，如 us-east-1',
-                              tc: tc,
-                              themeConfig: themeConfig,
-                              icon: Icons.map_outlined,
-                            ),
-                          ],
-
-                          const SizedBox(height: 24),
-
-                          Container(
-                            decoration: BoxDecoration(
-                              color: tc['switchBgColor'],
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: textColor.withValues(alpha: 0.1),
-                              ),
-                            ),
-                            padding: const EdgeInsets.all(12),
-                            child: SwitchListTile(
-                              value: _autoSync,
-                              onChanged:
-                                  (val) => setState(() => _autoSync = val),
-                              activeThumbColor:
-                                  themeConfig.isNotEmpty
-                                      ? themeConfig['activeSwitchColor']
-                                      : tc['accentColor'],
-                              activeTrackColor:
-                                  themeConfig.isNotEmpty
-                                      ? themeConfig['activeTrackColor']
-                                      : (tc['accentColor'] as Color)
-                                          .withValues(alpha: 0.5),
-                              title: Text(
-                                '开启自动同步',
-                                style: GoogleFonts.notoSerifSc(
-                                  color: textColor,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15,
                                 ),
-                              ),
-                              subtitle: Padding(
-                                padding: const EdgeInsets.only(top: 4),
-                                child: Text(
-                                  '开启后会在保存内容、回到前台等时机排队同步。\n关闭后只保留本地更改，等待你手动同步。',
-                                  style: GoogleFonts.notoSerifSc(
-                                    color: textColor.withValues(alpha: 0.7),
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ),
-                              dense: true,
-                              contentPadding: EdgeInsets.zero,
-                            ),
-                          ),
-
-                          const SizedBox(height: 16),
-
-                          // 图片压缩开关
-                          Container(
-                            decoration: BoxDecoration(
-                              color: tc['switchBgColor'],
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: textColor.withValues(alpha: 0.1),
-                              ),
-                            ),
-                            padding: const EdgeInsets.all(12),
-                            child: SwitchListTile(
-                              value: _compressImages,
-                              onChanged:
-                                  (val) =>
-                                      setState(() => _compressImages = val),
-                              activeThumbColor:
-                                  themeConfig.isNotEmpty
-                                      ? themeConfig['activeSwitchColor']
-                                      : tc['accentColor'],
-                              activeTrackColor:
-                                  themeConfig.isNotEmpty
-                                      ? themeConfig['activeTrackColor']
-                                      : (tc['accentColor'] as Color)
-                                          .withValues(alpha: 0.5),
-                              title: Text(
-                                '开启图片压缩',
-                                style: GoogleFonts.notoSerifSc(
-                                  color: textColor,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15,
-                                ),
-                              ),
-                              subtitle: Padding(
-                                padding: const EdgeInsets.only(top: 4),
-                                child: Text(
-                                  '开启后将压缩上传，显著节省云端存储和流量 (推荐)。\n关闭则上传原图，画质更好但耗流量。',
-                                  style: GoogleFonts.notoSerifSc(
-                                    color: textColor.withValues(alpha: 0.7),
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ),
-                              dense: true,
-                              contentPadding: EdgeInsets.zero,
-                            ),
-                          ),
-
-                          const SizedBox(height: 32),
-
-                          // 功能按钮区
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _buildButton(
-                                  label: '测试连接',
-                                  onTap: _isLoading ? null : _saveAndTest,
-                                  isPrimary: false,
+                                const SizedBox(height: 16),
+                                _buildTextField(
+                                  controller: _s3RegionController,
+                                  label: 'Region (区域 - 可选)',
+                                  hint: '默认自动，如 us-east-1',
                                   tc: tc,
+                                  themeConfig: themeConfig,
+                                  icon: Icons.map_outlined,
                                 ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: _buildButton(
-                                  label: '立即同步',
-                                  onTap: _isLoading ? null : _syncNow,
-                                  isPrimary: true,
-                                  tc: tc,
-                                ),
-                              ),
-                            ],
-                          ),
+                              ],
 
-                          if (provider.config.enabled) ...[
-                            const SizedBox(height: 12),
-                            _buildButton(
-                              label: '停用同步',
-                              onTap: _isLoading ? null : _disableSync,
-                              isPrimary: false,
-                              tc: tc,
-                            ),
-                          ],
+                              const SizedBox(height: 24),
 
-                          if (_isLoading ||
-                              provider.status == SyncStatus.syncing)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 24),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  // Action Text
-                                  Text(
-                                    provider.progressMessage.isEmpty
-                                        ? '正在处理...'
-                                        : provider.progressMessage,
-                                    style: GoogleFonts.notoSerifSc(
-                                      color: textColor.withValues(alpha: 0.9),
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                    textAlign: TextAlign.center,
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: tc['switchBgColor'],
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: textColor.withValues(alpha: 0.1),
                                   ),
-                                  const SizedBox(height: 12),
-
-                                  // Progress Bar
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(4),
-                                    child: LinearProgressIndicator(
-                                      value:
-                                          provider.totalProgress > 0
-                                              ? provider.totalProgress
-                                              : null,
-                                      backgroundColor: textColor.withValues(alpha: 
-                                        0.1,
+                                ),
+                                padding: const EdgeInsets.all(12),
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: SwitchListTile(
+                                    value: _autoSync,
+                                    onChanged: (val) =>
+                                        setState(() => _autoSync = val),
+                                    activeThumbColor: themeConfig.isNotEmpty
+                                        ? themeConfig['activeSwitchColor']
+                                        : tc['accentColor'],
+                                    activeTrackColor: themeConfig.isNotEmpty
+                                        ? themeConfig['activeTrackColor']
+                                        : (tc['accentColor'] as Color)
+                                              .withValues(alpha: 0.5),
+                                    title: Text(
+                                      '开启自动同步',
+                                      style: GoogleFonts.notoSerifSc(
+                                        color: textColor,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15,
                                       ),
-                                      color: tc['accentColor'],
-                                      minHeight: 6,
+                                    ),
+                                    subtitle: Padding(
+                                      padding: const EdgeInsets.only(top: 4),
+                                      child: Text(
+                                        '开启后会在保存内容、回到前台等时机排队同步。\n关闭后只保留本地更改，等待你手动同步。',
+                                        style: GoogleFonts.notoSerifSc(
+                                          color: textColor.withValues(
+                                            alpha: 0.7,
+                                          ),
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ),
+                                    dense: true,
+                                    contentPadding: EdgeInsets.zero,
+                                  ),
+                                ),
+                              ),
+
+                              const SizedBox(height: 16),
+
+                              // 图片压缩开关
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: tc['switchBgColor'],
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: textColor.withValues(alpha: 0.1),
+                                  ),
+                                ),
+                                padding: const EdgeInsets.all(12),
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: SwitchListTile(
+                                    value: _compressImages,
+                                    onChanged: (val) =>
+                                        setState(() => _compressImages = val),
+                                    activeThumbColor: themeConfig.isNotEmpty
+                                        ? themeConfig['activeSwitchColor']
+                                        : tc['accentColor'],
+                                    activeTrackColor: themeConfig.isNotEmpty
+                                        ? themeConfig['activeTrackColor']
+                                        : (tc['accentColor'] as Color)
+                                              .withValues(alpha: 0.5),
+                                    title: Text(
+                                      '开启图片压缩',
+                                      style: GoogleFonts.notoSerifSc(
+                                        color: textColor,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15,
+                                      ),
+                                    ),
+                                    subtitle: Padding(
+                                      padding: const EdgeInsets.only(top: 4),
+                                      child: Text(
+                                        '开启后将压缩上传，显著节省云端存储和流量 (推荐)。\n关闭则上传原图，画质更好但耗流量。',
+                                        style: GoogleFonts.notoSerifSc(
+                                          color: textColor.withValues(
+                                            alpha: 0.7,
+                                          ),
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ),
+                                    dense: true,
+                                    contentPadding: EdgeInsets.zero,
+                                  ),
+                                ),
+                              ),
+
+                              const SizedBox(height: 32),
+
+                              // 功能按钮区
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _buildButton(
+                                      label: '测试连接',
+                                      onTap: _isLoading ? null : _saveAndTest,
+                                      isPrimary: false,
+                                      tc: tc,
                                     ),
                                   ),
-
-                                  // Speed & ETA Text
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 8),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          provider.currentFileSpeed,
-                                          style: GoogleFonts.robotoMono(
-                                            color: textColor.withValues(alpha: 0.6),
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                        if (provider.etaMessage.isNotEmpty) ...[
-                                          Text(
-                                            '  |  ',
-                                            style: TextStyle(
-                                              color: textColor.withValues(alpha: 0.3),
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                          Text(
-                                            provider.etaMessage,
-                                            style: GoogleFonts.notoSerifSc(
-                                              color: textColor.withValues(alpha: 0.7),
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                        ],
-                                      ],
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: _buildButton(
+                                      label: '立即同步',
+                                      onTap: _isLoading ? null : _syncNow,
+                                      isPrimary: true,
+                                      tc: tc,
                                     ),
                                   ),
                                 ],
                               ),
-                            ),
 
-                          const SizedBox(height: 40),
-                          _buildTips(textColor, tc, provider.config.syncType),
-                        ],
-                      ),
-                    ),
-                  ))
-                  : _buildLockCard(context, tc),
+                              if (provider.config.enabled) ...[
+                                const SizedBox(height: 12),
+                                _buildButton(
+                                  label: '停用同步',
+                                  onTap: _isLoading ? null : _disableSync,
+                                  isPrimary: false,
+                                  tc: tc,
+                                ),
+                              ],
+
+                              if (_isLoading ||
+                                  provider.status == SyncStatus.syncing)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 24),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    children: [
+                                      // Action Text
+                                      Text(
+                                        provider.progressMessage.isEmpty
+                                            ? '正在处理...'
+                                            : provider.progressMessage,
+                                        style: GoogleFonts.notoSerifSc(
+                                          color: textColor.withValues(
+                                            alpha: 0.9,
+                                          ),
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                      const SizedBox(height: 12),
+
+                                      // Progress Bar
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(4),
+                                        child: LinearProgressIndicator(
+                                          value: provider.totalProgress > 0
+                                              ? provider.totalProgress
+                                              : null,
+                                          backgroundColor: textColor.withValues(
+                                            alpha: 0.1,
+                                          ),
+                                          color: tc['accentColor'],
+                                          minHeight: 6,
+                                        ),
+                                      ),
+
+                                      // Speed & ETA Text
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 8),
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Text(
+                                              provider.currentFileSpeed,
+                                              style: GoogleFonts.robotoMono(
+                                                color: textColor.withValues(
+                                                  alpha: 0.6,
+                                                ),
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                            if (provider
+                                                .etaMessage
+                                                .isNotEmpty) ...[
+                                              Text(
+                                                '  |  ',
+                                                style: TextStyle(
+                                                  color: textColor.withValues(
+                                                    alpha: 0.3,
+                                                  ),
+                                                  fontSize: 12,
+                                                ),
+                                              ),
+                                              Text(
+                                                provider.etaMessage,
+                                                style: GoogleFonts.notoSerifSc(
+                                                  color: textColor.withValues(
+                                                    alpha: 0.7,
+                                                  ),
+                                                  fontSize: 12,
+                                                ),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+
+                              const SizedBox(height: 40),
+                              _buildTips(
+                                textColor,
+                                tc,
+                                provider.config.syncType,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ))
+              : _buildLockCard(context, tc),
         ),
       ],
     );
@@ -813,16 +827,16 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
     final hintColor = textColor.withValues(alpha: 0.5);
 
     final borderSide = BorderSide(
-      color:
-          themeConfig.isNotEmpty
-              ? themeConfig['groupDecoration'].border.top.color
-              : textColor.withValues(alpha: 0.2), // Fallback slightly visible border
+      color: themeConfig.isNotEmpty
+          ? themeConfig['groupDecoration'].border.top.color
+          : textColor.withValues(
+              alpha: 0.2,
+            ), // Fallback slightly visible border
     );
 
-    final fillColor =
-        themeConfig.isNotEmpty
-            ? themeConfig['groupDecoration'].color
-            : tc['switchBgColor'];
+    final fillColor = themeConfig.isNotEmpty
+        ? themeConfig['groupDecoration'].color
+        : tc['switchBgColor'];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -882,28 +896,28 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
   }) {
     // 按主/次按钮读取相应的配置
     final gradient = isPrimary ? tc['primaryGradient'] as Gradient? : null;
-    final color =
-        isPrimary
-            ? ((tc['primaryBtnColor'] != null)
-                ? tc['primaryBtnColor'] as Color
-                : Colors.transparent)
-            : tc['secondaryBtnColor'] as Color;
-    final textColor =
-        isPrimary ? Colors.white : tc['secondaryBtnTextColor'] as Color;
+    final color = isPrimary
+        ? ((tc['primaryBtnColor'] != null)
+              ? tc['primaryBtnColor'] as Color
+              : Colors.transparent)
+        : tc['secondaryBtnColor'] as Color;
+    final textColor = isPrimary
+        ? Colors.white
+        : tc['secondaryBtnTextColor'] as Color;
 
-    final boxShadows =
-        isPrimary
-            ? [
-              BoxShadow(
-                color: tc['primaryShadowColor'],
-                blurRadius: 6,
-                offset: const Offset(0, 3),
-              ),
-            ]
-            : null;
+    final boxShadows = isPrimary
+        ? [
+            BoxShadow(
+              color: tc['primaryShadowColor'],
+              blurRadius: 6,
+              offset: const Offset(0, 3),
+            ),
+          ]
+        : null;
 
-    final border =
-        !isPrimary ? Border.all(color: tc['secondaryBorderColor']) : null;
+    final border = !isPrimary
+        ? Border.all(color: tc['secondaryBorderColor'])
+        : null;
 
     return Material(
       color: Colors.transparent,
@@ -914,8 +928,9 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
           padding: const EdgeInsets.symmetric(vertical: 14),
           decoration: BoxDecoration(
             gradient: gradient,
-            color:
-                color == Colors.transparent && gradient != null ? null : color,
+            color: color == Colors.transparent && gradient != null
+                ? null
+                : color,
             borderRadius: BorderRadius.circular(10),
             boxShadow: boxShadows,
             border: border,
@@ -924,7 +939,9 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
             label,
             textAlign: TextAlign.center,
             style: GoogleFonts.notoSerifSc(
-              color: onTap == null ? textColor.withValues(alpha: 0.5) : textColor,
+              color: onTap == null
+                  ? textColor.withValues(alpha: 0.5)
+                  : textColor,
               fontWeight: FontWeight.bold,
               fontSize: 15,
             ),
@@ -970,8 +987,9 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
               children: [
                 // 1. Thumb (Animated)
                 AnimatedAlign(
-                  alignment:
-                      isWebDav ? Alignment.centerLeft : Alignment.centerRight,
+                  alignment: isWebDav
+                      ? Alignment.centerLeft
+                      : Alignment.centerRight,
                   duration: const Duration(milliseconds: 300),
                   curve: Curves.easeOutBack,
                   child: Container(
@@ -983,7 +1001,9 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                       borderRadius: BorderRadius.circular(18),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: thumbShadowOpacity),
+                          color: Colors.black.withValues(
+                            alpha: thumbShadowOpacity,
+                          ),
                           blurRadius: 4,
                           offset: const Offset(0, 2),
                         ),
@@ -1001,10 +1021,11 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                       activeTextColor,
                       inactiveTextColor,
                       () {
-                        if (!isWebDav)
+                        if (!isWebDav) {
                           provider.saveConfig(
                             provider.config.copyWith(syncType: SyncType.webdav),
                           );
+                        }
                       },
                     ),
                     _buildSwitchLabel(
@@ -1013,10 +1034,11 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                       activeTextColor,
                       inactiveTextColor,
                       () {
-                        if (isWebDav)
+                        if (isWebDav) {
                           provider.saveConfig(
                             provider.config.copyWith(syncType: SyncType.s3),
                           );
+                        }
                       },
                     ),
                   ],

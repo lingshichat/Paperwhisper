@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:async';
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:webdav_client/webdav_client.dart' as webdav;
 import 'package:path/path.dart' as path;
@@ -22,15 +21,16 @@ class WebDavSyncService implements CloudStorageService {
   static const String momentsImagesPath = '/PaperWhisper/moments_data/images/';
   static const String momentsAudioPath = '/PaperWhisper/moments_data/audio/';
 
+  @override
   bool get isConnected => _client != null;
 
   @override
   String? get lastConnectionError => _lastConnectionError;
 
   void initConfig(String serverUrl, String username, String password) {
-      _serverUrl = serverUrl;
-      _username = username;
-      _password = password;
+    _serverUrl = serverUrl;
+    _username = username;
+    _password = password;
   }
 
   @override
@@ -52,10 +52,10 @@ class WebDavSyncService implements CloudStorageService {
         password: _password!,
         debug: kDebugMode,
       );
-      
+
       // Increase timeouts
       _client!.setConnectTimeout(60000);
-      _client!.setReceiveTimeout(300000); 
+      _client!.setReceiveTimeout(300000);
 
       // 简单的 Ping 测试
       await _client!.ping();
@@ -81,36 +81,36 @@ class WebDavSyncService implements CloudStorageService {
   @override
   Future<void> ensureDirectoryExists(String remotePath) async {
     if (_client == null) return;
-    
+
     // 规范化路径：移除开头斜杠
     remotePath = _formatPath(remotePath);
-    
+
     // 移除末尾斜杠以便统一处理
     if (remotePath.endsWith('/')) {
       remotePath = remotePath.substring(0, remotePath.length - 1);
     }
-    
+
     // 如果是根目录，忽略
     if (remotePath.isEmpty || remotePath == '.') return;
 
     // 尝试直接读取，如果成功则目录存在
     try {
-       // readDir 需要以 / 结尾来列出目录内容，但开头不能有 /
-       await _client!.readDir(remotePath + '/');
-       return; 
+      // readDir 需要以 / 结尾来列出目录内容，但开头不能有 /
+      await _client!.readDir('$remotePath/');
+      return;
     } catch (_) {
-       // 目录不存在，需要创建
+      // 目录不存在，需要创建
     }
-    
+
     // 递归检查父目录
     // 使用 posix context 处理 WebDAV 路径 (总是 / 分隔)
     String parent = path.posix.dirname(remotePath);
-    
+
     // 避免死循环
     if (parent != remotePath && parent != '.' && parent.isNotEmpty) {
-       await ensureDirectoryExists(parent);
+      await ensureDirectoryExists(parent);
     }
-    
+
     // 创建当前目录
     try {
       await _client!.mkdir(remotePath);
@@ -141,20 +141,24 @@ class WebDavSyncService implements CloudStorageService {
     if (_client == null) return [];
     try {
       // 确保目录存在
-      await ensureDirectoryExists(remotePath); 
-      
+      await ensureDirectoryExists(remotePath);
+
       // format path for readDir
       String p = _formatPath(remotePath);
       if (!p.endsWith('/')) p += '/';
-      
+
       final list = await _client!.readDir(p);
-      return list.map((f) => RemoteFile(
-        path: f.path ?? '',
-        name: f.name ?? '',
-        size: f.size ?? 0,
-        lastModified: f.mTime,
-        isDirectory: f.isDir ?? false,
-      )).toList();
+      return list
+          .map(
+            (f) => RemoteFile(
+              path: f.path ?? '',
+              name: f.name ?? '',
+              size: f.size ?? 0,
+              lastModified: f.mTime,
+              isDirectory: f.isDir ?? false,
+            ),
+          )
+          .toList();
     } catch (e) {
       debugPrint('WebDAV list files failed for $remotePath: $e');
       rethrow;
@@ -162,86 +166,108 @@ class WebDavSyncService implements CloudStorageService {
   }
 
   @override
-  Future<void> uploadFile(String localFilePath, String remoteFilePath, {Function(int sent, int total)? onProgress}) async {
+  Future<void> uploadFile(
+    String localFilePath,
+    String remoteFilePath, {
+    Function(int sent, int total)? onProgress,
+  }) async {
     if (_serverUrl == null) return;
-    
+
     // WebDAV PUT
     final url = Uri.parse(_serverUrl! + _formatPath(remoteFilePath));
     final file = File(localFilePath);
     final totalBytes = await file.length();
-    
+
     final client = HttpClient();
     client.connectionTimeout = const Duration(seconds: 60);
-    
+
     try {
       final request = await client.putUrl(url);
-      
+
       // Headers
       request.headers.set(HttpHeaders.authorizationHeader, _getAuthHeader());
       request.headers.contentType = ContentType.binary;
-      request.contentLength = totalBytes; 
+      request.contentLength = totalBytes;
 
       // Stream upload with progress
       final stream = file.openRead();
       int bytesSent = 0;
-      
-      await request.addStream(stream.map((chunk) {
-        bytesSent += chunk.length;
-        if (onProgress != null) onProgress(bytesSent, totalBytes);
-        return chunk;
-      }));
+
+      await request.addStream(
+        stream.map((chunk) {
+          bytesSent += chunk.length;
+          if (onProgress != null) onProgress(bytesSent, totalBytes);
+          return chunk;
+        }),
+      );
 
       final response = await request.close();
-      
+
       if (response.statusCode >= 200 && response.statusCode < 300) {
-         debugPrint('Manual Upload Success: $remoteFilePath');
+        debugPrint('Manual Upload Success: $remoteFilePath');
       } else {
-         throw HttpException("Upload failed: ${response.statusCode} ${response.reasonPhrase}", uri: url);
+        throw HttpException(
+          "Upload failed: ${response.statusCode} ${response.reasonPhrase}",
+          uri: url,
+        );
       }
     } catch (e) {
-       debugPrint('Manual Upload Failed: $e');
-       rethrow;
+      debugPrint('Manual Upload Failed: $e');
+      rethrow;
     } finally {
-       client.close();
+      client.close();
     }
   }
 
   @override
-  Future<void> downloadFile(String remoteFilePath, String localSavePath, {Function(int received, int total)? onProgress}) async {
+  Future<void> downloadFile(
+    String remoteFilePath,
+    String localSavePath, {
+    Function(int received, int total)? onProgress,
+  }) async {
     if (_serverUrl == null) return;
 
     final url = Uri.parse(_serverUrl! + _formatPath(remoteFilePath));
     final client = HttpClient();
     client.connectionTimeout = const Duration(seconds: 60);
-    
+
     try {
       final request = await client.getUrl(url);
       request.headers.set(HttpHeaders.authorizationHeader, _getAuthHeader());
-      
+
       final response = await request.close();
-      
+
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final totalBytes = response.contentLength;
         final file = File(localSavePath);
         final sink = file.openWrite();
-        
+
         int bytesReceived = 0;
-        
-        await response.listen((chunk) {
-           bytesReceived += chunk.length;
-           sink.add(chunk);
-           if (onProgress != null) onProgress(bytesReceived, totalBytes);
-        }, onDone: () async {
-           await sink.flush();
-           await sink.close();
-        }, onError: (e) {
-           sink.close();
-           throw e;
-        }).asFuture();
-        
+
+        await response
+            .listen(
+              (chunk) {
+                bytesReceived += chunk.length;
+                sink.add(chunk);
+                if (onProgress != null) onProgress(bytesReceived, totalBytes);
+              },
+              onDone: () async {
+                await sink.flush();
+                await sink.close();
+              },
+              onError: (e) {
+                sink.close();
+                throw e;
+              },
+            )
+            .asFuture();
+
         debugPrint('Manual Download Success: $remoteFilePath');
       } else {
-         throw HttpException("Download failed: ${response.statusCode} ${response.reasonPhrase}", uri: url);
+        throw HttpException(
+          "Download failed: ${response.statusCode} ${response.reasonPhrase}",
+          uri: url,
+        );
       }
     } catch (e) {
       debugPrint('Manual Download Failed: $e');
@@ -254,7 +280,7 @@ class WebDavSyncService implements CloudStorageService {
   String _getAuthHeader() {
     if (_username == null || _password == null) return "";
     final bytes = utf8.encode('$_username:$_password');
-    return 'Basic ' + base64Encode(bytes);
+    return 'Basic ${base64Encode(bytes)}';
   }
 
   @override
@@ -274,8 +300,8 @@ class WebDavSyncService implements CloudStorageService {
     try {
       // 确保目标目录存在
       await ensureDirectoryExists(path.posix.dirname(newPath));
-      
-      await _client!.rename(_formatPath(oldPath), _formatPath(newPath), false); 
+
+      await _client!.rename(_formatPath(oldPath), _formatPath(newPath), false);
       debugPrint('Moved Remote: $oldPath -> $newPath');
     } catch (e) {
       debugPrint('WebDAV move failed: $e');

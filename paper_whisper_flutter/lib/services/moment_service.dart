@@ -255,10 +255,9 @@ class MomentService {
       record: TrashRecord(
         type: TrashRecordType.moment,
         primaryFilename: filename,
-        relatedFiles:
-            relatedFiles.keys
-                .map((item) => item.replaceAll('\\', '/'))
-                .toList(),
+        relatedFiles: relatedFiles.keys
+            .map((item) => item.replaceAll('\\', '/'))
+            .toList(),
         deletedAt: DateTime.now(),
         title: '随心记',
         previewText: previewText,
@@ -299,12 +298,11 @@ class MomentService {
 
     // 1. Filter moments for the date
     List<Moment> moments = await getMoments();
-    List<Moment> dayMoments =
-        moments.where((m) {
-          return m.createdAt.year == date.year &&
-              m.createdAt.month == date.month &&
-              m.createdAt.day == date.day;
-        }).toList();
+    List<Moment> dayMoments = moments.where((m) {
+      return m.createdAt.year == date.year &&
+          m.createdAt.month == date.month &&
+          m.createdAt.day == date.day;
+    }).toList();
 
     if (dayMoments.isEmpty) return null;
 
@@ -324,7 +322,7 @@ class MomentService {
       if (m.images.isNotEmpty) {
         buffer.writeln("\n(包含 ${m.images.length} 张图片，请在随心记查看)");
       }
-      buffer.writeln("\n" + "-" * 20 + "\n");
+      buffer.writeln("\n${'-' * 20}\n");
     }
 
     // 3. Save via DiaryService
@@ -332,10 +330,9 @@ class MomentService {
 
     String dateStr =
         "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
-    String finalTitle =
-        customTitle.isNotEmpty
-            ? customTitle
-            : "${date.year}年${date.month}月${date.day}日 随心记聚合";
+    String finalTitle = customTitle.isNotEmpty
+        ? customTitle
+        : "${date.year}年${date.month}月${date.day}日 随心记聚合";
 
     // Fixed filename to allow overwrite: YYYY-MM-DD_moments_summary.txt
     String fixedFilename = "${dateStr}_moments_summary.txt";
@@ -358,7 +355,7 @@ class MomentService {
     String ext = path.extension(sourcePath); // usually .m4a or .wav
     if (ext.isEmpty) ext = '.m4a';
 
-    String filename = "${DateTime.now().millisecondsSinceEpoch}_audio${ext}";
+    String filename = "${DateTime.now().millisecondsSinceEpoch}_audio$ext";
     String destinationPath = path.join(_audioDir!.path, filename);
 
     await sourceFile.copy(destinationPath);

@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:io';
-import 'dart:ui';
 import 'package:provider/provider.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../providers/settings_provider.dart';
 import '../config/app_theme.dart';
-
 
 class SkeuomorphicBook extends StatelessWidget {
   final int year;
@@ -33,7 +31,7 @@ class SkeuomorphicBook extends StatelessWidget {
     final currentTheme = settings.currentTheme;
     final theme = Theme.of(context);
     final primaryColor = theme.primaryColor;
-    
+
     // Create a bottom color that matches the theme
     Color bottomColor;
     if (currentTheme == AppTheme.themeSeaFlower) {
@@ -41,7 +39,9 @@ class SkeuomorphicBook extends StatelessWidget {
       bottomColor = const Color(0xFFD4A5C3); // 柔和粉紫色，介于背景渐变的中间色调
     } else {
       // 其他主题：使用深色变体
-      bottomColor = HSLColor.fromColor(primaryColor).withLightness(0.15).toColor();
+      bottomColor = HSLColor.fromColor(
+        primaryColor,
+      ).withLightness(0.15).toColor();
     }
 
     return GestureDetector(
@@ -52,7 +52,9 @@ class SkeuomorphicBook extends StatelessWidget {
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.3), // Deeper shadow for floating effect
+              color: Colors.black.withValues(
+                alpha: 0.3,
+              ), // Deeper shadow for floating effect
               blurRadius: 20,
               offset: const Offset(0, 10),
             ),
@@ -69,13 +71,16 @@ class SkeuomorphicBook extends StatelessWidget {
                 child: _buildCoverArea(context, currentTheme, primaryColor),
               ),
 
-              
               // 2. Bottom Area (Title Info)
               Expanded(
-                flex: 1, // Reduced flex might cause overflow if content is large, checking layout
+                flex:
+                    1, // Reduced flex might cause overflow if content is large, checking layout
                 child: Container(
-                  color: bottomColor, 
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  color: bottomColor,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
                   child: LayoutBuilder(
                     builder: (context, constraints) {
                       return Column(
@@ -102,7 +107,8 @@ class SkeuomorphicBook extends StatelessWidget {
                           ),
                           const SizedBox(height: 8),
                           // Subtitle
-                          Flexible( // Use Flexible to prevent overflow
+                          Flexible(
+                            // Use Flexible to prevent overflow
                             child: Text(
                               subtitle.isNotEmpty ? subtitle : '$year年',
                               maxLines: 1,
@@ -115,7 +121,7 @@ class SkeuomorphicBook extends StatelessWidget {
                           ),
                         ],
                       );
-                    }
+                    },
                   ),
                 ),
               ),
@@ -127,7 +133,11 @@ class SkeuomorphicBook extends StatelessWidget {
   }
 
   /// 构建封面区域
-  Widget _buildCoverArea(BuildContext context, String theme, Color primaryColor) {
+  Widget _buildCoverArea(
+    BuildContext context,
+    String theme,
+    Color primaryColor,
+  ) {
     // 创建封面内容
     return Container(
       color: _getCoverBackgroundColor(theme, primaryColor),
@@ -144,7 +154,7 @@ class SkeuomorphicBook extends StatelessWidget {
             )
           else
             _buildDefaultCover(context),
-            
+
           // Menu Button (Three Dots) - Top Right
           Positioned(
             top: 12,
@@ -158,9 +168,15 @@ class SkeuomorphicBook extends StatelessWidget {
                     color: Colors.black.withValues(alpha: 0.2),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.more_horiz, color: Colors.white, size: 20),
+                  child: const Icon(
+                    Icons.more_horiz,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                 ),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 elevation: 8,
                 color: Colors.white,
                 onSelected: onMenuAction,
@@ -190,9 +206,16 @@ class SkeuomorphicBook extends StatelessWidget {
                     value: 'reset_cover',
                     child: Row(
                       children: [
-                        const Icon(Icons.image_not_supported_outlined, color: Colors.grey, size: 20),
+                        const Icon(
+                          Icons.image_not_supported_outlined,
+                          color: Colors.grey,
+                          size: 20,
+                        ),
                         const SizedBox(width: 12),
-                        const Text('恢复默认封面', style: TextStyle(color: Colors.black87)),
+                        const Text(
+                          '恢复默认封面',
+                          style: TextStyle(color: Colors.black87),
+                        ),
                       ],
                     ),
                   ),
@@ -202,7 +225,10 @@ class SkeuomorphicBook extends StatelessWidget {
                       children: [
                         const Icon(Icons.title, color: Colors.grey, size: 20),
                         const SizedBox(width: 12),
-                        const Text('恢复默认标题', style: TextStyle(color: Colors.black87)),
+                        const Text(
+                          '恢复默认标题',
+                          style: TextStyle(color: Colors.black87),
+                        ),
                       ],
                     ),
                   ),
@@ -210,9 +236,16 @@ class SkeuomorphicBook extends StatelessWidget {
                     value: 'reset_subtitle',
                     child: Row(
                       children: [
-                        const Icon(Icons.subtitles, color: Colors.grey, size: 20),
+                        const Icon(
+                          Icons.subtitles,
+                          color: Colors.grey,
+                          size: 20,
+                        ),
                         const SizedBox(width: 12),
-                        const Text('恢复默认副标题', style: TextStyle(color: Colors.black87)),
+                        const Text(
+                          '恢复默认副标题',
+                          style: TextStyle(color: Colors.black87),
+                        ),
                       ],
                     ),
                   ),
@@ -262,7 +295,8 @@ class SkeuomorphicBook extends StatelessWidget {
         assetPath = 'assets/illustrations/illustration_amber.svg';
         break;
       case AppTheme.themeAfterRain:
-        assetPath = 'assets/illustrations/illustration_seaflower.svg'; // Temporarily reuse seaflower as placeholder
+        assetPath =
+            'assets/illustrations/illustration_seaflower.svg'; // Temporarily reuse seaflower as placeholder
         break;
       default:
         assetPath = 'assets/illustrations/illustration_vintage.svg';
@@ -277,7 +311,7 @@ class SkeuomorphicBook extends StatelessWidget {
         placeholderBuilder: (ctx) => Container(
           color: Theme.of(context).primaryColor.withValues(alpha: 0.8),
           child: const Center(
-             child: CircularProgressIndicator(color: Colors.white12),
+            child: CircularProgressIndicator(color: Colors.white12),
           ),
         ),
       ),

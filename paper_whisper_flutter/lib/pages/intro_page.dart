@@ -15,6 +15,12 @@ class _IntroPageState extends State<IntroPage> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
   final List<IntroSlideData> _slides = [
     // 1. 欢迎页
     IntroSlideData(
@@ -92,8 +98,8 @@ class _IntroPageState extends State<IntroPage> {
                   height: 10,
                   decoration: BoxDecoration(
                     color: _currentPage == index
-                        ? const Color(0xFF8D6E63) 
-                        : const Color(0xFFD7CCC8), 
+                        ? const Color(0xFF8D6E63)
+                        : const Color(0xFFD7CCC8),
                     borderRadius: BorderRadius.circular(5),
                     boxShadow: [
                       if (_currentPage == index)
@@ -102,18 +108,18 @@ class _IntroPageState extends State<IntroPage> {
                           blurRadius: 4,
                           offset: const Offset(0, 2),
                         )
-                      else 
-                         const BoxShadow(color: Colors.transparent),
+                      else
+                        const BoxShadow(color: Colors.transparent),
                     ],
                   ),
                 );
               }),
             ),
           ),
-           
+
           // 3. 礼花特效 (只在最后一页显示)
           if (_currentPage == _slides.length - 1)
-             const Positioned.fill(child: PetalRainWidget(burst: true)),
+            const Positioned.fill(child: PetalRainWidget(burst: true)),
         ],
       ),
     );
@@ -169,15 +175,19 @@ class IntroSlide extends StatelessWidget {
                     ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(24),
-                      child: Image.asset('assets/icon.png'), // Ensure this asset exists
+                      child: Image.asset(
+                        'assets/icon.png',
+                      ), // Ensure this asset exists
                     ),
                   )
                 : Icon(
                     data.icon,
                     size: 100,
-                    color: const Color(0xFF5D4037).withValues(alpha: 0.8), // Seamless blend
+                    color: const Color(
+                      0xFF5D4037,
+                    ).withValues(alpha: 0.8), // Seamless blend
                     shadows: [
-                       BoxShadow(
+                      BoxShadow(
                         color: Colors.black.withValues(alpha: 0.1),
                         blurRadius: 10,
                         offset: const Offset(0, 5),
@@ -191,16 +201,18 @@ class IntroSlide extends StatelessWidget {
             data.title,
             textAlign: TextAlign.center,
             style: GoogleFonts.notoSerifSc(
-              fontSize: data.useAppIcon ? 36 : 32, // Slightly larger for main title
+              fontSize: data.useAppIcon
+                  ? 36
+                  : 32, // Slightly larger for main title
               fontWeight: FontWeight.bold,
-              color: const Color(0xFF3E2723), 
+              color: const Color(0xFF3E2723),
               shadows: [
-                 const Shadow(
+                const Shadow(
                   offset: Offset(0, 1),
                   blurRadius: 1,
-                  color: Colors.white, 
+                  color: Colors.white,
                 ),
-                 Shadow(
+                Shadow(
                   offset: const Offset(0, 2),
                   blurRadius: 4,
                   color: Colors.black.withValues(alpha: 0.2),
@@ -208,14 +220,15 @@ class IntroSlide extends StatelessWidget {
               ],
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // 副标题/英文
           Text(
             data.subtitle,
             textAlign: TextAlign.center,
-            style: GoogleFonts.playfairDisplay( // English serif
+            style: GoogleFonts.playfairDisplay(
+              // English serif
               fontSize: 18,
               fontStyle: FontStyle.italic,
               color: const Color(0xFF8D6E63),
@@ -239,8 +252,7 @@ class IntroSlide extends StatelessWidget {
           const SizedBox(height: 60),
 
           // 如果是最后一页，显示进入按钮
-          if (data.isLastPage)
-            _EnterButton(),
+          if (data.isLastPage) _EnterButton(),
         ],
       ),
     );
@@ -252,7 +264,8 @@ class _EnterButton extends StatefulWidget {
   State<_EnterButton> createState() => _EnterButtonState();
 }
 
-class _EnterButtonState extends State<_EnterButton> with SingleTickerProviderStateMixin {
+class _EnterButtonState extends State<_EnterButton>
+    with SingleTickerProviderStateMixin {
   bool _isPressed = false;
 
   @override
@@ -271,10 +284,12 @@ class _EnterButtonState extends State<_EnterButton> with SingleTickerProviderSta
         // 导航到主页，并使用淡入淡出动画
         Navigator.of(context).pushReplacement(
           PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) => const DiaryListPage(),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeTransition(opacity: animation, child: child);
-            },
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                const DiaryListPage(),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+                  return FadeTransition(opacity: animation, child: child);
+                },
             transitionDuration: const Duration(milliseconds: 800),
           ),
         );
@@ -290,13 +305,13 @@ class _EnterButtonState extends State<_EnterButton> with SingleTickerProviderSta
               ? [
                   // Pressed state: Inner shadow
                   // Pressed state: No drop shadow, closer to surface
-                   BoxShadow(
+                  BoxShadow(
                     color: Colors.transparent, // Hide shadow
                     blurRadius: 0,
                     offset: Offset(0, 0),
                   ),
-                   // Workaround: Standard doesn't support inset. Use Neumorphism trick or just simple state change.
-                   // Let's do simple state change: Remove drop shadow, maybe darker color.
+                  // Workaround: Standard doesn't support inset. Use Neumorphism trick or just simple state change.
+                  // Let's do simple state change: Remove drop shadow, maybe darker color.
                 ]
               : [
                   // Normal state: Drop shadow
@@ -311,26 +326,27 @@ class _EnterButtonState extends State<_EnterButton> with SingleTickerProviderSta
                     offset: Offset(-4, -4),
                   ),
                 ],
-            gradient: _isPressed 
+          gradient: _isPressed
               ? LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    const Color(0xFFEFE6D0).withValues(red: 230, green: 220, blue: 200), // Darker
+                    const Color(
+                      0xFFEFE6D0,
+                    ).withValues(red: 230, green: 220, blue: 200), // Darker
                     const Color(0xFFEFE6D0),
                   ],
                 )
               : const LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFFF9F4E6),
-                    Color(0xFFEFE6D0),
-                  ],
+                  colors: [Color(0xFFF9F4E6), Color(0xFFEFE6D0)],
                 ),
         ),
         alignment: Alignment.center,
-        transform: _isPressed ? Matrix4.translationValues(2, 2, 0) : Matrix4.identity(),
+        transform: _isPressed
+            ? Matrix4.translationValues(2, 2, 0)
+            : Matrix4.identity(),
         child: Text(
           '进入应用',
           style: GoogleFonts.notoSerifSc(
@@ -348,4 +364,3 @@ class _EnterButtonState extends State<_EnterButton> with SingleTickerProviderSta
 // ---------------------------------------------------------------------------
 // 简单的礼花/散落动画组件
 // ---------------------------------------------------------------------------
-

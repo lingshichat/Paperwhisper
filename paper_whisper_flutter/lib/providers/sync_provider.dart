@@ -112,6 +112,15 @@ class SyncProvider with ChangeNotifier {
   String _etaMessage = '';
 
   Timer? _autoSyncTimer;
+
+  @override
+  void dispose() {
+    // 取消待执行的自动同步定时器，避免全局单例销毁后回调残留
+    _autoSyncTimer?.cancel();
+    _autoSyncTimer = null;
+    super.dispose();
+  }
+
   static const int _notificationId = 888;
   static const String _channelId = 'paper_whisper_sync';
   static const String _channelName = 'Sync Status';
@@ -272,8 +281,9 @@ class SyncProvider with ChangeNotifier {
 
   String _formatSpeed(double bytesPerSec) {
     if (bytesPerSec < 1024) return "${bytesPerSec.toStringAsFixed(0)} B/s";
-    if (bytesPerSec < 1024 * 1024)
+    if (bytesPerSec < 1024 * 1024) {
       return "${(bytesPerSec / 1024).toStringAsFixed(1)} KB/s";
+    }
     return "${(bytesPerSec / (1024 * 1024)).toStringAsFixed(1)} MB/s";
   }
 
@@ -389,10 +399,9 @@ class SyncProvider with ChangeNotifier {
 
   String _buildSyncScopeId([SyncConfig? config]) {
     final activeConfig = config ?? _config;
-    final rawScope =
-        activeConfig.syncType == SyncType.webdav
-            ? 'webdav|${activeConfig.serverUrl.trim().toLowerCase()}|${activeConfig.username.trim().toLowerCase()}'
-            : 's3|${activeConfig.s3EndPoint.trim().toLowerCase()}|${activeConfig.s3BucketName.trim().toLowerCase()}|${activeConfig.s3AccessKey.trim().toLowerCase()}|${(activeConfig.s3Region ?? '').trim().toLowerCase()}';
+    final rawScope = activeConfig.syncType == SyncType.webdav
+        ? 'webdav|${activeConfig.serverUrl.trim().toLowerCase()}|${activeConfig.username.trim().toLowerCase()}'
+        : 's3|${activeConfig.s3EndPoint.trim().toLowerCase()}|${activeConfig.s3BucketName.trim().toLowerCase()}|${activeConfig.s3AccessKey.trim().toLowerCase()}|${(activeConfig.s3Region ?? '').trim().toLowerCase()}';
 
     return base64UrlEncode(utf8.encode(rawScope)).replaceAll('=', '');
   }
@@ -431,16 +440,16 @@ class SyncProvider with ChangeNotifier {
 
   Future<void> _saveCachedNameSet(String key, Set<String> values) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(
-      _scopeStorageKey(key),
-      values.toList()..sort(),
-    );
+    await prefs.setStringList(_scopeStorageKey(key), values.toList()..sort());
   }
 
   Future<void> _loadCurrentScopeLastSyncTime(SharedPreferences prefs) async {
-    final timeStr = prefs.getString(_scopeStorageKey(_currentScopeLastSyncTimeKey));
-    _currentScopeLastSyncTime =
-        timeStr == null ? null : DateTime.tryParse(timeStr);
+    final timeStr = prefs.getString(
+      _scopeStorageKey(_currentScopeLastSyncTimeKey),
+    );
+    _currentScopeLastSyncTime = timeStr == null
+        ? null
+        : DateTime.tryParse(timeStr);
   }
 
   Future<void> _persistCurrentScopeLastSyncTime(
@@ -453,9 +462,7 @@ class SyncProvider with ChangeNotifier {
     );
   }
 
-  Future<void> _migrateLegacyScopeCacheIfNeeded(
-    SharedPreferences prefs,
-  ) async {
+  Future<void> _migrateLegacyScopeCacheIfNeeded(SharedPreferences prefs) async {
     final scopedDiaryKey = _scopeStorageKey(_lastKnownRemoteManifestKey);
     final scopedMomentKey = _scopeStorageKey(_lastKnownMomentsManifestKey);
     final scopedImageKey = _scopeStorageKey(_lastKnownMomentImagesKey);
@@ -681,8 +688,8 @@ class SyncProvider with ChangeNotifier {
 
   Future<void> _persistSuccessfulSyncCaches() async {
     if (_diaryProvider != null) {
-      final diaryManifest =
-          _diaryProvider!.service.manifestService.manifest.clone();
+      final diaryManifest = _diaryProvider!.service.manifestService.manifest
+          .clone();
       await _saveCachedManifest(_lastKnownRemoteManifestKey, diaryManifest);
     }
 
@@ -868,10 +875,9 @@ class SyncProvider with ChangeNotifier {
       final message = _buildConnectionFailureMessage(errorText);
       _lastError = message;
       await refreshTrustSnapshot(
-        overrideState:
-            _isLikelyConfigurationFailure(errorText)
-                ? SyncTrustState.needsAttention
-                : SyncTrustState.syncFailed,
+        overrideState: _isLikelyConfigurationFailure(errorText)
+            ? SyncTrustState.needsAttention
+            : SyncTrustState.syncFailed,
         failureReason: message,
         configurationInvalid: _isLikelyConfigurationFailure(errorText),
       );
@@ -886,10 +892,9 @@ class SyncProvider with ChangeNotifier {
         final message = _buildConnectionFailureMessage(errorText);
         _lastError = message;
         await refreshTrustSnapshot(
-          overrideState:
-              _isLikelyConfigurationFailure(errorText)
-                  ? SyncTrustState.needsAttention
-                  : SyncTrustState.syncFailed,
+          overrideState: _isLikelyConfigurationFailure(errorText)
+              ? SyncTrustState.needsAttention
+              : SyncTrustState.syncFailed,
           failureReason: message,
           configurationInvalid: _isLikelyConfigurationFailure(errorText),
         );
@@ -910,6 +915,8 @@ class SyncProvider with ChangeNotifier {
     bool force = false,
     BuildContext? context,
   }) async {
+    // 在异步等待前捕获 context，供异步后仅作 UI 反馈使用
+    final syncContext = context;
     // 等待初始化完成，避免冷启动时 _lastSyncTime 尚未加载导致冷却失效
     await _initFuture;
 
@@ -928,8 +935,15 @@ class SyncProvider with ChangeNotifier {
     if (force) {
       debugPrint('Force Sync requested. Skipping debounce and cooldown.');
       if (_autoSyncTimer?.isActive ?? false) _autoSyncTimer!.cancel();
+      // 页面已销毁时不传 context，仅保留静默同步
+      if (syncContext != null && !syncContext.mounted) {
+        sync(isAuto: true).catchError((e) {
+          debugPrint('Force Sync caught error: $e');
+        });
+        return;
+      }
       // Pass context for feedback
-      sync(isAuto: true, context: context).catchError((e) {
+      sync(isAuto: true, context: syncContext).catchError((e) {
         debugPrint('Force Sync caught error: $e');
       });
       return;
@@ -973,24 +987,23 @@ class SyncProvider with ChangeNotifier {
       final bool? result = await showDialog<bool>(
         context: context,
         barrierDismissible: true, // Allow click outside to cancel
-        builder:
-            (ctx) => SkeuomorphicDialog(
-              title: '需要通知权限',
-              headerIcon: Icons.notifications_active,
-              content: const Text(
-                '为了防止同步过程被系统中断，并让您直观地看到上传进度，我们需要申请通知栏权限。\n\n请授予通知权限以启用同步功能。',
-              ),
-              // Custom footer for single button
-              footer: SizedBox(
-                width: double.infinity,
-                child: SkeuomorphicDialogButton(
-                  label: '去授予通知权限',
-                  onPressed: () async {
-                    Navigator.pop(ctx, true); // Close dialog first with flag
-                  },
-                ),
-              ),
+        builder: (ctx) => SkeuomorphicDialog(
+          title: '需要通知权限',
+          headerIcon: Icons.notifications_active,
+          content: const Text(
+            '为了防止同步过程被系统中断，并让您直观地看到上传进度，我们需要申请通知栏权限。\n\n请授予通知权限以启用同步功能。',
+          ),
+          // Custom footer for single button
+          footer: SizedBox(
+            width: double.infinity,
+            child: SkeuomorphicDialogButton(
+              label: '去授予通知权限',
+              onPressed: () async {
+                Navigator.pop(ctx, true); // Close dialog first with flag
+              },
             ),
+          ),
+        ),
       );
 
       if (result == true) {
@@ -1036,6 +1049,7 @@ class SyncProvider with ChangeNotifier {
 
     // Manually triggered sync: Check Permission First
     if (!isAuto && context != null) {
+      if (!context.mounted) return;
       final hasPermission = await checkNotificationPermission(context);
       if (!hasPermission) {
         // User cancelled or denied permission. Abort silent.
@@ -1044,7 +1058,7 @@ class SyncProvider with ChangeNotifier {
     }
 
     if (_status == SyncStatus.syncing) {
-      if (context != null && !isAuto) {
+      if (context != null && !isAuto && context.mounted) {
         SkeuomorphicToast.info(context, '正在同步中，请稍候...');
       }
       return;
@@ -1057,15 +1071,13 @@ class SyncProvider with ChangeNotifier {
       if (!connected) {
         final failureState =
             trustSnapshot.state == SyncTrustState.needsAttention
-                ? SyncTrustState.needsAttention
-                : SyncTrustState.syncFailed;
-        final failureMessage =
-            _lastError.isEmpty ? '网络异常，请稍后重试' : _lastError;
+            ? SyncTrustState.needsAttention
+            : SyncTrustState.syncFailed;
+        final failureMessage = _lastError.isEmpty ? '网络异常，请稍后重试' : _lastError;
         await refreshTrustSnapshot(
           overrideState: failureState,
           failureReason: failureMessage,
-          configurationInvalid:
-              failureState == SyncTrustState.needsAttention,
+          configurationInvalid: failureState == SyncTrustState.needsAttention,
         );
         if (context != null && context.mounted) {
           SkeuomorphicToast.error(context, failureMessage);
@@ -1144,10 +1156,9 @@ class SyncProvider with ChangeNotifier {
     }
 
     await refreshTrustSnapshot(
-      overrideState:
-          outcome.hasFailures
-              ? SyncTrustState.syncFailed
-              : SyncTrustState.localChangesPending,
+      overrideState: outcome.hasFailures
+          ? SyncTrustState.syncFailed
+          : SyncTrustState.localChangesPending,
       failureReason: outcome.hasFailures ? failureReason : null,
       clearFailureReason: !outcome.hasFailures,
     );
@@ -1208,7 +1219,7 @@ class SyncProvider with ChangeNotifier {
     }
 
     final remoteManifestJsonStr = await _storageService.readRemoteFile(
-      WebDavSyncService.rootPath + 'manifest.json',
+      '${WebDavSyncService.rootPath}manifest.json',
     );
     final remoteManifest = _decodeManifest(remoteManifestJsonStr);
     final nextRemoteManifest = remoteManifest.clone();
@@ -1383,7 +1394,7 @@ class SyncProvider with ChangeNotifier {
 
     try {
       await _storageService.writeRemoteFile(
-        WebDavSyncService.rootPath + 'manifest.json',
+        '${WebDavSyncService.rootPath}manifest.json',
         jsonEncode(manifestToWrite.toJson()),
       );
     } catch (e) {
@@ -1508,7 +1519,7 @@ class SyncProvider with ChangeNotifier {
     }
 
     final remoteManifestJsonStr = await _storageService.readRemoteFile(
-      WebDavSyncService.rootPath + 'moments_manifest.json',
+      '${WebDavSyncService.rootPath}moments_manifest.json',
     );
     final remoteManifest = _decodeManifest(remoteManifestJsonStr);
     final nextRemoteManifest = remoteManifest.clone();
@@ -1683,7 +1694,7 @@ class SyncProvider with ChangeNotifier {
 
     try {
       await _storageService.writeRemoteFile(
-        WebDavSyncService.rootPath + 'moments_manifest.json',
+        '${WebDavSyncService.rootPath}moments_manifest.json',
         jsonEncode(manifestToWrite.toJson()),
       );
     } catch (e) {
@@ -1774,8 +1785,9 @@ class SyncProvider with ChangeNotifier {
             WebDavSyncService.momentsImagesPath + name,
           );
           processed++;
-          if (!isAuto)
+          if (!isAuto) {
             _showNotification(processed, total, body: "清理云端无效图片: $name");
+          }
         } catch (e) {
           outcome.addDeleteFailure('image remote cleanup $name: $e');
         }
@@ -1790,12 +1802,13 @@ class SyncProvider with ChangeNotifier {
           if (f.existsSync()) {
             f.deleteSync();
             processed++;
-            if (!isAuto)
+            if (!isAuto) {
               _showNotification(
                 processed,
                 total,
                 body: "清理本地无效图片: ${path.basename(f.path)}",
               );
+            }
           }
         } catch (e) {
           outcome.addDeleteFailure(

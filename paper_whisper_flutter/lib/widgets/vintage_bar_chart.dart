@@ -26,7 +26,7 @@ class VintageBarChart extends StatelessWidget {
     final colors = _getThemeColors();
     final maxValue = data.reduce((a, b) => a > b ? a : b);
 
-    return Container(
+    return SizedBox(
       height: height,
       child: Column(
         children: [
@@ -61,9 +61,7 @@ class VintageBarChart extends StatelessWidget {
                   children: [
                     // 软木板纹理
                     Positioned.fill(
-                      child: CustomPaint(
-                        painter: _CorkTexturePainter(),
-                      ),
+                      child: CustomPaint(painter: _CorkTexturePainter()),
                     ),
                     // 便签网格
                     Padding(
@@ -74,7 +72,9 @@ class VintageBarChart extends StatelessWidget {
                         children: data.asMap().entries.map((entry) {
                           final index = entry.key;
                           final value = entry.value;
-                          final heightRatio = maxValue > 0 ? value / maxValue : 0;
+                          final heightRatio = maxValue > 0
+                              ? value / maxValue
+                              : 0;
                           final isHighlighted = value > 0 && value == maxValue;
 
                           // 每5天显示一个日期标签
@@ -108,7 +108,9 @@ class VintageBarChart extends StatelessWidget {
                                     borderRadius: BorderRadius.circular(4),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Colors.black.withValues(alpha: 0.1),
+                                        color: Colors.black.withValues(
+                                          alpha: 0.1,
+                                        ),
                                         blurRadius: 2,
                                         offset: const Offset(0, 1),
                                       ),
@@ -186,10 +188,7 @@ class VintageBarChart extends StatelessWidget {
     switch (theme) {
       case AppTheme.themeGardenOfWords:
         return _VintageChartColors(
-          corkColors: [
-            const Color(0xFF5D4037),
-            const Color(0xFF4E342E),
-          ],
+          corkColors: [const Color(0xFF5D4037), const Color(0xFF4E342E)],
           noteColors: [
             const Color(0xFFC8E6C9),
             const Color(0xFFA5D6A7),
@@ -200,10 +199,7 @@ class VintageBarChart extends StatelessWidget {
         );
       case AppTheme.themeTwilight:
         return _VintageChartColors(
-          corkColors: [
-            const Color(0xFF4A148C),
-            const Color(0xFF311B92),
-          ],
+          corkColors: [const Color(0xFF4A148C), const Color(0xFF311B92)],
           noteColors: [
             const Color(0xFFF8BBD0),
             const Color(0xFFF48FB1),
@@ -214,10 +210,7 @@ class VintageBarChart extends StatelessWidget {
         );
       case AppTheme.themeAfterRain:
         return _VintageChartColors(
-          corkColors: [
-            const Color(0xFF37474F),
-            const Color(0xFF263238),
-          ],
+          corkColors: [const Color(0xFF37474F), const Color(0xFF263238)],
           noteColors: [
             const Color(0xFFE1F5FE),
             const Color(0xFFB3E5FC),
@@ -228,10 +221,7 @@ class VintageBarChart extends StatelessWidget {
         );
       case AppTheme.themeSeaFlower:
         return _VintageChartColors(
-          corkColors: [
-            const Color(0xFF880E4F),
-            const Color(0xFFAD1457),
-          ],
+          corkColors: [const Color(0xFF880E4F), const Color(0xFFAD1457)],
           noteColors: [
             const Color(0xFFFCE4EC),
             const Color(0xFFF8BBD0),
@@ -242,10 +232,7 @@ class VintageBarChart extends StatelessWidget {
         );
       case AppTheme.themeMidnight:
         return _VintageChartColors(
-          corkColors: [
-            const Color(0xFF0D1117),
-            const Color(0xFF161b22),
-          ],
+          corkColors: [const Color(0xFF0D1117), const Color(0xFF161b22)],
           noteColors: [
             const Color(0xFFC5CAE9),
             const Color(0xFF9FA8DA),
@@ -256,10 +243,7 @@ class VintageBarChart extends StatelessWidget {
         );
       case AppTheme.themeAmberLens:
         return _VintageChartColors(
-          corkColors: [
-            const Color(0xFF3E2723),
-            const Color(0xFF4E342E),
-          ],
+          corkColors: [const Color(0xFF3E2723), const Color(0xFF4E342E)],
           noteColors: [
             const Color(0xFFFFECB3),
             const Color(0xFFFFE082),
@@ -270,10 +254,7 @@ class VintageBarChart extends StatelessWidget {
         );
       default: // Vintage
         return _VintageChartColors(
-          corkColors: [
-            const Color(0xFF8D6E63),
-            const Color(0xFF6D4C41),
-          ],
+          corkColors: [const Color(0xFF8D6E63), const Color(0xFF6D4C41)],
           noteColors: [
             const Color(0xFFFFF9C4),
             const Color(0xFFFFF59D),
@@ -337,10 +318,7 @@ class _StickyNote extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [
-                noteColor,
-                noteColor.withValues(alpha: 0.9),
-              ],
+              colors: [noteColor, noteColor.withValues(alpha: 0.9)],
             ),
             borderRadius: BorderRadius.circular(2),
             boxShadow: [
@@ -368,7 +346,10 @@ class _StickyNote extends StatelessWidget {
                     // 胶带效果
                     Container(
                       height: 8,
-                      margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 2,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
@@ -435,10 +416,7 @@ class _CorkTexturePainter extends CustomPainter {
         ..color = Colors.brown.withValues(alpha: 0.05)
         ..style = PaintingStyle.fill;
 
-      canvas.drawRect(
-        Rect.fromLTWH(x, y, width, height),
-        paint,
-      );
+      canvas.drawRect(Rect.fromLTWH(x, y, width, height), paint);
     }
   }
 

@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
 import 'package:path_provider/path_provider.dart';
@@ -8,7 +7,8 @@ import 'package:crypto/crypto.dart';
 import 'dart:convert';
 
 class ThumbnailCacheService {
-  static final ThumbnailCacheService _instance = ThumbnailCacheService._internal();
+  static final ThumbnailCacheService _instance =
+      ThumbnailCacheService._internal();
   factory ThumbnailCacheService() => _instance;
   ThumbnailCacheService._internal();
 
@@ -78,7 +78,10 @@ class ThumbnailCacheService {
   }
 
   /// 生成缩略图（使用 compute 在后台线程执行）
-  Future<Uint8List?> generateThumbnail(String imagePath, {int size = thumbnailSize}) async {
+  Future<Uint8List?> generateThumbnail(
+    String imagePath, {
+    int size = thumbnailSize,
+  }) async {
     try {
       final file = File(imagePath);
       if (!await file.exists()) return null;
@@ -153,10 +156,12 @@ Uint8List? _processImage(_ProcessImageData data) {
     int targetWidth, targetHeight;
     if (original.width > original.height) {
       targetWidth = data.targetSize;
-      targetHeight = (original.height * data.targetSize / original.width).round();
+      targetHeight = (original.height * data.targetSize / original.width)
+          .round();
     } else {
       targetHeight = data.targetSize;
-      targetWidth = (original.width * data.targetSize / original.height).round();
+      targetWidth = (original.width * data.targetSize / original.height)
+          .round();
     }
 
     // 生成缩略图

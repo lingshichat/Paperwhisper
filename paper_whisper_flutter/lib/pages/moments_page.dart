@@ -190,10 +190,9 @@ class _MomentsPageState extends State<MomentsPage> {
       return _cachedFilteredMoments;
     }
 
-    final filteredMoments =
-        _latestMoments
-            .where((moment) => moment.content.contains(query))
-            .toList(growable: false);
+    final filteredMoments = _latestMoments
+        .where((moment) => moment.content.contains(query))
+        .toList(growable: false);
 
     _cachedSearchQuery = query;
     _cachedSearchRevision = _momentsRevision;
@@ -243,23 +242,22 @@ class _MomentsPageState extends State<MomentsPage> {
         if (!mounted) return;
         final go = await showDialog<bool>(
           context: context,
-          builder:
-              (ctx) => SkeuomorphicDialog(
-                title: '今日额度已用完',
-                headerIcon: Icons.lock_outline,
-                content: const Text('免费版每日 3 条随心记。赞助后解锁无限创作、WebDAV 同步与更多能力。'),
-                actions: [
-                  SkeuomorphicDialogButton(
-                    label: '取消',
-                    isPrimary: false,
-                    onPressed: () => Navigator.pop(ctx, false),
-                  ),
-                  SkeuomorphicDialogButton(
-                    label: '去赞助',
-                    onPressed: () => Navigator.pop(ctx, true),
-                  ),
-                ],
+          builder: (ctx) => SkeuomorphicDialog(
+            title: '今日额度已用完',
+            headerIcon: Icons.lock_outline,
+            content: const Text('免费版每日 3 条随心记。赞助后解锁无限创作、WebDAV 同步与更多能力。'),
+            actions: [
+              SkeuomorphicDialogButton(
+                label: '取消',
+                isPrimary: false,
+                onPressed: () => Navigator.pop(ctx, false),
               ),
+              SkeuomorphicDialogButton(
+                label: '去赞助',
+                onPressed: () => Navigator.pop(ctx, true),
+              ),
+            ],
+          ),
         );
         if (go == true && mounted) {
           Navigator.push(
@@ -318,19 +316,23 @@ class _MomentsPageState extends State<MomentsPage> {
     if (mounted) {
       final syncProvider = context.read<SyncProvider>();
       await syncProvider.refreshTrustSnapshot();
+      if (!mounted) return;
       final pendingCount = syncProvider.trustSnapshot.totalPendingCount;
 
       if (syncProvider.config.enabled &&
           syncProvider.config.autoSync &&
           syncProvider.isConfigured) {
         SkeuomorphicToast.info(context, '记录已保存，准备同步...');
+        if (!mounted) return;
         final granted = await syncProvider.checkNotificationPermission(context);
         if (mounted && granted) {
           unawaited(syncProvider.requestAutoSync(context: context));
         }
       } else if (syncProvider.config.enabled && pendingCount > 0) {
+        if (!mounted) return;
         SkeuomorphicToast.info(context, '已保存，尚有 $pendingCount 项待同步');
       } else {
+        if (!mounted) return;
         SkeuomorphicToast.success(context, '记录已保存');
       }
     }
@@ -405,8 +407,8 @@ class _MomentsPageState extends State<MomentsPage> {
             SkeuomorphicDialogButton(
               label: '生成',
               isPrimary: true,
-              onPressed:
-                  () => Navigator.pop(ctx, inputVal.isEmpty ? title : inputVal),
+              onPressed: () =>
+                  Navigator.pop(ctx, inputVal.isEmpty ? title : inputVal),
             ),
           ],
         );
@@ -424,6 +426,7 @@ class _MomentsPageState extends State<MomentsPage> {
 
         final syncProvider = context.read<SyncProvider>();
         await syncProvider.refreshTrustSnapshot();
+        if (!mounted) return;
         if (syncProvider.config.autoSync && syncProvider.isConfigured) {
           final granted = await syncProvider.checkNotificationPermission(
             context,
@@ -432,16 +435,17 @@ class _MomentsPageState extends State<MomentsPage> {
             unawaited(syncProvider.requestAutoSync(context: context));
           }
         }
-
+        if (!mounted) return;
         SkeuomorphicToast.success(context, '生成成功，正在跳转...');
 
         // Auto navigate to Writer
+        if (!mounted) return;
         Navigator.of(context).pushReplacement(
           PageRouteBuilder(
-            pageBuilder: (_, __, ___) => const DiaryListPage(),
+            pageBuilder: (_, _, _) => const DiaryListPage(),
             transitionDuration: const Duration(milliseconds: 500),
-            transitionsBuilder:
-                (_, a, __, c) => FadeTransition(opacity: a, child: c),
+            transitionsBuilder: (_, a, _, c) =>
+                FadeTransition(opacity: a, child: c),
           ),
         );
       } catch (e) {
@@ -513,8 +517,9 @@ class _MomentsPageState extends State<MomentsPage> {
       (provider) => provider.momentsSearchQuery,
     );
     final bool isSearchActive = searchQuery.isNotEmpty;
-    final List<Moment> filteredMoments =
-        isSearchActive ? _getFilteredMoments(searchQuery) : const [];
+    final List<Moment> filteredMoments = isSearchActive
+        ? _getFilteredMoments(searchQuery)
+        : const [];
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -553,11 +558,8 @@ class _MomentsPageState extends State<MomentsPage> {
                         },
                         child: RulerDatePicker(
                           selectedDate: _selectedDate,
-                          onDateChanged:
-                              (d) => _onDateChanged(
-                                d,
-                                animate: false,
-                              ), // 不驱动 PageView
+                          onDateChanged: (d) =>
+                              _onDateChanged(d, animate: false), // 不驱动 PageView
                           controller: _rulerController,
                           accentColor: rulerAccent,
                           backgroundColor: rulerBg,
@@ -608,15 +610,15 @@ class _MomentsPageState extends State<MomentsPage> {
                                   borderRadius: BorderRadius.circular(24),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withValues(alpha: 
-                                        0.2,
+                                      color: Colors.black.withValues(
+                                        alpha: 0.2,
                                       ), // Deep shadow
                                       blurRadius: 15,
                                       offset: const Offset(0, 8),
                                     ),
                                     BoxShadow(
-                                      color: Colors.black.withValues(alpha: 
-                                        0.1,
+                                      color: Colors.black.withValues(
+                                        alpha: 0.1,
                                       ), // Ambient shadow
                                       blurRadius: 5,
                                       offset: const Offset(0, 0),
@@ -764,7 +766,9 @@ class _MomentsPageState extends State<MomentsPage> {
                   children: [
                     const SizedBox(
                       width: 300,
-                      child: SidebarWidget(activeSection: SidebarSection.moments),
+                      child: SidebarWidget(
+                        activeSection: SidebarSection.moments,
+                      ),
                     ),
                     Expanded(child: content),
                   ],
@@ -779,8 +783,8 @@ class _MomentsPageState extends State<MomentsPage> {
         if (_isSearching) {
           headerTitle = SkeuomorphicSearchBar(
             value: searchQuery,
-            onChanged:
-                (val) => context.read<DiaryProvider>().setMomentsSearchQuery(val),
+            onChanged: (val) =>
+                context.read<DiaryProvider>().setMomentsSearchQuery(val),
             autoFocus: true,
           );
         } else {
@@ -1000,11 +1004,10 @@ class _MomentsPageState extends State<MomentsPage> {
             ),
           ),
           GestureDetector(
-            onTap:
-                () => Navigator.push(
-                  context,
-                  SlidePageRoute(page: const PremiumMembershipPage()),
-                ),
+            onTap: () => Navigator.push(
+              context,
+              SlidePageRoute(page: const PremiumMembershipPage()),
+            ),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               child: Text(
@@ -1026,33 +1029,32 @@ class _MomentsPageState extends State<MomentsPage> {
     // 使用透明容器，确保背景可以穿透显示
     return Container(
       color: Colors.transparent, // 透明背景
-      child:
-          filteredMoments.isEmpty
-              ? Center(
-                child: Opacity(
-                  opacity: 0.7,
-                  child: Text(
-                    '没有找到相关记忆...',
-                    style: GoogleFonts.notoSerifSc(
-                      color: textColor?.withValues(alpha: 0.7) ?? Colors.white70,
-                      fontSize: 16,
-                    ),
+      child: filteredMoments.isEmpty
+          ? Center(
+              child: Opacity(
+                opacity: 0.7,
+                child: Text(
+                  '没有找到相关记忆...',
+                  style: GoogleFonts.notoSerifSc(
+                    color: textColor?.withValues(alpha: 0.7) ?? Colors.white70,
+                    fontSize: 16,
                   ),
                 ),
-              )
-              : ListView.builder(
-                padding: EdgeInsets.only(top: 20, bottom: _inputHeight + 20),
-                itemCount: filteredMoments.length,
-                itemBuilder: (context, i) {
-                  return MomentCard(
-                    moment: filteredMoments[i],
-                    baseDir: _baseDir,
-                    onDelete: () async {
-                      await _handleMomentDeleted(filteredMoments[i].uuid);
-                    },
-                  );
-                },
               ),
+            )
+          : ListView.builder(
+              padding: EdgeInsets.only(top: 20, bottom: _inputHeight + 20),
+              itemCount: filteredMoments.length,
+              itemBuilder: (context, i) {
+                return MomentCard(
+                  moment: filteredMoments[i],
+                  baseDir: _baseDir,
+                  onDelete: () async {
+                    await _handleMomentDeleted(filteredMoments[i].uuid);
+                  },
+                );
+              },
+            ),
     );
   }
 
@@ -1146,8 +1148,10 @@ class _MomentsPageState extends State<MomentsPage> {
 
   Widget _buildEmptyStateForDate(DateTime date) {
     final bool isToday = _isSameDay(date, DateTime.now());
-    final theme =
-        Provider.of<SettingsProvider>(context, listen: false).currentTheme;
+    final theme = Provider.of<SettingsProvider>(
+      context,
+      listen: false,
+    ).currentTheme;
     final themeConfig = AppTheme.getMomentsTheme(theme);
     final Color iconColor = themeConfig['emptyStateIconColor'] as Color;
     final Color textColor = themeConfig['emptyStateTextColor'] as Color;
@@ -1217,24 +1221,22 @@ class _MomentsPageState extends State<MomentsPage> {
               for (int i = 0; i < columnCount; i++)
                 Expanded(
                   child: Padding(
-                    padding:
-                        i < columnCount - 1
-                            ? const EdgeInsets.only(right: 24)
-                            : EdgeInsets.zero,
+                    padding: i < columnCount - 1
+                        ? const EdgeInsets.only(right: 24)
+                        : EdgeInsets.zero,
                     child: Column(
-                      children:
-                          columns[i].map((moment) {
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 24),
-                              child: MomentCard(
-                                moment: moment,
-                                baseDir: _baseDir,
-                                onDelete: () async {
-                                  await _handleMomentDeleted(moment.uuid);
-                                },
-                              ),
-                            );
-                          }).toList(),
+                      children: columns[i].map((moment) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 24),
+                          child: MomentCard(
+                            moment: moment,
+                            baseDir: _baseDir,
+                            onDelete: () async {
+                              await _handleMomentDeleted(moment.uuid);
+                            },
+                          ),
+                        );
+                      }).toList(),
                     ),
                   ),
                 ),

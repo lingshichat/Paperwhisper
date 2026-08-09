@@ -186,30 +186,29 @@ class _MomentCardState extends State<MomentCard> {
   Future<void> _confirmDelete() async {
     showDialog(
       context: context,
-      builder:
-          (ctx) => SkeuomorphicDialog(
-            title: '删除随心记',
-            headerIcon: Icons.delete_forever,
-            content: const Text(
-              '确定要删除这条随心记吗？\n内容会先移入回收站，之后仍可恢复。',
-              textAlign: TextAlign.center,
-            ),
-            actions: [
-              SkeuomorphicDialogButton(
-                label: '取消',
-                isPrimary: false,
-                onPressed: () => Navigator.pop(ctx),
-              ),
-              SkeuomorphicDialogButton(
-                label: '移入回收站',
-                isPrimary: true,
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  if (widget.onDelete != null) widget.onDelete!();
-                },
-              ),
-            ],
+      builder: (ctx) => SkeuomorphicDialog(
+        title: '删除随心记',
+        headerIcon: Icons.delete_forever,
+        content: const Text(
+          '确定要删除这条随心记吗？\n内容会先移入回收站，之后仍可恢复。',
+          textAlign: TextAlign.center,
+        ),
+        actions: [
+          SkeuomorphicDialogButton(
+            label: '取消',
+            isPrimary: false,
+            onPressed: () => Navigator.pop(ctx),
           ),
+          SkeuomorphicDialogButton(
+            label: '移入回收站',
+            isPrimary: true,
+            onPressed: () {
+              Navigator.pop(ctx);
+              if (widget.onDelete != null) widget.onDelete!();
+            },
+          ),
+        ],
+      ),
     );
   }
 
@@ -249,13 +248,12 @@ class _MomentCardState extends State<MomentCard> {
               Navigator.of(context).push(
                 PageRouteBuilder(
                   opaque: false,
-                  pageBuilder:
-                      (_, __, ___) => MomentDetailPage(
-                        moment: widget.moment,
-                        baseDir: widget.baseDir,
-                        heroTag: heroTag,
-                      ),
-                  transitionsBuilder: (_, animation, __, child) {
+                  pageBuilder: (_, _, _) => MomentDetailPage(
+                    moment: widget.moment,
+                    baseDir: widget.baseDir,
+                    heroTag: heroTag,
+                  ),
+                  transitionsBuilder: (_, animation, _, child) {
                     return FadeTransition(opacity: animation, child: child);
                   },
                 ),
@@ -327,8 +325,8 @@ class _MomentCardState extends State<MomentCard> {
                                     SizedBox(
                                       height: 250, // Fixed height for carousel
                                       child: Stack(
-                                        clipBehavior:
-                                            Clip.none, // Allow stack effect to overflow slightly if needed
+                                        clipBehavior: Clip
+                                            .none, // Allow stack effect to overflow slightly if needed
                                         alignment: Alignment.center,
                                         children: [
                                           // "Pile" Effect (Background Layers)
@@ -389,35 +387,30 @@ class _MomentCardState extends State<MomentCard> {
                                                       ).push(
                                                         PageRouteBuilder(
                                                           opaque: false,
-                                                          pageBuilder:
-                                                              (
-                                                                _,
-                                                                __,
-                                                                ___,
-                                                              ) => MomentDetailPage(
-                                                                moment:
-                                                                    widget
-                                                                        .moment,
-                                                                baseDir:
-                                                                    widget
-                                                                        .baseDir,
+                                                          pageBuilder: (_, _, _) =>
+                                                              MomentDetailPage(
+                                                                moment: widget
+                                                                    .moment,
+                                                                baseDir: widget
+                                                                    .baseDir,
                                                                 heroTag:
                                                                     heroTag, // Note: Hero might be tricky with Carousel, might need unique tag per image
                                                                 initialIndex:
                                                                     index, // TODO: Update MomentDetailPage to accept this
                                                               ),
-                                                          transitionsBuilder: (
-                                                            _,
-                                                            animation,
-                                                            __,
-                                                            child,
-                                                          ) {
-                                                            return FadeTransition(
-                                                              opacity:
-                                                                  animation,
-                                                              child: child,
-                                                            );
-                                                          },
+                                                          transitionsBuilder:
+                                                              (
+                                                                _,
+                                                                animation,
+                                                                _,
+                                                                child,
+                                                              ) {
+                                                                return FadeTransition(
+                                                                  opacity:
+                                                                      animation,
+                                                                  child: child,
+                                                                );
+                                                              },
                                                         ),
                                                       );
                                                     },
@@ -458,10 +451,9 @@ class _MomentCardState extends State<MomentCard> {
                                                 width: isActive ? 8 : 6,
                                                 height: isActive ? 8 : 6,
                                                 decoration: BoxDecoration(
-                                                  color:
-                                                      isActive
-                                                          ? indicatorActiveColor
-                                                          : indicatorInactiveColor,
+                                                  color: isActive
+                                                      ? indicatorActiveColor
+                                                      : indicatorInactiveColor,
                                                   shape: BoxShape.circle,
                                                 ),
                                               );
@@ -529,12 +521,11 @@ class _MomentCardState extends State<MomentCard> {
                                             'assets/icon.png',
                                             width: 14,
                                             height: 14,
-                                            errorBuilder:
-                                                (_, __, ___) => Icon(
-                                                  Icons.edit,
-                                                  size: 14,
-                                                  color: metaColor,
-                                                ),
+                                            errorBuilder: (_, _, _) => Icon(
+                                              Icons.edit,
+                                              size: 14,
+                                              color: metaColor,
+                                            ),
                                           ),
                                         ),
                                         const SizedBox(width: 6),
@@ -622,7 +613,7 @@ class _MomentCardState extends State<MomentCard> {
       file,
       fit: BoxFit.cover,
       cacheHeight: 750, // Optimize for list view (250dp * 3.0 pixel ratio)
-      errorBuilder: (_, __, ___) => const SizedBox(),
+      errorBuilder: (_, _, _) => const SizedBox(),
     );
   }
 
