@@ -45,13 +45,13 @@ class MomentIndex {
     }
 
     return MomentIndex._(
-      latestMoments: List.unmodifiable(latestMoments),
-      momentsByDay: Map.unmodifiable(
+      latestMoments: List<Moment>.unmodifiable(latestMoments),
+      momentsByDay: Map<String, List<Moment>>.unmodifiable(
         momentsByDay.map(
-          (key, value) => MapEntry(key, List.unmodifiable(value)),
+          (key, value) => MapEntry(key, List<Moment>.unmodifiable(value)),
         ),
       ),
-      imageCountByDay: Map.unmodifiable(imageCountByDay),
+      imageCountByDay: Map<String, int>.unmodifiable(imageCountByDay),
     );
   }
 

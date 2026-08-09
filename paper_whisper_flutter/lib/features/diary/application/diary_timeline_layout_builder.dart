@@ -89,7 +89,6 @@ class DiaryTimelineLayout {
 /// // plan 只负责位置与年份，不持有文案或 Provider 依赖。
 /// ```
 abstract final class DiaryTimelineLayoutBuilder {
-
   /// 计算时间线布局。
   static DiaryTimelineLayout build({
     required List<DiaryTimelineInput> items,
@@ -121,7 +120,10 @@ abstract final class DiaryTimelineLayoutBuilder {
         if (parts.isNotEmpty) rowYear = int.tryParse(parts[0]) ?? 0;
 
         units.add(
-          DiaryEntryRowUnit(entries: List.unmodifiable(buffer), year: rowYear),
+          DiaryEntryRowUnit(
+            entries: List<DiaryEntry>.unmodifiable(buffer),
+            year: rowYear,
+          ),
         );
         itemYearMap.add(rowYear);
         buffer.clear();
