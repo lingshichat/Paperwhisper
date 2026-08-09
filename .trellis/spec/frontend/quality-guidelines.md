@@ -147,9 +147,45 @@ final results = await Future.wait([...]);
 
 ## Testing Requirements
 
-- Run `flutter analyze` before committing — must pass with zero errors
-- Manual testing on both **Windows** and **Android** for UI changes
-- No automated unit tests are currently enforced (test directory exists but is minimal)
+- Run `flutter analyze` before committing — it must report **0 issues** and exit with code 0
+- Run the complete `flutter test` suite after each change batch; focused tests do not replace the full suite
+- Add observable behavior characterization tests before moving provider, service, persistence, or page orchestration code
+- Manually test UI changes on both **Windows** and **Android** when real devices are available
+- For platform-sensitive widgets, add a repeatable widget smoke test with `ThemeData(platform:)`, representative desktop/mobile viewports, interaction assertions, and `tester.takeException()` checks
+
+### Cross-Platform Widget Smoke
+
+```dart
+testWidgets('renders on desktop and mobile platforms', (tester) async {
+  addTearDown(() {
+    tester.view.resetPhysicalSize();
+    tester.view.resetDevicePixelRatio();
+  });
+
+  tester.view.physicalSize = const Size(1080, 2400);
+  tester.view.devicePixelRatio = 3;
+
+  await tester.pumpWidget(
+    MaterialApp(
+      theme: ThemeData(platform: TargetPlatform.android),
+      home: const TargetPage(),
+    ),
+  );
+
+  expect(tester.takeException(), isNull);
+});
+```
+
+The test must restore global view state even when an assertion fails. It complements, but does not replace, real-device visual inspection.
+
+### Formatting Scope
+
+Dart SDK formatter changes can rewrite an entire legacy file. For narrow fixes:
+
+1. Format only files owned by the current batch.
+2. Keep formatter churn in a reviewable checkpoint separate from later architecture changes.
+3. Review semantic changes with `git diff -w` when formatter output is large.
+4. Never format unrelated files merely to make the repository globally uniform.
 
 ---
 

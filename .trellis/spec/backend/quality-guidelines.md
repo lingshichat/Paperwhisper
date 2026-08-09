@@ -114,7 +114,40 @@ if (Platform.isAndroid) {
 
 - Services should be testable via their `init()` / `reset()` pattern
 - File I/O services should use injectable paths for test isolation
-- No automated tests are currently enforced but services should be designed to be testable
+- Service behavior tests must assert public state, persisted files, or returned values instead of private call order
+
+### Dart Test Doubles And Private State
+
+Dart identifiers beginning with `_` are private to the **library**, not to the class hierarchy. A subclass declared in a test library cannot initialize a superclass field by declaring another field with the same spelling.
+
+```dart
+// Wrong: this is a different field from MomentService._dataDir.
+class FakeMomentService extends MomentService {
+  Directory? _dataDir;
+
+  @override
+  Future<void> init() async {
+    _dataDir = testDirectory;
+  }
+}
+```
+
+Use an explicit test path seam or override the complete public operation instead:
+
+```dart
+// Correct: production initialization owns its private fields.
+final service = MomentService(debugDataDir: testDirectory);
+await service.init();
+await service.saveMoment(moment);
+```
+
+| Case | Expected approach |
+|---|---|
+| Good | Use `debugDataDir` or another constructor dependency and exercise the real public behavior |
+| Base | Override a public getter/method without relying on superclass private state |
+| Bad | Shadow `_dataDir`, `_manifest`, or similar fields in a test subclass and call inherited methods |
+
+Required assertion points for file-backed services: the public result, persisted file/manifest content, and successful reload after `reset()` or a new instance.
 
 ---
 
