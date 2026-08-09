@@ -40,6 +40,12 @@ config.json
 .opencode/
 .rtk/
 AGENTS.md
+
+# 本地 MCP 配置（含密钥）
+.mcp.json
+
+# 本地 Agent 技能（不入库）
+.codex/skills/
 # OS
 .DS_Store
 Thumbs.db
