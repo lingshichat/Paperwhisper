@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as path;
 import 'package:paper_whisper_flutter/config/theme/theme_registry.dart';
+import 'package:paper_whisper_flutter/features/sync/application/sync_run_result.dart';
 import 'package:paper_whisper_flutter/models/sync_config.dart';
 import 'package:paper_whisper_flutter/models/sync_trust_snapshot.dart';
 import 'package:paper_whisper_flutter/pages/sync_settings_page.dart';
@@ -298,8 +299,9 @@ class TestSyncProvider extends SyncProvider {
   }
 
   @override
-  Future<void> sync({bool isAuto = false, BuildContext? context}) async {
+  Future<SyncRunResult> sync({bool isAuto = false}) async {
     syncCallCount++;
+    return const SyncRunResult(status: SyncRunStatus.success);
   }
 }
 

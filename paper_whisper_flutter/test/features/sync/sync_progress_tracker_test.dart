@@ -6,12 +6,10 @@ import 'package:paper_whisper_flutter/features/sync/application/sync_progress_tr
 /// 覆盖 reset / totalProgress 公式与 clamp / markItemProcessed /
 /// resetCurrentFile / 500ms 节流 / onChanged 通知等确定性行为。
 ///
-/// ## API 缺口
-/// 当前 API 无 clock seam：速度与 ETA 计算内部使用 `DateTime.now()`，
-/// 无法注入可控时钟，因此瞬时速度与 ETA 精确值无法确定性断言。
-/// 建议为构造器增加 `DateTime Function()? clock` 注入点（与
-/// AutoSyncScheduler 一致），届时可移除下方真实延迟用例并改为
-/// FakeAsync + 可控时钟的精确断言。
+/// 速度与 ETA 通过构造器注入的 `clock` 精确控制时间，无需真实延迟：
+/// - 500ms 节流窗口边界（499ms 不通知、恰好 500ms 通知）；
+/// - 瞬时速度格式化（B/s / KB/s / MB/s）；
+/// - ETA 文案分支（剩余秒 / 剩余分秒 / 即将完成 / 计算中）。
 void main() {
   group('SyncProgressTracker 确定性行为', () {
     test('reset 重置统计、设置初始文案并通知', () {
@@ -98,18 +96,6 @@ void main() {
       expect(tracker.currentFileProgress, 0.0);
     });
 
-    test('500ms 节流窗口内重复回调更新进度但不通知', () {
-      var changed = 0;
-      final tracker = SyncProgressTracker(onChanged: () => changed++);
-      tracker.reset(3); // changed = 1
-      tracker.onFileProgress(10, 100); // changed = 2，首次刷新
-
-      tracker.onFileProgress(20, 100); // 同一毫秒内，节流
-
-      expect(tracker.currentFileProgress, 0.2, reason: '进度本身仍应更新');
-      expect(changed, 2, reason: '节流窗口内不得重复通知');
-    });
-
     test('无剩余项时 ETA 显示即将完成', () {
       final tracker = SyncProgressTracker();
       tracker.reset(2);
@@ -122,33 +108,95 @@ void main() {
     });
   });
 
-  // 速度与 ETA 依赖真实时钟（缺 clock seam，见文件头注释）。
-  // 使用一次短延迟验证格式化与更新路径，断言保持宽松以容忍计时抖动。
-  group('SyncProgressTracker 速度与 ETA（真实时钟，短延迟）', () {
-    test('完成项后第二次进度回调计算瞬时速度并进入剩余文案分支', () async {
+  group('SyncProgressTracker 节流与速度/ETA（注入时钟）', () {
+    test('500ms 节流窗口内重复回调更新进度但不通知', () {
+      var now = DateTime(2026, 1, 1, 12, 0, 0);
       var changed = 0;
-      final tracker = SyncProgressTracker(onChanged: () => changed++);
-      tracker.reset(10);
+      final tracker = SyncProgressTracker(
+        onChanged: () => changed++,
+        clock: () => now,
+      );
+      tracker.reset(3); // changed = 1
+      tracker.onFileProgress(10, 100); // changed = 2，首次刷新，_lastSpeedUpdate = t0
+
+      now = now.add(const Duration(milliseconds: 499));
+      tracker.onFileProgress(20, 100); // 节流窗口内（<500ms）
+
+      expect(tracker.currentFileProgress, 0.2, reason: '进度本身仍应更新');
+      expect(changed, 2, reason: '节流窗口内不得重复通知');
+
+      now = now.add(const Duration(milliseconds: 1)); // 距 t0 恰好 500ms
+      tracker.onFileProgress(30, 100); // 跨过窗口：刷新速度/ETA 并通知
+
+      expect(changed, 3, reason: '恰好 500ms 时应触发节流刷新');
+    });
+
+    test('完成项后第二次进度回调计算瞬时速度与剩余秒数', () {
+      var now = DateTime(2026, 1, 1, 12, 0, 0);
+      var changed = 0;
+      final tracker = SyncProgressTracker(
+        onChanged: () => changed++,
+        clock: () => now,
+      );
+      tracker.reset(10); // changed = 1，batchStart = t0
       tracker.markItemProcessed(); // processed = 1
-      tracker.onFileProgress(50, 100); // 首次：speed = '计算中...'
 
-      await Future<void>.delayed(const Duration(milliseconds: 700));
+      tracker.onFileProgress(50, 100); // changed = 2，首次：speed = '计算中...'
+      expect(tracker.currentFileSpeed, '计算中...');
 
-      tracker.onFileProgress(100, 100); // 第二次：计算速度与 ETA
+      now = now.add(const Duration(milliseconds: 700));
+      tracker.onFileProgress(100, 100); // changed = 3
 
-      expect(tracker.currentFileProgress, 1.0);
-      expect(
-        tracker.currentFileSpeed,
-        endsWith(' B/s'),
-        reason: '瞬时速度应格式化为 B/s（约 71 B/s，容忍抖动）',
-      );
-      expect(tracker.currentFileSpeed, isNot('计算中...'));
-      expect(
-        tracker.etaMessage,
-        startsWith('剩余'),
-        reason: '有剩余项时应进入“剩余 X 秒”分支',
-      );
-      expect(changed, 3, reason: 'reset + 首次回调 + 第二次回调各通知一次');
+      // 瞬时速度：bytesDiff=50 / 700ms → 71.4 B/s → '71 B/s'
+      expect(tracker.currentFileSpeed, '71 B/s');
+      // ETA：700ms/项 × (10 - 1 - 1.0) 剩余 → 5600ms → '剩余 5 秒'
+      expect(tracker.etaMessage, '剩余 5 秒');
+      expect(changed, 3, reason: 'reset + 首次回调 + 跨窗口回调各通知一次');
+    });
+
+    test('速度按 KB/s 与 MB/s 格式化', () {
+      var now = DateTime(2026, 1, 1, 12, 0, 0);
+      final tracker = SyncProgressTracker(clock: () => now);
+      tracker.reset(10);
+      tracker.markItemProcessed();
+
+      // KB/s：2048 B 增量 / 1000ms → 2048 B/s → 2.0 KB/s
+      tracker.onFileProgress(1024, 4096);
+      now = now.add(const Duration(seconds: 1));
+      tracker.onFileProgress(3072, 4096);
+      expect(tracker.currentFileSpeed, '2.0 KB/s');
+
+      // MB/s：2 MiB 增量 / 1000ms → 2.0 MB/s
+      now = now.add(const Duration(seconds: 1));
+      tracker.onFileProgress(3072 + 2 * 1024 * 1024, 4096 * 1024 * 1024);
+      expect(tracker.currentFileSpeed, '2.0 MB/s');
+    });
+
+    test('ETA 进入剩余分秒分支', () {
+      var now = DateTime(2026, 1, 1, 12, 0, 0);
+      final tracker = SyncProgressTracker(clock: () => now);
+      tracker.reset(10);
+      tracker.markItemProcessed();
+
+      tracker.onFileProgress(50, 100);
+      now = now.add(const Duration(milliseconds: 61000));
+      tracker.onFileProgress(100, 100);
+
+      // 61000ms/项 × (10 - 1 - 1.0) = 488000ms = 8 分 8 秒
+      expect(tracker.etaMessage, '剩余 8 分 8 秒');
+    });
+
+    test('完成项数不变时速度不重复计算（count 未增长不刷新）', () {
+      var now = DateTime(2026, 1, 1, 12, 0, 0);
+      final tracker = SyncProgressTracker(clock: () => now);
+      tracker.reset(10);
+      tracker.markItemProcessed();
+
+      tracker.onFileProgress(100, 100); // 首次：speed = '计算中...'
+      now = now.add(const Duration(seconds: 1));
+      tracker.onFileProgress(100, 100); // count 未增长：不计算速度
+
+      expect(tracker.currentFileSpeed, '计算中...');
     });
   });
 }

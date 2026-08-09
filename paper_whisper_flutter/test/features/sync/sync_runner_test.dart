@@ -164,6 +164,8 @@ void main() {
     Future<void> buildRunner({
       FakeCloudStorageService? storageOverride,
       FakeMomentService? momentOverride,
+      Duration batchDelay = Duration.zero,
+      Duration imageDownloadTimeout = const Duration(seconds: 15),
     }) async {
       storage = storageOverride ?? FakeCloudStorageService();
       momentService = momentOverride ?? FakeMomentService(baseDir);
@@ -180,6 +182,8 @@ void main() {
         onNotify: (progress, max, {body, indeterminate = false}) {
           if (body != null) notifications.add(body);
         },
+        batchDelay: batchDelay,
+        imageDownloadTimeout: imageDownloadTimeout,
       );
     }
 
@@ -821,6 +825,118 @@ void main() {
 
       expect(notifications, isNotEmpty);
       expect(notifications, contains('开始同步 1 个变更...'));
+    });
+
+    test('image download timeout records failedDownloads when remote image hangs', () async {
+      // 远端存在被引用但本地缺失的图片，下载永不完成 →
+      // Runner 的 imageDownloadTimeout 触发 TimeoutException 进入 failedDownloads
+      final fakeMoments = FakeMomentService(
+        baseDir,
+        referencedImages: const <String>{'hang.jpg'},
+      );
+      await fakeMoments.init();
+      storage = FakeCloudStorageService(
+        hangingDownloadFor: const <String>{'hang.jpg'},
+      );
+      storage.remoteFiles['${WebDavSyncService.momentsImagesPath}hang.jpg'] =
+          'image-bytes';
+
+      await buildRunner(
+        storageOverride: storage,
+        momentOverride: fakeMoments,
+        imageDownloadTimeout: const Duration(milliseconds: 50),
+      );
+      diaryService = await buildDiaryService();
+
+      final outcome = await runner.run(
+        isAuto: true,
+        diaryService: diaryService,
+      );
+
+      expect(outcome.failedDownloads, greaterThan(0));
+      expect(outcome.hasFailures, isTrue);
+      expect(
+        outcome.errors.any((e) => e.contains('image download')),
+        isTrue,
+        reason: '超时应计入图片下载失败分类',
+      );
+      // 超时失败不计入已完成图片数
+      expect(outcome.processedImages, 0);
+    });
+
+    test('batch processes uploads serially in manifest order', () async {
+      await buildRunner();
+      diaryService = await buildDiaryService();
+
+      const files = <String>[
+        '2026-03-12_a.txt',
+        '2026-03-12_b.txt',
+        '2026-03-12_c.txt',
+      ];
+      for (var i = 0; i < files.length; i++) {
+        await writeDiaryFile(files[i], 'content $i');
+        diaryService.manifestService.updateItem(
+          files[i],
+          isDeleted: false,
+          timestamp: 100 + i,
+        );
+      }
+
+      final outcome = await runner.run(
+        isAuto: true,
+        diaryService: diaryService,
+      );
+
+      expect(outcome.processedDiaries, 3);
+      expect(outcome.hasFailures, isFalse);
+      // batch=1 串行：上传顺序与 manifest 迭代顺序一致（确定性）
+      expect(storage.uploadedPaths, <String>[
+        '${WebDavSyncService.diaryBasePath}2026-03-12_a.txt',
+        '${WebDavSyncService.diaryBasePath}2026-03-12_b.txt',
+        '${WebDavSyncService.diaryBasePath}2026-03-12_c.txt',
+      ]);
+    });
+
+    test('batch continues after an individual item failure', () async {
+      await buildRunner(
+        storageOverride: FakeCloudStorageService(failUploadFor: 'b.txt'),
+      );
+      diaryService = await buildDiaryService();
+
+      const files = <String>[
+        '2026-03-12_a.txt',
+        '2026-03-12_b.txt',
+        '2026-03-12_c.txt',
+      ];
+      for (var i = 0; i < files.length; i++) {
+        await writeDiaryFile(files[i], 'content $i');
+        diaryService.manifestService.updateItem(
+          files[i],
+          isDeleted: false,
+          timestamp: 100 + i,
+        );
+      }
+
+      final outcome = await runner.run(
+        isAuto: true,
+        diaryService: diaryService,
+      );
+
+      expect(outcome.failedUploads, 1);
+      expect(outcome.processedDiaries, 2);
+      expect(outcome.hasFailures, isTrue);
+      expect(
+        storage.uploadedPaths,
+        containsAll(<String>[
+          '${WebDavSyncService.diaryBasePath}2026-03-12_a.txt',
+          '${WebDavSyncService.diaryBasePath}2026-03-12_c.txt',
+        ]),
+      );
+      expect(
+        storage.uploadedPaths.any((p) => p.contains('2026-03-12_b.txt')),
+        isFalse,
+        reason: '失败项不得上传',
+      );
     });
   });
 }

@@ -1,8 +1,9 @@
 import 'dart:io';
 
-import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as path;
+import 'package:paper_whisper_flutter/features/sync/application/auto_sync_scheduler.dart';
+import 'package:paper_whisper_flutter/features/sync/application/sync_run_result.dart';
 import 'package:paper_whisper_flutter/models/diary_entry.dart';
 import 'package:paper_whisper_flutter/models/moment.dart';
 import 'package:paper_whisper_flutter/models/sync_config.dart';
@@ -54,8 +55,9 @@ void main() {
         ),
       );
 
-      await provider.requestAutoSync(fromLifecycle: true);
+      final decision = await provider.requestAutoSync(fromLifecycle: true);
 
+      expect(decision, isNull, reason: '未启用自动同步时命令被跳过');
       expect(provider.syncCallCount, 0);
     });
 
@@ -123,8 +125,9 @@ void main() {
         await provider.ensureInitialized();
 
         // 默认配置未启用：sync 应安全早退，不连接、不改变信任状态
-        await provider.sync();
+        final result = await provider.sync();
 
+        expect(result.status, SyncRunStatus.notEnabled);
         expect(provider.trustSnapshot.state, SyncTrustState.notEnabled);
         expect(provider.lastError, isEmpty);
         expect(webDav.isConnected, isFalse);
@@ -154,8 +157,10 @@ void main() {
           ),
         );
 
-        await provider.sync();
+        final result = await provider.sync();
 
+        expect(result.status, SyncRunStatus.needsAttention);
+        expect(result.failureMessage, '配置异常，请检查账号或服务器地址');
         expect(provider.trustSnapshot.state, SyncTrustState.needsAttention);
         expect(provider.lastError, '配置异常，请检查账号或服务器地址');
         expect(webDav.isConnected, isFalse);
@@ -440,6 +445,172 @@ void main() {
         expect(provider.trustSnapshot.totalPendingCount, 0);
       },
     );
+
+    test('sync returns connectionFailed result when connection fails', () async {
+      final provider = SyncProvider(
+        webDavService: FakeWebDavSyncService(
+          connectResult: false,
+          connectionError: 'SocketException: Failed host lookup',
+        ),
+        momentService: FakeMomentService(tempDir),
+        secretStore: SyncSecretStore.fake(),
+        initializeNotifications: false,
+      );
+
+      await provider.saveConfig(
+        SyncConfig(
+          enabled: true,
+          autoSync: true,
+          serverUrl: 'https://dav.example.com/',
+          username: 'demo',
+          password: 'secret',
+        ),
+      );
+
+      final result = await provider.sync();
+
+      expect(result.status, SyncRunStatus.connectionFailed);
+      expect(result.failureMessage, '网络异常，请稍后重试');
+      expect(provider.trustSnapshot.state, SyncTrustState.syncFailed);
+    });
+
+    test('sync returns alreadySyncing result while a sync is in progress', () async {
+      final provider = SyncProvider(
+        webDavService: FakeWebDavSyncService(),
+        momentService: FakeMomentService(tempDir),
+        secretStore: SyncSecretStore.fake(),
+        initializeNotifications: false,
+      );
+
+      await provider.saveConfig(
+        SyncConfig(
+          enabled: true,
+          autoSync: true,
+          serverUrl: 'https://dav.example.com/',
+          username: 'demo',
+          password: 'secret',
+        ),
+      );
+
+      // 将信任态置为 syncing（模拟正在执行的同步），重入保护应返回 typed result
+      await provider.refreshTrustSnapshot(
+        overrideState: SyncTrustState.syncing,
+      );
+
+      final result = await provider.sync();
+
+      expect(result.status, SyncRunStatus.alreadySyncing);
+      expect(result.failureMessage, isEmpty);
+    });
+
+    test('sync returns success result with zero changes on a clean state', () async {
+      final diaryService = FakeDiaryService(tempDir);
+      await diaryService.init();
+      final diaryProvider = DiaryProvider(diaryService, <DiaryEntry>[]);
+      final provider = SyncProvider(
+        webDavService: FakeWebDavSyncService(),
+        momentService: FakeMomentService(tempDir),
+        secretStore: SyncSecretStore.fake(),
+        initializeNotifications: false,
+      );
+      provider.updateDiaryProvider(diaryProvider);
+
+      await provider.saveConfig(
+        SyncConfig(
+          enabled: true,
+          autoSync: true,
+          serverUrl: 'https://dav.example.com/',
+          username: 'demo',
+          password: 'secret',
+        ),
+      );
+
+      final result = await provider.sync();
+
+      expect(result.status, SyncRunStatus.success);
+      expect(result.hasChanges, isFalse);
+      expect(result.processedDiaries, 0);
+      expect(result.processedMoments, 0);
+      expect(provider.trustSnapshot.state, SyncTrustState.syncedSuccessfully);
+      expect(provider.trustSnapshot.totalPendingCount, 0);
+      expect(provider.lastSyncTime, isNotNull);
+    });
+
+    test('requestAutoSync schedules a debounced sync when auto sync is enabled', () async {
+      final provider = SyncProvider(
+        webDavService: FakeWebDavSyncService(),
+        momentService: FakeMomentService(tempDir),
+        secretStore: SyncSecretStore.fake(),
+        initializeNotifications: false,
+      );
+
+      await provider.saveConfig(
+        SyncConfig(
+          enabled: true,
+          autoSync: true,
+          serverUrl: 'https://dav.example.com/',
+          username: 'demo',
+          password: 'secret',
+        ),
+      );
+
+      // 首次触发（无上次同步时间）不受冷却限制，返回防抖排定决策
+      final decision = await provider.requestAutoSync(fromLifecycle: true);
+
+      expect(decision, AutoSyncDecision.scheduled);
+      // 先排空 saveConfig 后台 connect 的异步链，再释放调度器取消 30s 防抖
+      await pumpEventQueue();
+      provider.dispose();
+    });
+
+    test('requestAutoSync force triggers immediately even when auto sync is off', () async {
+      final provider = TestableSyncProvider(
+        webDavService: FakeWebDavSyncService(),
+        momentService: FakeMomentService(tempDir),
+        secretStore: SyncSecretStore.fake(),
+        initializeNotifications: false,
+      );
+
+      await provider.saveConfig(
+        SyncConfig(
+          enabled: true,
+          autoSync: false,
+          serverUrl: 'https://dav.example.com/',
+          username: 'demo',
+          password: 'secret',
+        ),
+      );
+
+      final decision = await provider.requestAutoSync(force: true);
+
+      expect(decision, AutoSyncDecision.triggeredNow);
+      await pumpEventQueue();
+      expect(provider.syncCallCount, 1);
+    });
+
+    test('requestAutoSync returns null and marks needsAttention when credentials missing', () async {
+      final provider = SyncProvider(
+        webDavService: FakeWebDavSyncService(),
+        momentService: FakeMomentService(tempDir),
+        secretStore: SyncSecretStore.fake(),
+        initializeNotifications: false,
+      );
+
+      await provider.saveConfig(
+        SyncConfig(
+          enabled: true,
+          autoSync: true,
+          serverUrl: 'https://dav.example.com/',
+          username: '',
+          password: '',
+        ),
+      );
+
+      final decision = await provider.requestAutoSync(fromLifecycle: true);
+
+      expect(decision, isNull);
+      expect(provider.trustSnapshot.state, SyncTrustState.needsAttention);
+    });
   });
 }
 
@@ -448,14 +619,17 @@ class TestableSyncProvider extends SyncProvider {
 
   TestableSyncProvider({
     super.webDavService,
+    super.s3Service,
     super.momentService,
     super.secretStore,
+    super.notificationService,
     super.initializeNotifications,
   });
 
   @override
-  Future<void> sync({bool isAuto = false, BuildContext? context}) async {
+  Future<SyncRunResult> sync({bool isAuto = false}) async {
     syncCallCount++;
+    return const SyncRunResult(status: SyncRunStatus.success);
   }
 }
 

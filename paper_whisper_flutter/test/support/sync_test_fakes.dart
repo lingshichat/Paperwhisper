@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:path/path.dart' as path;
@@ -17,6 +18,7 @@ class FakeCloudStorageService implements CloudStorageService {
     this.failUploadFor,
     this.failDownloadFor,
     this.downloadError = 'Network failure',
+    this.hangingDownloadFor = const <String>{},
   });
 
   /// remotePath 包含该子串时上传抛错。
@@ -25,6 +27,10 @@ class FakeCloudStorageService implements CloudStorageService {
   /// remotePath 包含该子串时下载抛错。
   final String? failDownloadFor;
   final String downloadError;
+
+  /// remotePath 包含任一子串时下载永不完成（配合 Runner 的
+  /// `imageDownloadTimeout` 覆盖图片下载超时进入 failedDownloads 的路径）。
+  final Set<String> hangingDownloadFor;
 
   /// 内存远端文件表（完整云端路径 → 内容）。
   final Map<String, String> remoteFiles = <String, String>{};
@@ -82,6 +88,12 @@ class FakeCloudStorageService implements CloudStorageService {
   }) async {
     if (failDownloadFor != null && remotePath.contains(failDownloadFor!)) {
       throw Exception(downloadError);
+    }
+    if (hangingDownloadFor.any(remotePath.contains)) {
+      // 永不完成：由 Runner 的 `.timeout` 触发 TimeoutException。
+      // 不使用延迟 Timer（避免测试结束时的 pending timer 失败）。
+      await Completer<void>().future;
+      return;
     }
     final content = remoteFiles[remotePath];
     if (content == null) {
