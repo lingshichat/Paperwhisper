@@ -4,8 +4,8 @@ import 'package:flutter/rendering.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
-import 'package:audioplayers/audioplayers.dart';
 import '../features/export/data/export_path_resolver.dart';
+import '../features/moments/application/moment_audio_controller.dart';
 import 'dart:async';
 
 import 'dart:io';
@@ -29,9 +29,17 @@ class MomentCard extends StatefulWidget {
     this.baseDir,
     this.onTap,
     this.onDelete,
+    this.controller,
   });
 
   final VoidCallback? onDelete;
+
+  /// 音频控制器（测试注入用）。
+  ///
+  /// 不注入时生产代码按
+  /// `moment.audioPath / baseDir.path / audioDuration` 自行创建并持有
+  /// （owned）；注入时卡片只订阅状态流、不负责释放。
+  final MomentAudioController? controller;
 
   @override
   State<MomentCard> createState() => _MomentCardState();
@@ -42,73 +50,60 @@ class _MomentCardState extends State<MomentCard> {
   bool _showWatermark = false;
   int _currentIndex = 0;
 
-  // Audio Player State
-  final AudioPlayer _audioPlayer = AudioPlayer();
-  bool _isPlaying = false;
-  Duration _audioPosition = Duration.zero;
-  Duration _audioDuration = Duration.zero;
-  StreamSubscription? _playerCompleteSub;
-  StreamSubscription? _playerStateSub;
-  StreamSubscription? _playerPositionSub;
-  StreamSubscription? _playerDurationSub;
+  // Audio Playback：状态与播放决策全部委托 MomentAudioController。
+  MomentAudioController? _audioController;
+  bool _ownsAudioController = false;
+  StreamSubscription<MomentAudioState>? _audioStateSub;
 
   @override
   void initState() {
     super.initState();
-    if (widget.moment.audioDuration != null) {
-      _audioDuration = Duration(seconds: widget.moment.audioDuration!);
+    final injected = widget.controller;
+    if (injected != null) {
+      _audioController = injected;
+    } else if (widget.moment.audioPath != null) {
+      // 生产：按 moment.audioPath / baseDir.path / audioDuration 创建并持有。
+      _audioController = MomentAudioController(
+        audioPath: widget.moment.audioPath,
+        baseDir: widget.baseDir?.path,
+        initialDuration: widget.moment.audioDuration != null
+            ? Duration(seconds: widget.moment.audioDuration!)
+            : null,
+      );
+      _ownsAudioController = true;
     }
-    _initAudio();
-  }
-
-  void _initAudio() {
-    _playerStateSub = _audioPlayer.onPlayerStateChanged.listen((state) {
-      if (mounted) setState(() => _isPlaying = state == PlayerState.playing);
-    });
-
-    _playerDurationSub = _audioPlayer.onDurationChanged.listen((d) {
-      if (mounted) setState(() => _audioDuration = d);
-    });
-
-    _playerPositionSub = _audioPlayer.onPositionChanged.listen((p) {
-      if (mounted) setState(() => _audioPosition = p);
-    });
-
-    _playerCompleteSub = _audioPlayer.onPlayerComplete.listen((_) {
-      if (mounted) {
-        setState(() {
-          _isPlaying = false;
-          _audioPosition = Duration.zero;
-        });
-      }
-    });
+    final controller = _audioController;
+    if (controller != null) {
+      controller.initialize();
+      _audioStateSub = controller.stateStream.listen((_) {
+        if (mounted) setState(() {});
+      });
+    }
   }
 
   @override
   void dispose() {
-    _audioPlayer.dispose();
-    _playerStateSub?.cancel();
-    _playerCompleteSub?.cancel();
-    _playerPositionSub?.cancel();
-    _playerDurationSub?.cancel();
+    _audioStateSub?.cancel();
+    // 只释放自建的控制器；注入的由测试/外部负责。
+    if (_ownsAudioController) _audioController?.dispose();
     super.dispose();
   }
 
   Future<void> _toggleAudio() async {
-    if (widget.moment.audioPath == null || widget.baseDir == null) return;
+    final controller = _audioController;
+    if (controller == null) return;
 
-    if (_isPlaying) {
-      await _audioPlayer.pause();
-    } else {
-      // Construct path - audioPath is relative "audio/xxx.m4a"
-      File audioFile = File(
-        path.join(widget.baseDir!.path, widget.moment.audioPath!),
-      );
-      if (await audioFile.exists()) {
-        await _audioPlayer.play(DeviceFileSource(audioFile.path));
-      } else {
+    final result = await controller.toggle();
+    switch (result) {
+      case MomentAudioToggleMissing():
         if (mounted) SkeuomorphicToast.error(context, '音频文件丢失');
-      }
+      case MomentAudioToggleFailure():
+        // 记录此错误路径改进：网关异常不再成为 unhandled async error，
+        // 统一翻译为用户可见反馈。
+        if (mounted) SkeuomorphicToast.error(context, '音频播放失败');
+      case MomentAudioToggleNoAudio():
+      case MomentAudioToggleHandled():
+        break;
     }
   }
 
@@ -615,9 +610,12 @@ class _MomentCardState extends State<MomentCard> {
     final audioProgressColor = themeConfig['audioProgressColor'] as Color;
     final audioDurationColor = themeConfig['audioDurationColor'] as Color;
 
+    // 播放器 UI 严格读取控制器状态（时间/进度/按钮图标原样呈现）。
+    final state = _audioController?.state ?? const MomentAudioState.idle();
+
     double progress = 0.0;
-    if (_audioDuration.inMilliseconds > 0) {
-      progress = _audioPosition.inMilliseconds / _audioDuration.inMilliseconds;
+    if (state.duration.inMilliseconds > 0) {
+      progress = state.position.inMilliseconds / state.duration.inMilliseconds;
       if (progress > 1.0) progress = 1.0;
     }
 
@@ -643,7 +641,7 @@ class _MomentCardState extends State<MomentCard> {
                 boxShadow: [audioButtonShadow],
               ),
               child: Icon(
-                _isPlaying ? Icons.pause : Icons.play_arrow,
+                state.isPlaying ? Icons.pause : Icons.play_arrow,
                 color: audioButtonIconColor,
                 size: 20,
               ),
@@ -687,7 +685,9 @@ class _MomentCardState extends State<MomentCard> {
             const SizedBox(width: 12),
 
             Text(
-              _formatDuration(_isPlaying ? _audioPosition : _audioDuration),
+              _formatDuration(
+                state.isPlaying ? state.position : state.duration,
+              ),
               style: GoogleFonts.roboto(
                 color: audioDurationColor,
                 fontSize: 10,
