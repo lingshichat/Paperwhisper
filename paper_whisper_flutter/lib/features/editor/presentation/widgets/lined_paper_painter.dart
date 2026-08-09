@@ -32,5 +32,7 @@ class LinedPaperPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant LinedPaperPainter oldDelegate) =>
+      oldDelegate.lineColor != lineColor ||
+      oldDelegate.lineHeight != lineHeight;
 }

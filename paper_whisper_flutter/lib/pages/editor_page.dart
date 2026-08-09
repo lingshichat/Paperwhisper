@@ -15,10 +15,8 @@ import '../features/editor/application/editor_save_coordinator.dart';
 import '../features/editor/application/editor_session_controller.dart';
 import '../features/editor/data/diary_export_service.dart';
 import '../features/editor/presentation/widgets/editor_body.dart';
-import '../features/editor/presentation/widgets/editor_branding_footer.dart';
-import '../features/editor/presentation/widgets/editor_meta_selector.dart';
+import '../features/editor/presentation/widgets/editor_export_surface.dart';
 import '../features/editor/presentation/widgets/editor_top_bar.dart';
-import '../features/editor/presentation/widgets/lined_paper_painter.dart';
 import '../features/sync/presentation/sync_ui_coordinator.dart';
 import '../widgets/export_success_dialog.dart';
 import 'package:flutter/rendering.dart'; // For RenderRepaintBoundary
@@ -471,13 +469,19 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                       child: Container(
                         width: 700,
                         padding: const EdgeInsets.symmetric(vertical: 20),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: _buildExportChunks(
-                            textColor,
-                            secondaryColor,
-                            theme,
-                          ),
+                        child: EditorExportSurface(
+                          repaintKeys: _exportKeys,
+                          plan: _exportPlan,
+                          theme: theme,
+                          textColor: textColor,
+                          secondaryColor: secondaryColor,
+                          title: _session.titleController.text,
+                          dateString: _session.dateString,
+                          weather: _session.weather,
+                          mood: _session.mood,
+                          hideLines: Provider.of<SettingsProvider>(
+                            context,
+                          ).compatibilityMode,
                         ),
                       ),
                     ),
@@ -505,50 +509,6 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
           ],
         ),
       ),
-    );
-  }
-
-  /// Export-specific header - uses pure Text widgets to avoid
-  /// TextField, DropdownButton, PopupMenuButton artifacts in exported images.
-  Widget _buildExportHeader(Color textColor, Color secondaryColor) {
-    return Column(
-      children: [
-        // Title (always Text, never TextField)
-        Text(
-          _session.titleController.text.isEmpty
-              ? '无题'
-              : _session.titleController.text,
-          style: GoogleFonts.notoSerifSc(
-            fontSize: 36,
-            fontWeight: FontWeight.bold,
-            color: textColor,
-          ),
-          textAlign: TextAlign.center,
-        ),
-
-        const SizedBox(height: 15),
-        // Meta (all Text, no interactive elements)
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Text(
-              _session.dateString,
-              style: EditorMetaSelector.metaStyle(secondaryColor),
-            ),
-            EditorMetaSelector.metaSeparator(secondaryColor),
-            Text(
-              _session.weather.name.toUpperCase(),
-              style: EditorMetaSelector.metaStyle(secondaryColor),
-            ),
-            EditorMetaSelector.metaSeparator(secondaryColor),
-            Text(
-              _session.mood.name.toUpperCase(),
-              style: EditorMetaSelector.metaStyle(secondaryColor),
-            ),
-          ],
-        ),
-      ],
     );
   }
 
@@ -618,241 +578,4 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     if (boundary == null) return null;
     return boundary.toImage(pixelRatio: pixelRatio);
   }
-
-  List<Widget> _buildExportChunks(
-    Color textColor,
-    Color secondaryColor,
-    String theme,
-  ) {
-    if (_exportKeys.isEmpty) return [];
-    final plan = _exportPlan;
-    if (plan == null) return [];
-
-    List<Widget> chunks = [];
-    int keyIndex = 0;
-
-    // 通过 AppTheme 获取导出相关颜色
-    final tc = AppTheme.getEditorTheme(theme);
-    final Color paperColor = tc['exportPaperColor'];
-    final Color borderColor = tc['exportBorderColor'];
-
-    // Default theme special case: Top border only.
-    final bool isDefaultTheme =
-        theme != AppTheme.themeSeaFlower &&
-        theme != AppTheme.themeMidnight &&
-        theme != AppTheme.themeAmberLens &&
-        theme != AppTheme.themeAfterRain;
-
-    // --- Chunk 1: Header ---
-    if (keyIndex < _exportKeys.length) {
-      chunks.add(
-        RepaintBoundary(
-          key: _exportKeys[keyIndex++],
-          child: Container(
-            width: 700,
-            decoration: BoxDecoration(
-              color: paperColor,
-              border: Border(top: BorderSide(color: borderColor, width: 8)),
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(0),
-              ),
-            ),
-            // Padding handled inside
-            child: Stack(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(
-                    left: 60,
-                    right: 60,
-                    top: 60,
-                    bottom: 0,
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Default Theme Red Line
-                      if (isDefaultTheme)
-                        Container(
-                          height: 8,
-                          width: 80,
-                          margin: const EdgeInsets.only(bottom: 20),
-                          color: const Color(0xFFC0392B),
-                        ),
-
-                      _buildExportHeader(textColor, secondaryColor),
-                      const SizedBox(height: 20),
-                      Center(
-                        child: Container(
-                          width: 60,
-                          height: 2,
-                          color: (tc['cursorColor'] as Color).withValues(
-                            alpha: 0.5,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(
-                        height: 30,
-                      ), // Spacing between line and text
-                    ],
-                  ),
-                ),
-                // Ribbon (Only on Header)
-                Positioned(
-                  right: 40,
-                  top: -8,
-                  child: _buildRibbonForExport(theme),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
-    // --- Body Chunks (文本切片由导出服务的分块计划提供) ---
-
-    for (final String chunkText in plan.bodyChunkTexts) {
-      if (keyIndex < _exportKeys.length) {
-        chunks.add(
-          RepaintBoundary(
-            key: _exportKeys[keyIndex++],
-            child: Container(
-              width: 700,
-              decoration: BoxDecoration(
-                color: paperColor,
-                borderRadius: BorderRadius.zero, // Square for seamless stitch
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 0),
-              child: _buildExportChunkText(chunkText, textColor, theme),
-            ),
-          ),
-        );
-      }
-    }
-
-    // --- Chunk Last: Footer ---
-    if (keyIndex < _exportKeys.length) {
-      chunks.add(
-        RepaintBoundary(
-          key: _exportKeys[keyIndex++],
-          child: Container(
-            width: 700,
-            decoration: BoxDecoration(
-              color: paperColor,
-              // Rounded Bottom?
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Add a bit of lined paper to fill the gap if last chunk was short?
-                // No, simply finish.
-                const SizedBox(height: 20),
-                EditorBrandingFooter(secondaryColor: secondaryColor),
-                const SizedBox(height: 40), // Bottom Padding
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
-    return chunks;
-  }
-
-  Widget _buildRibbonForExport(String theme) {
-    final tc = AppTheme.getEditorTheme(theme);
-    final Color accentColor = tc['ribbonAccentColor'];
-
-    return CustomPaint(
-      size: const Size(50, 90),
-      painter: _ExportRibbonPainter(color: accentColor),
-    );
-  }
-
-  Widget _buildExportChunkText(String text, Color textColor, String theme) {
-    const double fontSize = 18.0;
-    const double lineHeight = 32.0;
-    final bool hideLines = Provider.of<SettingsProvider>(
-      context,
-    ).compatibilityMode;
-    final tc = AppTheme.getEditorTheme(theme);
-
-    return CustomPaint(
-      foregroundPainter: LinedPaperPainter(
-        lineColor: hideLines ? Colors.transparent : tc['lineColor'],
-        lineHeight: lineHeight,
-      ),
-      child: Container(
-        // Ensure width constraint match
-        width: double.infinity,
-        padding: EdgeInsets.zero,
-        child: Text(
-          text,
-          style: GoogleFonts.notoSerifSc(
-            fontSize: fontSize,
-            color: textColor,
-            height: lineHeight / fontSize,
-          ),
-          strutStyle: StrutStyle(
-            fontFamily: GoogleFonts.notoSerifSc().fontFamily,
-            fontSize: fontSize,
-            height: (lineHeight / fontSize),
-            leading: 0,
-            forceStrutHeight: true,
-            leadingDistribution: TextLeadingDistribution.even,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ExportRibbonPainter extends CustomPainter {
-  final Color color;
-  _ExportRibbonPainter({required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    const double ribbonWidth = 40;
-    const double ribbonHeight = 80;
-    const double offsetX = 5;
-    const double offsetY = 0;
-
-    // Shadow
-    final ribbonPath = Path();
-    ribbonPath.moveTo(offsetX, offsetY);
-    ribbonPath.lineTo(offsetX + ribbonWidth, offsetY);
-    ribbonPath.lineTo(offsetX + ribbonWidth, offsetY + ribbonHeight);
-    ribbonPath.lineTo(offsetX + ribbonWidth / 2, offsetY + ribbonHeight - 20);
-    ribbonPath.lineTo(offsetX, offsetY + ribbonHeight);
-    ribbonPath.close();
-
-    canvas.save();
-    canvas.translate(2, 5);
-    final shadowPaint = Paint()
-      ..color = Colors.black.withValues(alpha: 0.2)
-      ..maskFilter = const MaskFilter.blur(
-        BlurStyle.normal,
-        4,
-      ); // Lighter shadow for export
-    canvas.drawPath(ribbonPath, shadowPaint);
-    canvas.restore();
-
-    // Body
-    final ribbonPaint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-    final mainPath = Path();
-    mainPath.moveTo(offsetX, offsetY);
-    mainPath.lineTo(offsetX + ribbonWidth, offsetY);
-    mainPath.lineTo(offsetX + ribbonWidth, offsetY + ribbonHeight);
-    mainPath.lineTo(offsetX + ribbonWidth / 2, offsetY + ribbonHeight - 20);
-    mainPath.lineTo(offsetX, offsetY + ribbonHeight);
-    mainPath.close();
-    canvas.drawPath(mainPath, ribbonPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
