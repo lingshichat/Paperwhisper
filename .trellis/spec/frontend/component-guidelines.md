@@ -109,8 +109,124 @@ Global default transition is `_SkeuomorphicPageTransitionsBuilder` in `app_theme
 
 ---
 
+## Scenario: Editor Session, Save, And Export Boundaries
+
+### 1. Scope / Trigger
+
+Apply this contract when changing editor input state, draft recovery, save/delete behavior, route preview synchronization, long-image export, or editor-specific widgets. The compatibility shell remains `pages/editor_page.dart`; new editor logic belongs under `features/editor/`.
+
+### 2. Signatures
+
+```dart
+EditorSessionController({
+  required DiaryEntry? initialEntry,
+  required DraftService draftService,
+});
+
+Future<DraftRestoreInfo?> checkDraftRestore();
+Future<void> performAutoSave();
+Future<void> awaitPendingAutoSave();
+void syncPreviewText();
+void dispose();
+
+EditorSaveCoordinator({
+  required DiaryProvider diaryProvider,
+  required EditorSessionController session,
+});
+Future<EditorSaveResult> save();
+Future<EditorDeleteResult> delete(String filename);
+
+DiaryExportChunkPlan buildChunkPlan(String text);
+Future<DiaryExportResult> export({
+  required DiaryExportChunkPlan plan,
+  required String baseName,
+  required DiaryChunkCapture capture,
+});
+```
+
+### 3. Contracts
+
+- `EditorPage` owns Widget lifecycle, route animation, dialogs/toasts/navigation, typed-result translation, GlobalKeys, and `RenderRepaintBoundary` lookup.
+- `EditorSessionController` owns title/content/200-character preview controllers, editor metadata, the 2-second draft timer, in-flight draft writes, and disposal. It never holds BuildContext.
+- Programmatic initialization/restoration suppresses the text listener. Restored content may make `hasChanges` true but must not schedule an immediate redundant draft write.
+- On pause, persist dirty draft state immediately. On dispose, cancel timers, remove listeners, and dispose all three text controllers.
+- Save/delete first cancel debounce, await an in-flight draft write, then mutate the diary. Success clears the draft; save failure preserves it.
+- UI messages, sync feedback, and route reverse/pop order remain in the page and consume the context-free sync contract from `features/sync/`.
+- Preview text is capped at 200 characters; content over 3000 characters keeps the Sliver performance path.
+- Long-image export uses one header, 40-line body chunks, and one footer; captures at pixel ratio 3.0 and encodes JPEG quality 90.
+- `DiaryExportService` may receive test directory/timestamp seams, but production defaults and file name `diary_<base>_<milliseconds>.jpg` remain unchanged.
+- Export temporary state is restored in `finally`; consumed `ui.Image` objects are disposed.
+- Metadata keeps the original Row at sufficient width and uses grouped wrapping below 300 logical pixels of available content width; text and controls must not be hidden or scaled.
+
+### 4. Validation & Error Matrix
+
+| Condition | Required behavior |
+|---|---|
+| Draft equals the original entry | Clear the stale draft and do not prompt |
+| Draft is shorter than the original content | Return restore info with `isIncomplete=true` |
+| Draft write is still in flight when Save/Delete starts | Wait for it before diary mutation and final draft clear |
+| Timer-triggered draft write fails | Catch/log without content, keep dirty state for retry, and do not emit an unhandled async error |
+| Diary save fails | Return `EditorSaveFailure`; preserve the draft and page state |
+| Delete fails | Preserve existing exception propagation until the product contract explicitly changes |
+| One export chunk cannot be captured | Skip it; continue if at least one chunk succeeds |
+| All export chunks fail | Throw `DiaryExportException('No content captured')` and restore capture UI state |
+| Export directory does not exist | Create it recursively before writing |
+| Metadata renders in a 360×800 Android viewport | Wrap groups without RenderFlex overflow |
+
+### 5. Good / Base / Bad Cases
+
+- Good: A debounce write is in flight, the user taps Save, the write completes, the diary saves, and only then is the draft cleared.
+- Base: A short new diary renders the full body in preview and exports as Header + one Body + Footer.
+- Bad: Move `BuildContext`, Toast, Navigator, `GlobalKey`, or `RenderRepaintBoundary` into `EditorSessionController` or `DiaryExportService` to reduce page line count.
+
+### 6. Tests Required
+
+- Public page behavior: initialize/edit, draft restore, debounce/pause, save/delete/return confirmation, sync feedback, dispose, long-content preview, and export entry.
+- Controller unit tests: 200/201 preview boundary, every tracked metadata field, restore suppression, timer reset/cancel, failed write retry, and disposed controllers.
+- Save coordinator tests: every persisted `DiaryEntry` field, save/delete ordering, failure draft retention, and a Completer-gated in-flight write.
+- Export service tests: 39/40/41/80/81-line boundaries, null/all-null captures, image dimensions, JPEG decode, deterministic path, and image disposal.
+- Presentation widget tests: callbacks/visibility, 360×800 Android overflow checks, painter repaint fields, and export key ordering.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```dart
+Future<void> save() async {
+  await draftService.clearDraft('new');
+  await diaryProvider.saveEntry(entry); // failure already lost the draft
+}
+
+class DiaryExportService {
+  final BuildContext context;
+  final GlobalKey repaintKey;
+}
+```
+
+#### Correct
+
+```dart
+session.cancelPendingAutoSave();
+await session.awaitPendingAutoSave();
+final result = await saveCoordinator.save();
+
+switch (result) {
+  case EditorSaveSuccess():
+    await SyncUiCoordinator(context).handleSaveAutoSync(...);
+  case EditorSaveFailure(:final error):
+    showSafeSaveError(error);
+  case EditorSaveValidation():
+    break;
+}
+```
+
+---
+
 ## Real Code Examples
 
+- [`editor_page.dart`](../../paper_whisper_flutter/lib/pages/editor_page.dart) — compatibility shell that owns route/lifecycle/UI intent translation and composes editor feature boundaries
+- [`editor_session_controller.dart`](../../paper_whisper_flutter/lib/features/editor/application/editor_session_controller.dart) — owns input controllers, 200-character preview, draft debounce, and disposal without BuildContext
+- [`editor_export_surface.dart`](../../paper_whisper_flutter/lib/features/editor/presentation/widgets/editor_export_surface.dart) — renders keyed Header/Body/Footer capture surfaces from explicit props without performing capture or I/O
 - [`skeuomorphic_container.dart`](../../paper_whisper_flutter/lib/widgets/skeuomorphic_container.dart) — base tactile primitive with named constructors like `.paper()` and `.inset()`
 - [`moment_input_widget.dart`](../../paper_whisper_flutter/lib/widgets/moment_input_widget.dart) — reads `AppTheme.getMomentInputTheme(...)` and applies shadows, rounded surfaces, and themed icon colors instead of Material defaults
 - [`update_dialog.dart`](../../paper_whisper_flutter/lib/widgets/update_dialog.dart) — custom stateful dialog with mounted guards, download state machine, and bespoke skeuomorphic presentation

@@ -55,6 +55,20 @@
 
 ---
 
+## 🧭 2026 架构可维护性重构
+
+| 阶段 | 状态 | 已建立的边界与质量证据 |
+|---|---|---|
+| 质量基线 | ✅ 完成 | `flutter analyze` 0 issue、资源释放与双平台基础 smoke |
+| 同步域 | ✅ 完成 | context-free `SyncProvider`、`features/sync/`、共享 Service 所有权、跨实例 Manifest 串行写入 |
+| 编辑器 | ✅ 完成 | `editor_page.dart` 约 1650→581 行；Session/Save/Export/Presentation 边界；编辑器 115 项、完整 324 项测试 |
+| 页面协调器 | ⏳ 待执行 | Settings/Moments/DiaryList/SyncSettings 横切职责与协调器 |
+| 目标架构 | ⏳ 待执行 | typed theme、集中导航、最终 feature-first 目录迁移 |
+
+后续阶段必须基于前一阶段验收态串行实施。不得重新把 BuildContext、文件 I/O、平台插件、Timer 或跨功能保存策略塞回 Provider/大型页面。
+
+---
+
 ## 📌 验收规则
 
 任何人认领推进上述 Phase 3 任务时，必须遵守以下约定：
