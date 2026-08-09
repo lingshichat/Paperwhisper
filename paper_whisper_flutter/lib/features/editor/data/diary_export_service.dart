@@ -69,7 +69,23 @@ class DiaryExportException implements Exception {
 /// 展示层通过 [DiaryChunkCapture] 注入捕获能力，捕获到的 RenderObject
 /// 归属权仍在展示层，本服务只消费其产生的 [ui.Image]。
 class DiaryExportService {
-  const DiaryExportService();
+  /// [exportDirectoryResolver]：导出目录解析器（可注入，测试可用临时目录）。
+  ///
+  /// production 缺省逐字走 [_resolveExportDirectory] 的平台三分支逻辑。
+  /// [timestampMillis]：文件名时间戳（毫秒）来源（可注入，测试可用固定值）。
+  ///
+  /// production 缺省为 `DateTime.now().millisecondsSinceEpoch`。
+  /// 本服务不暴露 BuildContext / Widget / Provider。
+  const DiaryExportService({
+    this.exportDirectoryResolver,
+    this.timestampMillis,
+  });
+
+  /// 导出目录解析器（可注入）；为 null 时使用平台三分支默认逻辑。
+  final Future<Directory> Function()? exportDirectoryResolver;
+
+  /// 文件名时间戳（毫秒）来源（可注入）；为 null 时使用系统当前时间。
+  final int Function()? timestampMillis;
 
   /// 每块正文行数：40 行 * 32px ≈ 1280px 高度（含内边距），拼接安全。
   static const int linesPerChunk = 40;
@@ -158,8 +174,7 @@ class DiaryExportService {
     }
 
     // 3. 解析导出目录并写入
-    final String exportPath = await _resolveExportDirectory();
-    final Directory exportDir = Directory(exportPath);
+    final Directory exportDir = await _resolveExportDir();
     if (!await exportDir.exists()) {
       try {
         await exportDir.create(recursive: true);
@@ -168,8 +183,9 @@ class DiaryExportService {
       }
     }
 
-    final String fileName =
-        'diary_${baseName}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+    final int timestamp =
+        timestampMillis?.call() ?? DateTime.now().millisecondsSinceEpoch;
+    final String fileName = 'diary_${baseName}_$timestamp.jpg';
     final File file = File(path.join(exportDir.path, fileName));
     await file.writeAsBytes(img.encodeJpg(stitchCanvas, quality: jpgQuality));
 
@@ -180,6 +196,13 @@ class DiaryExportService {
       chunkCount: capturedImages.length,
       bodyChunkCount: plan.bodyChunkTexts.length,
     );
+  }
+
+  /// 解析导出目录：优先使用注入的 resolver，缺省走平台三分支。
+  Future<Directory> _resolveExportDir() async {
+    final resolver = exportDirectoryResolver;
+    if (resolver != null) return resolver();
+    return Directory(await _resolveExportDirectory());
   }
 
   /// 解析导出目录（Android 授权 / Android 未授权 / 非 Android 三分支）。
