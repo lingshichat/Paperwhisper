@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import '../../../../models/moment.dart';
-import '../../../../widgets/moment_card.dart';
+import 'moment_card.dart';
 
 /// 桌面端随心记瀑布流（纯展示，props 驱动）。
 ///

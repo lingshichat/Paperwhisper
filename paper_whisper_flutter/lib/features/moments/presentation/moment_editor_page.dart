@@ -4,13 +4,12 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../models/moment.dart';
-import '../services/moment_service.dart';
-import '../providers/sync_provider.dart';
-import '../widgets/skeuomorphic_dialog.dart';
-
-import '../config/theme/theme_registry.dart';
-import '../providers/settings_provider.dart';
+import 'package:paper_whisper_flutter/config/theme/theme_registry.dart';
+import 'package:paper_whisper_flutter/models/moment.dart';
+import 'package:paper_whisper_flutter/providers/settings_provider.dart';
+import 'package:paper_whisper_flutter/providers/sync_provider.dart';
+import 'package:paper_whisper_flutter/services/moment_service.dart';
+import 'package:paper_whisper_flutter/widgets/skeuomorphic_dialog.dart';
 
 class MomentEditorPage extends StatefulWidget {
   const MomentEditorPage({super.key});

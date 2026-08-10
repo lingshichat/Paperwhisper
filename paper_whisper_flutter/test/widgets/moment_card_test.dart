@@ -7,9 +7,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:paper_whisper_flutter/config/theme/theme_registry.dart';
 import 'package:paper_whisper_flutter/features/moments/application/moment_audio_controller.dart';
 import 'package:paper_whisper_flutter/models/moment.dart';
-import 'package:paper_whisper_flutter/pages/moment_detail_page.dart';
+import 'package:paper_whisper_flutter/features/moments/presentation/moment_detail_page.dart';
 import 'package:paper_whisper_flutter/providers/settings_provider.dart';
-import 'package:paper_whisper_flutter/widgets/moment_card.dart';
+import 'package:paper_whisper_flutter/features/moments/presentation/widgets/moment_card.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

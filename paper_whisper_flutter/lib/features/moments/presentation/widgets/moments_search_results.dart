@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../models/moment.dart';
-import '../../../../widgets/moment_card.dart';
+import 'moment_card.dart';
 
 /// 随心记搜索结果列表（纯展示，props 驱动）。
 ///

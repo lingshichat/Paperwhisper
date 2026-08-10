@@ -4,20 +4,20 @@ import 'package:flutter/rendering.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
-import '../features/export/data/export_path_resolver.dart';
-import '../features/moments/application/moment_audio_controller.dart';
+import 'package:paper_whisper_flutter/features/export/data/export_path_resolver.dart';
+import 'package:paper_whisper_flutter/features/moments/application/moment_audio_controller.dart';
 import 'dart:async';
 
 import 'dart:io';
 import 'package:provider/provider.dart';
-import '../models/moment.dart';
-import '../providers/settings_provider.dart';
-import '../config/theme/theme_registry.dart';
-import '../config/theme/components/moment_card_theme_data.dart';
-import 'skeuomorphic_toast.dart';
-import 'export_success_dialog.dart';
-import 'skeuomorphic_dialog.dart';
-import '../app/navigation/app_routes.dart';
+import 'package:paper_whisper_flutter/app/navigation/app_routes.dart';
+import 'package:paper_whisper_flutter/config/theme/components/moment_card_theme_data.dart';
+import 'package:paper_whisper_flutter/config/theme/theme_registry.dart';
+import 'package:paper_whisper_flutter/models/moment.dart';
+import 'package:paper_whisper_flutter/providers/settings_provider.dart';
+import 'package:paper_whisper_flutter/widgets/export_success_dialog.dart';
+import 'package:paper_whisper_flutter/widgets/skeuomorphic_dialog.dart';
+import 'package:paper_whisper_flutter/widgets/skeuomorphic_toast.dart';
 
 class MomentCard extends StatefulWidget {
   final Moment moment;

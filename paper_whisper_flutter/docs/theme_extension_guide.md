@@ -71,7 +71,7 @@
 
 - **遮罩透明度**：检查 Scrim 的颜色和透明度设置。
 
-### 2.8 随心记页面 (`lib/pages/moments_page.dart`)
+### 2.8 随心记页面 (`lib/features/moments/presentation/moments_page.dart`)
 
 - **顶栏背景**：检查 `AppBar` 的 `backgroundColor`。
 - **标尺颜色**：检查 `RulerDatePicker` 的输入是否来自 `ThemeRegistry.get(theme).moments`。
@@ -111,7 +111,7 @@
 
 - **信纸颜色**：`_getThemeColors()` 中的 `_LetterColors` 配置（信纸背景、折痕、阴影）。
 
-### 3.8 随心记输入框 (`lib/widgets/moment_input_widget.dart`)
+### 3.8 随心记输入框 (`lib/features/moments/presentation/widgets/moment_input_widget.dart`)
 
 - **容器背景**：检查 `containerColor`。
 - **输入框样式**：检查 `inputBgColor`, `inputBorderColor`。
@@ -153,7 +153,7 @@ lib/pages/settings_page.dart
 lib/pages/sync_settings_page.dart
 lib/features/library/presentation/book_directory_page.dart
 lib/pages/focus_writing_page.dart
-lib/pages/moments_page.dart
+lib/features/moments/presentation/moments_page.dart
 lib/widgets/paper_sheet_widget.dart
 lib/widgets/skeuomorphic_date_picker.dart
 lib/widgets/skeuomorphic_search_bar.dart
@@ -161,6 +161,6 @@ lib/widgets/book_flip_refresh_widget.dart
 lib/widgets/month_divider.dart
 lib/widgets/skeuomorphic_dialog.dart
 lib/app/navigation/route_transitions.dart
-lib/widgets/moment_input_widget.dart
+lib/features/moments/presentation/widgets/moment_input_widget.dart
 assets/textures/
 ```

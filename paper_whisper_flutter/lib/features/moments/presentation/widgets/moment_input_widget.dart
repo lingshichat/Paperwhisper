@@ -6,13 +6,13 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
-import '../providers/settings_provider.dart';
-import '../providers/sync_provider.dart';
-import '../widgets/skeuomorphic_dialog.dart';
-import '../widgets/skeuomorphic_toast.dart';
-import '../config/theme/theme_registry.dart';
-import '../config/theme/components/moment_input_theme_data.dart';
-import '../features/moments/application/moment_recorder_controller.dart';
+import 'package:paper_whisper_flutter/config/theme/components/moment_input_theme_data.dart';
+import 'package:paper_whisper_flutter/config/theme/theme_registry.dart';
+import 'package:paper_whisper_flutter/features/moments/application/moment_recorder_controller.dart';
+import 'package:paper_whisper_flutter/providers/settings_provider.dart';
+import 'package:paper_whisper_flutter/providers/sync_provider.dart';
+import 'package:paper_whisper_flutter/widgets/skeuomorphic_dialog.dart';
+import 'package:paper_whisper_flutter/widgets/skeuomorphic_toast.dart';
 import 'cassette_wheel.dart';
 
 class MomentInputWidget extends StatefulWidget {

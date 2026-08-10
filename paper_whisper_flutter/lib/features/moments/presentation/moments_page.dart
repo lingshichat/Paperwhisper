@@ -4,34 +4,34 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-import '../models/moment.dart';
-import '../services/moment_service.dart';
-import '../widgets/moment_card.dart';
-import '../widgets/sidebar_widget.dart';
-import '../widgets/ruler_date_picker.dart';
-import '../widgets/moment_input_widget.dart';
-import '../app/navigation/app_routes.dart';
-import '../providers/settings_provider.dart'; // Added
-import '../providers/sync_provider.dart'; // Added
-import '../config/app_theme.dart'; // Added
-import '../config/theme/theme_registry.dart';
-import '../widgets/skeuomorphic_toast.dart'; // Added
-import '../features/sync/presentation/sync_ui_coordinator.dart';
-import '../widgets/skeuomorphic_dialog.dart'; // Added
+import 'package:paper_whisper_flutter/app/navigation/app_routes.dart';
+import 'package:paper_whisper_flutter/config/app_theme.dart';
+import 'package:paper_whisper_flutter/config/theme/theme_registry.dart';
+import 'package:paper_whisper_flutter/features/moments/application/moment_index.dart';
+import 'package:paper_whisper_flutter/features/moments/application/moment_send_pipeline.dart';
+import 'package:paper_whisper_flutter/features/moments/application/moments_timeline_controller.dart';
+import 'package:paper_whisper_flutter/features/sync/presentation/sync_ui_coordinator.dart';
+import 'package:paper_whisper_flutter/features/update/application/update_check_coordinator.dart';
+import 'package:paper_whisper_flutter/models/moment.dart';
+import 'package:paper_whisper_flutter/providers/diary_provider.dart';
+import 'package:paper_whisper_flutter/providers/settings_provider.dart';
+import 'package:paper_whisper_flutter/providers/sync_provider.dart';
+import 'package:paper_whisper_flutter/services/moment_service.dart';
+import 'package:paper_whisper_flutter/services/payment_service.dart';
+import 'package:paper_whisper_flutter/widgets/sidebar_widget.dart';
+import 'package:paper_whisper_flutter/widgets/skeuomorphic_dialog.dart';
+import 'package:paper_whisper_flutter/widgets/skeuomorphic_search_bar.dart';
+import 'package:paper_whisper_flutter/widgets/skeuomorphic_toast.dart';
+import 'package:paper_whisper_flutter/widgets/update_dialog.dart';
 
-import '../providers/diary_provider.dart'; // Added
-import '../widgets/skeuomorphic_search_bar.dart'; // Added
-import '../services/payment_service.dart';
-import '../features/update/application/update_check_coordinator.dart';
-import '../widgets/update_dialog.dart'; // Added
-import '../features/moments/application/moment_index.dart';
-import '../features/moments/application/moment_send_pipeline.dart';
-import '../features/moments/application/moments_timeline_controller.dart';
-import '../features/moments/presentation/widgets/moments_desktop_header.dart';
-import '../features/moments/presentation/widgets/moments_empty_state.dart';
-import '../features/moments/presentation/widgets/moments_limit_banner.dart';
-import '../features/moments/presentation/widgets/moments_search_results.dart';
-import '../features/moments/presentation/widgets/moments_waterfall.dart';
+import 'widgets/moment_card.dart';
+import 'widgets/moment_input_widget.dart';
+import 'widgets/moments_desktop_header.dart';
+import 'widgets/moments_empty_state.dart';
+import 'widgets/moments_limit_banner.dart';
+import 'widgets/moments_search_results.dart';
+import 'widgets/moments_waterfall.dart';
+import 'widgets/ruler_date_picker.dart';
 
 class MomentsPage extends StatefulWidget {
   const MomentsPage({super.key});

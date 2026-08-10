@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:path/path.dart' as path;
 import 'package:provider/provider.dart';
-import '../models/moment.dart';
-import '../providers/settings_provider.dart';
-import '../config/theme/theme_registry.dart';
+import 'package:paper_whisper_flutter/config/theme/theme_registry.dart';
+import 'package:paper_whisper_flutter/models/moment.dart';
+import 'package:paper_whisper_flutter/providers/settings_provider.dart';
 
 class MomentStandardCard extends StatelessWidget {
   final Moment moment;

@@ -7,14 +7,15 @@ import 'package:flutter/rendering.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:path/path.dart' as path;
-import '../features/export/data/export_path_resolver.dart';
-import '../models/moment.dart';
-import '../widgets/postmark_stamp.dart';
-import '../providers/settings_provider.dart';
-import '../widgets/skeuomorphic_toast.dart';
-import '../widgets/export_success_dialog.dart';
-import '../widgets/moment_standard_card.dart';
-import '../widgets/skeuomorphic_dialog.dart';
+import 'package:paper_whisper_flutter/features/export/data/export_path_resolver.dart';
+import 'package:paper_whisper_flutter/models/moment.dart';
+import 'package:paper_whisper_flutter/providers/settings_provider.dart';
+import 'package:paper_whisper_flutter/widgets/export_success_dialog.dart';
+import 'package:paper_whisper_flutter/widgets/skeuomorphic_dialog.dart';
+import 'package:paper_whisper_flutter/widgets/skeuomorphic_toast.dart';
+
+import 'widgets/moment_standard_card.dart';
+import 'widgets/postmark_stamp.dart';
 
 class MomentDetailPage extends StatefulWidget {
   final Moment moment;
