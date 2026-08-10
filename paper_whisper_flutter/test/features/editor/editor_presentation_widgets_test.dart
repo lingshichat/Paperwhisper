@@ -798,7 +798,7 @@ void main() {
       final visiblePainter = linedPainterOf(tester);
       expect(
         visiblePainter.lineColor,
-        AppTheme.getEditorTheme(theme)['lineColor'],
+        ThemeRegistry.get(theme).editor.lineColor,
       );
 
       await pumpInApp(
@@ -1195,7 +1195,7 @@ void main() {
       );
       expect(
         bodyPainterOf(tester).lineColor,
-        AppTheme.getEditorTheme(theme)['lineColor'],
+        ThemeRegistry.get(theme).editor.lineColor,
       );
       expect(tester.takeException(), isNull);
     });

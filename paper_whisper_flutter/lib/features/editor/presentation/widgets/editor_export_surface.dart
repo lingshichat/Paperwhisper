@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../config/app_theme.dart';
+import '../../../../config/theme/theme_registry.dart';
 import '../../../../models/diary_entry.dart';
 import '../../data/diary_export_service.dart';
 import 'editor_branding_footer.dart';
@@ -82,10 +83,10 @@ class EditorExportSurface extends StatelessWidget {
     final List<Widget> chunks = [];
     int keyIndex = 0;
 
-    // 通过 AppTheme 获取导出相关颜色
-    final tc = AppTheme.getEditorTheme(theme);
-    final Color paperColor = tc['exportPaperColor'];
-    final Color borderColor = tc['exportBorderColor'];
+    // 通过 ThemeRegistry 获取导出相关颜色
+    final tc = ThemeRegistry.get(theme).editor;
+    final Color paperColor = tc.exportPaperColor;
+    final Color borderColor = tc.exportBorderColor;
 
     // Default theme special case: Top border only.
     final bool isDefaultTheme =
@@ -136,7 +137,7 @@ class EditorExportSurface extends StatelessWidget {
                         child: Container(
                           width: 60,
                           height: 2,
-                          color: (tc['cursorColor'] as Color).withValues(
+                          color: tc.cursorColor.withValues(
                             alpha: 0.5,
                           ),
                         ),
@@ -251,8 +252,8 @@ class EditorExportSurface extends StatelessWidget {
 
   /// 导出 header 丝带（颜色来自主题 ribbonAccentColor）。
   Widget _buildRibbon() {
-    final tc = AppTheme.getEditorTheme(theme);
-    final Color accentColor = tc['ribbonAccentColor'];
+    final tc = ThemeRegistry.get(theme).editor;
+    final Color accentColor = tc.ribbonAccentColor;
 
     return CustomPaint(
       size: const Size(50, 90),
@@ -264,11 +265,11 @@ class EditorExportSurface extends StatelessWidget {
   Widget _buildChunkText(String text) {
     const double fontSize = 18.0;
     const double lineHeight = 32.0;
-    final tc = AppTheme.getEditorTheme(theme);
+    final tc = ThemeRegistry.get(theme).editor;
 
     return CustomPaint(
       foregroundPainter: LinedPaperPainter(
-        lineColor: hideLines ? Colors.transparent : tc['lineColor'],
+        lineColor: hideLines ? Colors.transparent : tc.lineColor,
         lineHeight: lineHeight,
       ),
       child: Container(

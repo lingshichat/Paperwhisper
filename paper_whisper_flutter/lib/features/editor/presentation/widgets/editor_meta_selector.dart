@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../../config/app_theme.dart';
+import '../../../../config/theme/theme_registry.dart';
 import '../../../../models/diary_entry.dart';
 import '../../../../widgets/skeuomorphic_date_picker.dart';
 
@@ -160,11 +160,11 @@ class EditorMetaSelector extends StatelessWidget {
       return Text(weather.name.toUpperCase(), style: metaStyle(metaTextColor));
     }
 
-    final tc = AppTheme.getEditorTheme(theme);
+    final tc = ThemeRegistry.get(theme).editor;
 
     // Dropdown Menu Style
-    final Color dropdownBg = tc['dropdownBg'];
-    final Color dropdownText = tc['dropdownText'];
+    final Color dropdownBg = tc.dropdownBg;
+    final Color dropdownText = tc.dropdownText;
 
     return DropdownButton<WeatherType>(
       value: weather,
@@ -208,10 +208,10 @@ class EditorMetaSelector extends StatelessWidget {
       return Text(mood.name.toUpperCase(), style: metaStyle(metaTextColor));
     }
 
-    final tc = AppTheme.getEditorTheme(theme);
+    final tc = ThemeRegistry.get(theme).editor;
 
-    final Color menuBg = tc['dropdownBg'];
-    final Color menuText = tc['dropdownText'];
+    final Color menuBg = tc.dropdownBg;
+    final Color menuText = tc.dropdownText;
 
     return PopupMenuButton<MoodType>(
       initialValue: mood,

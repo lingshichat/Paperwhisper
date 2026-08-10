@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../../config/app_theme.dart';
+import '../../../../config/theme/theme_registry.dart';
 import '../../../../models/diary_entry.dart';
 import '../../../../widgets/paper_sheet_widget.dart';
 import 'editor_branding_footer.dart';
@@ -96,7 +96,7 @@ class EditorBody extends StatelessWidget {
     // Threshold for switching to performance mode
     // ~200 lines or ~5000 chars
     bool usePerformanceMode = contentController.text.length > 3000;
-    final tc = AppTheme.getEditorTheme(theme);
+    final tc = ThemeRegistry.get(theme).editor;
 
     if (usePerformanceMode) {
       // --- Performance Mode (Slivers) ---
@@ -121,7 +121,7 @@ class EditorBody extends StatelessWidget {
                     child: Container(
                       width: 60,
                       height: 2,
-                      color: (tc['cursorColor'] as Color).withValues(
+                      color: tc.cursorColor.withValues(
                         alpha: 0.5,
                       ),
                     ),
@@ -160,7 +160,7 @@ class EditorBody extends StatelessWidget {
                   child: Container(
                     width: 60,
                     height: 2,
-                    color: (tc['cursorColor'] as Color).withValues(alpha: 0.5),
+                    color: tc.cursorColor.withValues(alpha: 0.5),
                   ),
                 ),
                 const SizedBox(height: 30),
@@ -182,7 +182,7 @@ class EditorBody extends StatelessWidget {
 
   /// 标题 + 元信息选择器（编辑态 TextField / 只读态 Text）。
   Widget _buildHeader() {
-    final tc = AppTheme.getEditorTheme(theme);
+    final tc = ThemeRegistry.get(theme).editor;
     return Column(
       children: [
         if (isEditing)
@@ -194,10 +194,10 @@ class EditorBody extends StatelessWidget {
               fontWeight: FontWeight.bold,
               color: textColor,
             ),
-            cursorColor: tc['cursorColor'],
+            cursorColor: tc.cursorColor,
             decoration: InputDecoration(
               hintText: '在此输入标题...',
-              hintStyle: TextStyle(color: tc['hintColor']),
+              hintStyle: TextStyle(color: tc.hintColor),
               border: InputBorder.none,
             ),
           )
@@ -235,10 +235,10 @@ class EditorBody extends StatelessWidget {
     const double lineHeight = 32.0;
 
     // Strict alignment: height = 32/18 = 1.7777...
-    final tc = AppTheme.getEditorTheme(theme);
+    final tc = ThemeRegistry.get(theme).editor;
     return CustomPaint(
       foregroundPainter: LinedPaperPainter(
-        lineColor: hideLines ? Colors.transparent : tc['lineColor'],
+        lineColor: hideLines ? Colors.transparent : tc.lineColor,
         lineHeight: lineHeight,
       ),
       child: Container(
@@ -262,7 +262,7 @@ class EditorBody extends StatelessWidget {
                   forceStrutHeight: true,
                   leadingDistribution: TextLeadingDistribution.even,
                 ),
-                cursorColor: tc['cursorColor'],
+                cursorColor: tc.cursorColor,
                 cursorHeight: 22,
                 decoration: const InputDecoration(
                   border: InputBorder.none,
@@ -359,7 +359,7 @@ class EditorBody extends StatelessWidget {
         color: textColor,
       );
 
-      final tc = AppTheme.getEditorTheme(theme);
+      final tc = ThemeRegistry.get(theme).editor;
 
       return SliverList(
         delegate: SliverChildBuilderDelegate((context, index) {
@@ -367,7 +367,7 @@ class EditorBody extends StatelessWidget {
 
           return CustomPaint(
             foregroundPainter: LinedPaperPainter(
-              lineColor: hideLines ? Colors.transparent : tc['lineColor'],
+              lineColor: hideLines ? Colors.transparent : tc.lineColor,
               lineHeight: lineHeight,
             ),
             child: Container(
@@ -401,10 +401,10 @@ class EditorBody extends StatelessWidget {
     const double fontSize = 18.0;
     const double lineHeight = 32.0;
 
-    final tc = AppTheme.getEditorTheme(theme);
+    final tc = ThemeRegistry.get(theme).editor;
     return CustomPaint(
       foregroundPainter: LinedPaperPainter(
-        lineColor: hideLines ? Colors.transparent : tc['lineColor'],
+        lineColor: hideLines ? Colors.transparent : tc.lineColor,
         lineHeight: lineHeight,
       ),
       child: Padding(

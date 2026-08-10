@@ -2,7 +2,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
-import '../../../../config/app_theme.dart';
+import '../../../../config/theme/theme_registry.dart';
 
 /// 编辑器顶栏：返回 / 导出 / 删除 / 保存 / 编辑切换。
 ///
@@ -10,7 +10,7 @@ import '../../../../config/app_theme.dart';
 /// 视觉（含部分主题的毛玻璃效果）。返回确认、保存/删除/导出流程、Toast
 /// 与 Navigator 均由页面装配，本组件不持有会话与业务编排。
 class EditorTopBar extends StatelessWidget {
-  /// 当前主题名（AppTheme 主题配置入口，决定顶栏配色与模糊效果）。
+  /// 当前主题名（ThemeRegistry 主题配置入口，决定顶栏配色与模糊效果）。
   final String theme;
 
   /// 是否处于编辑态（编辑态显示保存按钮，否则显示编辑入口）。
@@ -48,11 +48,11 @@ class EditorTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tc = AppTheme.getEditorTheme(theme);
+    final tc = ThemeRegistry.get(theme).editor;
 
-    final Color barBg = tc['appBarBg'];
-    final Color iconColor = tc['iconColor'];
-    final Border? border = tc['appBarBorder'];
+    final Color barBg = tc.appBarBg;
+    final Color iconColor = tc.iconColor;
+    final Border? border = tc.appBarBorder;
 
     Widget barContent = Container(
       // 移除固定高度，改用最小高度约束+padding适配
@@ -111,7 +111,7 @@ class EditorTopBar extends StatelessWidget {
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: tc['saveButtonBg'],
+                  color: tc.saveButtonBg,
                   borderRadius: BorderRadius.circular(8),
                   boxShadow: [
                     BoxShadow(
@@ -133,7 +133,7 @@ class EditorTopBar extends StatelessWidget {
                     Text(
                       '✓',
                       style: TextStyle(
-                        color: tc['saveButtonCheckColor'],
+                        color: tc.saveButtonCheckColor,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -141,7 +141,7 @@ class EditorTopBar extends StatelessWidget {
                     Text(
                       '完成',
                       style: TextStyle(
-                        color: tc['saveButtonTextColor'],
+                        color: tc.saveButtonTextColor,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -160,7 +160,7 @@ class EditorTopBar extends StatelessWidget {
     );
 
     // 部分主题需要模糊效果
-    if (tc['applyBlur'] == true) {
+    if (tc.applyBlur) {
       return ClipRect(
         child: BackdropFilter(
           filter: ui.ImageFilter.blur(sigmaX: 15, sigmaY: 15),
