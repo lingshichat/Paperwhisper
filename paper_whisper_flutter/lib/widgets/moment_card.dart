@@ -12,7 +12,8 @@ import 'dart:io';
 import 'package:provider/provider.dart';
 import '../models/moment.dart';
 import '../providers/settings_provider.dart';
-import '../config/app_theme.dart';
+import '../config/theme/theme_registry.dart';
+import '../config/theme/components/moment_card_theme_data.dart';
 import 'skeuomorphic_toast.dart';
 import 'export_success_dialog.dart';
 import 'skeuomorphic_dialog.dart';
@@ -191,24 +192,23 @@ class _MomentCardState extends State<MomentCard> {
   @override
   Widget build(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context);
-    final themeConfig = AppTheme.getMomentCardTheme(settings.currentTheme);
-    final cardBg = themeConfig['cardColor'] as Color;
-    final textColor = themeConfig['textColor'] as Color;
-    final metaColor = themeConfig['metaColor'] as Color;
-    final deleteIconColor = themeConfig['deleteIconColor'] as Color;
-    final cardShadows = themeConfig['cardShadows'] as List<BoxShadow>;
-    final cardBorder = themeConfig['cardBorder'] as Border?;
-    final useGlassEffect = themeConfig['useGlassEffect'] as bool;
-    final cardBlurSigma = themeConfig['cardBlurSigma'] as double;
-    final imageStackColor = themeConfig['imageStackColor'] as Color;
-    final imageStackBorderColor = themeConfig['imageStackBorderColor'] as Color;
-    final imageStackShadow = themeConfig['imageStackShadow'] as BoxShadow;
-    final imageSurfaceColor = themeConfig['imageSurfaceColor'] as Color;
-    final imageSurfaceShadow = themeConfig['imageSurfaceShadow'] as BoxShadow;
-    final indicatorActiveColor = themeConfig['indicatorActiveColor'] as Color;
-    final indicatorInactiveColor =
-        themeConfig['indicatorInactiveColor'] as Color;
-    final watermarkDividerColor = themeConfig['watermarkDividerColor'] as Color;
+    final themeConfig = ThemeRegistry.get(settings.currentTheme).momentCard;
+    final cardBg = themeConfig.cardColor;
+    final textColor = themeConfig.textColor;
+    final metaColor = themeConfig.metaColor;
+    final deleteIconColor = themeConfig.deleteIconColor;
+    final cardShadows = themeConfig.cardShadows;
+    final cardBorder = themeConfig.cardBorder;
+    final useGlassEffect = themeConfig.useGlassEffect;
+    final cardBlurSigma = themeConfig.cardBlurSigma;
+    final imageStackColor = themeConfig.imageStackColor;
+    final imageStackBorderColor = themeConfig.imageStackBorderColor;
+    final imageStackShadow = themeConfig.imageStackShadow;
+    final imageSurfaceColor = themeConfig.imageSurfaceColor;
+    final imageSurfaceShadow = themeConfig.imageSurfaceShadow;
+    final indicatorActiveColor = themeConfig.indicatorActiveColor;
+    final indicatorInactiveColor = themeConfig.indicatorInactiveColor;
+    final watermarkDividerColor = themeConfig.watermarkDividerColor;
 
     final bool hasImage = widget.moment.images.isNotEmpty;
     final String heroTag = 'moment_${widget.moment.uuid}';
@@ -572,17 +572,16 @@ class _MomentCardState extends State<MomentCard> {
     return "${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}";
   }
 
-  Widget _buildSkeuomorphicPlayer(Map<String, dynamic> themeConfig) {
-    final textColor = themeConfig['textColor'] as Color;
-    final audioSurfaceColor = themeConfig['audioSurfaceColor'] as Color;
-    final audioSurfaceBorderColor =
-        themeConfig['audioSurfaceBorderColor'] as Color;
-    final audioButtonColor = themeConfig['audioButtonColor'] as Color;
-    final audioButtonIconColor = themeConfig['audioButtonIconColor'] as Color;
-    final audioButtonShadow = themeConfig['audioButtonShadow'] as BoxShadow;
-    final audioProgressBgColor = themeConfig['audioProgressBgColor'] as Color;
-    final audioProgressColor = themeConfig['audioProgressColor'] as Color;
-    final audioDurationColor = themeConfig['audioDurationColor'] as Color;
+  Widget _buildSkeuomorphicPlayer(MomentCardThemeData themeConfig) {
+    final textColor = themeConfig.textColor;
+    final audioSurfaceColor = themeConfig.audioSurfaceColor;
+    final audioSurfaceBorderColor = themeConfig.audioSurfaceBorderColor;
+    final audioButtonColor = themeConfig.audioButtonColor;
+    final audioButtonIconColor = themeConfig.audioButtonIconColor;
+    final audioButtonShadow = themeConfig.audioButtonShadow;
+    final audioProgressBgColor = themeConfig.audioProgressBgColor;
+    final audioProgressColor = themeConfig.audioProgressColor;
+    final audioDurationColor = themeConfig.audioDurationColor;
 
     // 播放器 UI 严格读取控制器状态（时间/进度/按钮图标原样呈现）。
     final state = _audioController?.state ?? const MomentAudioState.idle();

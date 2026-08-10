@@ -14,6 +14,7 @@ import '../app/navigation/app_routes.dart';
 import '../providers/settings_provider.dart'; // Added
 import '../providers/sync_provider.dart'; // Added
 import '../config/app_theme.dart'; // Added
+import '../config/theme/theme_registry.dart';
 import '../widgets/skeuomorphic_toast.dart'; // Added
 import '../features/sync/presentation/sync_ui_coordinator.dart';
 import '../widgets/skeuomorphic_dialog.dart'; // Added
@@ -236,12 +237,12 @@ class _MomentsPageState extends State<MomentsPage> {
     // Prepare theme-aware colors
     final settings = Provider.of<SettingsProvider>(context, listen: false);
     final theme = settings.currentTheme;
-    final dialogTheme = AppTheme.getDialogInputTheme(theme);
-    final inputBg = dialogTheme['backgroundColor']!;
-    final inputBorder = dialogTheme['borderColor']!;
-    final hintColor = dialogTheme['hintColor']!;
-    final textColor = dialogTheme['textColor']!;
-    final descColor = dialogTheme['descriptionColor']!;
+    final dialogTheme = ThemeRegistry.get(theme).dialogInput;
+    final inputBg = dialogTheme.backgroundColor;
+    final inputBorder = dialogTheme.borderColor;
+    final hintColor = dialogTheme.hintColor;
+    final textColor = dialogTheme.textColor;
+    final descColor = dialogTheme.descriptionColor;
 
     String? result = await showDialog<String>(
       context: context,
@@ -372,23 +373,23 @@ class _MomentsPageState extends State<MomentsPage> {
     final settings = Provider.of<SettingsProvider>(context);
     final theme = settings.currentTheme;
 
-    // 主题颜色统一由 AppTheme.getMomentsTheme 管理
-    final tc = AppTheme.getMomentsTheme(theme);
+    // 主题颜色统一由 ThemeRegistry.get(theme).moments 管理
+    final tc = ThemeRegistry.get(theme).moments;
 
-    final Color appBarIconColor = tc['appBarIconColor'];
-    final Color appBarTextColor = tc['appBarTextColor'];
+    final Color appBarIconColor = tc.appBarIconColor;
+    final Color appBarTextColor = tc.appBarTextColor;
 
     final Color rulerAccent = AppTheme.getAccentColor(theme);
 
     // Ruler Colors Configuration
-    final Color? rulerBg = tc['rulerBg'];
-    final Color? rulerTextColor = tc['rulerTextColor'];
-    final Color? rulerInactiveTextColor = tc['rulerInactiveTextColor'];
-    final Color? rulerSubTextColor = tc['rulerSubTextColor'];
-    final Color? rulerInactiveSubTextColor = tc['rulerInactiveSubTextColor'];
-    final Color? rulerIndicatorColor = tc['rulerIndicatorColor'];
-    final Color? rulerShadowColor = tc['rulerShadowColor'];
-    final Color? rulerBorderColor = tc['rulerBorderColor'];
+    final Color rulerBg = tc.rulerBg;
+    final Color rulerTextColor = tc.rulerTextColor;
+    final Color rulerInactiveTextColor = tc.rulerInactiveTextColor;
+    final Color rulerSubTextColor = tc.rulerSubTextColor;
+    final Color rulerInactiveSubTextColor = tc.rulerInactiveSubTextColor;
+    final Color rulerIndicatorColor = tc.rulerIndicatorColor;
+    final Color rulerShadowColor = tc.rulerShadowColor;
+    final Color rulerBorderColor = tc.rulerBorderColor;
 
     // Search Integration
     final String searchQuery = context.select<DiaryProvider, String>(
@@ -753,7 +754,7 @@ class _MomentsPageState extends State<MomentsPage> {
           extendBodyBehindAppBar: true,
           backgroundColor: Colors.transparent,
           resizeToAvoidBottomInset: false,
-          drawerScrimColor: tc['drawerScrimColor'], // 统一遮罩逻辑
+          drawerScrimColor: tc.drawerScrimColor, // 统一遮罩逻辑
           drawer: const Drawer(
             width: 300,
             elevation: 0,
@@ -761,7 +762,7 @@ class _MomentsPageState extends State<MomentsPage> {
             child: SidebarWidget(activeSection: SidebarSection.moments),
           ),
           appBar: AppBar(
-            backgroundColor: tc['appBarBg'],
+            backgroundColor: tc.appBarBg,
             elevation: 0,
             surfaceTintColor: Colors.transparent,
             shadowColor: Colors.transparent,

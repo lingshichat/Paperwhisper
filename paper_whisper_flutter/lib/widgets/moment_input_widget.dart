@@ -10,7 +10,8 @@ import '../providers/settings_provider.dart';
 import '../providers/sync_provider.dart';
 import '../widgets/skeuomorphic_dialog.dart';
 import '../widgets/skeuomorphic_toast.dart';
-import '../config/app_theme.dart';
+import '../config/theme/theme_registry.dart';
+import '../config/theme/components/moment_input_theme_data.dart';
 import '../features/moments/application/moment_recorder_controller.dart';
 import 'cassette_wheel.dart';
 
@@ -262,14 +263,14 @@ class _MomentInputWidgetState extends State<MomentInputWidget>
   @override
   Widget build(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context);
-    final themeConfig = AppTheme.getMomentInputTheme(settings.currentTheme);
-    final containerColor = themeConfig['containerColor'] as Color;
-    final iconColor = themeConfig['iconColor'] as Color;
-    final sendColor = themeConfig['sendColor'] as Color;
-    final imageIconColor = themeConfig['imageIconColor'] as Color;
-    final recordingColor = themeConfig['recordingColor'] as Color;
-    final cancelColor = themeConfig['cancelColor'] as Color;
-    final boxShadows = themeConfig['containerShadows'] as List<BoxShadow>;
+    final themeConfig = ThemeRegistry.get(settings.currentTheme).momentInput;
+    final containerColor = themeConfig.containerColor;
+    final iconColor = themeConfig.iconColor;
+    final sendColor = themeConfig.sendColor;
+    final imageIconColor = themeConfig.imageIconColor;
+    final recordingColor = themeConfig.recordingColor;
+    final cancelColor = themeConfig.cancelColor;
+    final boxShadows = themeConfig.containerShadows;
     final isRecording = _recorder.state.isRecording;
 
     return Container(
@@ -394,14 +395,14 @@ class _MomentInputWidgetState extends State<MomentInputWidget>
     );
   }
 
-  Widget _buildTextInputArea(Map<String, dynamic> themeConfig) {
-    final bgColor = themeConfig['inputBgColor'] as Color;
-    final borderColor = themeConfig['inputBorderColor'] as Color;
-    final textColor = themeConfig['textColor'] as Color;
-    final hintColor = themeConfig['hintColor'] as Color;
-    final cursorColor = themeConfig['cursorColor'] as Color;
-    final imageRemoveBgColor = themeConfig['imageRemoveBgColor'] as Color;
-    final imageRemoveIconColor = themeConfig['imageRemoveIconColor'] as Color;
+  Widget _buildTextInputArea(MomentInputThemeData themeConfig) {
+    final bgColor = themeConfig.inputBgColor;
+    final borderColor = themeConfig.inputBorderColor;
+    final textColor = themeConfig.textColor;
+    final hintColor = themeConfig.hintColor;
+    final cursorColor = themeConfig.cursorColor;
+    final imageRemoveBgColor = themeConfig.imageRemoveBgColor;
+    final imageRemoveIconColor = themeConfig.imageRemoveIconColor;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -499,16 +500,16 @@ class _MomentInputWidgetState extends State<MomentInputWidget>
     );
   }
 
-  Widget _buildCassetteDeck(Map<String, dynamic> themeConfig) {
-    final deckColor = themeConfig['cassetteDeckColor'] as Color;
-    final deckBorderColor = themeConfig['cassetteDeckBorderColor'] as Color;
-    final deckShadows = themeConfig['cassetteDeckShadows'] as List<BoxShadow>;
-    final labelColor = themeConfig['cassetteLabelColor'] as Color;
-    final windowColor = themeConfig['cassetteWindowColor'] as Color;
-    final windowBorderColor = themeConfig['cassetteWindowBorderColor'] as Color;
-    final bridgeColor = themeConfig['cassetteBridgeColor'] as Color;
-    final counterColor = themeConfig['cassetteCounterColor'] as Color;
-    final screwColor = themeConfig['cassetteScrewColor'] as Color;
+  Widget _buildCassetteDeck(MomentInputThemeData themeConfig) {
+    final deckColor = themeConfig.cassetteDeckColor;
+    final deckBorderColor = themeConfig.cassetteDeckBorderColor;
+    final deckShadows = themeConfig.cassetteDeckShadows;
+    final labelColor = themeConfig.cassetteLabelColor;
+    final windowColor = themeConfig.cassetteWindowColor;
+    final windowBorderColor = themeConfig.cassetteWindowBorderColor;
+    final bridgeColor = themeConfig.cassetteBridgeColor;
+    final counterColor = themeConfig.cassetteCounterColor;
+    final screwColor = themeConfig.cassetteScrewColor;
     final recordDuration = _recorder.state.recordDuration;
     String durationStr =
         "${recordDuration.inMinutes.toString().padLeft(2, '0')}:${(recordDuration.inSeconds % 60).toString().padLeft(2, '0')}";
@@ -602,12 +603,12 @@ class _MomentInputWidgetState extends State<MomentInputWidget>
     return Icon(Icons.add, size: 10, color: color);
   }
 
-  Widget _buildMiniCassette(Map<String, dynamic> themeConfig) {
-    final miniBgColor = themeConfig['miniCassetteBgColor'] as Color;
-    final miniPlayColor = themeConfig['miniCassettePlayColor'] as Color;
-    final miniTextColor = themeConfig['miniCassetteTextColor'] as Color;
-    final miniHintColor = themeConfig['miniCassetteHintColor'] as Color;
-    final miniDeleteColor = themeConfig['miniCassetteDeleteColor'] as Color;
+  Widget _buildMiniCassette(MomentInputThemeData themeConfig) {
+    final miniBgColor = themeConfig.miniCassetteBgColor;
+    final miniPlayColor = themeConfig.miniCassettePlayColor;
+    final miniTextColor = themeConfig.miniCassetteTextColor;
+    final miniHintColor = themeConfig.miniCassetteHintColor;
+    final miniDeleteColor = themeConfig.miniCassetteDeleteColor;
 
     return Container(
       margin: const EdgeInsets.only(top: 12),

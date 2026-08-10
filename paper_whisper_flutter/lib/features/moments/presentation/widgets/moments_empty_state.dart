@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../../config/app_theme.dart';
+import '../../../../config/theme/theme_registry.dart';
 
 /// 随心记空态（纯展示，props 驱动）。
 ///
@@ -21,9 +21,9 @@ class MomentsEmptyState extends StatelessWidget {
     final now = DateTime.now();
     final isToday =
         date.year == now.year && date.month == now.month && date.day == now.day;
-    final themeConfig = AppTheme.getMomentsTheme(theme);
-    final Color iconColor = themeConfig['emptyStateIconColor'] as Color;
-    final Color textColor = themeConfig['emptyStateTextColor'] as Color;
+    final themeConfig = ThemeRegistry.get(theme).moments;
+    final Color iconColor = themeConfig.emptyStateIconColor;
+    final Color textColor = themeConfig.emptyStateTextColor;
 
     return Center(
       child: Column(
