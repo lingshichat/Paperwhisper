@@ -12,6 +12,7 @@ import 'package:paper_whisper_flutter/models/sync_trust_snapshot.dart';
 import 'package:paper_whisper_flutter/pages/diary_card.dart';
 import 'package:paper_whisper_flutter/pages/diary_list_page.dart';
 import 'package:paper_whisper_flutter/pages/editor_page.dart';
+import 'package:paper_whisper_flutter/pages/settings_page.dart';
 import 'package:paper_whisper_flutter/providers/diary_provider.dart';
 import 'package:paper_whisper_flutter/providers/settings_provider.dart';
 import 'package:paper_whisper_flutter/providers/sync_provider.dart';
@@ -266,6 +267,30 @@ void main() {
       expect(find.text('去擦拭灰尘 (写一篇) →'), findsOneWidget);
       // 空态已拆分为参数化组件并由页面取色传入 props
       expect(find.byType(DiaryEmptyState), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('Sidebar 设置入口：经 AppRoutes.settings() 打开设置页', (tester) async {
+      final syncProvider = makeSyncProvider();
+      await pumpDiaryList(
+        tester,
+        syncProvider: syncProvider,
+        platform: TargetPlatform.windows,
+        physicalSize: const Size(1280, 720),
+      );
+
+      await tester.tap(
+        find.descendant(
+          of: find.byType(SidebarWidget),
+          matching: find.text('设置'),
+        ),
+      );
+      await tester.pump();
+      // SlidePageRoute 700ms 转场完成
+      await tester.pump(const Duration(milliseconds: 700));
+      await tester.pump();
+
+      expect(find.byType(SettingsPage), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 

@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:paper_whisper_flutter/config/theme/theme_registry.dart';
 import 'package:paper_whisper_flutter/features/moments/application/moment_audio_controller.dart';
 import 'package:paper_whisper_flutter/models/moment.dart';
+import 'package:paper_whisper_flutter/pages/moment_detail_page.dart';
 import 'package:paper_whisper_flutter/providers/settings_provider.dart';
 import 'package:paper_whisper_flutter/widgets/moment_card.dart';
 import 'package:provider/provider.dart';
@@ -102,6 +103,29 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
   }
+
+  group('导航：点击卡片进入详情（AppRoutes.momentDetail）', () {
+    testWidgets('无图片无音频卡片：点击 push 详情页（opaque=false 语义保留）', (tester) async {
+      final m = moment(images: const [], audioPath: null, audioDuration: null);
+      await pumpCard(tester, moment: m, width: 400, height: 800);
+
+      await tester.tap(find.text('测试内容'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      // 经 AppRoutes.momentDetail 的 fade 工厂（opaque=false）进入详情页。
+      expect(find.byType(MomentDetailPage), findsOneWidget);
+      final route =
+          ModalRoute.of(tester.element(find.byType(MomentDetailPage)))
+              as PageRouteBuilder<void>;
+      expect(route.opaque, isFalse);
+      expect(tester.takeException(), isNull);
+
+      // 收尾销毁整棵 widget 树：释放路由侧动画控制器与 Hero 状态。
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+  });
 
   group('渲染', () {
     testWidgets('无音频：不渲染播放器', (tester) async {

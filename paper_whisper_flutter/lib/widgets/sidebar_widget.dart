@@ -4,14 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../services/hitokoto_service.dart';
 import '../config/app_theme.dart';
-import '../pages/diary_list_page.dart';
-import '../pages/moments_page.dart';
-import '../pages/settings_page.dart';
-import '../pages/statistics_page.dart';
-import '../widgets/slide_page_route.dart';
+import '../app/navigation/app_routes.dart';
 import '../providers/settings_provider.dart';
-import '../pages/editor_page.dart';
-import '../widgets/paper_fold_page_route.dart';
 import '../widgets/skeuomorphic_search_bar.dart';
 import '../providers/diary_provider.dart';
 
@@ -184,7 +178,9 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                       onTap: () {
                         Navigator.push(
                           context,
-                          LetterFoldPageRoute(page: EditorPage(entry: null)),
+                          AppRoutes.editor(
+                            transition: AppRouteTransition.letterFold,
+                          ),
                         );
                       },
                       borderRadius: BorderRadius.circular(12),
@@ -288,16 +284,7 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                           }
 
                           if (!isWriter) {
-                            navigator.pushReplacement(
-                              PageRouteBuilder(
-                                pageBuilder: (_, _, _) => const DiaryListPage(),
-                                transitionDuration: const Duration(
-                                  milliseconds: 500,
-                                ),
-                                transitionsBuilder: (_, a, _, c) =>
-                                    FadeTransition(opacity: a, child: c),
-                              ),
-                            );
+                            navigator.pushReplacement(AppRoutes.diaryList());
                           }
                         },
                         isActive: isWriter,
@@ -322,16 +309,7 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                           }
 
                           if (!isMoments) {
-                            navigator.pushReplacement(
-                              PageRouteBuilder(
-                                pageBuilder: (_, _, _) => const MomentsPage(),
-                                transitionDuration: const Duration(
-                                  milliseconds: 500,
-                                ),
-                                transitionsBuilder: (_, a, _, c) =>
-                                    FadeTransition(opacity: a, child: c),
-                              ),
-                            );
+                            navigator.pushReplacement(AppRoutes.moments());
                           }
                         },
                         isActive: isMoments,
@@ -355,17 +333,7 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                           }
 
                           if (!isStatistics) {
-                            navigator.push(
-                              PageRouteBuilder(
-                                pageBuilder: (_, _, _) =>
-                                    const StatisticsPage(),
-                                transitionDuration: const Duration(
-                                  milliseconds: 500,
-                                ),
-                                transitionsBuilder: (_, a, _, c) =>
-                                    FadeTransition(opacity: a, child: c),
-                              ),
-                            );
+                            navigator.push(AppRoutes.statistics());
                           }
                         },
                         isActive: isStatistics,
@@ -435,10 +403,7 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                     if (isInDrawer) {
                       Navigator.pop(context);
                     }
-                    Navigator.push(
-                      context,
-                      SlidePageRoute(page: const SettingsPage()),
-                    );
+                    Navigator.push(context, AppRoutes.settings());
                   },
                   isActive: false,
                   textColor: textColor,

@@ -10,7 +10,7 @@ import '../widgets/moment_card.dart';
 import '../widgets/sidebar_widget.dart';
 import '../widgets/ruler_date_picker.dart';
 import '../widgets/moment_input_widget.dart';
-import '../pages/diary_list_page.dart';
+import '../app/navigation/app_routes.dart';
 import '../providers/settings_provider.dart'; // Added
 import '../providers/sync_provider.dart'; // Added
 import '../config/app_theme.dart'; // Added
@@ -21,8 +21,6 @@ import '../widgets/skeuomorphic_dialog.dart'; // Added
 import '../providers/diary_provider.dart'; // Added
 import '../widgets/skeuomorphic_search_bar.dart'; // Added
 import '../services/payment_service.dart';
-import '../pages/premium_membership_page.dart';
-import '../widgets/slide_page_route.dart';
 import '../features/update/application/update_check_coordinator.dart';
 import '../widgets/update_dialog.dart'; // Added
 import '../features/moments/application/moment_index.dart';
@@ -159,10 +157,7 @@ class _MomentsPageState extends State<MomentsPage> {
 
   /// 跳转赞助页（额度弹窗与额度提示条共用）。
   void _openPremiumMembership() {
-    Navigator.push(
-      context,
-      SlidePageRoute(page: const PremiumMembershipPage()),
-    );
+    Navigator.push(context, AppRoutes.premium());
   }
 
   Future<void> _handleSend(
@@ -332,14 +327,7 @@ class _MomentsPageState extends State<MomentsPage> {
 
         // Auto navigate to Writer
         if (!mounted) return;
-        Navigator.of(context).pushReplacement(
-          PageRouteBuilder(
-            pageBuilder: (_, _, _) => const DiaryListPage(),
-            transitionDuration: const Duration(milliseconds: 500),
-            transitionsBuilder: (_, a, _, c) =>
-                FadeTransition(opacity: a, child: c),
-          ),
-        );
+        Navigator.of(context).pushReplacement(AppRoutes.diaryList());
       } catch (e) {
         if (mounted) SkeuomorphicToast.error(context, '生成失败: $e');
       }

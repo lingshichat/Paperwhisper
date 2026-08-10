@@ -16,7 +16,7 @@ import '../config/app_theme.dart';
 import 'skeuomorphic_toast.dart';
 import 'export_success_dialog.dart';
 import 'skeuomorphic_dialog.dart';
-import '../pages/moment_detail_page.dart';
+import '../app/navigation/app_routes.dart';
 
 class MomentCard extends StatefulWidget {
   final Moment moment;
@@ -222,16 +222,10 @@ class _MomentCardState extends State<MomentCard> {
           child: GestureDetector(
             onTap: () {
               Navigator.of(context).push(
-                PageRouteBuilder(
-                  opaque: false,
-                  pageBuilder: (_, _, _) => MomentDetailPage(
-                    moment: widget.moment,
-                    baseDir: widget.baseDir,
-                    heroTag: heroTag,
-                  ),
-                  transitionsBuilder: (_, animation, _, child) {
-                    return FadeTransition(opacity: animation, child: child);
-                  },
+                AppRoutes.momentDetail(
+                  moment: widget.moment,
+                  baseDir: widget.baseDir,
+                  heroTag: heroTag,
                 ),
               );
             },
@@ -361,32 +355,13 @@ class _MomentCardState extends State<MomentCard> {
                                                       Navigator.of(
                                                         context,
                                                       ).push(
-                                                        PageRouteBuilder(
-                                                          opaque: false,
-                                                          pageBuilder: (_, _, _) =>
-                                                              MomentDetailPage(
-                                                                moment: widget
-                                                                    .moment,
-                                                                baseDir: widget
-                                                                    .baseDir,
-                                                                heroTag:
-                                                                    heroTag, // Note: Hero might be tricky with Carousel, might need unique tag per image
-                                                                initialIndex:
-                                                                    index, // TODO: Update MomentDetailPage to accept this
-                                                              ),
-                                                          transitionsBuilder:
-                                                              (
-                                                                _,
-                                                                animation,
-                                                                _,
-                                                                child,
-                                                              ) {
-                                                                return FadeTransition(
-                                                                  opacity:
-                                                                      animation,
-                                                                  child: child,
-                                                                );
-                                                              },
+                                                        AppRoutes.momentDetail(
+                                                          moment: widget.moment,
+                                                          baseDir:
+                                                              widget.baseDir,
+                                                          // Note: Hero might be tricky with Carousel, might need unique tag per image
+                                                          heroTag: heroTag,
+                                                          initialIndex: index,
                                                         ),
                                                       );
                                                     },
