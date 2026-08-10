@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 import 'package:paper_whisper_flutter/core/theme/app_theme.dart';
 import 'package:paper_whisper_flutter/core/theme/theme_registry.dart';
-import 'package:paper_whisper_flutter/features/settings/application/settings_provider.dart';
 
 /// 拟物风格弹窗 - 支持多主题适配
 class SkeuomorphicDialog extends StatelessWidget {
@@ -28,8 +26,7 @@ class SkeuomorphicDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final settings = Provider.of<SettingsProvider>(context, listen: false);
-    final theme = settings.currentTheme;
+    final theme = AppTheme.themeIdOf(context);
     final colors = _getThemeColors(theme);
 
     return Dialog(
@@ -247,8 +244,7 @@ class SkeuomorphicDialogButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final settings = Provider.of<SettingsProvider>(context, listen: false);
-    final theme = settings.currentTheme;
+    final theme = AppTheme.themeIdOf(context);
     final colors = _getButtonColors(theme);
 
     if (!isPrimary) {

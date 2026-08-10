@@ -12,29 +12,32 @@ void main() {
       SharedPreferences.setMockInitialValues(<String, Object>{});
     });
 
-    test('legacy sync config migrates secrets out of shared preferences', () async {
-      SharedPreferences.setMockInitialValues(<String, Object>{
-        'sync_config': jsonEncode(<String, Object?>{
-          'enabled': true,
-          'serverUrl': 'https://dav.example.com/',
-          'username': 'demo',
-          'password': 'legacy-secret',
-          's3SecretKey': 'legacy-s3-secret',
-        }),
-      });
+    test(
+      'legacy sync config migrates secrets out of shared preferences',
+      () async {
+        SharedPreferences.setMockInitialValues(<String, Object>{
+          'sync_config': jsonEncode(<String, Object?>{
+            'enabled': true,
+            'serverUrl': 'https://dav.example.com/',
+            'username': 'demo',
+            'password': 'legacy-secret',
+            's3SecretKey': 'legacy-s3-secret',
+          }),
+        });
 
-      final prefs = await SharedPreferences.getInstance();
-      final store = SyncSecretStore.fake();
+        final prefs = await SharedPreferences.getInstance();
+        final store = SyncSecretStore.fake();
 
-      await migrateLegacySyncSecrets(prefs, store);
+        await migrateLegacySyncSecrets(prefs, store);
 
-      final persistedConfig =
-          jsonDecode(prefs.getString('sync_config')!) as Map<String, dynamic>;
+        final persistedConfig =
+            jsonDecode(prefs.getString('sync_config')!) as Map<String, dynamic>;
 
-      expect(persistedConfig.containsKey('password'), isFalse);
-      expect(persistedConfig.containsKey('s3SecretKey'), isFalse);
-      expect(await store.readWebDavPassword(), 'legacy-secret');
-      expect(await store.readS3SecretKey(), 'legacy-s3-secret');
-    });
+        expect(persistedConfig.containsKey('password'), isFalse);
+        expect(persistedConfig.containsKey('s3SecretKey'), isFalse);
+        expect(await store.readWebDavPassword(), 'legacy-secret');
+        expect(await store.readS3SecretKey(), 'legacy-s3-secret');
+      },
+    );
   });
 }

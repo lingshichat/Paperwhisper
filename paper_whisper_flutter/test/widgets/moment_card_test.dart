@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:paper_whisper_flutter/core/theme/app_theme.dart';
 import 'package:paper_whisper_flutter/core/theme/theme_registry.dart';
 import 'package:paper_whisper_flutter/features/moments/application/moment_audio_controller.dart';
 import 'package:paper_whisper_flutter/features/moments/data/moment.dart';
@@ -76,7 +77,9 @@ void main() {
       ChangeNotifierProvider<SettingsProvider>(
         create: (_) => SettingsProvider(),
         child: MaterialApp(
-          theme: ThemeData(platform: platform),
+          theme: AppTheme.getThemeData(
+            AppTheme.themeDefault,
+          ).copyWith(platform: platform),
           home: Scaffold(
             body: SingleChildScrollView(
               child: MomentCard(

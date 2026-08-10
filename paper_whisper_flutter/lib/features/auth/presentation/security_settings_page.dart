@@ -10,7 +10,7 @@ import 'package:paper_whisper_flutter/features/settings/application/settings_pro
 import 'package:paper_whisper_flutter/features/auth/data/auth_service.dart';
 import 'package:paper_whisper_flutter/features/premium/data/payment_service.dart';
 import 'package:paper_whisper_flutter/shared/widgets/skeuomorphic_toast.dart';
-import 'package:paper_whisper_flutter/shared/widgets/visual_effects.dart';
+import 'package:paper_whisper_flutter/core/theme/widgets/visual_effects.dart';
 
 import 'widgets/lock_screen.dart';
 

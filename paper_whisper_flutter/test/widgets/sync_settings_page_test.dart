@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:paper_whisper_flutter/core/theme/app_theme.dart';
 import 'package:paper_whisper_flutter/core/theme/theme_registry.dart';
 import 'package:paper_whisper_flutter/features/sync/application/sync_run_result.dart';
 import 'package:paper_whisper_flutter/features/sync/data/sync_config.dart';
@@ -704,7 +705,9 @@ Widget buildSyncSettingsApp({
     ],
     child: MaterialApp(
       // 测试注入目标平台：ThemeData(platform:) 决定主题与部件平台行为
-      theme: platform == null ? null : ThemeData(platform: platform),
+      theme: AppTheme.getThemeData(
+        AppTheme.themeDefault,
+      ).copyWith(platform: platform),
       home: const SyncSettingsPage(),
     ),
   );

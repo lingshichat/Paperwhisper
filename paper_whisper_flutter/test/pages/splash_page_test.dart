@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:paper_whisper_flutter/core/theme/app_theme.dart';
 import 'package:paper_whisper_flutter/core/theme/theme_registry.dart';
 import 'package:paper_whisper_flutter/features/auth/presentation/intro_page.dart';
 import 'package:paper_whisper_flutter/features/auth/presentation/splash_page.dart';
@@ -47,6 +48,7 @@ void main() {
       MultiProvider(
         providers: [ChangeNotifierProvider(create: (_) => SettingsProvider())],
         child: MaterialApp(
+          theme: AppTheme.getThemeData(AppTheme.themeDefault),
           home: SplashPage(showIntro: true, startupPage: 'writer'),
         ),
       ),
@@ -76,6 +78,7 @@ void main() {
       MultiProvider(
         providers: [ChangeNotifierProvider(create: (_) => SettingsProvider())],
         child: MaterialApp(
+          theme: AppTheme.getThemeData(AppTheme.themeDefault),
           home: SplashPage(showIntro: true, startupPage: 'writer'),
         ),
       ),

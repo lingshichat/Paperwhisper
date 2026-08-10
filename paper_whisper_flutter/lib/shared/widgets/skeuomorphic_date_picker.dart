@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 import 'package:flutter/services.dart'; // For HapticFeedback
+import 'package:paper_whisper_flutter/core/theme/app_theme.dart';
 import 'package:paper_whisper_flutter/core/theme/theme_registry.dart';
-import 'package:paper_whisper_flutter/features/settings/application/settings_provider.dart';
 import 'skeuomorphic_dialog.dart';
 
 class SkeuomorphicDatePicker extends StatefulWidget {
@@ -103,7 +102,7 @@ class _SkeuomorphicDatePickerState extends State<SkeuomorphicDatePicker> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Provider.of<SettingsProvider>(context).currentTheme;
+    final theme = AppTheme.themeIdOf(context);
     final tc = ThemeRegistry.get(theme).datePicker;
 
     // Theme Colors

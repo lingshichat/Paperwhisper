@@ -8,7 +8,7 @@ import 'package:paper_whisper_flutter/core/theme/theme_registry.dart';
 import 'package:paper_whisper_flutter/features/settings/application/settings_provider.dart';
 import 'package:paper_whisper_flutter/features/update/data/update_service.dart';
 import 'package:paper_whisper_flutter/shared/widgets/skeuomorphic_toast.dart';
-import 'package:paper_whisper_flutter/shared/widgets/visual_effects.dart';
+import 'package:paper_whisper_flutter/core/theme/widgets/visual_effects.dart';
 
 /// 关于纸语页面
 /// 信纸风格展示项目信息、外部链接和开源协议

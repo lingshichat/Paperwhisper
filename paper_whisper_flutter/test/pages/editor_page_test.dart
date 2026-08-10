@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:paper_whisper_flutter/core/theme/app_theme.dart';
 import 'package:paper_whisper_flutter/core/theme/theme_registry.dart';
 import 'package:paper_whisper_flutter/features/diary/data/diary_entry.dart';
 import 'package:paper_whisper_flutter/features/sync/data/sync_config.dart';
@@ -110,7 +111,10 @@ void main() {
           ChangeNotifierProvider<DiaryProvider>.value(value: diaryProvider),
           ChangeNotifierProvider<SyncProvider>.value(value: syncProvider),
         ],
-        child: const MaterialApp(home: Scaffold(body: SizedBox())),
+        child: MaterialApp(
+          theme: AppTheme.getThemeData(AppTheme.themeDefault),
+          home: const Scaffold(body: SizedBox()),
+        ),
       ),
     );
     final navigator = tester.state<NavigatorState>(find.byType(Navigator));

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:paper_whisper_flutter/core/theme/app_theme.dart';
 import 'package:paper_whisper_flutter/core/theme/theme_registry.dart';
 import 'package:paper_whisper_flutter/features/moments/application/moment_recorder_controller.dart';
 import 'package:paper_whisper_flutter/features/settings/application/settings_provider.dart';
@@ -85,7 +86,9 @@ void main() {
       ChangeNotifierProvider<SettingsProvider>(
         create: (_) => SettingsProvider(),
         child: MaterialApp(
-          theme: ThemeData(platform: platform),
+          theme: AppTheme.getThemeData(
+            AppTheme.themeDefault,
+          ).copyWith(platform: platform),
           home: Scaffold(
             body: Align(
               alignment: Alignment.bottomCenter,

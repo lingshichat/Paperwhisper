@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:paper_whisper_flutter/core/theme/app_theme.dart';
 import 'package:paper_whisper_flutter/core/theme/components/fab_theme_data.dart';
 import 'package:paper_whisper_flutter/core/theme/theme_registry.dart';
 
@@ -18,6 +19,22 @@ void main() {
         'garden_of_words',
         'sea_flower',
       ]);
+    });
+
+    testWidgets('ThemeData 对共享组件暴露强类型主题 ID', (tester) async {
+      for (final theme in ThemeRegistry.allThemes) {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AppTheme.getThemeData(theme.id),
+            home: Builder(
+              builder: (context) => Text(AppTheme.themeIdOf(context)),
+            ),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+        expect(find.text(theme.id), findsOneWidget);
+      }
     });
   });
 

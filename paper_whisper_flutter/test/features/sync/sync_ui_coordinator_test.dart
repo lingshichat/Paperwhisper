@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:paper_whisper_flutter/core/theme/app_theme.dart';
 import 'package:paper_whisper_flutter/core/theme/theme_registry.dart';
 import 'package:paper_whisper_flutter/features/sync/application/auto_sync_scheduler.dart';
 import 'package:paper_whisper_flutter/features/sync/application/sync_run_result.dart';
@@ -66,6 +67,7 @@ void main() {
           ),
         ],
         child: MaterialApp(
+          theme: AppTheme.getThemeData(AppTheme.themeDefault),
           home: Builder(
             builder: (context) {
               ctx = context;

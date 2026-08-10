@@ -21,7 +21,7 @@ import 'package:paper_whisper_flutter/core/storage/storage_service.dart';
 import 'package:paper_whisper_flutter/features/update/data/update_service.dart';
 import 'package:paper_whisper_flutter/shared/widgets/skeuomorphic_dialog.dart';
 import 'package:paper_whisper_flutter/shared/widgets/skeuomorphic_toast.dart';
-import 'package:paper_whisper_flutter/shared/widgets/visual_effects.dart';
+import 'package:paper_whisper_flutter/core/theme/widgets/visual_effects.dart';
 
 import '../application/settings_permission_controller.dart';
 import '../application/settings_storage_controller.dart';

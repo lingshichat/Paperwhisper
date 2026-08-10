@@ -71,6 +71,12 @@ class AppTheme {
   static Color getAccentColor(String theme) =>
       ThemeRegistry.get(theme).colors.accent;
 
+  /// 从 Material 主题中读取当前 PaperWhisper 主题 ID。
+  ///
+  /// 共享组件通过这个强类型 ThemeExtension 取值，不依赖 SettingsProvider。
+  static String themeIdOf(BuildContext context) =>
+      Theme.of(context).extension<_PaperWhisperThemeIdentity>()!.id;
+
   // ══════════════════════════════════════
   //  ThemeData 生成
   // ══════════════════════════════════════
@@ -81,6 +87,7 @@ class AppTheme {
 
     return ThemeData(
       useMaterial3: true,
+      extensions: [_PaperWhisperThemeIdentity(theme)],
       brightness: t.colors.brightness,
       scaffoldBackgroundColor: t.colors.scaffoldBg,
       colorScheme: ColorScheme.fromSeed(
@@ -106,6 +113,29 @@ class AppTheme {
         },
       ),
     );
+  }
+}
+
+@immutable
+class _PaperWhisperThemeIdentity
+    extends ThemeExtension<_PaperWhisperThemeIdentity> {
+  const _PaperWhisperThemeIdentity(this.id);
+
+  final String id;
+
+  @override
+  _PaperWhisperThemeIdentity copyWith({String? id}) =>
+      _PaperWhisperThemeIdentity(id ?? this.id);
+
+  @override
+  _PaperWhisperThemeIdentity lerp(
+    covariant _PaperWhisperThemeIdentity? other,
+    double t,
+  ) {
+    if (other == null) {
+      return this;
+    }
+    return t < 0.5 ? this : other;
   }
 }
 

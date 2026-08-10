@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:paper_whisper_flutter/features/sync/presentation/sync_notification_service.dart';
+import 'package:paper_whisper_flutter/features/sync/application/sync_notification_service.dart';
 
 /// 记录型 [SyncNotificationGateway] 替身：记录每次调用及其参数。
 class RecordingGateway implements SyncNotificationGateway {

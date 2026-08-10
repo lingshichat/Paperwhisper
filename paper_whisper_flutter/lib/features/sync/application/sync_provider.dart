@@ -21,7 +21,7 @@ import 'package:paper_whisper_flutter/features/sync/data/sync_secret_store.dart'
 import 'package:paper_whisper_flutter/features/sync/data/sync_trust_snapshot.dart';
 import 'package:paper_whisper_flutter/features/sync/data/sync_trust_snapshot_store.dart';
 import 'package:paper_whisper_flutter/features/sync/data/webdav_sync_service.dart';
-import 'package:paper_whisper_flutter/features/sync/presentation/sync_notification_service.dart';
+import 'package:paper_whisper_flutter/features/sync/application/sync_notification_service.dart';
 
 enum SyncStatus { none, syncing, success, failed }
 

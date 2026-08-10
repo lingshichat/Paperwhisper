@@ -5,12 +5,13 @@ import 'package:path/path.dart' as path;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:paper_whisper_flutter/features/moments/data/moment.dart';
 import 'package:paper_whisper_flutter/features/diary/data/diary_entry.dart';
+import 'package:paper_whisper_flutter/core/storage/moment_storage_access.dart';
 import 'package:paper_whisper_flutter/core/storage/trash_record.dart';
 import 'package:paper_whisper_flutter/features/sync/data/manifest_service.dart';
 import 'package:paper_whisper_flutter/core/storage/trash_service.dart';
 import 'package:paper_whisper_flutter/features/diary/data/diary_service.dart';
 
-class MomentService {
+class MomentService implements MomentStorageAccess {
   MomentService({Directory? debugDataDir, DiaryService? diaryService})
     : _debugDataDir = debugDataDir,
       _diaryService = diaryService;
@@ -26,6 +27,7 @@ class MomentService {
 
   // 获取数据目录路径，供 UI 显示调试用
   String get currentDataPath => _dataDir?.path ?? 'Unknown';
+  @override
   Directory? get dataDir => _dataDir;
   Directory? get imagesDir => _imagesDir;
   Directory? get audioDir => _audioDir;
@@ -36,6 +38,7 @@ class MomentService {
     _audioDir = null;
   }
 
+  @override
   Future<void> init() async {
     if (_dataDir != null) return;
 
@@ -161,6 +164,7 @@ class MomentService {
     return moments;
   }
 
+  @override
   Future<Set<String>> getAllReferencedImages() async {
     List<Moment> moments = await getMoments();
     Set<String> validImages = {};

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:paper_whisper_flutter/core/theme/app_theme.dart';
 import 'package:paper_whisper_flutter/core/theme/theme_registry.dart';
 import 'package:paper_whisper_flutter/features/auth/application/lock_controller.dart';
 import 'package:paper_whisper_flutter/features/auth/presentation/widgets/lock_screen.dart';
@@ -69,6 +70,7 @@ void main() {
       ChangeNotifierProvider<SettingsProvider>(
         create: (_) => SettingsProvider(),
         child: MaterialApp(
+          theme: AppTheme.getThemeData(AppTheme.themeDefault),
           home: LockScreen(
             controller: controller,
             mode: mode,
@@ -228,6 +230,7 @@ void main() {
       ChangeNotifierProvider<SettingsProvider>(
         create: (_) => SettingsProvider(),
         child: MaterialApp(
+          theme: AppTheme.getThemeData(AppTheme.themeDefault),
           home: LockScreen(
             controller: controller,
             onUnlocked: () => unlocked = true,

@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 import 'package:paper_whisper_flutter/core/theme/app_theme.dart';
 import 'package:paper_whisper_flutter/core/theme/theme_registry.dart';
-import 'package:paper_whisper_flutter/features/settings/application/settings_provider.dart';
 
 class SkeuomorphicSearchBar extends StatefulWidget {
   final String value;
@@ -56,7 +54,7 @@ class _SkeuomorphicSearchBarState extends State<SkeuomorphicSearchBar> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Provider.of<SettingsProvider>(context).currentTheme;
+    final theme = AppTheme.themeIdOf(context);
 
     // Theme Configuration
     final searchTheme = ThemeRegistry.get(theme).search;

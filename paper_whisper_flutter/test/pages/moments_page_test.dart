@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:paper_whisper_flutter/core/theme/app_theme.dart';
 import 'package:paper_whisper_flutter/core/theme/theme_registry.dart';
 import 'package:paper_whisper_flutter/features/moments/data/moment.dart';
 import 'package:paper_whisper_flutter/features/sync/data/sync_config.dart';
@@ -99,7 +100,9 @@ void main() {
         ChangeNotifierProvider<PaymentService>.value(value: PaymentService()),
       ],
       child: MaterialApp(
-        theme: platform == null ? null : ThemeData(platform: platform),
+        theme: AppTheme.getThemeData(
+          AppTheme.themeDefault,
+        ).copyWith(platform: platform),
         home: const MomentsPage(),
       ),
     );

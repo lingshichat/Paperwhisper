@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 import 'package:paper_whisper_flutter/core/theme/app_theme.dart';
 import 'package:paper_whisper_flutter/core/theme/theme_registry.dart';
-import 'package:paper_whisper_flutter/features/settings/application/settings_provider.dart';
 
 /// 拟物风格 Toast 工具类
 /// 提供成功、错误、信息等样式的通知提示
@@ -71,8 +69,7 @@ class SkeuomorphicToast {
 
   /// 获取当前主题对应的颜色配置
   static _ToastColors _getThemeColors(BuildContext context, _ToastType type) {
-    final settings = Provider.of<SettingsProvider>(context, listen: false);
-    final theme = settings.currentTheme;
+    final theme = AppTheme.themeIdOf(context);
     final themeConfig = ThemeRegistry.get(theme).toast;
     final style = switch (type) {
       _ToastType.success => themeConfig.success,

@@ -82,7 +82,10 @@ void main() {
     await tester.pumpWidget(
       ChangeNotifierProvider<SettingsProvider>(
         create: (_) => SettingsProvider(),
-        child: MaterialApp(home: Scaffold(body: child)),
+        child: MaterialApp(
+          theme: AppTheme.getThemeData(AppTheme.themeDefault),
+          home: Scaffold(body: child),
+        ),
       ),
     );
   }

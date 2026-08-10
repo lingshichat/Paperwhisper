@@ -2,15 +2,15 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
-import 'package:paper_whisper_flutter/features/moments/data/moment_service.dart';
+import 'package:paper_whisper_flutter/core/storage/moment_storage_access.dart';
 import 'thumbnail_cache_service.dart';
 import 'package:flutter/painting.dart';
 
 class StorageService {
-  final MomentService _momentService;
+  final MomentStorageAccess _momentService;
 
   /// 注入共享 MomentService（读目录大小/清理孤儿），不维护独立实例。
-  StorageService({required MomentService momentService})
+  StorageService({required MomentStorageAccess momentService})
     : _momentService = momentService;
 
   /// 获取缓存大小（字节）
@@ -150,16 +150,7 @@ class StorageService {
       if (!await imagesDir.exists()) return 0;
 
       // 1. 获取所有有效的图片引用
-      final moments = await _momentService.getMoments();
-      final Set<String> validImageNames = {};
-
-      for (var m in moments) {
-        for (var relativePath in m.images) {
-          // relativePath is usually "images/xxx.jpg" or "xxx.jpg" (older versions)
-          String name = path.basename(relativePath);
-          validImageNames.add(name);
-        }
-      }
+      final validImageNames = await _momentService.getAllReferencedImages();
 
       // 2. 遍历 images 目录
       final entities = await imagesDir.list().toList();
