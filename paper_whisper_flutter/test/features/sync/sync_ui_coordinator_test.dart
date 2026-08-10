@@ -8,7 +8,7 @@ import 'package:paper_whisper_flutter/features/sync/application/sync_run_result.
 import 'package:paper_whisper_flutter/features/sync/presentation/sync_ui_coordinator.dart';
 import 'package:paper_whisper_flutter/features/sync/data/sync_config.dart';
 import 'package:paper_whisper_flutter/features/sync/data/sync_trust_snapshot.dart';
-import 'package:paper_whisper_flutter/providers/settings_provider.dart';
+import 'package:paper_whisper_flutter/features/settings/application/settings_provider.dart';
 import 'package:paper_whisper_flutter/features/sync/application/sync_provider.dart';
 import 'package:paper_whisper_flutter/features/sync/data/sync_secret_store.dart';
 import 'package:provider/provider.dart';

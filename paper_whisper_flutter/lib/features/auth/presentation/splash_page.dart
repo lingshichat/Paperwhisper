@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:paper_whisper_flutter/app/navigation/app_routes.dart';
 import 'package:paper_whisper_flutter/core/theme/app_theme.dart';
 import 'package:paper_whisper_flutter/features/update/application/update_check_coordinator.dart';
-import 'package:paper_whisper_flutter/providers/settings_provider.dart';
+import 'package:paper_whisper_flutter/features/settings/application/settings_provider.dart';
 import 'package:paper_whisper_flutter/features/auth/data/auth_service.dart';
 import 'package:paper_whisper_flutter/features/update/presentation/update_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';

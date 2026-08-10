@@ -14,7 +14,7 @@ import 'package:paper_whisper_flutter/app/navigation/app_routes.dart';
 import 'package:paper_whisper_flutter/core/theme/components/moment_card_theme_data.dart';
 import 'package:paper_whisper_flutter/core/theme/theme_registry.dart';
 import 'package:paper_whisper_flutter/features/moments/data/moment.dart';
-import 'package:paper_whisper_flutter/providers/settings_provider.dart';
+import 'package:paper_whisper_flutter/features/settings/application/settings_provider.dart';
 import 'package:paper_whisper_flutter/shared/widgets/export_success_dialog.dart';
 import 'package:paper_whisper_flutter/shared/widgets/skeuomorphic_dialog.dart';
 import 'package:paper_whisper_flutter/shared/widgets/skeuomorphic_toast.dart';

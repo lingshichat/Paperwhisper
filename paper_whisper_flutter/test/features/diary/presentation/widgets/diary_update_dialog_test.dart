@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:paper_whisper_flutter/core/theme/theme_registry.dart';
 import 'package:paper_whisper_flutter/features/diary/presentation/widgets/diary_update_dialog.dart';
 import 'package:paper_whisper_flutter/features/update/data/update_info.dart';
-import 'package:paper_whisper_flutter/providers/settings_provider.dart';
+import 'package:paper_whisper_flutter/features/settings/application/settings_provider.dart';
 import 'package:provider/provider.dart';
 
 /// DiaryUpdateDialog 组件测试：公告/更新/强制/备用下载分支的文案、图标、

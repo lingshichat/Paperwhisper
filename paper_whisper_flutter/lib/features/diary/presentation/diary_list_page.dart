@@ -22,7 +22,7 @@ import 'package:paper_whisper_flutter/features/update/application/update_check_c
 import 'package:paper_whisper_flutter/features/diary/data/diary_entry.dart';
 import 'package:paper_whisper_flutter/features/update/data/update_info.dart';
 import 'package:paper_whisper_flutter/features/diary/application/diary_provider.dart';
-import 'package:paper_whisper_flutter/providers/settings_provider.dart';
+import 'package:paper_whisper_flutter/features/settings/application/settings_provider.dart';
 import 'package:paper_whisper_flutter/features/sync/application/sync_provider.dart';
 import 'package:paper_whisper_flutter/features/update/data/update_service.dart';
 import 'package:paper_whisper_flutter/app/shell/sidebar_widget.dart';

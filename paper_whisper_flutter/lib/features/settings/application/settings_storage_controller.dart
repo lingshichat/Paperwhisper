@@ -1,4 +1,4 @@
-import '../../../services/storage_service.dart';
+import 'package:paper_whisper_flutter/core/storage/storage_service.dart';
 
 /// 设置页存储快照（typed）。
 class SettingsStorageSnapshot {

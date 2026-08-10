@@ -10,7 +10,7 @@ import 'package:paper_whisper_flutter/features/sync/data/sync_config.dart';
 import 'package:paper_whisper_flutter/features/sync/data/sync_trust_snapshot.dart';
 import 'package:paper_whisper_flutter/features/editor/presentation/editor_page.dart';
 import 'package:paper_whisper_flutter/features/diary/application/diary_provider.dart';
-import 'package:paper_whisper_flutter/providers/settings_provider.dart';
+import 'package:paper_whisper_flutter/features/settings/application/settings_provider.dart';
 import 'package:paper_whisper_flutter/features/sync/application/sync_provider.dart';
 import 'package:paper_whisper_flutter/shared/widgets/skeuomorphic_date_picker.dart';
 import 'package:provider/provider.dart';

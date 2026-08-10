@@ -6,7 +6,7 @@ import 'package:path/path.dart' as path;
 import 'package:uuid/uuid.dart';
 import 'package:paper_whisper_flutter/features/diary/data/diary_entry.dart';
 import 'package:paper_whisper_flutter/features/sync/data/manifest_service.dart';
-import 'package:paper_whisper_flutter/services/trash_service.dart';
+import 'package:paper_whisper_flutter/core/storage/trash_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class DiaryService {

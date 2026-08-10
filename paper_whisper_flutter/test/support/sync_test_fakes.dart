@@ -7,7 +7,7 @@ import 'package:paper_whisper_flutter/features/sync/data/cloud_storage_service.d
 import 'package:paper_whisper_flutter/features/diary/data/diary_service.dart';
 import 'package:paper_whisper_flutter/features/sync/data/manifest_service.dart';
 import 'package:paper_whisper_flutter/features/moments/data/moment_service.dart';
-import 'package:paper_whisper_flutter/services/trash_service.dart';
+import 'package:paper_whisper_flutter/core/storage/trash_service.dart';
 
 /// 内存版云端存储替身：实现 [CloudStorageService] 接口，
 /// 记录上传/下载/删除/移动副作用，供 SyncRunner 测试断言外部行为。

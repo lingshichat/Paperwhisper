@@ -18,7 +18,7 @@ import 'package:paper_whisper_flutter/features/settings/presentation/settings_pa
 import 'package:paper_whisper_flutter/features/statistics/presentation/statistics_page.dart';
 import 'package:paper_whisper_flutter/features/sync_settings/presentation/sync_settings_page.dart';
 import 'package:paper_whisper_flutter/features/trash/presentation/trash_page.dart';
-import 'package:paper_whisper_flutter/providers/settings_provider.dart';
+import 'package:paper_whisper_flutter/features/settings/application/settings_provider.dart';
 import 'package:provider/provider.dart';
 
 /// AppRoutes 路由工厂：route 目标 Widget 类型与参数可达、

@@ -40,7 +40,8 @@ class TrashRecord {
       relatedFiles: (json['relatedFiles'] as List<dynamic>? ?? <dynamic>[])
           .map((item) => item.toString())
           .toList(),
-      deletedAt: DateTime.tryParse(json['deletedAt']?.toString() ?? '') ??
+      deletedAt:
+          DateTime.tryParse(json['deletedAt']?.toString() ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
       title: json['title']?.toString(),
       previewText: json['previewText']?.toString(),

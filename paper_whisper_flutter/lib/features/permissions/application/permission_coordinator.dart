@@ -1,6 +1,6 @@
 import 'package:permission_handler/permission_handler.dart';
 
-import '../../../utils/platform_utils.dart';
+import 'package:paper_whisper_flutter/core/platform/platform_utils.dart';
 
 /// 权限状态快照（typed）。
 class PermissionSnapshot {

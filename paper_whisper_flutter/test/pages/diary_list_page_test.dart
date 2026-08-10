@@ -14,7 +14,7 @@ import 'package:paper_whisper_flutter/features/diary/presentation/widgets/diary_
 import 'package:paper_whisper_flutter/features/editor/presentation/editor_page.dart';
 import 'package:paper_whisper_flutter/features/settings/presentation/settings_page.dart';
 import 'package:paper_whisper_flutter/features/diary/application/diary_provider.dart';
-import 'package:paper_whisper_flutter/providers/settings_provider.dart';
+import 'package:paper_whisper_flutter/features/settings/application/settings_provider.dart';
 import 'package:paper_whisper_flutter/features/sync/application/sync_provider.dart';
 import 'package:paper_whisper_flutter/features/moments/data/moment_service.dart';
 import 'package:paper_whisper_flutter/features/premium/data/payment_service.dart';

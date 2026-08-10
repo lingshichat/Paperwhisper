@@ -6,7 +6,7 @@ import 'package:flutter/foundation.dart';
 /// 用于检测特定平台特性，如鸿蒙系统
 class PlatformUtils {
   static const MethodChannel _channel = MethodChannel('paper_whisper/platform');
-  
+
   /// 缓存检测结果，避免重复调用原生代码
   static bool? _isHarmonyOSCached;
 
@@ -15,18 +15,18 @@ class PlatformUtils {
     if (kIsWeb) return false;
     return Platform.isWindows || Platform.isMacOS || Platform.isLinux;
   }
-  
+
   /// 检测当前设备是否为鸿蒙系统 (HarmonyOS)
-  /// 
+  ///
   /// 鸿蒙系统上 permission_handler 的特殊权限请求可能无法正常工作，
   /// 需要使用 openAppSettings() 手动跳转设置页。
   static Future<bool> isHarmonyOS() async {
     // 非 Android 直接返回 false
     if (!Platform.isAndroid) return false;
-    
+
     // 使用缓存
     if (_isHarmonyOSCached != null) return _isHarmonyOSCached!;
-    
+
     try {
       final result = await _channel.invokeMethod<bool>('isHarmonyOS');
       _isHarmonyOSCached = result ?? false;
@@ -39,7 +39,7 @@ class PlatformUtils {
       return false;
     }
   }
-  
+
   /// 清除缓存（仅用于测试）
   @visibleForTesting
   static void clearCache() {

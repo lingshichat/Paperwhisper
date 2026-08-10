@@ -6,7 +6,7 @@ import 'package:paper_whisper_flutter/app/navigation/app_routes.dart';
 import 'package:paper_whisper_flutter/core/theme/app_theme.dart';
 import 'package:paper_whisper_flutter/core/theme/theme_registry.dart';
 import 'package:paper_whisper_flutter/features/diary/application/diary_provider.dart';
-import 'package:paper_whisper_flutter/providers/settings_provider.dart';
+import 'package:paper_whisper_flutter/features/settings/application/settings_provider.dart';
 import 'package:paper_whisper_flutter/app/shell/data/hitokoto_service.dart';
 import 'package:paper_whisper_flutter/shared/widgets/skeuomorphic_search_bar.dart';
 

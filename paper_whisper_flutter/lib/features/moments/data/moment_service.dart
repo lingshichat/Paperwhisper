@@ -5,9 +5,9 @@ import 'package:path/path.dart' as path;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:paper_whisper_flutter/features/moments/data/moment.dart';
 import 'package:paper_whisper_flutter/features/diary/data/diary_entry.dart';
-import 'package:paper_whisper_flutter/models/trash_record.dart';
+import 'package:paper_whisper_flutter/core/storage/trash_record.dart';
 import 'package:paper_whisper_flutter/features/sync/data/manifest_service.dart';
-import 'package:paper_whisper_flutter/services/trash_service.dart';
+import 'package:paper_whisper_flutter/core/storage/trash_service.dart';
 import 'package:paper_whisper_flutter/features/diary/data/diary_service.dart';
 
 class MomentService {

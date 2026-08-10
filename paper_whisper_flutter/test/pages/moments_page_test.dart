@@ -9,7 +9,7 @@ import 'package:paper_whisper_flutter/features/sync/data/sync_trust_snapshot.dar
 import 'package:paper_whisper_flutter/features/diary/presentation/diary_list_page.dart';
 import 'package:paper_whisper_flutter/features/moments/presentation/moments_page.dart';
 import 'package:paper_whisper_flutter/features/diary/application/diary_provider.dart';
-import 'package:paper_whisper_flutter/providers/settings_provider.dart';
+import 'package:paper_whisper_flutter/features/settings/application/settings_provider.dart';
 import 'package:paper_whisper_flutter/features/sync/application/sync_provider.dart';
 import 'package:paper_whisper_flutter/features/moments/data/moment_service.dart';
 import 'package:paper_whisper_flutter/features/premium/data/payment_service.dart';

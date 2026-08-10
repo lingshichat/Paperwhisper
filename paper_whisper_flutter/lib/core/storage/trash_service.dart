@@ -2,12 +2,12 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as path;
-import '../models/trash_record.dart';
+import 'package:paper_whisper_flutter/core/storage/trash_record.dart';
 
 class TrashService {
   Directory? _trashDir;
   Directory? _recordsDir;
-  
+
   // Init with the main data directory. Trash will be sibling: 'trash_data'
   Future<void> init(Directory dataDir) async {
     final parentDir = dataDir.parent;
@@ -20,7 +20,7 @@ class TrashService {
       await _recordsDir!.create(recursive: true);
     }
   }
-  
+
   Directory? get trashDir => _trashDir;
   Directory? get recordsDir => _recordsDir;
 
@@ -30,7 +30,10 @@ class TrashService {
   }
 
   String _bundlePath(String primaryFilename) {
-    return path.join(_trashDir!.path, path.basenameWithoutExtension(primaryFilename));
+    return path.join(
+      _trashDir!.path,
+      path.basenameWithoutExtension(primaryFilename),
+    );
   }
 
   Future<void> moveToTrash(File file) async {
@@ -44,26 +47,26 @@ class TrashService {
       debugPrint("Trash error: $e");
       // If rename fails (cross-device?), try copy-delete
       try {
-         final filename = path.basename(file.path);
-         final targetPath = path.join(_trashDir!.path, filename);
-         await file.copy(targetPath);
-         await file.delete();
+        final filename = path.basename(file.path);
+        final targetPath = path.join(_trashDir!.path, filename);
+        await file.copy(targetPath);
+        await file.delete();
       } catch (e2) {
-         debugPrint("Trash copy-delete failed: $e2");
-         rethrow;
+        debugPrint("Trash copy-delete failed: $e2");
+        rethrow;
       }
     }
   }
-  
+
   Future<void> restoreFromTrash(String filename, Directory targetDir) async {
     if (_trashDir == null) return;
     final trashFile = File(path.join(_trashDir!.path, filename));
     if (!await trashFile.exists()) return; // Already gone?
-    
+
     final targetPath = path.join(targetDir.path, filename);
     await trashFile.rename(targetPath);
   }
-  
+
   Future<void> deletePermanently(String filename) async {
     if (_trashDir == null) return;
     final trashFile = File(path.join(_trashDir!.path, filename));
@@ -71,11 +74,15 @@ class TrashService {
       await trashFile.delete();
     }
   }
-  
+
   Future<List<File>> listValidTrashFiles() async {
     if (_trashDir == null) return [];
     try {
-      return _trashDir!.list().where((e) => e is File && e.path.endsWith('.txt')).cast<File>().toList();
+      return _trashDir!
+          .list()
+          .where((e) => e is File && e.path.endsWith('.txt'))
+          .cast<File>()
+          .toList();
     } catch (e) {
       return [];
     }
@@ -91,7 +98,9 @@ class TrashService {
     final bundleDir = Directory(_bundlePath(record.primaryFilename));
     await bundleDir.create(recursive: true);
 
-    final primaryTarget = File(path.join(bundleDir.path, record.primaryFilename));
+    final primaryTarget = File(
+      path.join(bundleDir.path, record.primaryFilename),
+    );
     await _moveFile(primaryFile, primaryTarget);
 
     for (final entry in relatedFiles.entries) {
@@ -107,9 +116,14 @@ class TrashService {
     if (_trashDir == null || _recordsDir == null) return;
 
     final bundleDir = Directory(_bundlePath(record.primaryFilename));
-    final primarySource = File(path.join(bundleDir.path, record.primaryFilename));
+    final primarySource = File(
+      path.join(bundleDir.path, record.primaryFilename),
+    );
     if (await primarySource.exists()) {
-      await _moveFile(primarySource, File(path.join(targetDir.path, record.primaryFilename)));
+      await _moveFile(
+        primarySource,
+        File(path.join(targetDir.path, record.primaryFilename)),
+      );
     }
 
     for (final relativePath in record.relatedFiles) {

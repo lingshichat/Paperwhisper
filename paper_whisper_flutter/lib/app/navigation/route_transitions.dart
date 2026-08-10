@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'package:paper_whisper_flutter/core/theme/app_theme.dart';
-import '../../providers/settings_provider.dart';
+import 'package:paper_whisper_flutter/features/settings/application/settings_provider.dart';
 
 /// 自定义页面转场的集中定义（5 个旧文件中的 6 种 Route 类：
 /// slide / fade-slide / unfold / smooth-cover / book-flip / letter-fold）。

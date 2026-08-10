@@ -9,11 +9,11 @@ import 'package:paper_whisper_flutter/app/navigation/app_routes.dart';
 import 'package:paper_whisper_flutter/core/theme/app_theme.dart';
 import 'package:paper_whisper_flutter/features/auth/presentation/splash_page.dart';
 import 'package:paper_whisper_flutter/features/auth/presentation/widgets/lock_screen.dart';
-import 'package:paper_whisper_flutter/providers/settings_provider.dart';
+import 'package:paper_whisper_flutter/features/settings/application/settings_provider.dart';
 import 'package:paper_whisper_flutter/features/sync/application/sync_provider.dart';
 import 'package:paper_whisper_flutter/features/auth/data/auth_service.dart';
 import 'package:paper_whisper_flutter/features/moments/data/moment_service.dart';
-import 'package:paper_whisper_flutter/services/storage_service.dart';
+import 'package:paper_whisper_flutter/core/storage/storage_service.dart';
 
 import 'app_lifecycle_observer.dart';
 
