@@ -10,7 +10,7 @@ import '../providers/settings_provider.dart';
 import '../widgets/skeuomorphic_dialog.dart';
 import '../widgets/skeuomorphic_toast.dart';
 import '../services/draft_service.dart'; // Added
-import '../widgets/slide_page_route.dart'; // Needed for "Save As New" navigation
+import '../app/navigation/app_routes.dart';
 import '../features/editor/application/editor_save_coordinator.dart';
 import '../features/editor/application/editor_session_controller.dart';
 import '../features/editor/data/diary_export_service.dart';
@@ -179,17 +179,15 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                 Navigator.pop(ctx);
                 Navigator.pushReplacement(
                   context,
-                  SlidePageRoute(
-                    page: EditorPage(
-                      entry: DiaryEntry(
-                        filename: '',
-                        dateString: draft.dateString,
-                        title: draft.title,
-                        content: draft.content,
-                        weather: draft.weather,
-                        mood: draft.mood,
-                        isMarkdown: true,
-                      ),
+                  AppRoutes.editor(
+                    entry: DiaryEntry(
+                      filename: '',
+                      dateString: draft.dateString,
+                      title: draft.title,
+                      content: draft.content,
+                      weather: draft.weather,
+                      mood: draft.mood,
+                      isMarkdown: true,
                     ),
                   ),
                 );

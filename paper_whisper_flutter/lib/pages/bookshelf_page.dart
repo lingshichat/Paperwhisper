@@ -7,8 +7,7 @@ import '../providers/diary_provider.dart';
 import '../providers/settings_provider.dart';
 import '../config/app_theme.dart';
 import '../widgets/skeuomorphic_book.dart';
-import '../widgets/smooth_cover_page_route.dart'; // SmoothCoverPageRoute
-import 'book_directory_page.dart';
+import '../app/navigation/app_routes.dart';
 import '../widgets/skeuomorphic_dialog.dart';
 
 class BookshelfPage extends StatefulWidget {
@@ -153,7 +152,7 @@ class _BookshelfPageState extends State<BookshelfPage> {
                                    Navigator.popUntil(context, (route) => route.isFirst);
                                    Navigator.push(
                                      context,
-                                     SmoothCoverPageRoute(page: BookDirectoryPage(year: year)),
+                                     AppRoutes.bookDirectory(year: year),
                                    );
                                 },
                                 onMenuAction: (action) async {

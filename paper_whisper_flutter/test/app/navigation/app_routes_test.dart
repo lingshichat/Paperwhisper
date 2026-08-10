@@ -155,8 +155,8 @@ void main() {
     ) async {
       await tester.pumpWidget(harness(const Scaffold(body: Text('x'))));
       final route = AppRoutes.bookshelf();
-      expect(route, isA<SmoothCoverPageRoute<void>>());
-      final cover = route as SmoothCoverPageRoute<void>;
+      expect(route, isA<SmoothCoverPageRoute<dynamic>>());
+      final cover = route as SmoothCoverPageRoute<dynamic>;
       expect(cover.transitionDuration, const Duration(milliseconds: 700));
       expect(cover.opaque, isTrue);
     });

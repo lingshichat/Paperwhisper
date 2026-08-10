@@ -129,8 +129,12 @@ class AppRoutes {
   static Route<void> diaryList() => shellFade(const DiaryListPage());
 
   /// 书架页（现状：SmoothCoverPageRoute，book_directory）。
-  static Route<void> bookshelf({int? initialYear}) =>
-      smoothCover(BookshelfPage(initialYear: initialYear));
+  ///
+  /// 保持旧调用 `SmoothCoverPageRoute(page: BookshelfPage(...))` 推断出的
+  /// `Route<dynamic>` 返回契约：调用方 `Navigator.push` 拿回 dynamic 结果，
+  /// 与 book_directory 的 `Navigator.pop(context, result)` 语义一致。
+  static Route<dynamic> bookshelf({int? initialYear}) =>
+      smoothCover<dynamic>(BookshelfPage(initialYear: initialYear));
 
   /// 目录页（现状：SmoothCoverPageRoute，返回 int 结果：月/年）。
   static Route<int> bookDirectory({required int year}) =>

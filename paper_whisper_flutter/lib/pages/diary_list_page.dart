@@ -19,13 +19,7 @@ import '../widgets/skeuomorphic_search_bar.dart';
 import '../widgets/month_divider.dart';
 import '../widgets/skeuomorphic_toast.dart';
 import '../features/sync/presentation/sync_ui_coordinator.dart';
-import 'editor_page.dart';
 import 'diary_card.dart';
-import 'sync_settings_page.dart';
-import '../widgets/slide_page_route.dart';
-import '../widgets/unfold_page_route.dart';
-import '../widgets/paper_fold_page_route.dart'; // LetterFoldPageRoute
-import '../widgets/smooth_cover_page_route.dart'; // SmoothCoverPageRoute
 import 'dart:io' show Platform;
 import '../models/update_info.dart';
 import '../services/update_service.dart';
@@ -36,7 +30,7 @@ import '../features/diary/application/diary_list_filter.dart';
 import '../features/diary/application/diary_timeline_layout_builder.dart';
 import '../features/diary/presentation/widgets/diary_empty_state.dart';
 import '../features/diary/presentation/widgets/diary_update_dialog.dart';
-import 'book_directory_page.dart';
+import '../app/navigation/app_routes.dart';
 
 class DiaryListPage extends StatefulWidget {
   final int? initialYear;
@@ -174,36 +168,36 @@ class _DiaryListPageState extends State<DiaryListPage>
       if (!mounted) break;
       final result = await Navigator.push(
         context,
-        SmoothCoverPageRoute(page: BookDirectoryPage(year: targetYear)),
+        AppRoutes.bookDirectory(year: targetYear),
       );
 
       if (result == null) break; // Back button pressed
 
-      if (result is int) {
-        debugPrint('Navigation Debug: Directory returned result: $result');
-        if (result <= 12) {
-          // It's a month
-          debugPrint(
-            'Navigation Debug: Recognized as month $result for year $targetYear',
-          );
+      // AppRoutes.bookDirectory 返回 Route<int>：非空结果已保证为 int，
+      // 移除旧 dynamic 时代的 `result is int` 类型守卫。
+      debugPrint('Navigation Debug: Directory returned result: $result');
+      if (result <= 12) {
+        // It's a month
+        debugPrint(
+          'Navigation Debug: Recognized as month $result for year $targetYear',
+        );
 
-          // Wait for transition to finish
-          await Future.delayed(const Duration(milliseconds: 300));
+        // Wait for transition to finish
+        await Future.delayed(const Duration(milliseconds: 300));
 
-          _scrollToMonth(targetYear, result);
-          break;
-        } else {
-          // It's a year (from Bookshelf)
-          targetYear = result;
-          debugPrint(
-            'Navigation Debug: Recognized as new year $targetYear. Looping...',
-          );
+        _scrollToMonth(targetYear, result);
+        break;
+      } else {
+        // It's a year (from Bookshelf)
+        targetYear = result;
+        debugPrint(
+          'Navigation Debug: Recognized as new year $targetYear. Looping...',
+        );
 
-          // Wait for transition/rebuild
-          await Future.delayed(const Duration(milliseconds: 100));
-          _scrollToYear(targetYear);
-          // Loop continues -> Re-opens directory with new year
-        }
+        // Wait for transition/rebuild
+        await Future.delayed(const Duration(milliseconds: 100));
+        _scrollToYear(targetYear);
+        // Loop continues -> Re-opens directory with new year
       }
     }
   }
@@ -415,10 +409,7 @@ class _DiaryListPageState extends State<DiaryListPage>
             isPrimary: true,
             onPressed: () {
               Navigator.pop(ctx);
-              Navigator.push(
-                context,
-                SlidePageRoute(page: const SyncSettingsPage()),
-              );
+              Navigator.push(context, AppRoutes.syncSettings());
             },
           ),
         ],
@@ -431,7 +422,7 @@ class _DiaryListPageState extends State<DiaryListPage>
       // 新建日记：使用信纸对折动画
       Navigator.push(
         context,
-        LetterFoldPageRoute(page: EditorPage(entry: null)),
+        AppRoutes.editor(transition: AppRouteTransition.letterFold),
       );
     } else if (cardRect != null) {
       // 智能分级：超过 300 字符启用性能模式，优化长日记体验
@@ -443,15 +434,13 @@ class _DiaryListPageState extends State<DiaryListPage>
       // 点击卡片：使用展开动画
       Navigator.push(
         context,
-        UnfoldPageRoute(
-          // 传递 EditorPage，并注入状态回调
-          page: EditorPage(
-            entry: entry,
-            usePreviewMode: isLongDiary, // 开启首屏渲染优化
-            onContentReady: (callback) {
-              showFullContent = callback; // 捕获编辑器的刷新方法
-            },
-          ),
+        AppRoutes.editor(
+          entry: entry,
+          usePreviewMode: isLongDiary, // 开启首屏渲染优化
+          onContentReady: (callback) {
+            showFullContent = callback; // 捕获编辑器的刷新方法
+          },
+          transition: AppRouteTransition.unfold,
           sourceRect: cardRect,
           // 关键恢复：虽然是长日记，但因为我们有了数据截断优化，
           // 所以可以放心使用完整的 800ms 动态圆角动画，无需性能降级！
@@ -464,7 +453,7 @@ class _DiaryListPageState extends State<DiaryListPage>
       );
     } else {
       // 降级：使用平滑动画
-      Navigator.push(context, SlidePageRoute(page: EditorPage(entry: entry)));
+      Navigator.push(context, AppRoutes.editor(entry: entry));
     }
   }
 
@@ -751,10 +740,7 @@ class _DiaryListPageState extends State<DiaryListPage>
           child: BookFlipRefreshWidget(
             theme: theme,
             onLongRefreshTap: () {
-              Navigator.push(
-                context,
-                SlidePageRoute(page: const SyncSettingsPage()),
-              );
+              Navigator.push(context, AppRoutes.syncSettings());
             },
             onRefresh: () async {
               final syncProvider = Provider.of<SyncProvider>(

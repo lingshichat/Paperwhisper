@@ -6,6 +6,7 @@ import 'package:paper_whisper_flutter/config/theme/theme_registry.dart';
 import 'package:paper_whisper_flutter/models/sync_config.dart';
 import 'package:paper_whisper_flutter/models/sync_trust_snapshot.dart';
 import 'package:paper_whisper_flutter/pages/settings_page.dart';
+import 'package:paper_whisper_flutter/pages/sync_settings_page.dart';
 import 'package:paper_whisper_flutter/providers/settings_provider.dart';
 import 'package:paper_whisper_flutter/providers/sync_provider.dart';
 import 'package:paper_whisper_flutter/services/moment_service.dart';
@@ -261,6 +262,18 @@ void main() {
   });
 
   group('SettingsPage 入口与交互', () {
+    testWidgets('数据同步入口经 AppRoutes 导航到同步设置页', (tester) async {
+      final syncProvider = makeSyncProvider();
+      await pumpSettings(tester, syncProvider: syncProvider);
+
+      await tester.tap(find.text('数据同步'));
+      await tester.pumpAndSettle();
+
+      // AppRoutes.syncSettings() 返回 SlidePageRoute(SyncSettingsPage)
+      expect(find.byType(SyncSettingsPage), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('主题风格入口打开选择面板并切换主题', (tester) async {
       final syncProvider = makeSyncProvider();
       await pumpSettings(tester, syncProvider: syncProvider);

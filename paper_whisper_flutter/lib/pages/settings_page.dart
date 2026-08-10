@@ -23,14 +23,9 @@ import '../features/sync/presentation/sync_status_formatter.dart';
 import '../widgets/update_dialog.dart';
 import '../widgets/skeuomorphic_toast.dart';
 import '../widgets/skeuomorphic_dialog.dart';
-import '../widgets/slide_page_route.dart';
 import '../widgets/visual_effects.dart';
-import '../pages/trash_page.dart';
+import '../app/navigation/app_routes.dart';
 import '../services/storage_service.dart';
-import 'sync_settings_page.dart';
-import 'security_settings_page.dart';
-import 'premium_membership_page.dart'; // Import Premium Page
-import 'about_page.dart';
 import '../services/payment_service.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -198,10 +193,7 @@ class _SettingsPageState extends State<SettingsPage>
                   subtitle: pay.isSponsor ? '已点亮勋章 - 感谢有你' : '用爱发电，请我喝杯咖啡',
                   textColor: textColor,
                   onTap: () {
-                    Navigator.push(
-                      context,
-                      SlidePageRoute(page: const PremiumMembershipPage()),
-                    );
+                    Navigator.push(context, AppRoutes.premium());
                   },
                 );
               },
@@ -213,10 +205,7 @@ class _SettingsPageState extends State<SettingsPage>
               subtitle: _getSyncStatusText(context),
               textColor: textColor,
               onTap: () {
-                Navigator.push(
-                  context,
-                  SlidePageRoute(page: SyncSettingsPage()),
-                );
+                Navigator.push(context, AppRoutes.syncSettings());
               },
             ),
           ],
@@ -281,10 +270,7 @@ class _SettingsPageState extends State<SettingsPage>
               subtitle: '生物识别与密码保护',
               textColor: textColor,
               onTap: () {
-                Navigator.push(
-                  context,
-                  SlidePageRoute(page: const SecuritySettingsPage()),
-                );
+                Navigator.push(context, AppRoutes.securitySettings());
               },
             ),
             SettingsDivider(color: themeConfig['dividerColor'] as Color),
@@ -312,7 +298,7 @@ class _SettingsPageState extends State<SettingsPage>
               subtitle: '找回误删的日记',
               textColor: textColor,
               onTap: () {
-                Navigator.push(context, SlidePageRoute(page: TrashPage()));
+                Navigator.push(context, AppRoutes.trash());
               },
             ),
           ],
@@ -393,10 +379,7 @@ class _SettingsPageState extends State<SettingsPage>
               subtitle: '纸本无言，因你而语',
               textColor: textColor,
               onTap: () {
-                Navigator.push(
-                  context,
-                  SlidePageRoute(page: const AboutPage()),
-                );
+                Navigator.push(context, AppRoutes.about());
               },
             ),
             if (kDebugMode) ...[

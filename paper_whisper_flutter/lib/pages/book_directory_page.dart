@@ -5,8 +5,7 @@ import '../providers/diary_provider.dart';
 import '../providers/settings_provider.dart';
 import '../config/app_theme.dart';
 import '../widgets/skeuomorphic_dialog.dart';
-import '../widgets/smooth_cover_page_route.dart'; // SmoothCoverPageRoute
-import 'bookshelf_page.dart';
+import '../app/navigation/app_routes.dart';
 
 class BookDirectoryPage extends StatelessWidget {
   final int year;
@@ -41,7 +40,7 @@ class BookDirectoryPage extends StatelessWidget {
           onTap: () async {
             final result = await Navigator.push(
               context,
-              SmoothCoverPageRoute(page: BookshelfPage(initialYear: year)),
+              AppRoutes.bookshelf(initialYear: year),
             );
             if (result != null) {
                if (context.mounted) Navigator.pop(context, result);

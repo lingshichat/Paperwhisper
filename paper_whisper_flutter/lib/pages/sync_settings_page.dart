@@ -12,9 +12,8 @@ import '../features/sync/presentation/sync_ui_coordinator.dart';
 import '../features/sync/presentation/sync_status_formatter.dart';
 import '../features/sync_settings/application/sync_settings_form_controller.dart';
 import '../features/sync_settings/presentation/widgets/sync_settings_widgets.dart';
+import '../app/navigation/app_routes.dart';
 import '../widgets/skeuomorphic_toast.dart';
-import 'premium_membership_page.dart';
-import '../widgets/slide_page_route.dart';
 
 class SyncSettingsPage extends StatefulWidget {
   const SyncSettingsPage({super.key});
@@ -166,10 +165,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
               color: lockBtnColor,
               borderRadius: BorderRadius.circular(10),
               child: InkWell(
-                onTap: () => Navigator.push(
-                  context,
-                  SlidePageRoute(page: const PremiumMembershipPage()),
-                ),
+                onTap: () => Navigator.push(context, AppRoutes.premium()),
                 borderRadius: BorderRadius.circular(10),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
