@@ -126,7 +126,7 @@ UI ← watches → Provider ← calls → shared Service ← does → I/O
 ```
 
 Example flow:
-1. `main.dart` creates one `DiaryService` and one `MomentService(diaryService: ...)`.
+1. `app/bootstrap.dart` creates one `DiaryService` and one `MomentService(diaryService: ...)`.
 2. `DiaryProvider`, `SyncProvider`, pages, statistics, and storage receive those exact instances.
 3. User taps Save → `DiaryProvider.saveEntry()` writes through the shared `DiaryService`.
 4. `DiaryProvider` calls `notifyListeners()` and sync pending calculation reads the same manifest state.
@@ -147,11 +147,12 @@ StatisticsService(
 
 ## Real Code Examples
 
-- [`main.dart`](../../paper_whisper_flutter/lib/main.dart) — owns the shared `DiaryService` / `MomentService` instances and registers both services plus the reactive providers
-- [`sync_provider.dart`](../../paper_whisper_flutter/lib/providers/sync_provider.dart) — exposes context-free sync commands and delegates persistence, state calculation, scheduling, notifications, and transfer algorithms to `features/sync/`
-- [`sync_ui_coordinator.dart`](../../paper_whisper_flutter/lib/features/sync/presentation/sync_ui_coordinator.dart) — translates typed sync results into permission dialogs and toasts without putting `BuildContext` in the provider
-- [`editor_page.dart`](../../paper_whisper_flutter/lib/pages/editor_page.dart) — uses `context.read<SyncProvider>()` for save-triggered side effects without subscribing the whole page to sync rebuilds
-- [`settings_page.dart`](../../paper_whisper_flutter/lib/pages/settings_page.dart) — scopes premium badge rebuilds with `Consumer<PaymentService>` instead of rebuilding the whole settings screen
+- [`bootstrap.dart`](../../../paper_whisper_flutter/lib/app/bootstrap.dart) — owns the shared `DiaryService` / `MomentService` instances and registers services plus reactive providers
+- [`sync_provider.dart`](../../../paper_whisper_flutter/lib/features/sync/application/sync_provider.dart) — exposes context-free sync commands and delegates persistence, state calculation, scheduling, notifications, and transfer algorithms inside `features/sync/`
+- [`sync_notification_service.dart`](../../../paper_whisper_flutter/lib/features/sync/application/sync_notification_service.dart) — owns OS notification side effects without creating an application → presentation dependency
+- [`sync_ui_coordinator.dart`](../../../paper_whisper_flutter/lib/features/sync/presentation/sync_ui_coordinator.dart) — translates typed sync results into permission dialogs and toasts without putting `BuildContext` in the provider
+- [`editor_page.dart`](../../../paper_whisper_flutter/lib/features/editor/presentation/editor_page.dart) — uses `context.read<SyncProvider>()` for save-triggered side effects without subscribing the whole page to sync rebuilds
+- [`settings_page.dart`](../../../paper_whisper_flutter/lib/features/settings/presentation/settings_page.dart) — scopes premium badge rebuilds with `Consumer<PaymentService>` instead of rebuilding the whole settings screen
 
 ---
 
@@ -227,7 +228,7 @@ await SyncUiCoordinator(context).handleSaveAutoSync(
 | `MomentIndex` / `MomentSendPipeline` | `features/moments/application/` | 纯索引 / 单次动作对象，无 Widget 生命周期 |
 | `DiaryTimelineLayoutBuilder` / `DiaryAnnouncementCoordinator` | `features/diary/application/` | 纯函数 / 页面 owned |
 | `SyncSettingsFormController` | `features/sync_settings/application/` | 页面 owned，持有 8 个输入 Controller |
-| `LockController` | `features/security/application/` | 页面 owned |
+| `LockController` | `features/auth/application/` | 页面 owned |
 | `UpdateDownloadController` / `SettingsUpdateController` 等 | `features/{update,settings}/application/` | 页面 owned，随 dialog/页面销毁 |
 | `MomentAudioController` / `MomentRecorderController` | `features/moments/application/` | 组件 owned，`dispose()` 释放播放器/录音器 |
 

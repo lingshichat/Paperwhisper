@@ -98,10 +98,10 @@ HitokotoService().fetchHitokoto(); // 不 await
 
 ## Real Code Examples
 
-- [`main.dart`](../../paper_whisper_flutter/lib/main.dart) — `_MyAppState` mixes in `WidgetsBindingObserver`, registers the observer in `initState()`, and removes it in `dispose()`
-- [`diary_list_page.dart`](../../paper_whisper_flutter/lib/pages/diary_list_page.dart) — defers context-dependent loading and scroll jumps to `addPostFrameCallback`, and removes listeners during teardown
-- [`moment_input_widget.dart`](../../paper_whisper_flutter/lib/widgets/moment_input_widget.dart) — disposes text/audio/animation controllers and uses a post-frame callback to measure rendered height safely
-- [`update_dialog.dart`](../../paper_whisper_flutter/lib/widgets/update_dialog.dart) — cancels the active download token in `dispose()` so background work does not outlive the dialog
+- [`main.dart`](../../../paper_whisper_flutter/lib/main.dart) — `_MyAppState` mixes in `WidgetsBindingObserver`, registers the observer in `initState()`, and removes it in `dispose()`
+- [`diary_list_page.dart`](../../../paper_whisper_flutter/lib/features/diary/presentation/diary_list_page.dart) — defers context-dependent loading and scroll jumps to `addPostFrameCallback`, and removes listeners during teardown
+- [`moment_input_widget.dart`](../../../paper_whisper_flutter/lib/features/moments/presentation/widgets/moment_input_widget.dart) — disposes text/audio/animation controllers and uses a post-frame callback to measure rendered height safely
+- [`update_dialog.dart`](../../../paper_whisper_flutter/lib/features/update/presentation/update_dialog.dart) — cancels the active download token in `dispose()` so background work does not outlive the dialog
 
 ---
 

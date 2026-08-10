@@ -38,7 +38,7 @@
 - [x] `moment_input_widget.dart` 底栏按钮去除 Container+Border 外框，恢复纯图标拟物风格
 
 ### P1: 高优页面样式收敛（✅ 已完成）
-- [x] `settings_page.dart`: 已统一由 `AppTheme.getSettingsTheme` 接管，无散落主题判断。
+- [x] `settings_page.dart`: 已统一读取 `ThemeRegistry` typed component data，无动态 Map 或散落主题判断。
 
 ### P2: 独立组件样式收敛（✅ 已完成）
 - [x] `security_settings_page.dart`: 无硬编码主题判断
@@ -63,15 +63,16 @@
 | 同步域 | ✅ 完成 | context-free `SyncProvider`、`features/sync/`、共享 Service 所有权、跨实例 Manifest 串行写入 |
 | 编辑器 | ✅ 完成 | `editor_page.dart` 约 1650→581 行；Session/Save/Export/Presentation 边界；编辑器 115 项、完整 324 项测试 |
 | 页面协调器 | ✅ 完成 | 横切职责收敛：UpdateCheck/Permission/SaveSync/ExportPathResolver/SyncStatusFormatter；Settings 1521→944、Moments 1248→907、DiaryList 1257→881、SyncSettings 1140→764、Editor 581 行；新控制器/协调器不持有 BuildContext；`flutter analyze` 0 issue、完整 765 项测试全绿、14 个文件双平台 widget smoke |
-| 目标架构 | ⏳ 待执行 | typed theme、集中导航、最终 feature-first 目录迁移 |
+| 目标架构 | ✅ 完成 | `app/core/features/shared` 落地；AppRoutes 集中导航；动态主题 facade、主题 `toMap()`/强转归零；`main.dart` 3 行；依赖方向静态检查全 0；完整 815 项测试；7 主题 × 2 平台 × 3 页面共 42 张视觉截图通过 |
 
-后续阶段必须基于前一阶段验收态串行实施。不得重新把 BuildContext、文件 I/O、平台插件、Timer 或跨功能保存策略塞回 Provider/大型页面。
+五阶段已全部完成。后续功能必须在现有边界内演进，不再恢复旧 layer-first 目录或动态主题兼容层。不得重新把 BuildContext、文件 I/O、平台插件、Timer 或跨功能保存策略塞回 Provider/大型页面。
 
 ---
 
 ## 📌 验收规则
 
 任何人认领推进上述 Phase 3 任务时，必须遵守以下约定：
-1. **不要在 Widget 层判断主题**。所有关于 `isSeaFlower` 的布尔值只能作为 `AppTheme` 内部判断，不能污染 UI 层。
-2. 修改完成后，必须在本地运行并切换**全部 7 种主题**，确保没有发生色彩断层或文字看不清的视觉回归。
-3. 提交前确保能通过 `flutter analyze` 无新引入的错误。
+1. **Widget 只读 typed theme data。** 通过 `AppTheme.themeIdOf(context)` 与 `ThemeRegistry.get(id).component` 取值，不新增主题 Map、运行时强转或散装主题分支。
+2. 修改完成后，在 Windows 与 Android 检查全部 7 种主题；主题/布局变更还需保留可重复的 widget smoke 或截图证据。
+3. 提交前运行全仓 format check、`flutter analyze` 和完整 `flutter test`，三者都必须通过。
+4. core/shared/data/application 的反向依赖、navigation 外 Route 构造和旧 layer import 必须保持 0；具体命令见 `frontend/architecture-boundaries.md`。

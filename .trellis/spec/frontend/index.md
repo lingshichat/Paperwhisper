@@ -13,7 +13,7 @@
 | Animations | `simple_animations`, custom `PageRouteBuilder` transitions |
 | UI paradigm | **Skeuomorphism** — realistic textures, shadows, gradients |
 | Fonts | Google Fonts (via `google_fonts` package) |
-| Styling | Centralized theme system in `config/app_theme.dart` |
+| Styling | Typed theme registry in `core/theme/` |
 | Storage | File-system based (plain text files + JSON), `shared_preferences` |
 | Sync | WebDAV (`webdav_client`) and S3-compatible (`minio`) |
 
@@ -23,6 +23,7 @@
 
 | Guide | Description | Status |
 |-------|-------------|--------|
+| [Architecture Boundaries](./architecture-boundaries.md) | app/core/features/shared ownership, dependency gates, navigation and theme contracts | ✅ Filled |
 | [Directory Structure](./directory-structure.md) | Module organization and file layout | ✅ Filled |
 | [Component Guidelines](./component-guidelines.md) | Widget patterns, composition, skeuomorphic design | ✅ Filled |
 | [Hook Guidelines](./hook-guidelines.md) | Widget lifecycle, mixins, callbacks | ✅ Filled |

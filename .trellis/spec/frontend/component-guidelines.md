@@ -61,12 +61,16 @@ class SkeuomorphicFoo extends StatelessWidget {
 
 ### Theme-driven styling (preferred):
 
-All colors, gradients, and shadows come from `AppTheme` static methods:
+Colors, gradients, borders, and shadows come from typed component data:
 
 ```dart
-final theme = AppTheme.getDiaryCardTheme(settings.currentTheme);
-// Returns a Map with keys like 'backgroundColor', 'textColor', 'shadow', etc.
+final themeId = AppTheme.themeIdOf(context);
+final diaryCard = ThemeRegistry.get(themeId).diaryCard;
+
+Text(title, style: TextStyle(color: diaryCard.titleColor));
 ```
+
+Shared widgets use the ThemeExtension published by `AppTheme.getThemeData()` and must not import `SettingsProvider`.
 
 ### Skeuomorphic requirements for every visual component:
 
@@ -89,15 +93,15 @@ final theme = AppTheme.getDiaryCardTheme(settings.currentTheme);
 
 The app uses handcrafted page transitions instead of default Material transitions:
 
-| Transition | File | Usage |
-|-----------|------|-------|
-| Book flip | `book_flip_page_route.dart` | Diary reading mode |
-| Paper fold | `paper_fold_page_route.dart` | General navigation |
-| Slide | `slide_page_route.dart` | Settings sub-pages |
-| Unfold | `unfold_page_route.dart` | Editor opening |
-| Smooth cover | `smooth_cover_page_route.dart` | Modal-like pages |
+| Transition | Class | Usage |
+|-----------|-------|-------|
+| Book flip | `BookFlipPageRoute` | Diary reading mode |
+| Letter/paper fold | `LetterFoldPageRoute` | Physical paper navigation |
+| Slide | `SlidePageRoute` | Settings sub-pages |
+| Unfold | `UnfoldPageRoute` | Editor opening |
+| Smooth cover | `SmoothCoverPageRoute` | Modal-like pages |
 
-Global default transition is `_SkeuomorphicPageTransitionsBuilder` in `app_theme.dart` — a fade + slide-up with `easeOutQuart` curve.
+All Route classes live in `app/navigation/route_transitions.dart`; cross-page factories live in `app/navigation/app_routes.dart`. Global default transition remains `_SkeuomorphicPageTransitionsBuilder` in `core/theme/app_theme.dart`.
 
 ---
 
@@ -113,7 +117,7 @@ Global default transition is `_SkeuomorphicPageTransitionsBuilder` in `app_theme
 
 ### 1. Scope / Trigger
 
-Apply this contract when changing editor input state, draft recovery, save/delete behavior, route preview synchronization, long-image export, or editor-specific widgets. The compatibility shell remains `pages/editor_page.dart`; new editor logic belongs under `features/editor/`.
+Apply this contract when changing editor input state, draft recovery, save/delete behavior, route preview synchronization, long-image export, or editor-specific widgets. The page lives at `features/editor/presentation/editor_page.dart`; editor data/application/presentation responsibilities stay inside that feature.
 
 ### 2. Signatures
 
@@ -226,7 +230,7 @@ switch (result) {
 
 ### 1. Scope / Trigger
 
-Apply this contract when changing 页面横切逻辑（更新检查、权限、保存后同步、导出路径、同步文案），或设置/随心记/日记列表/同步设置四个页面的协调器与控制器。Compatibility shells remain `pages/settings_page.dart`、`pages/moments_page.dart`、`pages/diary_list_page.dart`、`pages/sync_settings_page.dart`；new logic belongs under `features/{export,permissions,update,settings,moments,diary,sync_settings,security,sync}/`。
+Apply this contract when changing 页面横切逻辑（更新检查、权限、保存后同步、导出路径、同步文案），或设置/随心记/日记列表/同步设置四个页面的协调器与控制器。页面分别位于各自 feature 的 `presentation/`；新逻辑继续落入 `features/{export,permissions,update,settings,moments,diary,sync_settings,auth,sync}/`。
 
 ### 2. Signatures
 
@@ -351,7 +355,7 @@ SettingsUpdateController({UpdateCheckCoordinator? coordinator}); // manualCheck/
 - **页面翻译 UI intent。** Toast、Dialog、Navigator、错误动画、`openAppSettings` 等留在页面或 presentation 协调器（`SyncUiCoordinator`）。页面是薄壳：装配 section、绑定状态、翻译 typed 结果。
 - **owned / injected dispose。** Widget/Page 自建的控制器由自身 `dispose()`；外部注入的控制器仍由注入方释放。控制器内部创建的 TextEditingController、Timer、AudioPlayer/Recorder、CancelToken 与订阅必须全部释放；应用级共享的 SyncProvider、UpdateService、AuthService 不由页面控制器释放。
 - **Provider 不替换。** 跨页响应式状态仍在 `SyncProvider` / `DiaryProvider` / `SettingsProvider`；控制器经构造或 Provider 获取，不新增状态管理库，不为短生命周期状态新增 Provider。
-- **动态主题 Map 留在页面。** 拆分出的控制器与纯函数不读取 `AppTheme.getXxxTheme()`；主题 Map 强转属于阶段 5 范围，本阶段不迁移。
+- **控制器不读取主题。** Controller、Coordinator 与纯函数不读取 ThemeRegistry；typed component data 只在 presentation 使用。
 - **<1000 行约束。** 页面超过 1000 行必须先拆分再增加行为。当前基线：settings 944、moments 907、diary_list 881、sync_settings 764、editor 581。
 - **去重语义已定义。** `UpdateCheckCoordinator.checkAuto` 对同一 purpose 开始即置位、失败回滚；这有意修复 Moments 失败后永久跳过，并把 DiaryList 自动检查收敛为进程内一次。`SaveSyncCoordinator` 三分支与 `SyncStatusFormatter` 的全部 `SyncTrustState` 文案必须保持当前测试契约。
 - 新类型直接落入所属 feature；通用类型只有出现多个真实消费方时才进入 shared/core（本阶段 `ExportPathResolver` 为 `features/export/`，无新 shared 层）。
@@ -386,7 +390,7 @@ SettingsUpdateController({UpdateCheckCoordinator? coordinator}); // manualCheck/
 ### 6. Tests Required
 
 - 协调器/纯函数单元测试：`test/features/{update,permissions,sync,export}/` — 去重回滚、权限三分支、SaveSync 三分支、导出路径三分支、Formatter 全部状态文案。
-- 页面控制器测试：`test/features/{moments,diary,sync_settings,security,settings}/` — 日期换算、index 分组、send pipeline 额度、表单校验、Lock PIN 状态机、录音/播放状态流。
+- 页面控制器测试：`test/features/{moments,diary,sync_settings,auth,settings}/` — 日期换算、index 分组、send pipeline 额度、表单校验、Lock PIN 状态机、录音/播放状态流。
 - 页面行为刻画测试：`test/pages/{settings,moments,diary_list}_page_test.dart` + `test/widgets/sync_settings_page_test.dart` — 主链路交互断言。
 - 双平台 widget smoke：14 个文件覆盖 `TargetPlatform.android` 与桌面视口，断言 `tester.takeException()` 为 null。
 
@@ -429,24 +433,24 @@ switch (outcome) {
 
 ## Real Code Examples
 
-- [`editor_page.dart`](../../paper_whisper_flutter/lib/pages/editor_page.dart) — compatibility shell that owns route/lifecycle/UI intent translation and composes editor feature boundaries
-- [`editor_session_controller.dart`](../../paper_whisper_flutter/lib/features/editor/application/editor_session_controller.dart) — owns input controllers, 200-character preview, draft debounce, and disposal without BuildContext
-- [`editor_export_surface.dart`](../../paper_whisper_flutter/lib/features/editor/presentation/widgets/editor_export_surface.dart) — renders keyed Header/Body/Footer capture surfaces from explicit props without performing capture or I/O
-- [`skeuomorphic_container.dart`](../../paper_whisper_flutter/lib/widgets/skeuomorphic_container.dart) — base tactile primitive with named constructors like `.paper()` and `.inset()`
-- [`moment_input_widget.dart`](../../paper_whisper_flutter/lib/widgets/moment_input_widget.dart) — reads `AppTheme.getMomentInputTheme(...)` and applies shadows, rounded surfaces, and themed icon colors instead of Material defaults
-- [`update_dialog.dart`](../../paper_whisper_flutter/lib/widgets/update_dialog.dart) — custom stateful dialog with mounted guards, download state machine, and bespoke skeuomorphic presentation
-- [`book_flip_page_route.dart`](../../paper_whisper_flutter/lib/widgets/book_flip_page_route.dart) — custom page transition that reinforces the physical-book interaction model
+- [`editor_page.dart`](../../../paper_whisper_flutter/lib/features/editor/presentation/editor_page.dart) — owns route/lifecycle/UI intent translation and composes editor feature boundaries
+- [`editor_session_controller.dart`](../../../paper_whisper_flutter/lib/features/editor/application/editor_session_controller.dart) — owns input controllers, 200-character preview, draft debounce, and disposal without BuildContext
+- [`editor_export_surface.dart`](../../../paper_whisper_flutter/lib/features/editor/presentation/widgets/editor_export_surface.dart) — renders keyed Header/Body/Footer capture surfaces from explicit props without performing capture or I/O
+- [`skeuomorphic_container.dart`](../../../paper_whisper_flutter/lib/shared/widgets/skeuomorphic_container.dart) — cross-feature tactile primitive with named constructors like `.paper()` and `.inset()`
+- [`moment_input_widget.dart`](../../../paper_whisper_flutter/lib/features/moments/presentation/widgets/moment_input_widget.dart) — reads typed `MomentInputThemeData` and owns its media UI lifecycle
+- [`update_dialog.dart`](../../../paper_whisper_flutter/lib/features/update/presentation/update_dialog.dart) — custom stateful dialog with mounted guards, download state machine, and bespoke skeuomorphic presentation
+- [`route_transitions.dart`](../../../paper_whisper_flutter/lib/app/navigation/route_transitions.dart) — centralized physical page transitions
 
 ---
 
 ## Common Mistakes
 
-1. **Using `Theme.of(context)` Material colors directly** — Always go through `AppTheme.getXxxTheme()` methods instead
+1. **Using generic Material colors for a themed component** — Read the matching typed component data from `ThemeRegistry`
 2. **Forgetting dark theme support** — Every component must look correct in "午夜星尘" (midnight) theme
-3. **Hardcoding colors inline** — Extract to `AppTheme` static methods
+3. **Hardcoding theme branches inline** — Add a typed field to the relevant `*ThemeData` class
 4. **Creating new widgets without shadows** — Appears flat and breaks the visual language
 5. **Not testing on both Windows and Android** — Layout differences between desktop and mobile
-6. **新增页面主题方法后未覆盖所有主题** — `AppTheme.getXxxTheme()` 必须包含全部 7 种主题 case（含 `default` fallback），并在本地切换全部主题验证无视觉断层
+6. **新增主题字段后只填写部分主题** — 必须逐一填写 7 个主题，并做双平台视觉回归；不得用 default fallback 掩盖漏项
 7. **工具栏按钮添加不必要的边框/背景** — 底栏图标按钮应使用 `GestureDetector + Padding + Icon` 的简洁模式，不要用 `Container + Border.all` 包裹，否则违反拟物化简洁风格
 8. **AppTheme 方法中用 boolean 变量 + if-else 判断主题** — 应使用 `switch(theme)` 语句，不要声明 `isMidnight`/`isTwilight` 等布尔变量再用 if-else 链
 9. **滚动页面未固定 AppBar 的 scrolled-under 状态** — 在 `PageView` / `ListView` 等可滚动页面中，如果顶栏颜色需要保持恒定，必须显式设置 `surfaceTintColor`、`scrolledUnderElevation`，必要时通过 `notificationPredicate` 禁用滚动通知驱动的自动变色

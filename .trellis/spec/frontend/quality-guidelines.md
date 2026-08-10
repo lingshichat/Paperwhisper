@@ -52,11 +52,10 @@ Container(
       : (isMidnight ? Color(0xFFc9d1d9) : Color(0xFFD7CCC8))
 )
 
-// 正确: 提取到 AppTheme，通过专有的 Theme 方法获取整个颜色配置 Map 或单个 Color
-final themeConfig = AppTheme.getSyncSettingsTheme(settings.currentTheme);
-Container(color: themeConfig['textColor'])
-// 或
-Container(color: AppTheme.getPaperColor(settings.currentTheme))
+// 正确: 读取 ThemeRegistry 的 typed component data
+final themeId = AppTheme.themeIdOf(context);
+final syncTheme = ThemeRegistry.get(themeId).syncSettings;
+Container(color: syncTheme.textColor);
 ```
 
 ### ❌ 3. `print()` for debugging in committed code
@@ -138,10 +137,11 @@ final results = await Future.wait([...]);
 
 ## Real Code Examples
 
-- [`main.dart`](../../paper_whisper_flutter/lib/main.dart) — parallelizes startup with `Future.wait(...)`, installs crash reporting hooks, and keeps non-critical preload work behind timeouts / fire-and-forget calls
-- [`moment_input_widget.dart`](../../paper_whisper_flutter/lib/widgets/moment_input_widget.dart) — disposes every controller/player/timer it owns and pulls all major colors/shadows from `AppTheme.getMomentInputTheme(...)`
-- [`settings_page.dart`](../../paper_whisper_flutter/lib/pages/settings_page.dart) — renders from `themeConfig` maps instead of hardcoded theme booleans and scopes membership UI rebuilds with `Consumer`
-- [`sync_settings_page.dart`](../../paper_whisper_flutter/lib/pages/sync_settings_page.dart) — combines `AppTheme.getSettingsTheme(...)` and `AppTheme.getSyncSettingsTheme(...)` instead of inlining sync-page colors in widget code
+- [`bootstrap.dart`](../../../paper_whisper_flutter/lib/app/bootstrap.dart) — parallelizes startup with `Future.wait(...)`, installs crash reporting hooks, and keeps non-critical preload work behind timeouts / fire-and-forget calls
+- [`moment_input_widget.dart`](../../../paper_whisper_flutter/lib/features/moments/presentation/widgets/moment_input_widget.dart) — disposes every controller/player/timer it owns and reads typed `MomentInputThemeData`
+- [`settings_page.dart`](../../../paper_whisper_flutter/lib/features/settings/presentation/settings_page.dart) — translates typed controller outcomes and scopes membership rebuilds with `Consumer`
+- [`sync_settings_page.dart`](../../../paper_whisper_flutter/lib/features/sync_settings/presentation/sync_settings_page.dart) — reads typed settings/sync component data instead of runtime theme maps
+- [`architecture-boundaries.md`](./architecture-boundaries.md) — defines static dependency gates for app/core/features/shared
 
 ---
 
@@ -151,7 +151,7 @@ final results = await Future.wait([...]);
 - Run the complete `flutter test` suite after each change batch; focused tests do not replace the full suite
 - Add observable behavior characterization tests before moving provider, service, persistence, or page orchestration code
 - Manually test UI changes on both **Windows** and **Android** when real devices are available
-- For platform-sensitive widgets, add a repeatable widget smoke test with `ThemeData(platform:)`, representative desktop/mobile viewports, interaction assertions, and `tester.takeException()` checks
+- For platform-sensitive widgets, add a repeatable widget smoke test using `AppTheme.getThemeData(...).copyWith(platform: ...)`, representative desktop/mobile viewports, interaction assertions, and `tester.takeException()` checks
 
 ### Cross-Platform Widget Smoke
 
@@ -167,7 +167,9 @@ testWidgets('renders on desktop and mobile platforms', (tester) async {
 
   await tester.pumpWidget(
     MaterialApp(
-      theme: ThemeData(platform: TargetPlatform.android),
+      theme: AppTheme.getThemeData(
+        AppTheme.themeDefault,
+      ).copyWith(platform: TargetPlatform.android),
       home: const TargetPage(),
     ),
   );
@@ -191,7 +193,9 @@ Dart SDK formatter changes can rewrite an entire legacy file. For narrow fixes:
 
 ## Code Review Checklist
 
-- [ ] No hardcoded colors — uses `AppTheme` methods
+- [ ] No scattered theme branches — uses typed `ThemeRegistry` component data
+- [ ] No dynamic theme facade, `toMap()`, or runtime theme cast
+- [ ] core/shared/data/application dependency direction passes static checks
 - [ ] No Material default widgets in custom UI
 - [ ] All controllers are disposed in `dispose()`
 - [ ] `mounted` guard on all async `setState` calls

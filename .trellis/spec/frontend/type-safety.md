@@ -1,195 +1,183 @@
 # Type Safety
 
-> Dart type patterns and model conventions in PaperWhisper.
+> PaperWhisper 的 Dart 强类型约定。项目启用 null safety，不使用 freezed、json_serializable、build_runner 或其他代码生成。
 
 ---
 
-## Overview
+## Type Ownership
 
-PaperWhisper uses Dart's strong type system with null safety enabled (`sdk: ^3.10.0`, Flutter 3.44.x stable). There is no code generation (no `freezed`, `json_serializable`, or `build_runner`). Types are manually defined in `models/`.
+业务模型跟随所属 feature：
+
+| Model | Location | Persistence |
+|---|---|---|
+| `DiaryEntry` | `features/diary/data/` | 自定义 META 文本格式 |
+| `Moment` | `features/moments/data/` | 每条记录一个 JSON 文件 |
+| `SyncConfig` / `SyncManifest` / `SyncTrustSnapshot` | `features/sync/data/` | SharedPreferences / JSON manifest |
+| `UpdateInfo` | `features/update/data/` | 远端 JSON |
+| `TrashRecord` | `core/storage/` | 跨 Diary/Moments 的回收站记录 |
+
+不要恢复全局 `models/`。单域模型留在 feature；只有确实跨域且不依赖业务上层的模型才进入 core。
 
 ---
 
-## Type Organization
+## Typed Theme Contract
 
-### Models live in `lib/models/`:
+`ThemeRegistry` 是主题数据的唯一来源：
 
-| Model | Serialization | Storage |
-|-------|--------------|---------|
-| `DiaryEntry` | Custom text format (META line) | Plain text file |
-| `Moment` | JSON (`toJson()` / `fromJson()`) | JSON file per moment |
-| `SyncConfig` | JSON | `SharedPreferences` |
-| `SyncManifest` | JSON | File system manifest |
-| `UpdateInfo` | JSON | Remote API |
-
-### Theme data is in a transition state:
-
-Typed source-of-truth lives under `config/theme/components/`, but most UI code still consumes `Map<String, dynamic>` returned by `AppTheme`:
 ```dart
-static Map<String, dynamic> getDiaryCardTheme(String theme) =>
-    ThemeRegistry.get(theme).diaryCard.toMap();
+final themeId = AppTheme.themeIdOf(context);
+final cardTheme = ThemeRegistry.get(themeId).diaryCard;
+
+final Color titleColor = cardTheme.titleColor;
+final List<BoxShadow> shadows = cardTheme.shadows;
 ```
 
-Rules for new theme fields:
-- Add the strongly-typed property to the relevant `*ThemeData` class first
-- Expose it through `.toMap()` only as a compatibility layer for existing widgets
-- Prefer migrating new widgets toward typed theme objects when practical
+必须遵守：
+
+- UI 直接读取 `PaperWhisperTheme` 的 typed component 字段。
+- 不新增 `Map<String, dynamic>` 主题 facade。
+- 不恢复组件 `toMap()`，也不在 UI 里 `as Color` / `as Gradient` / `as Border`。
+- nullable、Gradient、Border、Shadow 必须由字段类型表达，不能用哨兵值代替。
+- `FabThemeData.backgroundColor` 和 `backgroundGradient` 恰一非空。
+- `AppTheme.getThemeData(id)` 发布强类型 ThemeExtension；shared widget 通过 `AppTheme.themeIdOf(context)` 取主题 ID，不依赖 Settings feature。
+- 测试 shared widget 时使用 `AppTheme.getThemeData()`，不要为裸 ThemeData 增加 fallback。
+
+主题静态检查：
+
+```bash
+rg "AppTheme\.get[A-Za-z]+Theme\(" lib
+rg "\btoMap\s*\(" lib/core/theme
+rg "\bdynamic\b" lib/core/theme
+rg "\bas\s+(Color|Gradient|Border|BoxShadow)" lib/core/theme lib/features lib/shared
+```
 
 ---
 
-## Model Conventions
+## Models
 
-### Constructor pattern:
+### Immutable fields
 
 ```dart
 class Moment {
-  final String uuid;        // 不可变标识
-  final String content;     // 不可变内容
-  final DateTime createdAt; // 不可变时间戳
-  final String? weather;    // 可选字段用 nullable
+  final String uuid;
+  final String content;
+  final DateTime createdAt;
+  final String? audioPath;
 
-  Moment({
+  const Moment({
     required this.uuid,
     required this.content,
     required this.createdAt,
-    this.weather,
+    this.audioPath,
   });
 }
 ```
 
-### Factory constructors:
+可选值用 nullable 表达；受限集合优先 enum 或 sealed outcome，不用松散字符串承载运行时状态。
+
+### Explicit immutable collections
 
 ```dart
-// 创建新实例 (自动生成 UUID/timestamp)
-factory Moment.create({required String content, ...}) { ... }
-
-// 从 JSON 反序列化
-factory Moment.fromJson(Map<String, dynamic> json) { ... }
-
-// 从文件内容反序列化
-factory DiaryEntry.fromFileContent(String filename, String rawContent) { ... }
+final List<DiaryEntry> entries = List<DiaryEntry>.unmodifiable(source);
+final Map<String, SyncManifestItem> items =
+    Map<String, SyncManifestItem>.unmodifiable(source);
 ```
 
-### Serialization:
+显式写出泛型，避免 `List.unmodifiable` / `Map.unmodifiable` 被推断成 `dynamic`。
+
+### Typed outcomes
+
+页面协调器和状态机用 sealed class / enum 返回结果：
 
 ```dart
-// 到 JSON (用于 API/存储)
-Map<String, dynamic> toJson() { ... }
-
-// 到文件内容 (DiaryEntry 特有的自定义格式)
-String toFileContent() { ... }
-```
-
----
-
-## Validation
-
-### No runtime validation library is used.
-
-Validation is done manually in factory constructors:
-
-```dart
-factory DiaryEntry.fromFileContent(String filename, String rawContent, ...) {
-  // 手动解析和默认值
-  if (title.isEmpty) title = '无题';
-  
-  // 安全类型转换
-  try {
-    DateFormat('yyyy-MM-dd').parse(dateStr);
-  } catch (_) {
-    dateStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
-  }
+sealed class SaveSyncDecision {}
+final class SaveSyncAutoSync extends SaveSyncDecision {}
+final class SaveSyncPending extends SaveSyncDecision {
+  SaveSyncPending(this.pendingCount);
+  final int pendingCount;
 }
 ```
 
-### Enum parsing with fallback:
+application 不抛 UI 语义异常让页面猜测；页面对 typed outcome 做穷尽翻译。
+
+---
+
+## Serialization
+
+持久化格式属于兼容契约，重构目录或类型时不得顺手修改：
+
+- Diary 继续使用既有 META 文本格式。
+- Moment、Manifest 和 Trust Snapshot 保持当前 JSON 字段名。
+- DateTime 使用 ISO 8601 或已有毫秒时间戳规则。
+- `startup_page` 只允许 `moments`、`writer`、`last`。
+- 云端相对路径统一使用 `/`，不能把 Windows `\\` 写入跨平台数据。
+
+JSON 边界可以进行必要的类型检查和兼容 fallback；typed 主题与内部应用状态不使用运行时 Map fallback。
 
 ```dart
-static WeatherType _parseWeather(String s) {
-  return WeatherType.values.firstWhere(
-    (e) => e.name == s,
-    orElse: () => WeatherType.sunny, // 安全默认值
-  );
-}
+final name = json['name'] as String? ?? '默认值';
+final timestamp = json['timestamp'] as int?;
 ```
 
 ---
 
-## Common Patterns
+## Null Safety
 
-### Enums for constrained values:
-
-```dart
-enum WeatherType { sunny, cloudy, rainy, snowy, windy }
-enum MoodType { happy, calm, sad, excited, tired }
-```
-
-### Nullable fields for optional data:
-
-```dart
-final String? audioPath;    // 录音文件相对路径 (可能没有)
-final int? audioDuration;   // 录音时长 (可能没有)
-```
-
-### DateTime as ISO 8601 strings in JSON:
-
-```dart
-'createdAt': createdAt.toIso8601String(),
-// Deserialize:
-createdAt: DateTime.parse(json['createdAt'] as String),
-```
-
----
-
-## Real Code Examples
-
-- [`moment.dart`](../../paper_whisper_flutter/lib/models/moment.dart) — immutable fields, `Moment.create(...)`, typed JSON casts, and ISO-8601 serialization
-- [`diary_entry.dart`](../../paper_whisper_flutter/lib/models/diary_entry.dart) — custom text parser with fallback defaults for title/date/weather/mood and a separate `fromJson(...)` cache path
-- [`sync_trust_snapshot.dart`](../../paper_whisper_flutter/lib/models/sync_trust_snapshot.dart) — enum-backed UI contract with `copyWith`, derived getters, and safe fallback parsing for persisted state names
-- [`moment_input_theme_data.dart`](../../paper_whisper_flutter/lib/config/theme/components/moment_input_theme_data.dart) — typed theme DTO that bridges into the legacy `Map<String, dynamic>` access pattern
+- 只有已经由控制流、构造断言或框架契约证明非空时才使用 `!`。
+- 对外部 JSON、文件、插件返回值先判空，再进入业务层。
+- `BuildContext.mounted` 和 StatefulWidget `mounted` 在异步 UI 回调后必须检查。
+- nullable theme field 不得在迁移时擅自改成默认色；逐主题补齐 typed 数据或保留 nullable 分支。
 
 ---
 
 ## Forbidden Patterns
 
-### ❌ 1. Using `dynamic` when concrete type is known
+### Known concrete type written as dynamic
 
 ```dart
-// 禁止
-dynamic result = await service.getData();
+// Wrong
+final dynamic result = await service.load();
 
-// 正确
-List<DiaryEntry> result = await service.getData();
+// Correct
+final List<DiaryEntry> result = await service.load();
 ```
 
-### ❌ 2. Unnecessary type casts without null check
+### Runtime theme casts
 
 ```dart
-// 禁止
-final name = json['name'] as String; // 如果 null 会崩溃
+// Wrong
+final color = themeMap['titleColor'] as Color;
 
-// 正确
-final name = json['name'] as String? ?? '默认值';
+// Correct
+final color = ThemeRegistry.get(themeId).diaryCard.titleColor;
 ```
 
-### ❌ 3. Using `var` for non-obvious types
+### Untyped UI results
 
 ```dart
-// 避免: 类型不明显
-var x = service.getConfig();
+// Wrong
+return {'ok': false, 'message': error.toString()};
 
-// 正确: 类型清晰
-SyncConfig config = service.getConfig();
-// 或者类型很明显时
-final entries = <DiaryEntry>[];
+// Correct
+return SaveFailure(error);
 ```
 
-### ❌ 4. Ignoring null safety
+### Raw generic collections
 
 ```dart
-// 禁止: 强制解包
-final value = nullableVar!;
+// Wrong
+return List.unmodifiable(items);
 
-// 正确: 安全处理
-final value = nullableVar ?? defaultValue;
+// Correct
+return List<SyncManifestItem>.unmodifiable(items);
 ```
+
+---
+
+## Real Examples
+
+- [`diary_entry.dart`](../../../paper_whisper_flutter/lib/features/diary/data/diary_entry.dart)：自定义文本解析与 typed enum。
+- [`sync_trust_snapshot.dart`](../../../paper_whisper_flutter/lib/features/sync/data/sync_trust_snapshot.dart)：enum 状态、copyWith 和持久化兼容。
+- [`paper_whisper_theme.dart`](../../../paper_whisper_flutter/lib/core/theme/paper_whisper_theme.dart)：七主题的 typed 聚合对象。
+- [`fab_theme_data.dart`](../../../paper_whisper_flutter/lib/core/theme/components/fab_theme_data.dart)：互斥 nullable 字段建模。
+- [`sync_run_result.dart`](../../../paper_whisper_flutter/lib/features/sync/application/sync_run_result.dart)：context-free typed result。
