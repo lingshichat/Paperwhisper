@@ -7,12 +7,11 @@ import 'package:path/path.dart' as path;
 /// ExportPathResolver 单元测试（阶段 4 L0 第一批）。
 ///
 /// 契约覆盖：
-/// - 四种 ExportPathKind 与逐字路径：Android 授权、Android 未授权外部目录、
-///   Android 兜底 documents、非 Android documents；
+/// - 四种路径分支：Android 授权、Android 未授权外部目录、
+///   Android 兜底 documents、非 Android documents，断言 [Directory.path]；
 /// - 全部依赖通过构造 seam 注入，测试内不触碰 permission_handler /
 ///   path_provider 等任何插件（各 seam 计数断言调用与否）；
-/// - 三个依赖 seam 的异常按契约原样向上传播；
-/// - [ExportPathResult.directory] 与 [ExportPathResult.path] 一致。
+/// - 三个依赖 seam 的异常按契约原样向上传播。
 ///
 /// 纯逻辑测试，无真实 IO、无等待、无平台 channel。
 void main() {
@@ -25,7 +24,7 @@ void main() {
         var grantedCalls = 0;
         var extCalls = 0;
 
-        final result = await ExportPathResolver(
+        final dir = await ExportPathResolver(
           isAndroid: () => false,
           applicationDocumentsDirectory: () async {
             documentsCalls++;
@@ -41,9 +40,7 @@ void main() {
           },
         ).resolve();
 
-        expect(result.kind, ExportPathKind.desktopDocuments);
-        expect(result.path, path.join(documents.path, 'PaperWhisper_Exports'));
-        expect(result.directory.path, result.path);
+        expect(dir.path, path.join(documents.path, 'PaperWhisper_Exports'));
         // 非 Android 分支不触碰授权与外部目录 seam（即不触碰插件默认实现）
         expect(documentsCalls, 1);
         expect(grantedCalls, 0);
@@ -58,7 +55,7 @@ void main() {
         var grantedCalls = 0;
         var extCalls = 0;
 
-        final result = await ExportPathResolver(
+        final dir = await ExportPathResolver(
           isAndroid: () => true,
           applicationDocumentsDirectory: () async {
             documentsCalls++;
@@ -74,9 +71,7 @@ void main() {
           },
         ).resolve();
 
-        expect(result.kind, ExportPathKind.androidPublicPictures);
-        expect(result.path, '/storage/emulated/0/Pictures/PaperWhisper');
-        expect(result.directory.path, result.path);
+        expect(dir.path, '/storage/emulated/0/Pictures/PaperWhisper');
         // 授权分支：documents 仍先解析，授权 seam 被查询，外部目录不查询
         expect(documentsCalls, 1);
         expect(grantedCalls, 1);
@@ -86,7 +81,7 @@ void main() {
 
     test('Android 未授权但有外部目录：external/Exports（androidAppExternal）', () async {
       final extDir = Directory('/storage/emulated/0/Android/data/com.example');
-      final result = await ExportPathResolver(
+      final dir = await ExportPathResolver(
         isAndroid: () => true,
         applicationDocumentsDirectory: () async =>
             Directory('/data/user/0/app/files'),
@@ -94,25 +89,21 @@ void main() {
         externalStorageDirectory: () async => extDir,
       ).resolve();
 
-      expect(result.kind, ExportPathKind.androidAppExternal);
-      expect(result.path, path.join(extDir.path, 'Exports'));
-      expect(result.directory.path, result.path);
+      expect(dir.path, path.join(extDir.path, 'Exports'));
     });
 
     test(
       'Android 未授权且无外部目录：documents/Exports 兜底（androidDocumentsFallback）',
       () async {
         final documents = Directory('/data/user/0/app/files');
-        final result = await ExportPathResolver(
+        final dir = await ExportPathResolver(
           isAndroid: () => true,
           applicationDocumentsDirectory: () async => documents,
           isManageExternalStorageGranted: () async => false,
           externalStorageDirectory: () async => null,
         ).resolve();
 
-        expect(result.kind, ExportPathKind.androidDocumentsFallback);
-        expect(result.path, path.join(documents.path, 'Exports'));
-        expect(result.directory.path, result.path);
+        expect(dir.path, path.join(documents.path, 'Exports'));
       },
     );
   });

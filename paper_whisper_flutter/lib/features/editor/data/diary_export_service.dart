@@ -203,6 +203,6 @@ class DiaryExportService {
   Future<Directory> _resolveExportDir() async {
     final resolver = exportDirectoryResolver;
     if (resolver != null) return resolver();
-    return (await const ExportPathResolver().resolve()).directory;
+    return const ExportPathResolver().resolve();
   }
 }

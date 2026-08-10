@@ -125,10 +125,9 @@ class _MomentCardState extends State<MomentCard> {
       var pngBytes = byteData!.buffer.asUint8List();
 
       // 导出目录委托 ExportPathResolver（平台/授权三分支，context-free）。
-      final exportResult = await const ExportPathResolver().resolve();
-      String exportPath = exportResult.path;
+      final exportDir = await const ExportPathResolver().resolve();
+      String exportPath = exportDir.path;
 
-      final exportDir = Directory(exportPath);
       if (!await exportDir.exists()) {
         try {
           await exportDir.create(recursive: true);

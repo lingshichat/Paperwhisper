@@ -4,31 +4,6 @@ import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-/// 导出目录命中分支（供测试与调用方区分解析结果）。
-enum ExportPathKind {
-  /// Android 且已授予 manageExternalStorage：系统 Pictures 目录。
-  androidPublicPictures,
-
-  /// Android 未授权但有应用专属外部目录：external/Exports。
-  androidAppExternal,
-
-  /// Android 未授权且无应用专属外部目录：documents/Exports 兜底。
-  androidDocumentsFallback,
-
-  /// 非 Android 平台：documents/PaperWhisper_Exports。
-  desktopDocuments,
-}
-
-/// 导出路径解析结果（typed value，不含任何平台 API）。
-class ExportPathResult {
-  const ExportPathResult({required this.path, required this.kind});
-
-  final String path;
-  final ExportPathKind kind;
-
-  Directory get directory => Directory(path);
-}
-
 /// 按平台与存储授权状态解析导出目录。
 ///
 /// 职责边界：
@@ -66,41 +41,29 @@ class ExportPathResolver {
   final Future<Directory?> Function()? externalStorageDirectory;
 
   /// 解析导出目录。
-  Future<ExportPathResult> resolve() async {
+  Future<Directory> resolve() async {
     final bool android = (isAndroid ?? _defaultIsAndroid)();
     final Directory documents =
         await (applicationDocumentsDirectory ??
             getApplicationDocumentsDirectory)();
 
     if (!android) {
-      return ExportPathResult(
-        path: path.join(documents.path, 'PaperWhisper_Exports'),
-        kind: ExportPathKind.desktopDocuments,
-      );
+      return Directory(path.join(documents.path, 'PaperWhisper_Exports'));
     }
 
     final bool granted =
         await (isManageExternalStorageGranted ??
             _defaultManageExternalStorageGranted)();
     if (granted) {
-      return const ExportPathResult(
-        path: '/storage/emulated/0/Pictures/PaperWhisper',
-        kind: ExportPathKind.androidPublicPictures,
-      );
+      return Directory('/storage/emulated/0/Pictures/PaperWhisper');
     }
 
     final Directory? extDir =
         await (externalStorageDirectory ?? getExternalStorageDirectory)();
     if (extDir != null) {
-      return ExportPathResult(
-        path: path.join(extDir.path, 'Exports'),
-        kind: ExportPathKind.androidAppExternal,
-      );
+      return Directory(path.join(extDir.path, 'Exports'));
     }
-    return ExportPathResult(
-      path: path.join(documents.path, 'Exports'),
-      kind: ExportPathKind.androidDocumentsFallback,
-    );
+    return Directory(path.join(documents.path, 'Exports'));
   }
 
   static bool _defaultIsAndroid() => Platform.isAndroid;

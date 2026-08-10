@@ -141,7 +141,7 @@ class _MomentDetailPageState extends State<MomentDetailPage>
       var pngBytes = byteData!.buffer.asUint8List();
 
       // 导出目录委托 ExportPathResolver（平台/授权三分支，context-free）。
-      final exportDir = (await const ExportPathResolver().resolve()).directory;
+      final exportDir = await const ExportPathResolver().resolve();
       if (!await exportDir.exists()) {
         try {
           await exportDir.create(recursive: true);
