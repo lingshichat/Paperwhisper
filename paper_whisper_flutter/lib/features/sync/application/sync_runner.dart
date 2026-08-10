@@ -4,11 +4,11 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as path;
 
-import '../../../models/sync_manifest.dart';
-import '../../../services/cloud_storage_service.dart';
+import 'package:paper_whisper_flutter/features/sync/data/sync_manifest.dart';
+import 'package:paper_whisper_flutter/features/sync/data/cloud_storage_service.dart';
 import 'package:paper_whisper_flutter/features/diary/data/diary_service.dart';
 import 'package:paper_whisper_flutter/features/moments/data/moment_service.dart';
-import '../../../services/webdav_sync_service.dart';
+import 'package:paper_whisper_flutter/features/sync/data/webdav_sync_service.dart';
 import '../data/sync_scope_cache_store.dart';
 import 'sync_error_classifier.dart';
 import 'sync_progress_tracker.dart';

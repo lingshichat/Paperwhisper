@@ -8,10 +8,10 @@ import 'package:paper_whisper_flutter/core/theme/components/sync_settings_theme_
 import 'package:paper_whisper_flutter/core/theme/theme_registry.dart';
 import 'package:paper_whisper_flutter/features/sync/presentation/sync_status_formatter.dart';
 import 'package:paper_whisper_flutter/features/sync/presentation/sync_ui_coordinator.dart';
-import 'package:paper_whisper_flutter/models/sync_config.dart';
-import 'package:paper_whisper_flutter/models/sync_trust_snapshot.dart';
+import 'package:paper_whisper_flutter/features/sync/data/sync_config.dart';
+import 'package:paper_whisper_flutter/features/sync/data/sync_trust_snapshot.dart';
 import 'package:paper_whisper_flutter/providers/settings_provider.dart';
-import 'package:paper_whisper_flutter/providers/sync_provider.dart';
+import 'package:paper_whisper_flutter/features/sync/application/sync_provider.dart';
 import 'package:paper_whisper_flutter/features/premium/data/payment_service.dart';
 import 'package:paper_whisper_flutter/shared/widgets/skeuomorphic_toast.dart';
 

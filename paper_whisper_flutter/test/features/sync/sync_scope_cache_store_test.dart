@@ -2,8 +2,8 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:paper_whisper_flutter/features/sync/data/sync_scope_cache_store.dart';
-import 'package:paper_whisper_flutter/models/sync_config.dart';
-import 'package:paper_whisper_flutter/models/sync_manifest.dart';
+import 'package:paper_whisper_flutter/features/sync/data/sync_config.dart';
+import 'package:paper_whisper_flutter/features/sync/data/sync_manifest.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {

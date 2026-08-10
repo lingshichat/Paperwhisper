@@ -14,7 +14,7 @@ import 'package:paper_whisper_flutter/features/sync/presentation/sync_status_for
 import 'package:paper_whisper_flutter/features/update/presentation/update_dialog.dart';
 import 'package:paper_whisper_flutter/features/update/data/update_info.dart';
 import 'package:paper_whisper_flutter/providers/settings_provider.dart';
-import 'package:paper_whisper_flutter/providers/sync_provider.dart';
+import 'package:paper_whisper_flutter/features/sync/application/sync_provider.dart';
 import 'package:paper_whisper_flutter/features/moments/data/moment_service.dart';
 import 'package:paper_whisper_flutter/features/premium/data/payment_service.dart';
 import 'package:paper_whisper_flutter/services/storage_service.dart';

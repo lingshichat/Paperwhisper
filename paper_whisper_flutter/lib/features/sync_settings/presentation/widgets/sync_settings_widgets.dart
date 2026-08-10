@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../../models/sync_config.dart';
+import 'package:paper_whisper_flutter/features/sync/data/sync_config.dart';
 import '../../../sync/presentation/sync_status_formatter.dart';
 
 /// 同步设置页展示组件集合（纯展示，props 驱动）。

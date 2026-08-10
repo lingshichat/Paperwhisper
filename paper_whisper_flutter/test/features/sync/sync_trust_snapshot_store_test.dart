@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:paper_whisper_flutter/features/sync/data/sync_trust_snapshot_store.dart';
-import 'package:paper_whisper_flutter/models/sync_trust_snapshot.dart';
+import 'package:paper_whisper_flutter/features/sync/data/sync_trust_snapshot.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// SyncTrustSnapshotStore 测试。

@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:paper_whisper_flutter/features/sync/presentation/sync_status_formatter.dart';
-import 'package:paper_whisper_flutter/models/sync_trust_snapshot.dart';
+import 'package:paper_whisper_flutter/features/sync/data/sync_trust_snapshot.dart';
 
 /// SyncStatusFormatter 单元测试（阶段 4 L0 第二批）。
 ///

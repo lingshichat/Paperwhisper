@@ -3,9 +3,9 @@ import 'dart:io';
 
 import 'package:path/path.dart' as path;
 import 'package:paper_whisper_flutter/features/diary/data/diary_entry.dart';
-import 'package:paper_whisper_flutter/services/cloud_storage_service.dart';
+import 'package:paper_whisper_flutter/features/sync/data/cloud_storage_service.dart';
 import 'package:paper_whisper_flutter/features/diary/data/diary_service.dart';
-import 'package:paper_whisper_flutter/services/manifest_service.dart';
+import 'package:paper_whisper_flutter/features/sync/data/manifest_service.dart';
 import 'package:paper_whisper_flutter/features/moments/data/moment_service.dart';
 import 'package:paper_whisper_flutter/services/trash_service.dart';
 

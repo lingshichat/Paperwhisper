@@ -39,8 +39,8 @@ manifest 记录了文件 → 但磁盘上从未写入
 
 | 文件 | 修改内容 |
 |------|----------|
-| `lib/services/s3_sync_service.dart` | `downloadFile` 方法拆分 try-catch |
-| `lib/providers/sync_provider.dart` | 日记 + 随心记 manifest 更新增加磁盘校验 |
+| `lib/features/sync/data/s3_sync_service.dart` | `downloadFile` 方法拆分 try-catch |
+| `lib/features/sync/application/sync_provider.dart` | 日记 + 随心记 manifest 更新增加磁盘校验 |
 
 ### 1. S3 下载：拆分 statObject 和 getObject
 

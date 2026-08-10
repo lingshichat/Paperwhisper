@@ -2,26 +2,26 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
-import '../features/sync/application/auto_sync_scheduler.dart';
-import '../features/sync/application/sync_error_classifier.dart';
-import '../features/sync/application/sync_pending_calculator.dart';
-import '../features/sync/application/sync_progress_tracker.dart';
-import '../features/sync/application/sync_run_result.dart';
-import '../features/sync/application/sync_runner.dart';
-import '../features/sync/application/sync_trust_engine.dart';
-import '../features/sync/data/sync_config_store.dart';
-import '../features/sync/data/sync_scope_cache_store.dart';
-import '../features/sync/data/sync_trust_snapshot_store.dart';
-import '../features/sync/presentation/sync_notification_service.dart';
-import '../models/sync_config.dart';
-import '../models/sync_trust_snapshot.dart';
-import '../services/cloud_storage_service.dart';
+import 'package:paper_whisper_flutter/features/diary/application/diary_provider.dart';
 import 'package:paper_whisper_flutter/features/moments/data/moment_service.dart';
 import 'package:paper_whisper_flutter/features/premium/data/payment_service.dart';
-import '../services/s3_sync_service.dart';
-import '../services/sync_secret_store.dart';
-import '../services/webdav_sync_service.dart';
-import 'package:paper_whisper_flutter/features/diary/application/diary_provider.dart';
+import 'package:paper_whisper_flutter/features/sync/application/auto_sync_scheduler.dart';
+import 'package:paper_whisper_flutter/features/sync/application/sync_error_classifier.dart';
+import 'package:paper_whisper_flutter/features/sync/application/sync_pending_calculator.dart';
+import 'package:paper_whisper_flutter/features/sync/application/sync_progress_tracker.dart';
+import 'package:paper_whisper_flutter/features/sync/application/sync_run_result.dart';
+import 'package:paper_whisper_flutter/features/sync/application/sync_runner.dart';
+import 'package:paper_whisper_flutter/features/sync/application/sync_trust_engine.dart';
+import 'package:paper_whisper_flutter/features/sync/data/cloud_storage_service.dart';
+import 'package:paper_whisper_flutter/features/sync/data/s3_sync_service.dart';
+import 'package:paper_whisper_flutter/features/sync/data/sync_config.dart';
+import 'package:paper_whisper_flutter/features/sync/data/sync_config_store.dart';
+import 'package:paper_whisper_flutter/features/sync/data/sync_scope_cache_store.dart';
+import 'package:paper_whisper_flutter/features/sync/data/sync_secret_store.dart';
+import 'package:paper_whisper_flutter/features/sync/data/sync_trust_snapshot.dart';
+import 'package:paper_whisper_flutter/features/sync/data/sync_trust_snapshot_store.dart';
+import 'package:paper_whisper_flutter/features/sync/data/webdav_sync_service.dart';
+import 'package:paper_whisper_flutter/features/sync/presentation/sync_notification_service.dart';
 
 enum SyncStatus { none, syncing, success, failed }
 

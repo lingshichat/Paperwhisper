@@ -1,4 +1,4 @@
-import '../../../providers/sync_provider.dart';
+import 'package:paper_whisper_flutter/features/sync/application/sync_provider.dart';
 
 /// 保存后同步决策（sealed typed outcome，context-free）。
 ///

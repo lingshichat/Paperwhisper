@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
 
-import '../../../models/sync_config.dart';
-import '../../../providers/sync_provider.dart';
+import 'package:paper_whisper_flutter/features/sync/data/sync_config.dart';
+import 'package:paper_whisper_flutter/features/sync/application/sync_provider.dart';
 
 /// 同步设置表单动作的 typed 结果（context-free，不含任何 UI 文案）。
 ///

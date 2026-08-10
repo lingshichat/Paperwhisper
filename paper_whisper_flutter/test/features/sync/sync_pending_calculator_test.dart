@@ -5,8 +5,8 @@ import 'package:path/path.dart' as path;
 import 'package:paper_whisper_flutter/features/sync/application/sync_pending_calculator.dart';
 import 'package:paper_whisper_flutter/features/sync/data/sync_scope_cache_store.dart';
 import 'package:paper_whisper_flutter/features/moments/data/moment.dart';
-import 'package:paper_whisper_flutter/models/sync_config.dart';
-import 'package:paper_whisper_flutter/models/sync_manifest.dart';
+import 'package:paper_whisper_flutter/features/sync/data/sync_config.dart';
+import 'package:paper_whisper_flutter/features/sync/data/sync_manifest.dart';
 import 'package:paper_whisper_flutter/features/moments/data/moment_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

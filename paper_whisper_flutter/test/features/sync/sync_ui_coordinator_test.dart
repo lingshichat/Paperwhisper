@@ -6,11 +6,11 @@ import 'package:paper_whisper_flutter/core/theme/theme_registry.dart';
 import 'package:paper_whisper_flutter/features/sync/application/auto_sync_scheduler.dart';
 import 'package:paper_whisper_flutter/features/sync/application/sync_run_result.dart';
 import 'package:paper_whisper_flutter/features/sync/presentation/sync_ui_coordinator.dart';
-import 'package:paper_whisper_flutter/models/sync_config.dart';
-import 'package:paper_whisper_flutter/models/sync_trust_snapshot.dart';
+import 'package:paper_whisper_flutter/features/sync/data/sync_config.dart';
+import 'package:paper_whisper_flutter/features/sync/data/sync_trust_snapshot.dart';
 import 'package:paper_whisper_flutter/providers/settings_provider.dart';
-import 'package:paper_whisper_flutter/providers/sync_provider.dart';
-import 'package:paper_whisper_flutter/services/sync_secret_store.dart';
+import 'package:paper_whisper_flutter/features/sync/application/sync_provider.dart';
+import 'package:paper_whisper_flutter/features/sync/data/sync_secret_store.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

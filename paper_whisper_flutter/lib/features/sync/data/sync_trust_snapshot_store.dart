@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../models/sync_trust_snapshot.dart';
+import 'package:paper_whisper_flutter/features/sync/data/sync_trust_snapshot.dart';
 
 /// `sync_trust_snapshot` 持久化（SharedPreferences），无 UI 依赖，可独立单测。
 ///

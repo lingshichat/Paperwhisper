@@ -66,16 +66,15 @@ class SyncTrustSnapshot {
       pendingMomentCount: pendingMomentCount ?? this.pendingMomentCount,
       pendingImageCount: pendingImageCount ?? this.pendingImageCount,
       pendingAudioCount: pendingAudioCount ?? this.pendingAudioCount,
-      lastSuccessfulSyncAt:
-          clearLastSuccessfulSyncAt
-              ? null
-              : (lastSuccessfulSyncAt ?? this.lastSuccessfulSyncAt),
-      lastSuccessfulSyncPlatform:
-          clearLastSuccessfulSyncAt
-              ? null
-              : (lastSuccessfulSyncPlatform ?? this.lastSuccessfulSyncPlatform),
-      failureReason:
-          clearFailureReason ? null : (failureReason ?? this.failureReason),
+      lastSuccessfulSyncAt: clearLastSuccessfulSyncAt
+          ? null
+          : (lastSuccessfulSyncAt ?? this.lastSuccessfulSyncAt),
+      lastSuccessfulSyncPlatform: clearLastSuccessfulSyncAt
+          ? null
+          : (lastSuccessfulSyncPlatform ?? this.lastSuccessfulSyncPlatform),
+      failureReason: clearFailureReason
+          ? null
+          : (failureReason ?? this.failureReason),
       configurationInvalid: configurationInvalid ?? this.configurationInvalid,
     );
   }
@@ -106,12 +105,11 @@ class SyncTrustSnapshot {
       pendingMomentCount: json['pendingMomentCount'] ?? 0,
       pendingImageCount: json['pendingImageCount'] ?? 0,
       pendingAudioCount: json['pendingAudioCount'] ?? 0,
-      lastSuccessfulSyncAt:
-          json['lastSuccessfulSyncAt'] == null
-              ? null
-              : DateTime.tryParse(json['lastSuccessfulSyncAt'] as String),
-      lastSuccessfulSyncPlatform:
-          json['lastSuccessfulSyncPlatform']?.toString(),
+      lastSuccessfulSyncAt: json['lastSuccessfulSyncAt'] == null
+          ? null
+          : DateTime.tryParse(json['lastSuccessfulSyncAt'] as String),
+      lastSuccessfulSyncPlatform: json['lastSuccessfulSyncPlatform']
+          ?.toString(),
       failureReason: json['failureReason']?.toString(),
       configurationInvalid: json['configurationInvalid'] ?? false,
     );

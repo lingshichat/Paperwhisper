@@ -8,7 +8,7 @@ import 'package:paper_whisper_flutter/core/theme/theme_registry.dart';
 import 'package:paper_whisper_flutter/features/diary/data/diary_entry.dart';
 import 'package:paper_whisper_flutter/features/diary/application/diary_provider.dart';
 import 'package:paper_whisper_flutter/providers/settings_provider.dart';
-import 'package:paper_whisper_flutter/providers/sync_provider.dart';
+import 'package:paper_whisper_flutter/features/sync/application/sync_provider.dart';
 import 'package:paper_whisper_flutter/services/analytics_service.dart';
 import 'package:paper_whisper_flutter/features/auth/data/auth_service.dart';
 import 'package:paper_whisper_flutter/features/diary/data/diary_service.dart';

@@ -6,15 +6,15 @@ import 'package:paper_whisper_flutter/features/sync/application/auto_sync_schedu
 import 'package:paper_whisper_flutter/features/sync/application/sync_run_result.dart';
 import 'package:paper_whisper_flutter/features/diary/data/diary_entry.dart';
 import 'package:paper_whisper_flutter/features/moments/data/moment.dart';
-import 'package:paper_whisper_flutter/models/sync_config.dart';
-import 'package:paper_whisper_flutter/models/sync_trust_snapshot.dart';
+import 'package:paper_whisper_flutter/features/sync/data/sync_config.dart';
+import 'package:paper_whisper_flutter/features/sync/data/sync_trust_snapshot.dart';
 import 'package:paper_whisper_flutter/features/diary/application/diary_provider.dart';
-import 'package:paper_whisper_flutter/providers/sync_provider.dart';
-import 'package:paper_whisper_flutter/services/cloud_storage_service.dart';
+import 'package:paper_whisper_flutter/features/sync/application/sync_provider.dart';
+import 'package:paper_whisper_flutter/features/sync/data/cloud_storage_service.dart';
 import 'package:paper_whisper_flutter/features/moments/data/moment_service.dart';
-import 'package:paper_whisper_flutter/services/s3_sync_service.dart';
-import 'package:paper_whisper_flutter/services/sync_secret_store.dart';
-import 'package:paper_whisper_flutter/services/webdav_sync_service.dart';
+import 'package:paper_whisper_flutter/features/sync/data/s3_sync_service.dart';
+import 'package:paper_whisper_flutter/features/sync/data/sync_secret_store.dart';
+import 'package:paper_whisper_flutter/features/sync/data/webdav_sync_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../support/sync_test_fakes.dart'

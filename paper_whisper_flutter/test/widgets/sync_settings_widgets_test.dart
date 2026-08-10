@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:paper_whisper_flutter/features/sync/presentation/sync_status_formatter.dart';
 import 'package:paper_whisper_flutter/features/sync_settings/presentation/widgets/sync_settings_widgets.dart';
-import 'package:paper_whisper_flutter/models/sync_config.dart';
-import 'package:paper_whisper_flutter/models/sync_trust_snapshot.dart';
+import 'package:paper_whisper_flutter/features/sync/data/sync_config.dart';
+import 'package:paper_whisper_flutter/features/sync/data/sync_trust_snapshot.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

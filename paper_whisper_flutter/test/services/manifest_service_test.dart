@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as path;
-import 'package:paper_whisper_flutter/services/manifest_service.dart';
+import 'package:paper_whisper_flutter/features/sync/data/manifest_service.dart';
 
 void main() {
   group('ManifestService', () {

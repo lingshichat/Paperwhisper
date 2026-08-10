@@ -7,8 +7,8 @@ import 'package:paper_whisper_flutter/features/sync/application/sync_error_class
 import 'package:paper_whisper_flutter/features/sync/application/sync_progress_tracker.dart';
 import 'package:paper_whisper_flutter/features/sync/application/sync_runner.dart';
 import 'package:paper_whisper_flutter/features/sync/data/sync_scope_cache_store.dart';
-import 'package:paper_whisper_flutter/models/sync_manifest.dart';
-import 'package:paper_whisper_flutter/services/webdav_sync_service.dart';
+import 'package:paper_whisper_flutter/features/sync/data/sync_manifest.dart';
+import 'package:paper_whisper_flutter/features/sync/data/webdav_sync_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../support/sync_test_fakes.dart';

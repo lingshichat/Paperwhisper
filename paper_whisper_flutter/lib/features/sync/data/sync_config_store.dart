@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../models/sync_config.dart';
-import '../../../services/sync_secret_store.dart';
+import 'package:paper_whisper_flutter/features/sync/data/sync_config.dart';
+import 'package:paper_whisper_flutter/features/sync/data/sync_secret_store.dart';
 
 /// 同步配置与密钥持久化（无 UI 依赖，可独立单测）。
 ///

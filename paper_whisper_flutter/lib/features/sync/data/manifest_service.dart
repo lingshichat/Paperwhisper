@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as path;
-import '../models/sync_manifest.dart';
+import 'package:paper_whisper_flutter/features/sync/data/sync_manifest.dart';
 
 /// 本地 manifest 持久化服务。
 ///

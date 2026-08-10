@@ -1,4 +1,4 @@
-import '../../../models/sync_trust_snapshot.dart';
+import 'package:paper_whisper_flutter/features/sync/data/sync_trust_snapshot.dart';
 
 /// 同步状态卡 typed presentation data（不含 Widget / Icon / Color）。
 ///

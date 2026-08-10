@@ -1,10 +1,9 @@
-
 import 'dart:async';
 
 abstract class CloudStorageService {
   bool get isConnected;
   String? get lastConnectionError;
-  
+
   /// 连接/初始化服务
   Future<bool> connect();
 
@@ -16,10 +15,18 @@ abstract class CloudStorageService {
   Future<List<RemoteFile>> listFiles(String remotePath);
 
   /// 上传文件
-  Future<void> uploadFile(String localPath, String remotePath, {Function(int sent, int total)? onProgress});
+  Future<void> uploadFile(
+    String localPath,
+    String remotePath, {
+    Function(int sent, int total)? onProgress,
+  });
 
   /// 下载文件
-  Future<void> downloadFile(String remotePath, String localPath, {Function(int received, int total)? onProgress});
+  Future<void> downloadFile(
+    String remotePath,
+    String localPath, {
+    Function(int received, int total)? onProgress,
+  });
 
   /// 删除远程文件
   Future<void> deleteFile(String remotePath);
@@ -32,7 +39,7 @@ abstract class CloudStorageService {
 
   /// 写入字符串内容到远程文件
   Future<void> writeRemoteFile(String remotePath, String content);
-  
+
   /// 确保目录存在
   Future<void> ensureDirectoryExists(String remotePath);
 }
@@ -52,7 +59,8 @@ class RemoteFile {
     this.lastModified,
     this.isDirectory = false,
   });
-  
+
   @override
-  String toString() => 'RemoteFile(name: $name, size: $size, isDir: $isDirectory)';
+  String toString() =>
+      'RemoteFile(name: $name, size: $size, isDir: $isDirectory)';
 }

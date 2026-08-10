@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:paper_whisper_flutter/features/sync/application/sync_trust_engine.dart';
-import 'package:paper_whisper_flutter/models/sync_trust_snapshot.dart';
+import 'package:paper_whisper_flutter/features/sync/data/sync_trust_snapshot.dart';
 
 /// SyncTrustEngine 八分支优先级与 configurationInvalid / failureReason
 /// 清理矩阵测试（迁移自 `SyncProvider.refreshTrustSnapshot` 原判定链）。

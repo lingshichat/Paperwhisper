@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../models/sync_config.dart';
-import '../../../models/sync_manifest.dart';
+import 'package:paper_whisper_flutter/features/sync/data/sync_config.dart';
+import 'package:paper_whisper_flutter/features/sync/data/sync_manifest.dart';
 
 /// 作用域化同步缓存持久化（无 UI 依赖，可独立单测）。
 ///

@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:paper_whisper_flutter/features/sync_settings/application/sync_settings_form_controller.dart';
-import 'package:paper_whisper_flutter/models/sync_config.dart';
+import 'package:paper_whisper_flutter/features/sync/data/sync_config.dart';
 
 /// 内存 fake gateway：记录调用参数，不触碰真实 IO / 插件。
 class _FakeGateway implements SyncProviderGateway {
