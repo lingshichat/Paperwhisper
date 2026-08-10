@@ -13,13 +13,6 @@ class ToastStyleData {
     required this.icon,
     required this.text,
   });
-
-  Map<String, dynamic> toMap() => {
-    'bg': bg,
-    'border': border,
-    'icon': icon,
-    'text': text,
-  };
 }
 
 /// Toast 主题数据
@@ -29,17 +22,5 @@ class ToastThemeData {
   final ToastStyleData? warning;
   final ToastStyleData? info;
 
-  const ToastThemeData({
-    this.success,
-    this.error,
-    this.warning,
-    this.info,
-  });
-
-  Map<String, dynamic> toMap() => {
-    if (success != null) 'success': success!.toMap(),
-    if (error != null) 'error': error!.toMap(),
-    if (warning != null) 'warning': warning!.toMap(),
-    if (info != null) 'info': info!.toMap(),
-  };
+  const ToastThemeData({this.success, this.error, this.warning, this.info});
 }

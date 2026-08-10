@@ -25,17 +25,4 @@ class AppDialogThemeData {
     this.primaryBtnText,
     this.secondaryBtn,
   });
-
-  Map<String, dynamic> toMap() => {
-    if (paper != null) 'paper': paper,
-    if (title != null) 'title': title,
-    if (text != null) 'text': text,
-    if (icon != null) 'icon': icon,
-    if (tape != null) 'tape': tape,
-    if (shadow != null) 'shadow': shadow,
-    if (border != null) 'border': border,
-    if (primaryBtn != null) 'primaryBtn': primaryBtn,
-    if (primaryBtnText != null) 'primaryBtnText': primaryBtnText,
-    if (secondaryBtn != null) 'secondaryBtn': secondaryBtn,
-  };
 }

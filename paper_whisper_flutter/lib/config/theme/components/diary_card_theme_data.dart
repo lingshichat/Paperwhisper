@@ -45,27 +45,4 @@ class DiaryCardThemeData {
     required this.showFlowerWatermark,
     required this.usePaperContainer,
   });
-
-  Map<String, dynamic> toMap() => {
-    'bgColor': bgColor,
-    'titleColor': titleColor,
-    'contentColor': contentColor,
-    'dateColor': dateColor,
-    'iconColor': iconColor,
-    'dashedLineColor': dashedLineColor,
-    'shadows': shadows,
-    'hoverShadows': hoverShadows,
-    'border': border,
-    'hoverBorderColor': hoverBorderColor,
-    'dateWeight': dateWeight,
-    'glassEffect': glassEffect,
-    'glassColor': glassColor,
-    'blurSigma': blurSigma,
-    'borderRadius': borderRadius,
-    'hoverTranslateY': hoverTranslateY,
-    'hoverScale': hoverScale,
-    'showStarWatermark': showStarWatermark,
-    'showFlowerWatermark': showFlowerWatermark,
-    'usePaperContainer': usePaperContainer,
-  };
 }

@@ -21,15 +21,4 @@ class AppDatePickerThemeData {
     required this.border,
     required this.shadows,
   });
-
-  Map<String, dynamic> toMap() => {
-    'dialogBg': dialogBg,
-    'headerBg': headerBg,
-    'headerText': headerText,
-    'bodyText': bodyText,
-    'accentColor': accentColor,
-    'weekDayColor': weekDayColor,
-    'border': border,
-    'shadows': shadows,
-  };
 }

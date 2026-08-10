@@ -29,19 +29,4 @@ class SidebarThemeData {
     required this.buttonGradient,
     this.buttonShadow,
   });
-
-  Map<String, dynamic> toMap() => {
-    'bgDecoration': bgDecoration,
-    'textColor': textColor,
-    'activeTextColor': activeTextColor,
-    'subTextColor': subTextColor,
-    'hitokotoBackgroundColor': hitokotoBackgroundColor,
-    'hitokotoBorderColor': hitokotoBorderColor,
-    'dividerColor': dividerColor,
-    'pillColor': pillColor,
-    'pillShadows': pillShadows,
-    'pillBorder': pillBorder,
-    'buttonGradient': buttonGradient,
-    if (buttonShadow != null) 'buttonShadow': buttonShadow,
-  };
 }

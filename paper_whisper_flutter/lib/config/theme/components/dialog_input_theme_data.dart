@@ -19,14 +19,4 @@ class DialogInputThemeData {
     required this.backgroundColor,
     required this.descriptionColor,
   });
-
-  Map<String, Color> toMap() => {
-    'textColor': textColor,
-    'hintColor': hintColor,
-    'borderColor': borderColor,
-    'focusedBorderColor': focusedBorderColor,
-    'iconColor': iconColor,
-    'backgroundColor': backgroundColor,
-    'descriptionColor': descriptionColor,
-  };
 }

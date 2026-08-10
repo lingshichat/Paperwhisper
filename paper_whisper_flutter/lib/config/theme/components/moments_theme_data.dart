@@ -33,21 +33,4 @@ class MomentsThemeData {
     required this.emptyStateIconColor,
     required this.emptyStateTextColor,
   });
-
-  Map<String, dynamic> toMap() => {
-    'rulerBg': rulerBg,
-    'rulerTextColor': rulerTextColor,
-    'rulerInactiveTextColor': rulerInactiveTextColor,
-    'rulerSubTextColor': rulerSubTextColor,
-    'rulerInactiveSubTextColor': rulerInactiveSubTextColor,
-    'rulerIndicatorColor': rulerIndicatorColor,
-    'rulerShadowColor': rulerShadowColor,
-    'rulerBorderColor': rulerBorderColor,
-    'appBarIconColor': appBarIconColor,
-    'appBarTextColor': appBarTextColor,
-    'drawerScrimColor': drawerScrimColor,
-    'appBarBg': appBarBg,
-    'emptyStateIconColor': emptyStateIconColor,
-    'emptyStateTextColor': emptyStateTextColor,
-  };
 }

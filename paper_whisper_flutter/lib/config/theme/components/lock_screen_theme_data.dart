@@ -17,13 +17,4 @@ class LockScreenThemeData {
     this.keyBorder,
     this.keyText,
   });
-
-  Map<String, dynamic> toMap() => {
-    if (displayBg != null) 'displayBg': displayBg,
-    if (displayBorder != null) 'displayBorder': displayBorder,
-    if (accentColor != null) 'accentColor': accentColor,
-    if (keyBg != null) 'keyBg': keyBg,
-    if (keyBorder != null) 'keyBorder': keyBorder,
-    if (keyText != null) 'keyText': keyText,
-  };
 }

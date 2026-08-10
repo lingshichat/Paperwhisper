@@ -305,7 +305,10 @@ void main() {
           ),
       ];
       for (var index = 1; index < optionOffsets.length; index++) {
-        expect(optionOffsets[index].dy, greaterThan(optionOffsets[index - 1].dy));
+        expect(
+          optionOffsets[index].dy,
+          greaterThan(optionOffsets[index - 1].dy),
+        );
       }
 
       // 主题选择不自动关闭（closeOnSelect: false）；切换后 subtitle 更新。

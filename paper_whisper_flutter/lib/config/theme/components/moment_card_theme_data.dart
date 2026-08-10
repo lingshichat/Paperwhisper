@@ -55,32 +55,4 @@ class MomentCardThemeData {
     required this.audioDurationColor,
     required this.deleteIconColor,
   });
-
-  Map<String, dynamic> toMap() => {
-    'cardColor': cardColor,
-    'textColor': textColor,
-    'metaColor': metaColor,
-    'iconColor': iconColor,
-    'cardShadows': cardShadows,
-    'cardBorder': cardBorder,
-    'useGlassEffect': useGlassEffect,
-    'cardBlurSigma': cardBlurSigma,
-    'imageStackColor': imageStackColor,
-    'imageStackBorderColor': imageStackBorderColor,
-    'imageStackShadow': imageStackShadow,
-    'imageSurfaceColor': imageSurfaceColor,
-    'imageSurfaceShadow': imageSurfaceShadow,
-    'indicatorActiveColor': indicatorActiveColor,
-    'indicatorInactiveColor': indicatorInactiveColor,
-    'watermarkDividerColor': watermarkDividerColor,
-    'audioSurfaceColor': audioSurfaceColor,
-    'audioSurfaceBorderColor': audioSurfaceBorderColor,
-    'audioButtonColor': audioButtonColor,
-    'audioButtonIconColor': audioButtonIconColor,
-    'audioButtonShadow': audioButtonShadow,
-    'audioProgressBgColor': audioProgressBgColor,
-    'audioProgressColor': audioProgressColor,
-    'audioDurationColor': audioDurationColor,
-    'deleteIconColor': deleteIconColor,
-  };
 }

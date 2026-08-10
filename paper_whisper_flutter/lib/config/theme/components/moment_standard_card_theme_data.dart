@@ -11,10 +11,4 @@ class MomentStandardCardThemeData {
     required this.textColor,
     required this.metaColor,
   });
-
-  Map<String, dynamic> toMap() => {
-    'cardBg': cardBg,
-    'textColor': textColor,
-    'metaColor': metaColor,
-  };
 }

@@ -15,12 +15,4 @@ class MobileHeaderColorsData {
     required this.titleColor,
     required this.subtitleColor,
   });
-
-  Map<String, Color> toMap() => {
-    'background': background,
-    'border': border,
-    'iconColor': iconColor,
-    'titleColor': titleColor,
-    'subtitleColor': subtitleColor,
-  };
 }

@@ -37,23 +37,4 @@ class EditorThemeData {
     required this.ribbonAccentColor,
     required this.hintColor,
   });
-
-  Map<String, dynamic> toMap() => {
-    'appBarBg': appBarBg,
-    'iconColor': iconColor,
-    'cursorColor': cursorColor,
-    'lineColor': lineColor,
-    'dividerColor': dividerColor,
-    'appBarBorder': appBarBorder,
-    'applyBlur': applyBlur,
-    'saveButtonBg': saveButtonBg,
-    'saveButtonTextColor': saveButtonTextColor,
-    'saveButtonCheckColor': saveButtonCheckColor,
-    'dropdownBg': dropdownBg,
-    'dropdownText': dropdownText,
-    'exportPaperColor': exportPaperColor,
-    'exportBorderColor': exportBorderColor,
-    'ribbonAccentColor': ribbonAccentColor,
-    'hintColor': hintColor,
-  };
 }

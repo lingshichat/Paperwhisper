@@ -15,12 +15,4 @@ class SearchThemeData {
     this.iconColor,
     this.border,
   });
-
-  Map<String, dynamic> toMap() => {
-    if (bgColor != null) 'bgColor': bgColor,
-    if (textColor != null) 'textColor': textColor,
-    if (hintColor != null) 'hintColor': hintColor,
-    if (iconColor != null) 'iconColor': iconColor,
-    if (border != null) 'border': border,
-  };
 }

@@ -11,10 +11,4 @@ class PrivacyDialogThemeData {
     required this.contentTextColor,
     required this.disclaimerTextColor,
   });
-
-  Map<String, dynamic> toMap() => {
-    'linkColor': linkColor,
-    'contentTextColor': contentTextColor,
-    'disclaimerTextColor': disclaimerTextColor,
-  };
 }

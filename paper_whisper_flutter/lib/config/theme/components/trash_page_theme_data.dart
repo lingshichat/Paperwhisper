@@ -19,14 +19,4 @@ class TrashPageThemeData {
     required this.cardDateColor,
     required this.cardDecoration,
   });
-
-  Map<String, dynamic> toMap() => {
-    'titleColor': titleColor,
-    'iconColor': iconColor,
-    'restoreColor': restoreColor,
-    'dangerColor': dangerColor,
-    'cardTitleColor': cardTitleColor,
-    'cardDateColor': cardDateColor,
-    'cardDecoration': cardDecoration,
-  };
 }

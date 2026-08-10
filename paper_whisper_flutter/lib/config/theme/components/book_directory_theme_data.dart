@@ -13,11 +13,4 @@ class BookDirectoryThemeData {
     this.paperBorderColor,
     this.paperShadow,
   });
-
-  Map<String, dynamic> toMap() => {
-    if (inkColor != null) 'inkColor': inkColor,
-    if (paperColor != null) 'paperColor': paperColor,
-    if (paperBorderColor != null) 'paperBorderColor': paperBorderColor,
-    if (paperShadow != null) 'paperShadow': paperShadow,
-  };
 }

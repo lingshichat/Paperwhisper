@@ -11,10 +11,4 @@ class AppRefreshIndicatorThemeData {
     required this.pageColor,
     required this.textColor,
   });
-
-  Map<String, dynamic> toMap() => {
-    'bookColor': bookColor,
-    'pageColor': pageColor,
-    'textColor': textColor,
-  };
 }

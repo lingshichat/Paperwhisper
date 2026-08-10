@@ -19,14 +19,4 @@ class DiaryListPageThemeData {
     required this.emptyStateLinkColor,
     required this.updateDialogSecondaryColor,
   });
-
-  Map<String, dynamic> toMap() => {
-    'drawerScrimColor': drawerScrimColor,
-    'headerBoxShadow': headerBoxShadow,
-    'headerApplyBlur': headerApplyBlur,
-    'emptyStateIconColor': emptyStateIconColor,
-    'emptyStateTextColor': emptyStateTextColor,
-    'emptyStateLinkColor': emptyStateLinkColor,
-    'updateDialogSecondaryColor': updateDialogSecondaryColor,
-  };
 }

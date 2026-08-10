@@ -41,25 +41,4 @@ class SyncSettingsThemeData {
     required this.slidingSwitchShadowOpacity,
     required this.thumbShadowOpacity,
   });
-
-  Map<String, dynamic> toMap() => {
-    'titleColor': titleColor,
-    'textColor': textColor,
-    'accentColor': accentColor,
-    'lockBtnColor': lockBtnColor,
-    'switchTrackColor': switchTrackColor,
-    'switchThumbColor': switchThumbColor,
-    'switchActiveText': switchActiveText,
-    'switchInactiveText': switchInactiveText,
-    'primaryGradient': primaryGradient,
-    if (primaryBtnColor != null) 'primaryBtnColor': primaryBtnColor,
-    'primaryShadowColor': primaryShadowColor,
-    'secondaryBtnColor': secondaryBtnColor,
-    'secondaryBtnTextColor': secondaryBtnTextColor,
-    'secondaryBorderColor': secondaryBorderColor,
-    'tipsBgColor': tipsBgColor,
-    'switchBgColor': switchBgColor,
-    'slidingSwitchShadowOpacity': slidingSwitchShadowOpacity,
-    'thumbShadowOpacity': thumbShadowOpacity,
-  };
 }

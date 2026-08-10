@@ -47,8 +47,8 @@
 
 - **标题阴影**：检查 `titleShadow` 的定义。
 - **底部弹窗样式**：检查 `_buildSkeuomorphicBottomSheet()` 和相关方法。
-- **开关颜色**：通常由 `AppTheme.getSettingsTheme()` 统一管理。
-- **主题名称显示**：检查 `_getThemeName()` 方法，确保添加了新主题的中文名称。
+- **开关颜色**：由 `ThemeRegistry.get(theme).settings` 强类型数据统一管理。
+- **主题名称显示**：直接读取 `ThemeRegistry.get(theme).name`；展示顺序由设置页显式 ID 列表固定。
 - **状态栏适配**：检查 `AppBar` 是否设置了 `systemOverlayStyle`。
 
 ### 2.4 数据同步页面 (`lib/pages/sync_settings_page.dart`)
@@ -74,7 +74,7 @@
 ### 2.8 随心记页面 (`lib/pages/moments_page.dart`)
 
 - **顶栏背景**：检查 `AppBar` 的 `backgroundColor`。
-- **标尺颜色**：检查 `RulerDatePicker` 中的颜色配置（通常由 `AppTheme.getMomentsTheme()` 管理）。
+- **标尺颜色**：检查 `RulerDatePicker` 的输入是否来自 `ThemeRegistry.get(theme).moments`。
 - **输入框组件**：见组件适配部分 `MomentInputWidget`。
 
 ---
@@ -101,7 +101,7 @@
 
 ### 3.5 月份分割线 (`lib/widgets/month_divider.dart`)
 
-- **颜色配置**：`AppTheme.getMonthDividerTheme()`。
+- **颜色配置**：`ThemeRegistry.get(theme).monthDivider`。
 
 ### 3.6 对话框 (`lib/widgets/skeuomorphic_dialog.dart`)
 
@@ -123,10 +123,10 @@
 ## 四、新增主题标准流程
 
 1.  **资源准备**：如果需要，将背景图放入 `assets/textures/`。
-2.  **注册常量**：在 `app_theme.dart` 中添加 `themeNewTheme`。
-3.  **配置 AppTheme**：逐一实现 `app_theme.dart` 中的 `getXxxTheme()` 方法。
-4.  **全局搜索**：搜索 `isSeaFlower` 等旧主题判断，补充新分支。
-5.  **视觉验收**：重点检查**光标**、**图标**、**阴影**和**边框**颜色是否一致。
+2.  **定义主题**：在 `config/theme/themes/` 创建完整的 `PaperWhisperTheme`，填写 ID、名称、描述及全部 typed 组件字段。
+3.  **注册主题**：在 `ThemeRegistry.init()` 中按预期展示/回归顺序注册。
+4.  **兼容判断**：仅当现有视觉分支仍依赖主题 ID 时，在 `AppTheme` 添加对应常量；不得新增 Map 门面。
+5.  **测试与视觉验收**：更新主题 ID/顺序测试，并重点检查光标、图标、阴影和边框。
 
 ---
 

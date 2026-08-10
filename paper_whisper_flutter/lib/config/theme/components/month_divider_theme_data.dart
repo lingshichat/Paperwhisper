@@ -13,11 +13,4 @@ class MonthDividerThemeData {
     this.paperColor,
     this.shadows,
   });
-
-  Map<String, dynamic> toMap() => {
-    if (textColor != null) 'textColor': textColor,
-    if (lineColor != null) 'lineColor': lineColor,
-    if (paperColor != null) 'paperColor': paperColor,
-    if (shadows != null) 'shadows': shadows,
-  };
 }

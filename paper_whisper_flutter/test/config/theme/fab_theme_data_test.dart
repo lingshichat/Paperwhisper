@@ -9,18 +9,15 @@ void main() {
 
   group('ThemeRegistry 注册基线', () {
     test('allThemes 的 ID 与注册顺序保持不变', () {
-      expect(
-        ThemeRegistry.allThemes.map((t) => t.id).toList(),
-        [
-          'default', // vintage 复古纸张
-          'midnight',
-          'amber_lens',
-          'after_rain',
-          'twilight',
-          'garden_of_words',
-          'sea_flower',
-        ],
-      );
+      expect(ThemeRegistry.allThemes.map((t) => t.id).toList(), [
+        'default', // vintage 复古纸张
+        'midnight',
+        'amber_lens',
+        'after_rain',
+        'twilight',
+        'garden_of_words',
+        'sea_flower',
+      ]);
     });
   });
 
@@ -29,8 +26,6 @@ void main() {
       final fab = ThemeRegistry.get('default').fab;
       expect(fab.backgroundColor, const Color(0xFFC0392B));
       expect(fab.backgroundGradient, isNull);
-      expect(fab.bg, isA<Color>());
-      expect(fab.bg, isNot(isA<Gradient>()));
     });
 
     const gradientByTheme = <String, Type>{
@@ -48,34 +43,6 @@ void main() {
         expect(fab.backgroundColor, isNull);
         expect(fab.backgroundGradient.runtimeType, entry.value);
         expect(fab.backgroundGradient, isA<Gradient>());
-        expect(fab.bg, same(fab.backgroundGradient));
-      });
-    }
-  });
-
-  group('toMap 兼容映射', () {
-    const allIds = [
-      'default',
-      'midnight',
-      'amber_lens',
-      'after_rain',
-      'twilight',
-      'garden_of_words',
-      'sea_flower',
-    ];
-
-    for (final id in allIds) {
-      test('$id 的 toMap 与 typed 字段等价', () {
-        final fab = ThemeRegistry.get(id).fab;
-        final map = fab.toMap();
-        expect(map['bg'], same(fab.bg));
-        expect(map['shadow'], same(fab.shadow));
-        expect(map['iconColor'], fab.iconColor);
-        if (fab.border != null) {
-          expect(map['border'], same(fab.border));
-        } else {
-          expect(map.containsKey('border'), isFalse);
-        }
       });
     }
   });
@@ -103,13 +70,21 @@ void main() {
       );
     });
 
-    test('恰好一个非空时可正常构造，bg getter 返回对应值', () {
-      final solid =
-          FabThemeData(backgroundColor: Colors.red, shadow: shadow, iconColor: Colors.white);
-      expect(solid.bg, Colors.red);
-      final faded =
-          FabThemeData(backgroundGradient: gradient, shadow: shadow, iconColor: Colors.white);
-      expect(faded.bg, same(gradient));
+    test('恰好一个非空时可正常构造并保留对应 typed 字段', () {
+      final solid = FabThemeData(
+        backgroundColor: Colors.red,
+        shadow: shadow,
+        iconColor: Colors.white,
+      );
+      expect(solid.backgroundColor, Colors.red);
+      expect(solid.backgroundGradient, isNull);
+      final faded = FabThemeData(
+        backgroundGradient: gradient,
+        shadow: shadow,
+        iconColor: Colors.white,
+      );
+      expect(faded.backgroundColor, isNull);
+      expect(faded.backgroundGradient, same(gradient));
     });
   });
 }

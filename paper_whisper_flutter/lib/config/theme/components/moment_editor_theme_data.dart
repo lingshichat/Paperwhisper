@@ -29,19 +29,4 @@ class MomentEditorThemeData {
     required this.photoEmptyColor,
     required this.photoIconColor,
   });
-
-  Map<String, dynamic> toMap() => {
-    'bgColor': bgColor,
-    'appBarTextColor': appBarTextColor,
-    'appBarIconColor': appBarIconColor,
-    'inputBg': inputBg,
-    'inputTextColor': inputTextColor,
-    'hintColor': hintColor,
-    'dropdownBg': dropdownBg,
-    'dropdownIconColor': dropdownIconColor,
-    'dropdownMenuBg': dropdownMenuBg,
-    'dropdownItemColor': dropdownItemColor,
-    'photoEmptyColor': photoEmptyColor,
-    'photoIconColor': photoIconColor,
-  };
 }

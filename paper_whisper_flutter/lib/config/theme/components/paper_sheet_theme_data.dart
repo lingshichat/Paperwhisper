@@ -17,13 +17,4 @@ class PaperSheetThemeData {
     required this.borderRadius,
     required this.useGlassEffect,
   });
-
-  Map<String, dynamic> toMap() => {
-    'paperColor': paperColor,
-    'accentColor': accentColor,
-    'border': border,
-    'shadows': shadows,
-    'borderRadius': borderRadius,
-    'useGlassEffect': useGlassEffect,
-  };
 }
