@@ -6,9 +6,9 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:paper_whisper_flutter/app/navigation/app_routes.dart';
-import 'package:paper_whisper_flutter/config/app_theme.dart';
-import 'package:paper_whisper_flutter/config/theme/components/settings_theme_data.dart';
-import 'package:paper_whisper_flutter/config/theme/theme_registry.dart';
+import 'package:paper_whisper_flutter/core/theme/app_theme.dart';
+import 'package:paper_whisper_flutter/core/theme/components/settings_theme_data.dart';
+import 'package:paper_whisper_flutter/core/theme/theme_registry.dart';
 import 'package:paper_whisper_flutter/features/permissions/application/permission_coordinator.dart';
 import 'package:paper_whisper_flutter/features/sync/presentation/sync_status_formatter.dart';
 import 'package:paper_whisper_flutter/features/update/presentation/update_dialog.dart';

@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../config/app_theme.dart';
+import 'package:paper_whisper_flutter/core/theme/app_theme.dart';
 import '../../providers/settings_provider.dart';
 
 /// 自定义页面转场的集中定义（5 个旧文件中的 6 种 Route 类：

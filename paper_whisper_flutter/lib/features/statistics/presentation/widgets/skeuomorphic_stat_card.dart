@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:paper_whisper_flutter/config/app_theme.dart';
-import 'package:paper_whisper_flutter/config/theme/components/statistics_theme_data.dart';
-import 'package:paper_whisper_flutter/config/theme/theme_registry.dart';
+import 'package:paper_whisper_flutter/core/theme/app_theme.dart';
+import 'package:paper_whisper_flutter/core/theme/components/statistics_theme_data.dart';
+import 'package:paper_whisper_flutter/core/theme/theme_registry.dart';
 
 /// 拟物化统计卡片
 /// 根据主题展示不同的质感效果

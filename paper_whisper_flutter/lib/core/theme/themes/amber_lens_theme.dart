@@ -65,15 +65,9 @@ final amberLensTheme = PaperWhisperTheme(
   ),
   sidebarBackground: BoxDecoration(
     color: const Color(0xFF1E1E1E).withValues(alpha: 0.85),
-    border: const Border(
-      right: BorderSide(color: Color(0xFFFF9800), width: 1),
-    ),
+    border: const Border(right: BorderSide(color: Color(0xFFFF9800), width: 1)),
     boxShadow: const [
-      BoxShadow(
-        color: Colors.black,
-        offset: Offset(2, 0),
-        blurRadius: 10,
-      ),
+      BoxShadow(color: Colors.black, offset: Offset(2, 0), blurRadius: 10),
     ],
   ),
   systemUiOverlayStyle: SystemUiOverlayStyle.light.copyWith(
@@ -105,11 +99,7 @@ final amberLensTheme = PaperWhisperTheme(
         opacity: 0.5,
       ),
       boxShadow: [
-        BoxShadow(
-          color: Colors.black45,
-          blurRadius: 10,
-          offset: Offset(5, 0),
-        ),
+        BoxShadow(color: Colors.black45, blurRadius: 10, offset: Offset(5, 0)),
       ],
     ),
     textColor: const Color(0xFFBDBDBD),
@@ -121,11 +111,7 @@ final amberLensTheme = PaperWhisperTheme(
     pillColor: const Color(0xFF222222),
     pillShadows: [
       BoxShadow(color: Colors.white10, offset: Offset(0, 1), blurRadius: 0),
-      BoxShadow(
-        color: Colors.black87,
-        offset: Offset(0, -2),
-        blurRadius: 1,
-      ),
+      BoxShadow(color: Colors.black87, offset: Offset(0, -2), blurRadius: 1),
     ],
     buttonGradient: const LinearGradient(
       colors: [Color(0xFFFFB74D), Color(0xFFF57C00)],
@@ -137,11 +123,7 @@ final amberLensTheme = PaperWhisperTheme(
       borderRadius: BorderRadius.circular(16),
       border: Border.all(color: _amberAccent.withValues(alpha: 0.18)),
       boxShadow: const [
-        BoxShadow(
-          color: Colors.black,
-          blurRadius: 8,
-          offset: Offset(0, 2),
-        ),
+        BoxShadow(color: Colors.black, blurRadius: 8, offset: Offset(0, 2)),
       ],
     ),
     dividerColor: _amberAccent.withValues(alpha: 0.12),
@@ -162,11 +144,7 @@ final amberLensTheme = PaperWhisperTheme(
     sheetTitleColor: _amberTextPrimary,
     sheetTapeColor: const Color(0xFFFF9800),
     sheetShadows: const [
-      BoxShadow(
-        color: Colors.black,
-        blurRadius: 20,
-        offset: Offset(0, -5),
-      ),
+      BoxShadow(color: Colors.black, blurRadius: 20, offset: Offset(0, -5)),
     ],
     sheetBorder: Border.all(
       color: _amberAccent.withValues(alpha: 0.3),
@@ -195,7 +173,9 @@ final amberLensTheme = PaperWhisperTheme(
     cursorColor: const Color(0xFFFF9800),
     lineColor: const Color(0x1FFFFFFF),
     dividerColor: const Color(0xFFFF9800).withValues(alpha: 0.15),
-    appBarBorder: Border(bottom: BorderSide(color: Colors.white.withValues(alpha: 0.1))),
+    appBarBorder: Border(
+      bottom: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+    ),
     applyBlur: false,
     saveButtonBg: const Color(0xFFFF9800),
     saveButtonTextColor: Colors.black,
@@ -215,11 +195,7 @@ final amberLensTheme = PaperWhisperTheme(
     iconColor: _amberAccent,
     dashedLineColor: const Color(0x40FF9800),
     shadows: const [
-      BoxShadow(
-        color: Colors.black,
-        offset: Offset(0, 4),
-        blurRadius: 8,
-      ),
+      BoxShadow(color: Colors.black, offset: Offset(0, 4), blurRadius: 8),
     ],
     hoverShadows: const [
       BoxShadow(
@@ -228,11 +204,7 @@ final amberLensTheme = PaperWhisperTheme(
         blurRadius: 15,
         spreadRadius: 1,
       ),
-      BoxShadow(
-        color: Colors.black,
-        offset: Offset(0, 10),
-        blurRadius: 20,
-      ),
+      BoxShadow(color: Colors.black, offset: Offset(0, 10), blurRadius: 20),
     ],
     border: Border.all(color: const Color(0xFF424242)),
     hoverBorderColor: _amberAccent,
@@ -377,11 +349,7 @@ final amberLensTheme = PaperWhisperTheme(
       borderRadius: BorderRadius.circular(16),
       border: Border.all(color: _amberAccent.withValues(alpha: 0.3), width: 1),
       boxShadow: const [
-        BoxShadow(
-          color: Colors.black,
-          blurRadius: 6,
-          offset: Offset(0, 2),
-        ),
+        BoxShadow(color: Colors.black, blurRadius: 6, offset: Offset(0, 2)),
       ],
     ),
   ),
@@ -485,11 +453,7 @@ final amberLensTheme = PaperWhisperTheme(
     accentColor: const Color(0xFFFF9800),
     border: Border.all(color: const Color(0xFFFF9800), width: 1),
     shadows: const [
-      BoxShadow(
-        color: Colors.black,
-        offset: Offset(0, 5),
-        blurRadius: 20,
-      ),
+      BoxShadow(color: Colors.black, offset: Offset(0, 5), blurRadius: 20),
     ],
     borderRadius: 2.0,
     useGlassEffect: false,

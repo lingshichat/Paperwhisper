@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:paper_whisper_flutter/config/app_theme.dart';
+import 'package:paper_whisper_flutter/core/theme/app_theme.dart';
 
 /// 复古便签墙柱状图
 /// 将柱状图展示为软木板上的便签墙

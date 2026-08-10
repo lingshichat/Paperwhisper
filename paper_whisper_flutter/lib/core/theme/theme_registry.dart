@@ -15,8 +15,7 @@ class ThemeRegistry {
     _themes[theme.id] = theme;
   }
 
-  static PaperWhisperTheme get(String id) =>
-      _themes[id] ?? _themes['default']!;
+  static PaperWhisperTheme get(String id) => _themes[id] ?? _themes['default']!;
 
   static List<PaperWhisperTheme> get allThemes => _themes.values.toList();
 

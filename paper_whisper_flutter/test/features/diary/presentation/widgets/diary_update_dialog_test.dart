@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:paper_whisper_flutter/config/theme/theme_registry.dart';
+import 'package:paper_whisper_flutter/core/theme/theme_registry.dart';
 import 'package:paper_whisper_flutter/features/diary/presentation/widgets/diary_update_dialog.dart';
 import 'package:paper_whisper_flutter/models/update_info.dart';
 import 'package:paper_whisper_flutter/providers/settings_provider.dart';

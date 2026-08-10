@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'theme/theme_registry.dart';
+import 'theme_registry.dart';
 
 /// 主题系统门面：仅保留主题 ID 与真正强类型的全局装饰/ThemeData API。
 ///

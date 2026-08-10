@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:paper_whisper_flutter/config/theme/components/fab_theme_data.dart';
-import 'package:paper_whisper_flutter/config/theme/theme_registry.dart';
+import 'package:paper_whisper_flutter/core/theme/components/fab_theme_data.dart';
+import 'package:paper_whisper_flutter/core/theme/theme_registry.dart';
 
 void main() {
   setUpAll(ThemeRegistry.init);

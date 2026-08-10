@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:paper_whisper_flutter/config/app_theme.dart';
-import 'package:paper_whisper_flutter/config/theme/theme_registry.dart';
+import 'package:paper_whisper_flutter/core/theme/app_theme.dart';
+import 'package:paper_whisper_flutter/core/theme/theme_registry.dart';
 
 class MonthDivider extends StatelessWidget {
   final int year;

@@ -101,11 +101,7 @@ final midnightTheme = PaperWhisperTheme(
       color: Color(0xFF0D1117),
       border: Border(right: BorderSide(color: Colors.white12)),
       boxShadow: [
-        BoxShadow(
-          color: Colors.black87,
-          blurRadius: 10,
-          offset: Offset(5, 0),
-        ),
+        BoxShadow(color: Colors.black87, blurRadius: 10, offset: Offset(5, 0)),
       ],
     ),
     textColor: const Color(0xFFc9d1d9),
@@ -138,11 +134,7 @@ final midnightTheme = PaperWhisperTheme(
       borderRadius: BorderRadius.circular(16),
       border: Border.all(color: const Color(0xFF30363d)),
       boxShadow: const [
-        BoxShadow(
-          color: Colors.black,
-          blurRadius: 6,
-          offset: Offset(0, 2),
-        ),
+        BoxShadow(color: Colors.black, blurRadius: 6, offset: Offset(0, 2)),
       ],
     ),
     dividerColor: const Color(0xFF30363d),
@@ -163,11 +155,7 @@ final midnightTheme = PaperWhisperTheme(
     sheetTitleColor: _midnightTextPrimary,
     sheetTapeColor: const Color(0xFF30363d),
     sheetShadows: const [
-      BoxShadow(
-        color: Colors.black,
-        blurRadius: 20,
-        offset: Offset(0, -5),
-      ),
+      BoxShadow(color: Colors.black, blurRadius: 20, offset: Offset(0, -5)),
     ],
     sheetBorder: Border.all(color: const Color(0xFF30363d), width: 1),
     sheetShowTape: false,
@@ -384,11 +372,7 @@ final midnightTheme = PaperWhisperTheme(
       borderRadius: BorderRadius.circular(16),
       border: Border.all(color: const Color(0xFF30363d), width: 1),
       boxShadow: const [
-        BoxShadow(
-          color: Colors.black,
-          blurRadius: 8,
-          offset: Offset(0, 2),
-        ),
+        BoxShadow(color: Colors.black, blurRadius: 8, offset: Offset(0, 2)),
       ],
     ),
   ),
@@ -416,11 +400,7 @@ final midnightTheme = PaperWhisperTheme(
   momentInput: MomentInputThemeData(
     containerColor: const Color(0xFF0D1117),
     containerShadows: const [
-      BoxShadow(
-        color: Colors.black45,
-        offset: Offset(0, -1),
-        blurRadius: 4,
-      ),
+      BoxShadow(color: Colors.black45, offset: Offset(0, -1), blurRadius: 4),
     ],
     inputBgColor: const Color(0xFF161B22),
     inputBorderColor: const Color(0xFF30363D),
@@ -489,11 +469,7 @@ final midnightTheme = PaperWhisperTheme(
     accentColor: const Color(0xFF7986cb),
     border: Border.all(color: const Color(0xFF30363d), width: 1),
     shadows: const [
-      BoxShadow(
-        color: Colors.black,
-        offset: Offset(0, 4),
-        blurRadius: 20,
-      ),
+      BoxShadow(color: Colors.black, offset: Offset(0, 4), blurRadius: 20),
     ],
     borderRadius: 2.0,
     useGlassEffect: false,

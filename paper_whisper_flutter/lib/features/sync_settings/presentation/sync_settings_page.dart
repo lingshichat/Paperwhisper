@@ -3,9 +3,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import 'package:paper_whisper_flutter/app/navigation/app_routes.dart';
-import 'package:paper_whisper_flutter/config/app_theme.dart';
-import 'package:paper_whisper_flutter/config/theme/components/sync_settings_theme_data.dart';
-import 'package:paper_whisper_flutter/config/theme/theme_registry.dart';
+import 'package:paper_whisper_flutter/core/theme/app_theme.dart';
+import 'package:paper_whisper_flutter/core/theme/components/sync_settings_theme_data.dart';
+import 'package:paper_whisper_flutter/core/theme/theme_registry.dart';
 import 'package:paper_whisper_flutter/features/sync/presentation/sync_status_formatter.dart';
 import 'package:paper_whisper_flutter/features/sync/presentation/sync_ui_coordinator.dart';
 import 'package:paper_whisper_flutter/models/sync_config.dart';

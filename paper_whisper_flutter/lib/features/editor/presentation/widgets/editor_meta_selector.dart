@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../../config/theme/theme_registry.dart';
+import 'package:paper_whisper_flutter/core/theme/theme_registry.dart';
 import '../../../../models/diary_entry.dart';
 import 'package:paper_whisper_flutter/shared/widgets/skeuomorphic_date_picker.dart';
 

@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:paper_whisper_flutter/config/app_theme.dart';
+import 'package:paper_whisper_flutter/core/theme/app_theme.dart';
 
 /// 火漆印章徽章组件
 /// 用于展示高光数据，如连续写作天数

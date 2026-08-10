@@ -11,8 +11,8 @@ import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:paper_whisper_flutter/app/navigation/app_routes.dart';
-import 'package:paper_whisper_flutter/config/app_theme.dart';
-import 'package:paper_whisper_flutter/config/theme/theme_registry.dart';
+import 'package:paper_whisper_flutter/core/theme/app_theme.dart';
+import 'package:paper_whisper_flutter/core/theme/theme_registry.dart';
 import 'package:paper_whisper_flutter/features/diary/application/diary_announcement_coordinator.dart';
 import 'package:paper_whisper_flutter/features/diary/application/diary_list_filter.dart';
 import 'package:paper_whisper_flutter/features/diary/application/diary_timeline_layout_builder.dart';

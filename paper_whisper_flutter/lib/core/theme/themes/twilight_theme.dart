@@ -140,9 +140,7 @@ final twilightTheme = PaperWhisperTheme(
       ),
     ],
     pillBorder: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-    buttonGradient: const LinearGradient(
-      colors: [_accentRed, _bgBottom],
-    ),
+    buttonGradient: const LinearGradient(colors: [_accentRed, _bgBottom]),
     buttonShadow: BoxShadow(
       color: _accentRed.withValues(alpha: 0.4),
       blurRadius: 12,
@@ -188,7 +186,10 @@ final twilightTheme = PaperWhisperTheme(
         offset: const Offset(0, -5),
       ),
     ],
-    sheetBorder: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 1),
+    sheetBorder: Border.all(
+      color: Colors.white.withValues(alpha: 0.1),
+      width: 1,
+    ),
     sheetShowTape: false,
     sheetInfoBackgroundColor: _surface.withValues(alpha: 0.55),
     sheetInfoBorderColor: Colors.white.withValues(alpha: 0.1),
@@ -202,7 +203,9 @@ final twilightTheme = PaperWhisperTheme(
     ),
     optionUnselectedBgColor: const Color(0xFF352044).withValues(alpha: 0.6),
     optionUnselectedTextColor: const Color(0xFFBCAAA4),
-    optionUnselectedBorder: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+    optionUnselectedBorder: Border.all(
+      color: Colors.white.withValues(alpha: 0.1),
+    ),
   ),
 
   // --- Editor ---
@@ -456,7 +459,10 @@ final twilightTheme = PaperWhisperTheme(
       offset: const Offset(0, 0),
       spreadRadius: -2,
     ),
-    cardBorder: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 1),
+    cardBorder: Border.all(
+      color: Colors.white.withValues(alpha: 0.1),
+      width: 1,
+    ),
     accentColor: _accentRed,
     textColor: _textPrimary,
     secondaryTextColor: _textSecondary,
@@ -481,11 +487,7 @@ final twilightTheme = PaperWhisperTheme(
       borderRadius: BorderRadius.circular(16),
       border: Border.all(color: _accentRed.withValues(alpha: 0.3), width: 1),
       boxShadow: const [
-        BoxShadow(
-          color: Colors.black26,
-          blurRadius: 6,
-          offset: Offset(0, 2),
-        ),
+        BoxShadow(color: Colors.black26, blurRadius: 6, offset: Offset(0, 2)),
       ],
     ),
   ),

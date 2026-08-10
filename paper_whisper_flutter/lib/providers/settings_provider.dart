@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../config/app_theme.dart';
+import 'package:paper_whisper_flutter/core/theme/app_theme.dart';
 
 const String _themeKey = 'theme';
 const String _preferredThemeKey = 'preferred_theme';

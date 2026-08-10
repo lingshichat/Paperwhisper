@@ -98,11 +98,7 @@ final vintageTheme = PaperWhisperTheme(
         opacity: 0.6,
       ),
       boxShadow: [
-        BoxShadow(
-          color: Colors.black45,
-          blurRadius: 10,
-          offset: Offset(5, 0),
-        ),
+        BoxShadow(color: Colors.black45, blurRadius: 10, offset: Offset(5, 0)),
       ],
     ),
     textColor: const Color(0xFFD7CCC8),
@@ -114,11 +110,7 @@ final vintageTheme = PaperWhisperTheme(
     pillColor: const Color(0xFF2D1E1B),
     pillShadows: [
       BoxShadow(color: Colors.white10, offset: Offset(0, 1), blurRadius: 0),
-      BoxShadow(
-        color: Colors.black87,
-        offset: Offset(0, -2),
-        blurRadius: 1,
-      ),
+      BoxShadow(color: Colors.black87, offset: Offset(0, -2), blurRadius: 1),
     ],
     buttonGradient: const LinearGradient(
       colors: [Color(0xFFE57373), Color(0xFFD32F2F)],
@@ -388,11 +380,7 @@ final vintageTheme = PaperWhisperTheme(
   momentInput: MomentInputThemeData(
     containerColor: const Color(0xFF2D1E1B),
     containerShadows: const [
-      BoxShadow(
-        color: Colors.black38,
-        offset: Offset(0, -2),
-        blurRadius: 4,
-      ),
+      BoxShadow(color: Colors.black38, offset: Offset(0, -2), blurRadius: 4),
     ],
     inputBgColor: const Color(0xFF3E2723),
     inputBorderColor: const Color(0xFF5D4037),

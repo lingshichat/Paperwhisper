@@ -6,7 +6,7 @@
 
 ## 一、核心配置文件
 
-### 1. `lib/config/app_theme.dart`
+### 1. `lib/core/theme/app_theme.dart`
 
 这是主题系统的**核心枢纽**，所有主题的基础颜色和配置都在此定义。
 
@@ -123,7 +123,7 @@
 ## 四、新增主题标准流程
 
 1.  **资源准备**：如果需要，将背景图放入 `assets/textures/`。
-2.  **定义主题**：在 `config/theme/themes/` 创建完整的 `PaperWhisperTheme`，填写 ID、名称、描述及全部 typed 组件字段。
+2.  **定义主题**：在 `core/theme/themes/` 创建完整的 `PaperWhisperTheme`，填写 ID、名称、描述及全部 typed 组件字段。
 3.  **注册主题**：在 `ThemeRegistry.init()` 中按预期展示/回归顺序注册。
 4.  **兼容判断**：仅当现有视觉分支仍依赖主题 ID 时，在 `AppTheme` 添加对应常量；不得新增 Map 门面。
 5.  **测试与视觉验收**：更新主题 ID/顺序测试，并重点检查光标、图标、阴影和边框。
@@ -146,7 +146,7 @@
 ## 六、附录：本次适配涉及的文件列表
 
 ```
-lib/config/app_theme.dart
+lib/core/theme/app_theme.dart
 lib/features/diary/presentation/diary_list_page.dart
 lib/features/editor/presentation/editor_page.dart
 lib/features/settings/presentation/settings_page.dart

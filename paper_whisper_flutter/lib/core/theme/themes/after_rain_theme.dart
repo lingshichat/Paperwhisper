@@ -138,9 +138,7 @@ final afterRainTheme = PaperWhisperTheme(
       ),
     ],
     pillBorder: Border.all(color: Colors.white.withValues(alpha: 0.3)),
-    buttonGradient: const LinearGradient(
-      colors: [_primaryLight, _primaryMain],
-    ),
+    buttonGradient: const LinearGradient(colors: [_primaryLight, _primaryMain]),
     buttonShadow: BoxShadow(
       color: _primaryMain.withValues(alpha: 0.3),
       blurRadius: 8,
@@ -153,7 +151,10 @@ final afterRainTheme = PaperWhisperTheme(
     groupDecoration: BoxDecoration(
       color: Colors.white.withValues(alpha: 0.5),
       borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: Colors.white.withValues(alpha: 0.6), width: 1.5),
+      border: Border.all(
+        color: Colors.white.withValues(alpha: 0.6),
+        width: 1.5,
+      ),
       boxShadow: [
         BoxShadow(
           color: _accentBlue.withValues(alpha: 0.08),
@@ -439,7 +440,10 @@ final afterRainTheme = PaperWhisperTheme(
     cardBackground: BoxDecoration(
       color: Colors.white.withValues(alpha: 0.6),
       borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: Colors.white.withValues(alpha: 0.8), width: 1.5),
+      border: Border.all(
+        color: Colors.white.withValues(alpha: 0.8),
+        width: 1.5,
+      ),
     ),
     cardShadow: BoxShadow(
       color: _accentBlue.withValues(alpha: 0.15),
@@ -447,7 +451,10 @@ final afterRainTheme = PaperWhisperTheme(
       offset: const Offset(0, 8),
       spreadRadius: -4,
     ),
-    cardBorder: Border.all(color: Colors.white.withValues(alpha: 0.8), width: 1.5),
+    cardBorder: Border.all(
+      color: Colors.white.withValues(alpha: 0.8),
+      width: 1.5,
+    ),
     accentColor: _accentBlue,
     textColor: _textSecondary,
     secondaryTextColor: _textSecondary.withValues(alpha: 0.7),

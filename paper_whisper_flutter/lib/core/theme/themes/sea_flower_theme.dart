@@ -68,9 +68,7 @@ final seaFlowerTheme = PaperWhisperTheme(
   // --- Sidebar Background ---
   sidebarBackground: BoxDecoration(
     color: Colors.white.withValues(alpha: 0.15),
-    border: const Border(
-      right: BorderSide(color: Color(0x4DFFFFFF), width: 1),
-    ),
+    border: const Border(right: BorderSide(color: Color(0x4DFFFFFF), width: 1)),
   ),
 
   // --- System UI Overlay Style ---
@@ -103,11 +101,7 @@ final seaFlowerTheme = PaperWhisperTheme(
     bgDecoration: BoxDecoration(
       color: const Color(0xFFFCE4EC).withValues(alpha: 0.6),
       boxShadow: const [
-        BoxShadow(
-          color: Colors.black12,
-          blurRadius: 10,
-          offset: Offset(5, 0),
-        ),
+        BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(5, 0)),
       ],
     ),
     textColor: const Color(0xFF880E4F),
@@ -374,7 +368,10 @@ final seaFlowerTheme = PaperWhisperTheme(
       offset: Offset(0, 6),
       spreadRadius: -2,
     ),
-    cardBorder: Border.all(color: Colors.white.withValues(alpha: 0.6), width: 1),
+    cardBorder: Border.all(
+      color: Colors.white.withValues(alpha: 0.6),
+      width: 1,
+    ),
     accentColor: const Color(0xFFF06292),
     textColor: const Color(0xFF880E4F),
     secondaryTextColor: const Color(0xFFC2185B),
@@ -435,11 +432,7 @@ final seaFlowerTheme = PaperWhisperTheme(
   momentInput: MomentInputThemeData(
     containerColor: const Color(0xFFFCE4EC),
     containerShadows: const [
-      BoxShadow(
-        color: Colors.black12,
-        offset: Offset(0, -2),
-        blurRadius: 4,
-      ),
+      BoxShadow(color: Colors.black12, offset: Offset(0, -2), blurRadius: 4),
     ],
     inputBgColor: Colors.white,
     inputBorderColor: const Color(0xFFF8BBD0),

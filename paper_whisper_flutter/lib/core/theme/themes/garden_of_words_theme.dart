@@ -113,7 +113,10 @@ final gardenOfWordsTheme = PaperWhisperTheme(
     bgDecoration: BoxDecoration(
       color: const Color(0xFF263238).withValues(alpha: 0.6),
       border: Border(
-        right: BorderSide(color: Colors.white.withValues(alpha: 0.05), width: 1),
+        right: BorderSide(
+          color: Colors.white.withValues(alpha: 0.05),
+          width: 1,
+        ),
       ),
       boxShadow: [
         BoxShadow(
@@ -185,7 +188,10 @@ final gardenOfWordsTheme = PaperWhisperTheme(
         offset: const Offset(0, -5),
       ),
     ],
-    sheetBorder: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 1),
+    sheetBorder: Border.all(
+      color: Colors.white.withValues(alpha: 0.1),
+      width: 1,
+    ),
     sheetShowTape: false,
     sheetInfoBackgroundColor: _surface.withValues(alpha: 0.45),
     sheetInfoBorderColor: _accent.withValues(alpha: 0.2),
@@ -451,7 +457,10 @@ final gardenOfWordsTheme = PaperWhisperTheme(
       offset: const Offset(0, 6),
       spreadRadius: -2,
     ),
-    cardBorder: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 1),
+    cardBorder: Border.all(
+      color: Colors.white.withValues(alpha: 0.1),
+      width: 1,
+    ),
     accentColor: _accent,
     textColor: _textPrimary,
     secondaryTextColor: _textSecondary,
