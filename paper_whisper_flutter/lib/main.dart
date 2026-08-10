@@ -14,13 +14,13 @@ import 'config/app_theme.dart';
 import 'config/theme/theme_registry.dart';
 import 'services/storage_service.dart';
 import 'services/hitokoto_service.dart';
-import 'pages/splash_page.dart';
+import 'features/auth/presentation/splash_page.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'services/auth_service.dart';
 import 'services/trial_service.dart';
 import 'services/payment_service.dart';
-import 'widgets/lock_screen.dart';
+import 'features/auth/presentation/widgets/lock_screen.dart';
 import 'models/diary_entry.dart';
 import 'services/analytics_service.dart';
 

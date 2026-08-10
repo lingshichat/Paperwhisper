@@ -1,13 +1,12 @@
-
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
-import '../providers/settings_provider.dart';
-import '../config/theme/theme_registry.dart';
-import 'skeuomorphic_dialog.dart';
-import 'skeuomorphic_toast.dart';
+import 'package:paper_whisper_flutter/config/theme/theme_registry.dart';
+import 'package:paper_whisper_flutter/providers/settings_provider.dart';
+import 'package:paper_whisper_flutter/widgets/skeuomorphic_dialog.dart';
+import 'package:paper_whisper_flutter/widgets/skeuomorphic_toast.dart';
 
 class PrivacyAgreementDialog extends StatelessWidget {
   final VoidCallback onAgree;
@@ -52,19 +51,21 @@ class PrivacyAgreementDialog extends StatelessWidget {
                 children: [
                   const TextSpan(text: '请您在使用前仔细阅读并同意'),
                   _buildLinkSpan(
-                    context, 
-                    '《用户协议》', 
+                    context,
+                    '《用户协议》',
                     'https://lingshichat.feishu.cn/docx/ODY0dLSF4okfuzximQuctlMon7g?from=from_copylink',
-                    linkColor
+                    linkColor,
                   ),
                   const TextSpan(text: '与'),
                   _buildLinkSpan(
-                    context, 
-                    '《隐私政策》', 
+                    context,
+                    '《隐私政策》',
                     'https://lingshichat.feishu.cn/docx/Gd6sdvdmRonHO9x6fMccUr3qnXg?from=from_copylink',
-                    linkColor
+                    linkColor,
                   ),
-                  const TextSpan(text: '。我们将严格遵守相关法律法规，采取相应安全保护措施，全力保障您的信息安全与合法权益。'),
+                  const TextSpan(
+                    text: '。我们将严格遵守相关法律法规，采取相应安全保护措施，全力保障您的信息安全与合法权益。',
+                  ),
                 ],
               ),
             ),
@@ -94,7 +95,12 @@ class PrivacyAgreementDialog extends StatelessWidget {
     );
   }
 
-  TextSpan _buildLinkSpan(BuildContext context, String text, String url, Color color) {
+  TextSpan _buildLinkSpan(
+    BuildContext context,
+    String text,
+    String url,
+    Color color,
+  ) {
     return TextSpan(
       text: text,
       style: TextStyle(
@@ -112,7 +118,7 @@ class PrivacyAgreementDialog extends StatelessWidget {
     try {
       // 1. 尝试应用内浏览器 (Chrome Custom Tabs / Safari VC)
       if (!await launchUrl(
-        uri, 
+        uri,
         mode: LaunchMode.inAppBrowserView,
         browserConfiguration: const BrowserConfiguration(showTitle: true),
       )) {
@@ -120,14 +126,16 @@ class PrivacyAgreementDialog extends StatelessWidget {
         if (!await launchUrl(
           uri,
           mode: LaunchMode.inAppWebView,
-           webViewConfiguration: const WebViewConfiguration(enableJavaScript: true),
+          webViewConfiguration: const WebViewConfiguration(
+            enableJavaScript: true,
+          ),
         )) {
-           // 3. 降级到外部浏览器
-           if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-             if (context.mounted) {
-               SkeuomorphicToast.error(context, '无法打开链接');
-             }
-           }
+          // 3. 降级到外部浏览器
+          if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+            if (context.mounted) {
+              SkeuomorphicToast.error(context, '无法打开链接');
+            }
+          }
         }
       }
     } catch (e) {

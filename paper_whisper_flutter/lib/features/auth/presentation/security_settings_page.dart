@@ -2,16 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
-import '../app/navigation/app_routes.dart';
-import '../config/app_theme.dart';
-import '../config/theme/components/settings_theme_data.dart';
-import '../config/theme/theme_registry.dart';
-import '../providers/settings_provider.dart';
-import '../services/auth_service.dart';
-import '../services/payment_service.dart';
-import '../widgets/lock_screen.dart';
-import '../widgets/skeuomorphic_toast.dart';
-import '../widgets/visual_effects.dart';
+import 'package:paper_whisper_flutter/app/navigation/app_routes.dart';
+import 'package:paper_whisper_flutter/config/app_theme.dart';
+import 'package:paper_whisper_flutter/config/theme/components/settings_theme_data.dart';
+import 'package:paper_whisper_flutter/config/theme/theme_registry.dart';
+import 'package:paper_whisper_flutter/providers/settings_provider.dart';
+import 'package:paper_whisper_flutter/services/auth_service.dart';
+import 'package:paper_whisper_flutter/services/payment_service.dart';
+import 'package:paper_whisper_flutter/widgets/skeuomorphic_toast.dart';
+import 'package:paper_whisper_flutter/widgets/visual_effects.dart';
+
+import 'widgets/lock_screen.dart';
 
 class SecuritySettingsPage extends StatefulWidget {
   const SecuritySettingsPage({super.key});
@@ -144,9 +145,7 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
       appBar: AppBar(
         title: Text(
           '密码锁',
-          style: GoogleFonts.notoSerifSc(
-            color: headerColors.titleColor,
-          ),
+          style: GoogleFonts.notoSerifSc(color: headerColors.titleColor),
         ),
         backgroundColor: headerColors.background,
         elevation: 0,
@@ -154,47 +153,46 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
         centerTitle: true,
       ),
       backgroundColor: Colors.transparent,
-      body:
-          _isLoading
-              ? Center(
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(activeSwitchColor),
+      body: _isLoading
+          ? Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(activeSwitchColor),
+              ),
+            )
+          : ListView(
+              padding: const EdgeInsets.all(20),
+              children: [
+                _buildSecuritySwitchTile(
+                  icon: Icons.lock_outline,
+                  title: '启用安全锁',
+                  subtitle: '启动应用时需验证密码',
+                  value: _isLockEnabled,
+                  onChanged: _toggleLock,
+                  themeConfig: themeConfig,
                 ),
-              )
-              : ListView(
-                padding: const EdgeInsets.all(20),
-                children: [
+                if (_isLockEnabled && _canUseBio) ...[
+                  const SizedBox(height: 16),
                   _buildSecuritySwitchTile(
-                    icon: Icons.lock_outline,
-                    title: '启用安全锁',
-                    subtitle: '启动应用时需验证密码',
-                    value: _isLockEnabled,
-                    onChanged: _toggleLock,
+                    icon: Icons.fingerprint_rounded,
+                    title: '使用生物识别',
+                    subtitle: canUsePro ? '解锁更快、更安全' : '赞助后可用',
+                    value: _isBiometricEnabled,
+                    onChanged: canUsePro ? _toggleBiometric : null,
                     themeConfig: themeConfig,
                   ),
-                  if (_isLockEnabled && _canUseBio) ...[
-                    const SizedBox(height: 16),
-                    _buildSecuritySwitchTile(
-                      icon: Icons.fingerprint_rounded,
-                      title: '使用生物识别',
-                      subtitle: canUsePro ? '解锁更快、更安全' : '赞助后可用',
-                      value: _isBiometricEnabled,
-                      onChanged: canUsePro ? _toggleBiometric : null,
-                      themeConfig: themeConfig,
-                    ),
-                  ],
-                  if (_isLockEnabled) ...[
-                    const SizedBox(height: 16),
-                    _buildActionTile(
-                      icon: Icons.password_outlined,
-                      title: '修改密码',
-                      subtitle: '重新设置应用锁密码',
-                      onTap: _changePin,
-                      themeConfig: themeConfig,
-                    ),
-                  ],
                 ],
-              ),
+                if (_isLockEnabled) ...[
+                  const SizedBox(height: 16),
+                  _buildActionTile(
+                    icon: Icons.password_outlined,
+                    title: '修改密码',
+                    subtitle: '重新设置应用锁密码',
+                    onTap: _changePin,
+                    themeConfig: themeConfig,
+                  ),
+                ],
+              ],
+            ),
     );
 
     return Stack(

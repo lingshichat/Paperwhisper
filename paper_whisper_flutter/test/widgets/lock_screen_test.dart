@@ -2,9 +2,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:paper_whisper_flutter/config/theme/theme_registry.dart';
-import 'package:paper_whisper_flutter/features/security/application/lock_controller.dart';
+import 'package:paper_whisper_flutter/features/auth/application/lock_controller.dart';
+import 'package:paper_whisper_flutter/features/auth/presentation/widgets/lock_screen.dart';
 import 'package:paper_whisper_flutter/providers/settings_provider.dart';
-import 'package:paper_whisper_flutter/widgets/lock_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

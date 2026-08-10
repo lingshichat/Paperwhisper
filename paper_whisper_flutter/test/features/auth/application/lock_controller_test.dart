@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:paper_whisper_flutter/features/security/application/lock_controller.dart';
+import 'package:paper_whisper_flutter/features/auth/application/lock_controller.dart';
 
 /// 注入替身：不触碰 AuthService / local_auth / SharedPreferences（无 plugin / IO）。
 class _FakeLockGateway implements LockAuthGateway {

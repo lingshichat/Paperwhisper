@@ -9,11 +9,11 @@ import 'package:paper_whisper_flutter/features/library/presentation/book_directo
 import 'package:paper_whisper_flutter/features/library/presentation/bookshelf_page.dart';
 import 'package:paper_whisper_flutter/pages/diary_list_page.dart';
 import 'package:paper_whisper_flutter/pages/editor_page.dart';
-import 'package:paper_whisper_flutter/pages/intro_page.dart';
+import 'package:paper_whisper_flutter/features/auth/presentation/intro_page.dart';
 import 'package:paper_whisper_flutter/pages/moment_detail_page.dart';
 import 'package:paper_whisper_flutter/pages/moments_page.dart';
 import 'package:paper_whisper_flutter/features/premium/presentation/premium_membership_page.dart';
-import 'package:paper_whisper_flutter/pages/security_settings_page.dart';
+import 'package:paper_whisper_flutter/features/auth/presentation/security_settings_page.dart';
 import 'package:paper_whisper_flutter/pages/settings_page.dart';
 import 'package:paper_whisper_flutter/features/statistics/presentation/statistics_page.dart';
 import 'package:paper_whisper_flutter/pages/sync_settings_page.dart';

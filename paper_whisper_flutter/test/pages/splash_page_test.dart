@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:paper_whisper_flutter/config/theme/theme_registry.dart';
-import 'package:paper_whisper_flutter/pages/intro_page.dart';
-import 'package:paper_whisper_flutter/pages/splash_page.dart';
+import 'package:paper_whisper_flutter/features/auth/presentation/intro_page.dart';
+import 'package:paper_whisper_flutter/features/auth/presentation/splash_page.dart';
+import 'package:paper_whisper_flutter/features/auth/presentation/widgets/lock_screen.dart';
 import 'package:paper_whisper_flutter/providers/settings_provider.dart';
 import 'package:paper_whisper_flutter/services/auth_service.dart';
-import 'package:paper_whisper_flutter/widgets/lock_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

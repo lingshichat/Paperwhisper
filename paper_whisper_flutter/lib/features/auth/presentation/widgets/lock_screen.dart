@@ -5,17 +5,16 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
 
-import '../providers/settings_provider.dart';
-import '../widgets/skeuomorphic_toast.dart';
-import '../config/app_theme.dart';
-import '../config/theme/theme_registry.dart';
-import '../features/security/application/lock_controller.dart';
+import 'package:paper_whisper_flutter/config/app_theme.dart';
+import 'package:paper_whisper_flutter/config/theme/theme_registry.dart';
+import 'package:paper_whisper_flutter/features/auth/application/lock_controller.dart';
+import 'package:paper_whisper_flutter/providers/settings_provider.dart';
+import 'package:paper_whisper_flutter/widgets/skeuomorphic_toast.dart';
 import 'animated_fingerprint.dart';
 
-// LockScreenMode 所有权随控制器迁至 features/security/application/，
-// 此处 re-export 保证仅 import lock_screen.dart 的调用方（如
-// security_settings_page）继续可见，不破坏现有引用。
-export '../features/security/application/lock_controller.dart'
+// LockScreenMode 所有权位于 features/auth/application/，此处 re-export
+// 保证只 import lock_screen.dart 的调用方继续可见，不破坏现有引用。
+export 'package:paper_whisper_flutter/features/auth/application/lock_controller.dart'
     show LockScreenMode;
 
 class LockScreen extends StatefulWidget {
@@ -435,10 +434,8 @@ class _LockScreenState extends State<LockScreen> with TickerProviderStateMixin {
   Widget _buildDigitalDisplay(String theme) {
     final themeConfig = ThemeRegistry.get(theme).lockScreen;
     final accent = themeConfig.accentColor ?? AppTheme.getAccentColor(theme);
-    final bg =
-        themeConfig.displayBg ?? Colors.black.withValues(alpha: 0.3);
-    final border =
-        themeConfig.displayBorder ?? accent.withValues(alpha: 0.2);
+    final bg = themeConfig.displayBg ?? Colors.black.withValues(alpha: 0.3);
+    final border = themeConfig.displayBorder ?? accent.withValues(alpha: 0.2);
 
     return Container(
       width: 200,
@@ -535,8 +532,7 @@ class _LockScreenState extends State<LockScreen> with TickerProviderStateMixin {
 
   Widget _buildBiometricControls(String theme) {
     final themeConfig = ThemeRegistry.get(theme).lockScreen;
-    Color iconColor =
-        themeConfig.accentColor ?? AppTheme.getAccentColor(theme);
+    Color iconColor = themeConfig.accentColor ?? AppTheme.getAccentColor(theme);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -800,19 +796,18 @@ class _SkeuomorphicKeyState extends State<SkeuomorphicKey> {
   Widget _buildFrostedStyle() {
     final themeConfig = ThemeRegistry.get(widget.theme).lockScreen;
 
-    final accentColor = themeConfig.accentColor ??
+    final accentColor =
+        themeConfig.accentColor ??
         (widget.theme == 'amber_lens'
-              ? const Color(0xFFFF9800)
-              : const Color(0xFF7986cb));
+            ? const Color(0xFFFF9800)
+            : const Color(0xFF7986cb));
 
-    final keyBg =
-        themeConfig.keyBg ?? Colors.white.withValues(alpha: 0.05);
+    final keyBg = themeConfig.keyBg ?? Colors.white.withValues(alpha: 0.05);
 
     final keyBorder =
         themeConfig.keyBorder ?? Colors.white.withValues(alpha: 0.15);
 
-    final keyText =
-        themeConfig.keyText ?? Colors.white.withValues(alpha: 0.9);
+    final keyText = themeConfig.keyText ?? Colors.white.withValues(alpha: 0.9);
 
     return GestureDetector(
       onTapDown: _handleTapDown,

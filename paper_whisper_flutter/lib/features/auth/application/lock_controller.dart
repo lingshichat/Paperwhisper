@@ -1,8 +1,8 @@
-import '../../../services/auth_service.dart';
+import 'package:paper_whisper_flutter/services/auth_service.dart';
 
-/// 锁屏模式（自 `widgets/lock_screen.dart` 迁移的所有权）。
+/// 认证域的锁屏模式。
 ///
-/// 页面继续经 `lock_screen.dart` 的 export 引用，行为与文案不变。
+/// Presentation 层经 widgets/lock_screen.dart 继续 re-export，行为与文案不变。
 enum LockScreenMode {
   /// 普通解锁。
   unlock,

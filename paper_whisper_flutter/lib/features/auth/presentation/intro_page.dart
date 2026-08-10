@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../app/navigation/app_routes.dart';
-import '../widgets/visual_effects.dart';
+import 'package:paper_whisper_flutter/app/navigation/app_routes.dart';
+import 'package:paper_whisper_flutter/widgets/visual_effects.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class IntroPage extends StatefulWidget {
