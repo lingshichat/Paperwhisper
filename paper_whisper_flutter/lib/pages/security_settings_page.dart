@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 
 import '../app/navigation/app_routes.dart';
 import '../config/app_theme.dart';
+import '../config/theme/components/settings_theme_data.dart';
+import '../config/theme/theme_registry.dart';
 import '../providers/settings_provider.dart';
 import '../services/auth_service.dart';
 import '../services/payment_service.dart';
@@ -134,21 +136,21 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
     final settingsProvider = Provider.of<SettingsProvider>(context);
     final canUsePro = Provider.of<PaymentService>(context).canUseProFeatures;
     final theme = settingsProvider.currentTheme;
-    final headerColors = AppTheme.getMobileHeaderColors(theme);
-    final themeConfig = AppTheme.getSettingsTheme(theme);
-    final activeSwitchColor = themeConfig['activeSwitchColor'] as Color;
+    final headerColors = ThemeRegistry.get(theme).mobileHeader;
+    final themeConfig = ThemeRegistry.get(theme).settings;
+    final activeSwitchColor = themeConfig.activeSwitchColor;
 
     final content = Scaffold(
       appBar: AppBar(
         title: Text(
           '密码锁',
           style: GoogleFonts.notoSerifSc(
-            color: headerColors['titleColor'] as Color,
+            color: headerColors.titleColor,
           ),
         ),
-        backgroundColor: headerColors['background'],
+        backgroundColor: headerColors.background,
         elevation: 0,
-        iconTheme: IconThemeData(color: headerColors['iconColor']),
+        iconTheme: IconThemeData(color: headerColors.iconColor),
         centerTitle: true,
       ),
       backgroundColor: Colors.transparent,
@@ -200,9 +202,9 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
         Positioned.fill(
           child: Container(decoration: AppTheme.getBackground(theme)),
         ),
-        if (themeConfig['showPetalRain'] as bool)
+        if (themeConfig.showPetalRain)
           Positioned.fill(child: const PetalRainWidget()),
-        if (themeConfig['showStarrySky'] as bool)
+        if (themeConfig.showStarrySky)
           Positioned.fill(child: const StarrySkyWidget()),
         Positioned.fill(child: content),
       ],
@@ -215,15 +217,15 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
     required String subtitle,
     required bool value,
     required ValueChanged<bool>? onChanged,
-    required Map<String, dynamic> themeConfig,
+    required SettingsThemeData themeConfig,
   }) {
-    final textColor = themeConfig['textColor'] as Color;
-    final iconColor = themeConfig['iconColor'] as Color? ?? textColor;
-    final activeThumbColor = themeConfig['activeSwitchColor'] as Color;
-    final activeTrackColor = themeConfig['activeTrackColor'] as Color;
+    final textColor = themeConfig.textColor;
+    final iconColor = themeConfig.iconColor;
+    final activeThumbColor = themeConfig.activeSwitchColor;
+    final activeTrackColor = themeConfig.activeTrackColor;
 
     return Container(
-      decoration: themeConfig['groupDecoration'] as BoxDecoration,
+      decoration: themeConfig.groupDecoration,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         child: Row(
@@ -271,13 +273,13 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
     required String title,
     required String subtitle,
     required VoidCallback onTap,
-    required Map<String, dynamic> themeConfig,
+    required SettingsThemeData themeConfig,
   }) {
-    final textColor = themeConfig['textColor'] as Color;
-    final iconColor = themeConfig['iconColor'] as Color? ?? textColor;
+    final textColor = themeConfig.textColor;
+    final iconColor = themeConfig.iconColor;
 
     return Container(
-      decoration: themeConfig['groupDecoration'] as BoxDecoration,
+      decoration: themeConfig.groupDecoration,
       child: Material(
         color: Colors.transparent,
         child: InkWell(

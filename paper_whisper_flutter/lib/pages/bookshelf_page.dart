@@ -5,7 +5,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../providers/diary_provider.dart';
 import '../providers/settings_provider.dart';
-import '../config/app_theme.dart';
+import '../config/theme/theme_registry.dart';
 import '../widgets/skeuomorphic_book.dart';
 import '../app/navigation/app_routes.dart';
 import '../widgets/skeuomorphic_dialog.dart';
@@ -200,11 +200,11 @@ class _BookshelfPageState extends State<BookshelfPage> {
     
     final settings = Provider.of<SettingsProvider>(context, listen: false);
     final theme = settings.currentTheme;
-    final dialogTheme = AppTheme.getDialogInputTheme(theme);
-    final textColor = dialogTheme['textColor']!;
-    final hintColor = dialogTheme['hintColor']!;
-    final borderColor = dialogTheme['borderColor']!;
-    final focusedBorderColor = dialogTheme['focusedBorderColor']!;
+    final dialogTheme = ThemeRegistry.get(theme).dialogInput;
+    final textColor = dialogTheme.textColor;
+    final hintColor = dialogTheme.hintColor;
+    final borderColor = dialogTheme.borderColor;
+    final focusedBorderColor = dialogTheme.focusedBorderColor;
 
     showDialog(
       context: context,

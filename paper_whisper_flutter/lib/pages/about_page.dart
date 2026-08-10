@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../config/app_theme.dart';
+import '../config/theme/theme_registry.dart';
 import '../providers/settings_provider.dart';
 import '../services/update_service.dart';
 import '../widgets/visual_effects.dart';
@@ -92,10 +93,10 @@ class _AboutPageState extends State<AboutPage> {
   void _showMitLicense() {
     final settings = Provider.of<SettingsProvider>(context, listen: false);
     final theme = settings.currentTheme;
-    final themeConfig = AppTheme.getSettingsTheme(theme);
-    final Color bgColor = themeConfig['sheetBackgroundColor'] as Color;
-    final Color textColor = themeConfig['sheetTextColor'] as Color;
-    final Color titleColor = themeConfig['sheetTitleColor'] as Color;
+    final settingsTheme = ThemeRegistry.get(theme).settings;
+    final Color bgColor = settingsTheme.sheetBackgroundColor;
+    final Color textColor = settingsTheme.sheetTextColor;
+    final Color titleColor = settingsTheme.sheetTitleColor;
 
     showModalBottomSheet(
       context: context,
@@ -158,16 +159,16 @@ class _AboutPageState extends State<AboutPage> {
   Widget build(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context);
     final theme = settings.currentTheme;
-    final themeConfig = AppTheme.getSettingsTheme(theme);
+    final settingsTheme = ThemeRegistry.get(theme).settings;
 
-    final Color titleColor = themeConfig['titleColor'] as Color;
-    final Shadow titleShadow = themeConfig['titleShadow'] as Shadow;
+    final Color titleColor = settingsTheme.titleColor;
+    final Shadow titleShadow = settingsTheme.titleShadow;
 
     // 信纸内容使用 sheet 系列颜色（适配深色背景主题下的浅色信纸）
-    final Color sheetBgColor = themeConfig['sheetBackgroundColor'] as Color;
-    final Color sheetTextColor = themeConfig['sheetTextColor'] as Color;
-    final Color sheetTitleColor = themeConfig['sheetTitleColor'] as Color;
-    final Color sheetTapeColor = themeConfig['sheetTapeColor'] as Color;
+    final Color sheetBgColor = settingsTheme.sheetBackgroundColor;
+    final Color sheetTextColor = settingsTheme.sheetTextColor;
+    final Color sheetTitleColor = settingsTheme.sheetTitleColor;
+    final Color sheetTapeColor = settingsTheme.sheetTapeColor;
 
     Widget content = Scaffold(
       backgroundColor: Colors.transparent,
@@ -418,9 +419,9 @@ class _AboutPageState extends State<AboutPage> {
           child: Container(decoration: AppTheme.getBackground(theme)),
         ),
         // 2. 视觉特效
-        if (themeConfig['showPetalRain'] as bool)
+        if (settingsTheme.showPetalRain)
           const Positioned.fill(child: PetalRainWidget()),
-        if (themeConfig['showStarrySky'] as bool)
+        if (settingsTheme.showStarrySky)
           const Positioned.fill(child: StarrySkyWidget()),
         // 3. 页面内容
         Positioned.fill(child: content),

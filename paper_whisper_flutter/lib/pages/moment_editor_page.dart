@@ -9,7 +9,7 @@ import '../services/moment_service.dart';
 import '../providers/sync_provider.dart';
 import '../widgets/skeuomorphic_dialog.dart';
 
-import '../config/app_theme.dart';
+import '../config/theme/theme_registry.dart';
 import '../providers/settings_provider.dart';
 
 class MomentEditorPage extends StatefulWidget {
@@ -181,20 +181,20 @@ class _MomentEditorPageState extends State<MomentEditorPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Provider.of<SettingsProvider>(context).currentTheme;
-    final themeConfig = AppTheme.getMomentEditorTheme(theme);
+    final themeConfig = ThemeRegistry.get(theme).momentEditor;
 
     // Background can be complex (texture), so we use getBackground if available,
     // or fallback to solid color from config.
     // However, MomentEditorPage usually has a solid/simple background.
     // Let's use the one from config.
-    final bgColor = themeConfig['bgColor'] as Color;
-    final appBarTextColor = themeConfig['appBarTextColor'] as Color;
-    final appBarIconColor = themeConfig['appBarIconColor'] as Color;
-    final inputBg = themeConfig['inputBg'] as Color;
-    final inputTextColor = themeConfig['inputTextColor'] as Color;
-    final hintColor = themeConfig['hintColor'] as Color;
-    final photoEmptyColor = themeConfig['photoEmptyColor'] as Color;
-    final photoIconColor = themeConfig['photoIconColor'] as Color;
+    final bgColor = themeConfig.bgColor;
+    final appBarTextColor = themeConfig.appBarTextColor;
+    final appBarIconColor = themeConfig.appBarIconColor;
+    final inputBg = themeConfig.inputBg;
+    final inputTextColor = themeConfig.inputTextColor;
+    final hintColor = themeConfig.hintColor;
+    final photoEmptyColor = themeConfig.photoEmptyColor;
+    final photoIconColor = themeConfig.photoIconColor;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -336,11 +336,11 @@ class _MomentEditorPageState extends State<MomentEditorPage> {
     Function(String?) onChanged,
   ) {
     final theme = Provider.of<SettingsProvider>(context).currentTheme;
-    final themeConfig = AppTheme.getMomentEditorTheme(theme);
-    final dropdownBg = themeConfig['dropdownBg'] as Color;
-    final dropdownIconColor = themeConfig['dropdownIconColor'] as Color;
-    final dropdownMenuBg = themeConfig['dropdownMenuBg'] as Color;
-    final dropdownItemColor = themeConfig['dropdownItemColor'] as Color;
+    final themeConfig = ThemeRegistry.get(theme).momentEditor;
+    final dropdownBg = themeConfig.dropdownBg;
+    final dropdownIconColor = themeConfig.dropdownIconColor;
+    final dropdownMenuBg = themeConfig.dropdownMenuBg;
+    final dropdownItemColor = themeConfig.dropdownItemColor;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10),

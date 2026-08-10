@@ -4,6 +4,8 @@ import 'package:path/path.dart' as path;
 import 'package:provider/provider.dart';
 
 import '../config/app_theme.dart';
+import '../config/theme/components/trash_page_theme_data.dart';
+import '../config/theme/theme_registry.dart';
 import '../models/diary_entry.dart';
 import '../models/trash_record.dart';
 import '../providers/diary_provider.dart';
@@ -210,9 +212,9 @@ class _TrashPageState extends State<TrashPage> {
     final settings = Provider.of<SettingsProvider>(context);
     final theme = settings.currentTheme;
 
-    final tc = AppTheme.getTrashPageTheme(theme);
-    final Color titleColor = tc['titleColor'];
-    final Color iconColor = tc['iconColor'];
+    final tc = ThemeRegistry.get(theme).trashPage;
+    final Color titleColor = tc.titleColor;
+    final Color iconColor = tc.iconColor;
 
     return Stack(
       children: [
@@ -299,14 +301,14 @@ class _TrashPageState extends State<TrashPage> {
   Widget _buildDiaryTrashItem(
     BuildContext context,
     DiaryEntry entry,
-    Map<String, dynamic> tc,
+    TrashPageThemeData tc,
   ) {
-    final Color cardTitleColor = tc['cardTitleColor'];
-    final Color cardDateColor = tc['cardDateColor'];
-    final Color iconColor = tc['iconColor'];
-    final Color restoreColor = tc['restoreColor'];
-    final Color dangerColor = tc['dangerColor'];
-    final BoxDecoration decoration = tc['cardDecoration'];
+    final Color cardTitleColor = tc.cardTitleColor;
+    final Color cardDateColor = tc.cardDateColor;
+    final Color iconColor = tc.iconColor;
+    final Color restoreColor = tc.restoreColor;
+    final Color dangerColor = tc.dangerColor;
+    final BoxDecoration decoration = tc.cardDecoration;
 
     return GestureDetector(
       onTap: () => _showDiaryPreview(context, entry),
@@ -376,14 +378,14 @@ class _TrashPageState extends State<TrashPage> {
   Widget _buildMomentTrashItem(
     BuildContext context,
     TrashRecord record,
-    Map<String, dynamic> tc,
+    TrashPageThemeData tc,
   ) {
-    final Color cardTitleColor = tc['cardTitleColor'];
-    final Color cardDateColor = tc['cardDateColor'];
-    final Color iconColor = tc['iconColor'];
-    final Color restoreColor = tc['restoreColor'];
-    final Color dangerColor = tc['dangerColor'];
-    final BoxDecoration decoration = tc['cardDecoration'];
+    final Color cardTitleColor = tc.cardTitleColor;
+    final Color cardDateColor = tc.cardDateColor;
+    final Color iconColor = tc.iconColor;
+    final Color restoreColor = tc.restoreColor;
+    final Color dangerColor = tc.dangerColor;
+    final BoxDecoration decoration = tc.cardDecoration;
 
     final previewText = (record.previewText ?? '').trim();
     final title = previewText.isEmpty
