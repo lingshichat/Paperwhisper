@@ -85,7 +85,7 @@ final vintageTheme = PaperWhisperTheme(
   ),
   backgroundOverlays: const [],
   fab: FabThemeData(
-    bg: const Color(0xFFC0392B),
+    backgroundColor: const Color(0xFFC0392B),
     shadow: const BoxShadow(color: Colors.transparent),
     iconColor: Colors.white,
   ),

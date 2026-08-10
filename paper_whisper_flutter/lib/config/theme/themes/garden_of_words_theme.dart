@@ -92,7 +92,7 @@ final gardenOfWordsTheme = PaperWhisperTheme(
 
   // --- FAB ---
   fab: FabThemeData(
-    bg: const LinearGradient(
+    backgroundGradient: const LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
       colors: [Color(0xFFA5D6A7), _accentDark],

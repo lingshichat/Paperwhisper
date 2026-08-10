@@ -83,7 +83,7 @@ final midnightTheme = PaperWhisperTheme(
   ),
   backgroundOverlays: const [Positioned.fill(child: StarrySkyWidget())],
   fab: FabThemeData(
-    bg: const LinearGradient(
+    backgroundGradient: const LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
       colors: [Color(0xFF7986cb), Color(0xFF303f9f)],

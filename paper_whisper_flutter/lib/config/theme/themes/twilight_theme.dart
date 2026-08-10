@@ -95,7 +95,7 @@ final twilightTheme = PaperWhisperTheme(
 
   // --- FAB ---
   fab: FabThemeData(
-    bg: const RadialGradient(
+    backgroundGradient: const RadialGradient(
       center: Alignment.topLeft,
       radius: 1.0,
       colors: [_accentRed, Color(0xFFFF8A80)],

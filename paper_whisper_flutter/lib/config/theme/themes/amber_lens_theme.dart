@@ -83,7 +83,7 @@ final amberLensTheme = PaperWhisperTheme(
   ),
   backgroundOverlays: const [],
   fab: FabThemeData(
-    bg: const LinearGradient(
+    backgroundGradient: const LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
       colors: [Color(0xFFFFB74D), Color(0xFFF57C00)],

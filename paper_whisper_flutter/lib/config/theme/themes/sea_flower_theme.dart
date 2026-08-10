@@ -85,7 +85,7 @@ final seaFlowerTheme = PaperWhisperTheme(
 
   // --- FAB ---
   fab: const FabThemeData(
-    bg: LinearGradient(
+    backgroundGradient: LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
       colors: [Color(0xFFF8BBD0), Color(0xFFF06292)],

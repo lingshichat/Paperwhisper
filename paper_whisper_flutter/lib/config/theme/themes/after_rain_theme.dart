@@ -87,7 +87,7 @@ final afterRainTheme = PaperWhisperTheme(
 
   // --- FAB ---
   fab: FabThemeData(
-    bg: const LinearGradient(
+    backgroundGradient: const LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
       colors: [Color(0xFFE0F7FA), _accentBlue],
