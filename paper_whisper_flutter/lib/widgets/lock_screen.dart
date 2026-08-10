@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import '../providers/settings_provider.dart';
 import '../widgets/skeuomorphic_toast.dart';
 import '../config/app_theme.dart';
+import '../config/theme/theme_registry.dart';
 import '../features/security/application/lock_controller.dart';
 import 'animated_fingerprint.dart';
 
@@ -210,9 +211,9 @@ class _LockScreenState extends State<LockScreen> with TickerProviderStateMixin {
     BoxDecoration bgDecor = AppTheme.getBackground(theme);
 
     // Overlay for contrast (Glass effect)
-    final themeConfig = AppTheme.getLockScreenTheme(theme);
-    Color overlayColor = themeConfig.isNotEmpty
-        ? themeConfig['displayBg'].withValues(
+    final themeConfig = ThemeRegistry.get(theme).lockScreen;
+    Color overlayColor = themeConfig.displayBg != null
+        ? themeConfig.displayBg!.withValues(
             alpha: 0.1,
           ) // Derive from displayBg or use default
         : (theme == AppTheme.themeSeaFlower
@@ -317,7 +318,7 @@ class _LockScreenState extends State<LockScreen> with TickerProviderStateMixin {
     if (_controller.useBiometric) title = "验证身份";
 
     final textColor = AppTheme.getTextColor(theme);
-    final themeConfig = AppTheme.getLockScreenTheme(theme);
+    final themeConfig = ThemeRegistry.get(theme).lockScreen;
 
     return AnimatedBuilder(
       animation: _shakeController,
@@ -344,7 +345,7 @@ class _LockScreenState extends State<LockScreen> with TickerProviderStateMixin {
 
           if (theme == AppTheme.themeGardenOfWords)
             _buildDigitalDisplay(theme)
-          else if (themeConfig.isNotEmpty)
+          else if (themeConfig.displayBg != null)
             _buildDigitalDisplay(theme)
           else if (theme == AppTheme.themeDefault)
             _buildVintageDisplay()
@@ -432,16 +433,12 @@ class _LockScreenState extends State<LockScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildDigitalDisplay(String theme) {
-    final themeConfig = AppTheme.getLockScreenTheme(theme);
-    final accent = themeConfig.isNotEmpty
-        ? themeConfig['accentColor']
-        : AppTheme.getAccentColor(theme);
-    final bg = themeConfig.isNotEmpty
-        ? themeConfig['displayBg']
-        : Colors.black.withValues(alpha: 0.3);
-    final border = themeConfig.isNotEmpty
-        ? themeConfig['displayBorder']
-        : accent.withValues(alpha: 0.2);
+    final themeConfig = ThemeRegistry.get(theme).lockScreen;
+    final accent = themeConfig.accentColor ?? AppTheme.getAccentColor(theme);
+    final bg =
+        themeConfig.displayBg ?? Colors.black.withValues(alpha: 0.3);
+    final border =
+        themeConfig.displayBorder ?? accent.withValues(alpha: 0.2);
 
     return Container(
       width: 200,
@@ -537,10 +534,9 @@ class _LockScreenState extends State<LockScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildBiometricControls(String theme) {
-    final themeConfig = AppTheme.getLockScreenTheme(theme);
-    Color iconColor = themeConfig.isNotEmpty
-        ? themeConfig['accentColor']
-        : AppTheme.getAccentColor(theme);
+    final themeConfig = ThemeRegistry.get(theme).lockScreen;
+    Color iconColor =
+        themeConfig.accentColor ?? AppTheme.getAccentColor(theme);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -715,7 +711,7 @@ class _SkeuomorphicKeyState extends State<SkeuomorphicKey> {
 
   @override
   Widget build(BuildContext context) {
-    if (AppTheme.getLockScreenTheme(widget.theme).isNotEmpty) {
+    if (ThemeRegistry.get(widget.theme).lockScreen.displayBg != null) {
       return _buildFrostedStyle(); // Use frosted style for new themes
     } else if (widget.theme == AppTheme.themeDefault) {
       return _buildVintageStyle();
@@ -802,25 +798,21 @@ class _SkeuomorphicKeyState extends State<SkeuomorphicKey> {
 
   // 2. Frosted Glass Style (Midnight / Amber / AfterRain)
   Widget _buildFrostedStyle() {
-    final themeConfig = AppTheme.getLockScreenTheme(widget.theme);
+    final themeConfig = ThemeRegistry.get(widget.theme).lockScreen;
 
-    final accentColor = themeConfig.isNotEmpty
-        ? themeConfig['accentColor']
-        : (widget.theme == 'amber_lens'
+    final accentColor = themeConfig.accentColor ??
+        (widget.theme == 'amber_lens'
               ? const Color(0xFFFF9800)
               : const Color(0xFF7986cb));
 
-    final keyBg = themeConfig.isNotEmpty
-        ? themeConfig['keyBg']
-        : Colors.white.withValues(alpha: 0.05);
+    final keyBg =
+        themeConfig.keyBg ?? Colors.white.withValues(alpha: 0.05);
 
-    final keyBorder = themeConfig.isNotEmpty
-        ? themeConfig['keyBorder']
-        : Colors.white.withValues(alpha: 0.15);
+    final keyBorder =
+        themeConfig.keyBorder ?? Colors.white.withValues(alpha: 0.15);
 
-    final keyText = themeConfig.isNotEmpty
-        ? themeConfig['keyText']
-        : Colors.white.withValues(alpha: 0.9);
+    final keyText =
+        themeConfig.keyText ?? Colors.white.withValues(alpha: 0.9);
 
     return GestureDetector(
       onTapDown: _handleTapDown,

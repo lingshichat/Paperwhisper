@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/diary_entry.dart';
 import '../config/app_theme.dart';
+import '../config/theme/theme_registry.dart';
 import '../widgets/skeuomorphic_container.dart';
 import '../widgets/dashed_line_painter.dart';
 import '../app/navigation/route_transitions.dart' show getWidgetRect;
@@ -33,22 +34,22 @@ class _DiaryCardState extends State<DiaryCard> {
 
   @override
   Widget build(BuildContext context) {
-    // 从 AppTheme 获取完整的主题配色
-    final tc = AppTheme.getDiaryCardTheme(widget.theme);
+    // 从强类型注册表获取完整的主题配色
+    final tc = ThemeRegistry.get(widget.theme).diaryCard;
 
-    final Color titleColor = tc['titleColor'];
-    final Color contentColor = tc['contentColor'];
-    final Color dateColor = tc['dateColor'];
-    final Color iconColor = tc['iconColor'];
-    final Color dashedLineColor = tc['dashedLineColor'];
-    final Color bgColor = tc['bgColor'];
-    final List<BoxShadow> normalShadows = tc['shadows'];
-    final List<BoxShadow> hoverShadows = tc['hoverShadows'];
-    final double borderRadius = tc['borderRadius'];
+    final Color titleColor = tc.titleColor;
+    final Color contentColor = tc.contentColor;
+    final Color dateColor = tc.dateColor;
+    final Color iconColor = tc.iconColor;
+    final Color dashedLineColor = tc.dashedLineColor;
+    final Color bgColor = tc.bgColor;
+    final List<BoxShadow> normalShadows = tc.shadows;
+    final List<BoxShadow> hoverShadows = tc.hoverShadows;
+    final double borderRadius = tc.borderRadius;
 
     // 悬停时的边框处理：部分主题悬停时边框颜色会变化
-    final Color? hoverBorderColor = tc['hoverBorderColor'];
-    final Border? baseBorder = tc['border'];
+    final Color? hoverBorderColor = tc.hoverBorderColor;
+    final Border? baseBorder = tc.border;
     final Border? border = (hoverBorderColor != null && _isHovering)
         ? Border.all(color: hoverBorderColor)
         : baseBorder;
@@ -70,7 +71,7 @@ class _DiaryCardState extends State<DiaryCard> {
                   fontSize: 12,
                   height: 1.2, // Ensure clean baseline
                   color: dateColor,
-                  fontWeight: tc['dateWeight'],
+                  fontWeight: tc.dateWeight,
                 ),
               ),
               Row(
@@ -124,10 +125,10 @@ class _DiaryCardState extends State<DiaryCard> {
     // 构建卡片容器
     Widget containerBody;
 
-    if (tc['glassEffect'] == true) {
+    if (tc.glassEffect) {
       // 玻璃拟态逻辑（SeaFlower / Twilight）
-      final Color glassColor = tc['glassColor'];
-      final double blurSigma = tc['blurSigma'];
+      final Color glassColor = tc.glassColor;
+      final double blurSigma = tc.blurSigma;
 
       containerBody = ClipRRect(
         borderRadius: BorderRadius.circular(borderRadius),
@@ -147,7 +148,7 @@ class _DiaryCardState extends State<DiaryCard> {
           ),
         ),
       );
-    } else if (tc['usePaperContainer'] == true) {
+    } else if (tc.usePaperContainer) {
       // 默认主题使用 SkeuomorphicContainer.paper
       containerBody = AnimatedContainer(
         duration: const Duration(milliseconds: 300),
@@ -198,14 +199,14 @@ class _DiaryCardState extends State<DiaryCard> {
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOut,
           transform: Matrix4.identity()
-            ..translateByDouble(0.0, _isHovering ? (tc['hoverTranslateY'] as double) : 0.0, 0.0, 1.0)
-            ..scaleByDouble(_isHovering ? (tc['hoverScale'] as double) : 1.0, _isHovering ? (tc['hoverScale'] as double) : 1.0, 1.0, 1.0),
+            ..translateByDouble(0.0, _isHovering ? tc.hoverTranslateY : 0.0, 0.0, 1.0)
+            ..scaleByDouble(_isHovering ? tc.hoverScale : 1.0, _isHovering ? tc.hoverScale : 1.0, 1.0, 1.0),
           child: Stack(
             children: [
                containerBody,
 
                // Starry Sky Watermark (午夜星尘)
-               if (tc['showStarWatermark'] == true)
+               if (tc.showStarWatermark)
                  Positioned(
                     bottom: 15,
                     right: 20,
@@ -246,7 +247,7 @@ class _DiaryCardState extends State<DiaryCard> {
                  ),
 
                // Sea Flower Watermark (海底花海)
-               if (tc['showFlowerWatermark'] == true)
+               if (tc.showFlowerWatermark)
                  Positioned(
                    right: 0,
                    bottom: 0,

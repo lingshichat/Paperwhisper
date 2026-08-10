@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../config/app_theme.dart';
+import '../config/theme/components/sync_settings_theme_data.dart';
+import '../config/theme/theme_registry.dart';
 import '../models/sync_config.dart';
 import '../models/sync_trust_snapshot.dart';
 import '../providers/settings_provider.dart';
@@ -129,9 +131,9 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
     });
   }
 
-  Widget _buildLockCard(BuildContext context, Map<String, dynamic> tc) {
-    final textColor = tc['textColor'] as Color;
-    final lockBtnColor = tc['lockBtnColor'] as Color;
+  Widget _buildLockCard(BuildContext context, SyncSettingsThemeData tc) {
+    final textColor = tc.textColor;
+    final lockBtnColor = tc.lockBtnColor;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -200,25 +202,18 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
     final theme = settings.currentTheme;
 
     // 统一配置获取
-    final themeConfig = AppTheme.getSettingsTheme(theme);
-    final tc = AppTheme.getSyncSettingsTheme(theme);
-    // 开关配色：优先主题配置，兜底同步页 accent（两处 SwitchListTile 共用）。
-    final activeThumbColor = themeConfig.isNotEmpty
-        ? themeConfig['activeSwitchColor']
-        : tc['accentColor'];
-    final activeTrackColor = themeConfig.isNotEmpty
-        ? themeConfig['activeTrackColor']
-        : (tc['accentColor'] as Color).withValues(alpha: 0.5);
+    final themeData = ThemeRegistry.get(theme);
+    final themeConfig = themeData.settings;
+    final tc = themeData.syncSettings;
+    // SettingsThemeData 在七主题中均完整，保持原 isNotEmpty 恒真分支。
+    final activeThumbColor = themeConfig.activeSwitchColor;
+    final activeTrackColor = themeConfig.activeTrackColor;
 
-    final titleColor = tc['titleColor'] as Color;
-    final textColor = tc['textColor'] as Color;
-    // 输入域描边与填充：主题 groupDecoration 优先，兜底同步页配色。
-    final borderColor = themeConfig.isNotEmpty
-        ? (themeConfig['groupDecoration'] as BoxDecoration).border!.top.color
-        : textColor.withValues(alpha: 0.2);
-    final fillColor = themeConfig.isNotEmpty
-        ? (themeConfig['groupDecoration'] as BoxDecoration).color
-        : tc['switchBgColor'] as Color;
+    final titleColor = tc.titleColor;
+    final textColor = tc.textColor;
+    // 输入域描边与填充继续使用 settings groupDecoration。
+    final borderColor = themeConfig.groupDecoration.border!.top.color;
+    final fillColor = themeConfig.groupDecoration.color;
 
     return Stack(
       children: [
@@ -254,7 +249,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
               ? (_isBootstrapping
                     ? Center(
                         child: CircularProgressIndicator(
-                          color: tc['accentColor'] as Color,
+                          color: tc.accentColor,
                         ),
                       )
                     : SingleChildScrollView(
@@ -283,8 +278,8 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                                   SyncTrustState.needsAttention =>
                                     Icons.warning_amber_rounded,
                                 },
-                                accentColor: tc['accentColor'] as Color,
-                                backgroundColor: tc['switchBgColor'] as Color,
+                                accentColor: tc.accentColor,
+                                backgroundColor: tc.switchBgColor,
                                 borderColor: textColor.withValues(alpha: 0.12),
                                 textColor: textColor,
                               ),
@@ -411,7 +406,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
 
                               Container(
                                 decoration: BoxDecoration(
-                                  color: tc['switchBgColor'],
+                                  color: tc.switchBgColor,
                                   borderRadius: BorderRadius.circular(10),
                                   border: Border.all(
                                     color: textColor.withValues(alpha: 0.1),
@@ -458,7 +453,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                               // 图片压缩开关
                               Container(
                                 decoration: BoxDecoration(
-                                  color: tc['switchBgColor'],
+                                  color: tc.switchBgColor,
                                   borderRadius: BorderRadius.circular(10),
                                   border: Border.all(
                                     color: textColor.withValues(alpha: 0.1),
@@ -511,17 +506,17 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                                       onTap: _isLoading ? null : _saveAndTest,
                                       isPrimary: false,
                                       primaryGradient:
-                                          tc['primaryGradient'] as Gradient?,
+                                          tc.primaryGradient,
                                       primaryBtnColor:
-                                          tc['primaryBtnColor'] as Color?,
+                                          tc.primaryBtnColor,
                                       primaryShadowColor:
-                                          tc['primaryShadowColor'] as Color,
+                                          tc.primaryShadowColor,
                                       secondaryBtnColor:
-                                          tc['secondaryBtnColor'] as Color,
+                                          tc.secondaryBtnColor,
                                       secondaryBtnTextColor:
-                                          tc['secondaryBtnTextColor'] as Color,
+                                          tc.secondaryBtnTextColor,
                                       secondaryBorderColor:
-                                          tc['secondaryBorderColor'] as Color,
+                                          tc.secondaryBorderColor,
                                     ),
                                   ),
                                   const SizedBox(width: 16),
@@ -531,17 +526,17 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                                       onTap: _isLoading ? null : _syncNow,
                                       isPrimary: true,
                                       primaryGradient:
-                                          tc['primaryGradient'] as Gradient?,
+                                          tc.primaryGradient,
                                       primaryBtnColor:
-                                          tc['primaryBtnColor'] as Color?,
+                                          tc.primaryBtnColor,
                                       primaryShadowColor:
-                                          tc['primaryShadowColor'] as Color,
+                                          tc.primaryShadowColor,
                                       secondaryBtnColor:
-                                          tc['secondaryBtnColor'] as Color,
+                                          tc.secondaryBtnColor,
                                       secondaryBtnTextColor:
-                                          tc['secondaryBtnTextColor'] as Color,
+                                          tc.secondaryBtnTextColor,
                                       secondaryBorderColor:
-                                          tc['secondaryBorderColor'] as Color,
+                                          tc.secondaryBorderColor,
                                     ),
                                   ),
                                 ],
@@ -554,17 +549,17 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                                   onTap: _isLoading ? null : _disableSync,
                                   isPrimary: false,
                                   primaryGradient:
-                                      tc['primaryGradient'] as Gradient?,
+                                      tc.primaryGradient,
                                   primaryBtnColor:
-                                      tc['primaryBtnColor'] as Color?,
+                                      tc.primaryBtnColor,
                                   primaryShadowColor:
-                                      tc['primaryShadowColor'] as Color,
+                                      tc.primaryShadowColor,
                                   secondaryBtnColor:
-                                      tc['secondaryBtnColor'] as Color,
+                                      tc.secondaryBtnColor,
                                   secondaryBtnTextColor:
-                                      tc['secondaryBtnTextColor'] as Color,
+                                      tc.secondaryBtnTextColor,
                                   secondaryBorderColor:
-                                      tc['secondaryBorderColor'] as Color,
+                                      tc.secondaryBorderColor,
                                 ),
                               ],
 
@@ -600,7 +595,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                                           backgroundColor: textColor.withValues(
                                             alpha: 0.1,
                                           ),
-                                          color: tc['accentColor'],
+                                          color: tc.accentColor,
                                           minHeight: 6,
                                         ),
                                       ),
@@ -652,7 +647,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                               const SizedBox(height: 40),
                               SyncSettingsTips(
                                 textColor: textColor,
-                                backgroundColor: tc['tipsBgColor'] as Color,
+                                backgroundColor: tc.tipsBgColor,
                                 syncType: controller.syncType,
                               ),
                             ],
@@ -673,14 +668,13 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
     provider.saveConfig(provider.config.copyWith(syncType: type));
   }
 
-  Widget _buildSlidingSwitch(Map<String, dynamic> tc) {
-    final trackColor = tc['switchTrackColor'] as Color;
-    final thumbColor = tc['switchThumbColor'] as Color;
-    final activeTextColor = tc['switchActiveText'] as Color;
-    final inactiveTextColor = tc['switchInactiveText'] as Color;
-    final double slidingSwitchShadowOpacity =
-        tc['slidingSwitchShadowOpacity'] as double;
-    final double thumbShadowOpacity = tc['thumbShadowOpacity'] as double;
+  Widget _buildSlidingSwitch(SyncSettingsThemeData tc) {
+    final trackColor = tc.switchTrackColor;
+    final thumbColor = tc.switchThumbColor;
+    final activeTextColor = tc.switchActiveText;
+    final inactiveTextColor = tc.switchInactiveText;
+    final double slidingSwitchShadowOpacity = tc.slidingSwitchShadowOpacity;
+    final double thumbShadowOpacity = tc.thumbShadowOpacity;
 
     final isWebDav = controller.syncType == SyncType.webdav;
     return Center(

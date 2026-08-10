@@ -6,6 +6,8 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../config/app_theme.dart';
+import '../config/theme/components/settings_theme_data.dart';
+import '../config/theme/theme_registry.dart';
 import '../models/update_info.dart';
 import '../providers/settings_provider.dart';
 import '../providers/sync_provider.dart';
@@ -42,6 +44,16 @@ class _SettingsPageState extends State<SettingsPage>
   SettingsStorageController? _storageController;
   SettingsUpdateController? _updateController;
   bool _controllersReady = false;
+
+  static const _themePickerOrder = <String>[
+    AppTheme.themeDefault,
+    AppTheme.themeSeaFlower,
+    AppTheme.themeMidnight,
+    AppTheme.themeAmberLens,
+    AppTheme.themeAfterRain,
+    AppTheme.themeTwilight,
+    AppTheme.themeGardenOfWords,
+  ];
 
   // 未加载时的权限兜底快照：保持原 null status 视觉（三行均「未获取」）。
   static const PermissionSnapshot _kDeniedPermissionFallback =
@@ -121,9 +133,9 @@ class _SettingsPageState extends State<SettingsPage>
     // 获取主题信息，保持与 Sidebar 一致的设计语言
     final settings = Provider.of<SettingsProvider>(context);
     final theme = settings.currentTheme;
-    final themeConfig = AppTheme.getSettingsTheme(theme);
-    final Color titleColor = themeConfig['titleColor'] as Color;
-    final Shadow titleShadow = themeConfig['titleShadow'] as Shadow;
+    final themeConfig = ThemeRegistry.get(theme).settings;
+    final Color titleColor = themeConfig.titleColor;
+    final Shadow titleShadow = themeConfig.titleShadow;
 
     // Scaffold 内容
     Widget content = Scaffold(
@@ -158,9 +170,9 @@ class _SettingsPageState extends State<SettingsPage>
         ),
 
         // 2. Visual Effects
-        if (themeConfig['showPetalRain'] as bool)
+        if (themeConfig.showPetalRain)
           Positioned.fill(child: const PetalRainWidget()),
-        if (themeConfig['showStarrySky'] as bool)
+        if (themeConfig.showStarrySky)
           Positioned.fill(child: const StarrySkyWidget()),
 
         // 3. 内容
@@ -171,10 +183,10 @@ class _SettingsPageState extends State<SettingsPage>
 
   Widget _buildList(
     BuildContext context,
-    Map<String, dynamic> themeConfig,
+    SettingsThemeData themeConfig,
     SettingsProvider settings,
   ) {
-    final Color textColor = themeConfig['textColor'] as Color;
+    final Color textColor = themeConfig.textColor;
 
     return ListView(
       padding: const EdgeInsets.all(20),
@@ -182,7 +194,7 @@ class _SettingsPageState extends State<SettingsPage>
         // 1. 核心服务 (Core)
         SettingsSectionHeader(title: '账号与会员', textColor: textColor),
         SettingsGroupContainer(
-          decoration: themeConfig['groupDecoration'] as BoxDecoration,
+          decoration: themeConfig.groupDecoration,
           children: [
             // [NEW] Premium Membership Entry
             Consumer<PaymentService>(
@@ -198,7 +210,7 @@ class _SettingsPageState extends State<SettingsPage>
                 );
               },
             ),
-            SettingsDivider(color: themeConfig['dividerColor'] as Color),
+            SettingsDivider(color: themeConfig.dividerColor),
             SettingsItem(
               icon: Icons.cloud_sync_outlined,
               title: '数据同步',
@@ -215,7 +227,7 @@ class _SettingsPageState extends State<SettingsPage>
         // 2. 外观与体验 (Appearance & Experience)
         SettingsSectionHeader(title: '外观与体验', textColor: textColor),
         SettingsGroupContainer(
-          decoration: themeConfig['groupDecoration'] as BoxDecoration,
+          decoration: themeConfig.groupDecoration,
           children: [
             SettingsItem(
               icon: Icons.palette_outlined,
@@ -224,7 +236,7 @@ class _SettingsPageState extends State<SettingsPage>
               textColor: textColor,
               onTap: () => _showThemePicker(context, settings),
             ),
-            SettingsDivider(color: themeConfig['dividerColor'] as Color),
+            SettingsDivider(color: themeConfig.dividerColor),
             SettingsSwitchItem(
               icon: Icons.brightness_auto_outlined,
               title: '跟随系统深色模式',
@@ -232,10 +244,10 @@ class _SettingsPageState extends State<SettingsPage>
               value: settings.followSystemTheme,
               onChanged: (val) => settings.setFollowSystemTheme(val),
               textColor: textColor,
-              activeThumbColor: themeConfig['activeSwitchColor'] as Color,
-              activeTrackColor: themeConfig['activeTrackColor'] as Color,
+              activeThumbColor: themeConfig.activeSwitchColor,
+              activeTrackColor: themeConfig.activeTrackColor,
             ),
-            SettingsDivider(color: themeConfig['dividerColor'] as Color),
+            SettingsDivider(color: themeConfig.dividerColor),
             SettingsItem(
               icon: Icons.start_outlined,
               title: '启动页',
@@ -243,7 +255,7 @@ class _SettingsPageState extends State<SettingsPage>
               textColor: textColor,
               onTap: () => _showStartupPagePicker(context, settings),
             ),
-            SettingsDivider(color: themeConfig['dividerColor'] as Color),
+            SettingsDivider(color: themeConfig.dividerColor),
             // Compatibility Mode Switch
             SettingsSwitchItem(
               icon: Icons.layers_clear_outlined,
@@ -252,8 +264,8 @@ class _SettingsPageState extends State<SettingsPage>
               value: settings.compatibilityMode,
               onChanged: (val) => settings.setCompatibilityMode(val),
               textColor: textColor,
-              activeThumbColor: themeConfig['activeSwitchColor'] as Color,
-              activeTrackColor: themeConfig['activeTrackColor'] as Color,
+              activeThumbColor: themeConfig.activeSwitchColor,
+              activeTrackColor: themeConfig.activeTrackColor,
             ),
           ],
         ),
@@ -262,7 +274,7 @@ class _SettingsPageState extends State<SettingsPage>
         // 3. 数据与隐私 (Data & Privacy)
         SettingsSectionHeader(title: '数据与隐私', textColor: textColor),
         SettingsGroupContainer(
-          decoration: themeConfig['groupDecoration'] as BoxDecoration,
+          decoration: themeConfig.groupDecoration,
           children: [
             SettingsItem(
               icon: Icons.lock_outline,
@@ -273,7 +285,7 @@ class _SettingsPageState extends State<SettingsPage>
                 Navigator.push(context, AppRoutes.securitySettings());
               },
             ),
-            SettingsDivider(color: themeConfig['dividerColor'] as Color),
+            SettingsDivider(color: themeConfig.dividerColor),
             SettingsItem(
               icon: (_permissionController?.snapshot?.isAllGranted ?? false)
                   ? Icons.verified_user_outlined
@@ -283,7 +295,7 @@ class _SettingsPageState extends State<SettingsPage>
               textColor: textColor,
               onTap: () => _showPermissionManager(context),
             ),
-            SettingsDivider(color: themeConfig['dividerColor'] as Color),
+            SettingsDivider(color: themeConfig.dividerColor),
             SettingsItem(
               icon: Icons.sd_storage_outlined,
               title: '存储空间管理',
@@ -291,7 +303,7 @@ class _SettingsPageState extends State<SettingsPage>
               textColor: textColor,
               onTap: () => _showStorageManager(context, themeConfig),
             ),
-            SettingsDivider(color: themeConfig['dividerColor'] as Color),
+            SettingsDivider(color: themeConfig.dividerColor),
             SettingsItem(
               icon: Icons.delete_outline,
               title: '回收站',
@@ -308,7 +320,7 @@ class _SettingsPageState extends State<SettingsPage>
         // 4. 帮助与反馈 (Help & Feedback)
         SettingsSectionHeader(title: '帮助与反馈', textColor: textColor),
         SettingsGroupContainer(
-          decoration: themeConfig['groupDecoration'] as BoxDecoration,
+          decoration: themeConfig.groupDecoration,
           children: [
             SettingsItem(
               icon: Icons.help_outline,
@@ -319,7 +331,7 @@ class _SettingsPageState extends State<SettingsPage>
                 'https://lingshichat.feishu.cn/docx/JvzDdhLXEo3OVaxWEc9cygDqnMc?from=from_copylink',
               ),
             ),
-            SettingsDivider(color: themeConfig['dividerColor'] as Color),
+            SettingsDivider(color: themeConfig.dividerColor),
             SettingsItem(
               icon: Icons.feedback_outlined,
               title: '意见反馈',
@@ -336,7 +348,7 @@ class _SettingsPageState extends State<SettingsPage>
         // 5. 关于 (About)
         SettingsSectionHeader(title: '关于', textColor: textColor),
         SettingsGroupContainer(
-          decoration: themeConfig['groupDecoration'] as BoxDecoration,
+          decoration: themeConfig.groupDecoration,
           children: [
             SettingsItem(
               icon: Icons.system_update_outlined,
@@ -352,7 +364,7 @@ class _SettingsPageState extends State<SettingsPage>
                   ? () {}
                   : _checkForUpdate,
             ),
-            SettingsDivider(color: themeConfig['dividerColor'] as Color),
+            SettingsDivider(color: themeConfig.dividerColor),
             SettingsItem(
               icon: Icons.description_outlined,
               title: '用户协议',
@@ -362,7 +374,7 @@ class _SettingsPageState extends State<SettingsPage>
                 'https://lingshichat.feishu.cn/docx/ODY0dLSF4okfuzximQuctlMon7g?from=from_copylink',
               ),
             ),
-            SettingsDivider(color: themeConfig['dividerColor'] as Color),
+            SettingsDivider(color: themeConfig.dividerColor),
             SettingsItem(
               icon: Icons.privacy_tip_outlined,
               title: '隐私政策',
@@ -372,7 +384,7 @@ class _SettingsPageState extends State<SettingsPage>
                 'https://lingshichat.feishu.cn/docx/Gd6sdvdmRonHO9x6fMccUr3qnXg?from=from_copylink',
               ),
             ),
-            SettingsDivider(color: themeConfig['dividerColor'] as Color),
+            SettingsDivider(color: themeConfig.dividerColor),
             SettingsItem(
               icon: Icons.info_outline,
               title: '关于纸语PaperWhisper',
@@ -383,7 +395,7 @@ class _SettingsPageState extends State<SettingsPage>
               },
             ),
             if (kDebugMode) ...[
-              SettingsDivider(color: themeConfig['dividerColor'] as Color),
+              SettingsDivider(color: themeConfig.dividerColor),
               SettingsItem(
                 icon: Icons.science_outlined,
                 title: '开发测试：更新弹窗',
@@ -399,43 +411,41 @@ class _SettingsPageState extends State<SettingsPage>
     );
   }
 
-  // --- S2a 展示组件适配（极薄 themeConfig→props 转发，不复制 Widget 树） ---
+  // --- S2a 展示组件适配（typed theme→props 转发，不复制 Widget 树） ---
 
   Widget _sheetFrame(
-    Map<String, dynamic> themeConfig,
+    SettingsThemeData themeConfig,
     String title,
     List<Widget> children,
   ) {
     return SettingsBottomSheetFrame(
       title: title,
-      titleColor: themeConfig['sheetTitleColor'] as Color,
-      backgroundColor: themeConfig['sheetBackgroundColor'] as Color,
-      tapeColor: themeConfig['sheetTapeColor'] as Color,
-      shadows: List<BoxShadow>.from(
-        themeConfig['sheetShadows'] as List<dynamic>,
-      ),
-      border: themeConfig['sheetBorder'] as BoxBorder?,
-      showTape: themeConfig['sheetShowTape'] as bool,
+      titleColor: themeConfig.sheetTitleColor,
+      backgroundColor: themeConfig.sheetBackgroundColor,
+      tapeColor: themeConfig.sheetTapeColor,
+      shadows: themeConfig.sheetShadows,
+      border: themeConfig.sheetBorder,
+      showTape: themeConfig.sheetShowTape,
       children: children,
     );
   }
 
   /// 选择弹层样式：主题/启动页共用同一组 option 主题键，一次适配。
-  SettingsChoiceSheetStyle _choiceStyle(Map<String, dynamic> tc) {
+  SettingsChoiceSheetStyle _choiceStyle(SettingsThemeData tc) {
     return SettingsChoiceSheetStyle(
-      backgroundColor: tc['sheetBackgroundColor'] as Color,
-      titleColor: tc['sheetTitleColor'] as Color,
-      tapeColor: tc['sheetTapeColor'] as Color,
-      shadows: (tc['sheetShadows'] as List<dynamic>).cast<BoxShadow>(),
-      border: tc['sheetBorder'] as BoxBorder?,
-      showTape: tc['sheetShowTape'] as bool,
-      selectedBackgroundColor: tc['optionSelectedBgColor'] as Color,
-      unselectedBackgroundColor: tc['optionUnselectedBgColor'] as Color,
-      selectedTextColor: tc['optionSelectedTextColor'] as Color,
-      unselectedTextColor: tc['optionUnselectedTextColor'] as Color,
-      selectedShadow: tc['optionSelectedShadow'] as BoxShadow?,
-      unselectedShadow: tc['optionUnselectedShadow'] as BoxShadow?,
-      unselectedBorder: tc['optionUnselectedBorder'] as Border?,
+      backgroundColor: tc.sheetBackgroundColor,
+      titleColor: tc.sheetTitleColor,
+      tapeColor: tc.sheetTapeColor,
+      shadows: tc.sheetShadows,
+      border: tc.sheetBorder,
+      showTape: tc.sheetShowTape,
+      selectedBackgroundColor: tc.optionSelectedBgColor,
+      unselectedBackgroundColor: tc.optionUnselectedBgColor,
+      selectedTextColor: tc.optionSelectedTextColor,
+      unselectedTextColor: tc.optionUnselectedTextColor,
+      selectedShadow: tc.optionSelectedShadow,
+      unselectedShadow: tc.optionUnselectedShadow,
+      unselectedBorder: tc.optionUnselectedBorder,
     );
   }
 
@@ -446,10 +456,9 @@ class _SettingsPageState extends State<SettingsPage>
       context,
       listen: false,
     ).currentTheme;
-    final themeConfig = AppTheme.getSettingsTheme(theme);
-    final Color sheetDividerColor =
-        themeConfig['sheetInfoDividerColor'] as Color;
-    final Color sheetTextColor = themeConfig['sheetTextColor'] as Color;
+    final themeConfig = ThemeRegistry.get(theme).settings;
+    final Color sheetDividerColor = themeConfig.sheetInfoDividerColor;
+    final Color sheetTextColor = themeConfig.sheetTextColor;
 
     showModalBottomSheet(
       context: context,
@@ -756,24 +765,7 @@ class _SettingsPageState extends State<SettingsPage>
 
   // --- Theme & Storage Helpers (Unchanged Logic, just helper methods) ---
 
-  String _getThemeName(String theme) {
-    switch (theme) {
-      case AppTheme.themeSeaFlower:
-        return '海底花海';
-      case AppTheme.themeMidnight:
-        return '午夜星尘';
-      case AppTheme.themeAmberLens:
-        return '琥珀光圈';
-      case AppTheme.themeAfterRain:
-        return '雨后天空';
-      case AppTheme.themeTwilight:
-        return '黄昏之时';
-      case AppTheme.themeGardenOfWords:
-        return '言叶之庭';
-      default:
-        return '复古纸张';
-    }
-  }
+  String _getThemeName(String theme) => ThemeRegistry.get(theme).name;
 
   String _getStartupPageName(String page) {
     switch (page) {
@@ -790,22 +782,20 @@ class _SettingsPageState extends State<SettingsPage>
 
   void _showThemePicker(BuildContext context, SettingsProvider settings) {
     final style = _choiceStyle(
-      AppTheme.getSettingsTheme(settings.currentTheme),
+      ThemeRegistry.get(settings.currentTheme).settings,
     );
+    final themesById = {
+      for (final theme in ThemeRegistry.allThemes) theme.id: theme,
+    };
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) => SettingsChoiceSheet<String>(
         title: '选择主题',
-        // 7 主题 ID / 中文名顺序与 AppTheme 常量逐一对应（不含改 Map）。
-        options: const [
-          SettingsChoiceOption(label: '复古纸张', value: 'default'),
-          SettingsChoiceOption(label: '海底花海', value: 'sea_flower'),
-          SettingsChoiceOption(label: '午夜星尘', value: 'midnight'),
-          SettingsChoiceOption(label: '琥珀光圈', value: 'amber_lens'),
-          SettingsChoiceOption(label: '雨后天空', value: 'after_rain'),
-          SettingsChoiceOption(label: '黄昏之时', value: 'twilight'),
-          SettingsChoiceOption(label: '言叶之庭', value: 'garden_of_words'),
+        // Registry 提供名称；显式 ID 列表只固定既有展示顺序。
+        options: [
+          for (final id in _themePickerOrder)
+            SettingsChoiceOption(label: themesById[id]!.name, value: id),
         ],
         selected: settings.currentTheme,
         onSelected: (val) => settings.setTheme(val),
@@ -817,7 +807,7 @@ class _SettingsPageState extends State<SettingsPage>
 
   void _showStartupPagePicker(BuildContext context, SettingsProvider settings) {
     final style = _choiceStyle(
-      AppTheme.getSettingsTheme(settings.currentTheme),
+      ThemeRegistry.get(settings.currentTheme).settings,
     );
     showModalBottomSheet(
       context: context,
@@ -837,13 +827,12 @@ class _SettingsPageState extends State<SettingsPage>
 
   void _showStorageManager(
     BuildContext context,
-    Map<String, dynamic> themeConfig,
+    SettingsThemeData themeConfig,
   ) {
-    final Color sheetTextColor = themeConfig['sheetTextColor'] as Color;
-    final Color infoBgColor = themeConfig['sheetInfoBackgroundColor'] as Color;
-    final Color infoBorderColor = themeConfig['sheetInfoBorderColor'] as Color;
-    final Color infoDividerColor =
-        themeConfig['sheetInfoDividerColor'] as Color;
+    final Color sheetTextColor = themeConfig.sheetTextColor;
+    final Color infoBgColor = themeConfig.sheetInfoBackgroundColor;
+    final Color infoBorderColor = themeConfig.sheetInfoBorderColor;
+    final Color infoDividerColor = themeConfig.sheetInfoDividerColor;
 
     final snap = _storageController?.snapshot;
 

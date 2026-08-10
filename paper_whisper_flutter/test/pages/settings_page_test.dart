@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:paper_whisper_flutter/config/theme/theme_registry.dart';
+import 'package:paper_whisper_flutter/features/settings/presentation/widgets/settings_choice_sheet.dart';
 import 'package:paper_whisper_flutter/models/sync_config.dart';
 import 'package:paper_whisper_flutter/models/sync_trust_snapshot.dart';
 import 'package:paper_whisper_flutter/pages/settings_page.dart';
@@ -281,7 +282,31 @@ void main() {
       await tester.tap(find.text('主题风格'));
       await tester.pumpAndSettle();
       expect(find.text('选择主题'), findsOneWidget);
-      expect(find.text('午夜星尘'), findsOneWidget);
+      const themeNames = [
+        '复古纸张',
+        '海底花海',
+        '午夜星尘',
+        '琥珀光圈',
+        '雨后天空',
+        '黄昏之时',
+        '言叶之庭',
+      ];
+      final sheet = find.byType(SettingsChoiceSheet<String>);
+      for (final name in themeNames) {
+        expect(
+          find.descendant(of: sheet, matching: find.text(name)),
+          findsOneWidget,
+        );
+      }
+      final optionOffsets = [
+        for (final name in themeNames)
+          tester.getTopLeft(
+            find.descendant(of: sheet, matching: find.text(name)),
+          ),
+      ];
+      for (var index = 1; index < optionOffsets.length; index++) {
+        expect(optionOffsets[index].dy, greaterThan(optionOffsets[index - 1].dy));
+      }
 
       // 主题选择不自动关闭（closeOnSelect: false）；切换后 subtitle 更新。
       // 午夜星尘主题带 StarrySky 无限动画，不能用 pumpAndSettle。

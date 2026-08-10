@@ -4,6 +4,7 @@ import 'dart:ui'; // Added
 import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart';
 import '../config/app_theme.dart';
+import '../config/theme/theme_registry.dart';
 import 'skeuomorphic_container.dart'; // Added
 
 
@@ -14,11 +15,11 @@ class ThemeSelectionDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context);
     final currentTheme = settings.currentTheme;
-    final dialogTheme = AppTheme.getDialogTheme(currentTheme);
-    
+    final dialogTheme = ThemeRegistry.get(currentTheme).dialog;
+
     // Fallback constants
-    final bg = dialogTheme['paper'] ?? const Color(0xFFF7F1E3);
-    final closeColor = dialogTheme['icon'] ?? const Color(0xFF8D6E63);
+    final bg = dialogTheme.paper ?? const Color(0xFFF7F1E3);
+    final closeColor = dialogTheme.icon ?? const Color(0xFF8D6E63);
 
     return BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
@@ -29,8 +30,8 @@ class ThemeSelectionDialog extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           color: bg,
           shadows: [
-             dialogTheme['shadow'] is Color 
-                 ? BoxShadow(color: dialogTheme['shadow'], blurRadius: 30, offset: const Offset(0, 10))
+             dialogTheme.shadow != null
+                 ? BoxShadow(color: dialogTheme.shadow!, blurRadius: 30, offset: const Offset(0, 10))
                  : const BoxShadow(
                       color: Color.fromRGBO(0, 0, 0, 0.5),
                       offset: Offset(0, 20),
@@ -62,7 +63,7 @@ class ThemeSelectionDialog extends StatelessWidget {
                     style: GoogleFonts.notoSerifSc(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: dialogTheme['title'] ?? const Color(0xFF5D4037),
+                      color: dialogTheme.title ?? const Color(0xFF5D4037),
                       letterSpacing: 2,
                     ),
                   ),
@@ -177,10 +178,20 @@ class ThemeSelectionDialog extends StatelessWidget {
       String id, 
       String name, 
       String desc, 
-      dynamic background,
+      Object background,
       bool isActive) {
-      
+
     final cardAccent = AppTheme.getAccentColor(id);
+    final backgroundColor = switch (background) {
+      SolidColor(:final color) => color,
+      Gradient() => null,
+      _ => throw ArgumentError.value(background, 'background'),
+    };
+    final backgroundGradient = switch (background) {
+      Gradient gradient => gradient,
+      SolidColor() => null,
+      _ => throw ArgumentError.value(background, 'background'),
+    };
       
     return MouseRegion(
       cursor: SystemMouseCursors.click,
@@ -211,8 +222,8 @@ class ThemeSelectionDialog extends StatelessWidget {
                 child: Container(
                   width: double.infinity,
                   decoration: BoxDecoration(
-                     color: background is SolidColor ? background.color : null,
-                     gradient: background is! SolidColor ? background as Gradient? : null,
+                     color: backgroundColor,
+                     gradient: backgroundGradient,
                      borderRadius: BorderRadius.circular(4),
                      boxShadow: const [
                        BoxShadow(

@@ -9,6 +9,7 @@ import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import '../providers/settings_provider.dart';
 import '../models/diary_entry.dart';
 import '../config/app_theme.dart';
+import '../config/theme/theme_registry.dart';
 import '../widgets/sidebar_widget.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../providers/diary_provider.dart';
@@ -251,9 +252,9 @@ class _DiaryListPageState extends State<DiaryListPage>
   void _showUnifiedDialog(UpdateInfo info, {required bool isAnnouncement}) {
     final settings = Provider.of<SettingsProvider>(context, listen: false);
     final theme = settings.currentTheme;
-    // 从 AppTheme 获取对话框副文本颜色
-    final dlpTheme = AppTheme.getDiaryListPageTheme(theme);
-    final secondaryColor = dlpTheme['updateDialogSecondaryColor'] as Color;
+    // 从 typed 主题获取对话框副文本颜色
+    final dlpTheme = ThemeRegistry.get(theme).diaryListPage;
+    final secondaryColor = dlpTheme.updateDialogSecondaryColor;
 
     showDialog(
       context: context,
@@ -503,11 +504,11 @@ class _DiaryListPageState extends State<DiaryListPage>
           );
         } else {
           // Mobile: Drawer + Content
-          final dlpThemeMobile = AppTheme.getDiaryListPageTheme(theme);
+          final dlpThemeMobile = ThemeRegistry.get(theme).diaryListPage;
 
           return Scaffold(
             backgroundColor: Colors.transparent,
-            drawerScrimColor: dlpThemeMobile['drawerScrimColor'] as Color,
+            drawerScrimColor: dlpThemeMobile.drawerScrimColor,
             drawer: const Drawer(
               width: 300,
               elevation: 0,
@@ -529,13 +530,14 @@ class _DiaryListPageState extends State<DiaryListPage>
             ),
             floatingActionButton: Builder(
               builder: (ctx) {
-                final fabConfig = AppTheme.getFabTheme(theme);
-                final isCustom = fabConfig['bg'] is Gradient;
+                final fabConfig = ThemeRegistry.get(theme).fab;
+                final gradient = fabConfig.backgroundGradient;
+                final isCustom = gradient != null;
 
                 return FloatingActionButton(
                   backgroundColor: isCustom
                       ? Colors.transparent
-                      : fabConfig['bg'],
+                      : fabConfig.backgroundColor,
                   elevation: isCustom ? 0 : 6,
                   focusElevation: isCustom ? 0 : 6,
                   hoverElevation: isCustom ? 0 : 8,
@@ -547,13 +549,13 @@ class _DiaryListPageState extends State<DiaryListPage>
                     decoration: isCustom
                         ? BoxDecoration(
                             shape: BoxShape.circle,
-                            gradient: fabConfig['bg'],
-                            boxShadow: [fabConfig['shadow']],
+                            gradient: gradient,
+                            boxShadow: [fabConfig.shadow],
                           )
                         : null,
                     child: Icon(
                       Icons.edit,
-                      color: fabConfig['iconColor'],
+                      color: fabConfig.iconColor,
                       size: isCustom ? 28 : 24,
                     ),
                   ),
@@ -573,8 +575,8 @@ class _DiaryListPageState extends State<DiaryListPage>
     double availableWidth,
   ) {
     final diaryProvider = Provider.of<DiaryProvider>(context);
-    // 空态取色：页面从 7 主题动态 Map 取色后显式传给 DiaryEmptyState props
-    final dlpThemeEmpty = AppTheme.getDiaryListPageTheme(theme);
+    // 空态取色：页面从七主题 typed 数据取色后显式传给组件 props
+    final dlpThemeEmpty = ThemeRegistry.get(theme).diaryListPage;
 
     // Prepare Data
     List<dynamic> rawFlatEntries = [];
@@ -610,8 +612,9 @@ class _DiaryListPageState extends State<DiaryListPage>
         // Mobile Header (Now also for Desktop, but without Menu button)
         Builder(
           builder: (scaffoldContext) {
-            final headerColors = AppTheme.getMobileHeaderColors(theme);
-            final dlpThemeHeader = AppTheme.getDiaryListPageTheme(theme);
+            final themeData = ThemeRegistry.get(theme);
+            final headerColors = themeData.mobileHeader;
+            final dlpThemeHeader = themeData.diaryListPage;
 
             Widget headerContent = Container(
               height: 56 + MediaQuery.of(scaffoldContext).padding.top,
@@ -619,11 +622,11 @@ class _DiaryListPageState extends State<DiaryListPage>
                 top: MediaQuery.of(scaffoldContext).padding.top,
               ),
               decoration: BoxDecoration(
-                color: headerColors['background'],
+                color: headerColors.background,
                 border: Border(
-                  bottom: BorderSide(color: headerColors['border']!, width: 1),
+                  bottom: BorderSide(color: headerColors.border, width: 1),
                 ),
-                boxShadow: dlpThemeHeader['headerBoxShadow'] as List<BoxShadow>,
+                boxShadow: dlpThemeHeader.headerBoxShadow,
               ),
               child: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 300),
@@ -634,7 +637,7 @@ class _DiaryListPageState extends State<DiaryListPage>
                           IconButton(
                             icon: Icon(
                               Icons.arrow_back,
-                              color: headerColors['iconColor'],
+                              color: headerColors.iconColor,
                             ),
                             onPressed: () {
                               setState(() {
@@ -663,7 +666,7 @@ class _DiaryListPageState extends State<DiaryListPage>
                             IconButton(
                               icon: Icon(
                                 Icons.menu,
-                                color: headerColors['iconColor'],
+                                color: headerColors.iconColor,
                               ),
                               onPressed: () =>
                                   Scaffold.of(scaffoldContext).openDrawer(),
@@ -682,7 +685,7 @@ class _DiaryListPageState extends State<DiaryListPage>
                                     style: GoogleFonts.notoSerifSc(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
-                                      color: headerColors['titleColor'],
+                                      color: headerColors.titleColor,
                                       shadows: const [
                                         Shadow(
                                           color: Color.fromRGBO(0, 0, 0, 0.1),
@@ -696,7 +699,7 @@ class _DiaryListPageState extends State<DiaryListPage>
                                     '点击翻阅目录',
                                     style: TextStyle(
                                       fontSize: 10,
-                                      color: headerColors['subtitleColor'],
+                                      color: headerColors.subtitleColor,
                                     ),
                                   ),
                                 ],
@@ -707,7 +710,7 @@ class _DiaryListPageState extends State<DiaryListPage>
                             IconButton(
                               icon: Icon(
                                 Icons.search,
-                                color: headerColors['iconColor'],
+                                color: headerColors.iconColor,
                               ),
                               onPressed: () {
                                 setState(() {
@@ -722,7 +725,7 @@ class _DiaryListPageState extends State<DiaryListPage>
             );
 
             // Apply Blur for themes that need it
-            if (dlpThemeHeader['headerApplyBlur'] == true) {
+            if (dlpThemeHeader.headerApplyBlur) {
               return ClipRRect(
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
@@ -766,12 +769,9 @@ class _DiaryListPageState extends State<DiaryListPage>
                         searchTextColor: AppTheme.getTextColor(
                           theme,
                         ).withValues(alpha: 0.7),
-                        iconColor:
-                            dlpThemeEmpty['emptyStateIconColor'] as Color,
-                        textColor:
-                            dlpThemeEmpty['emptyStateTextColor'] as Color,
-                        linkColor:
-                            dlpThemeEmpty['emptyStateLinkColor'] as Color,
+                        iconColor: dlpThemeEmpty.emptyStateIconColor,
+                        textColor: dlpThemeEmpty.emptyStateTextColor,
+                        linkColor: dlpThemeEmpty.emptyStateLinkColor,
                         onCreate: () => _openEditor(null),
                       ),
                     ),
