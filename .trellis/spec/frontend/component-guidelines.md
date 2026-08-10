@@ -222,6 +222,211 @@ switch (result) {
 
 ---
 
+## Scenario: Page Coordinators And Device-State Controllers
+
+### 1. Scope / Trigger
+
+Apply this contract when changing 页面横切逻辑（更新检查、权限、保存后同步、导出路径、同步文案），或设置/随心记/日记列表/同步设置四个页面的协调器与控制器。Compatibility shells remain `pages/settings_page.dart`、`pages/moments_page.dart`、`pages/diary_list_page.dart`、`pages/sync_settings_page.dart`；new logic belongs under `features/{export,permissions,update,settings,moments,diary,sync_settings,security,sync}/`。
+
+### 2. Signatures
+
+```dart
+// 共享应用边界（context-free）
+UpdateCheckCoordinator({
+  UpdateCheckGateway? gateway,
+  Future<void> Function(Duration)? delay,
+  Set<String>? sessionCheckedPurposes,
+});
+Future<UpdateCheckOutcome> checkAuto({
+  required String purpose,
+  Duration delay = Duration.zero,
+});
+Future<UpdateCheckOutcome> checkManual({String? knownCurrentVersion});
+// UpdateCheckOutcome: UpdateCheckAvailable(info, currentVersion) | UpdateCheckUpToDate |
+//                    UpdateCheckFailure(error) | UpdateCheckSkipped
+
+PermissionCoordinator({statusOf, request, isHarmonyOS});
+Future<PermissionSnapshot> checkAll(); // storage/photos/notification + grantedCount/isAllGranted/summary
+Future<bool> isStorageGranted();
+Future<PermissionRequestOutcome> requestPermission(Permission permission);
+// PermissionRequestOutcome: granted | denied | permanentlyDenied
+
+SaveSyncCoordinator();
+Future<SaveSyncDecision> decideAfterSave(SyncProvider provider);
+bool shouldAutoSync(SyncProvider provider);
+// SaveSyncDecision: SaveSyncAutoSync | SaveSyncPending(pendingCount) | SaveSyncSaved
+
+ExportPathResolver({
+  bool Function()? isAndroid,
+  Future<bool> Function()? isManageExternalStorageGranted,
+  Future<Directory> Function()? applicationDocumentsDirectory,
+  Future<Directory?> Function()? externalStorageDirectory,
+});
+Future<Directory> resolve();
+
+SyncStatusFormatter();
+String? formatPlatform(String? platform);
+String formatTime(DateTime time); // settings 风格，分钟不补零
+String formatTimePadded(DateTime time); // sync_settings 风格，分钟补零
+String formatLastSyncLine(DateTime at, String? platform, {required bool padMinutes});
+String formatCompactStatus(SyncTrustSnapshot snapshot); // 7 状态文案
+SyncStatusCardText buildStatusCard(SyncTrustSnapshot snapshot); // title + lines
+```
+
+```dart
+// 页面边界控制器（owned/injected，页面负责 UI 翻译）
+MomentsTimelineController({DateTime? initialDate, DateTime Function()? clock});
+// indexForDate/dateForIndex/pageForRulerOffset/rulerOffsetForPage/isSameDay/selectDate
+// shouldProcessRulerScroll/rulerScrollEnded/shouldProcessPageScroll/pageScrollEnded
+MomentIndex.build(List<Moment> moments); // momentsForDate/imageCountForDate/latest
+MomentSendPipeline({
+  required MomentService momentService,
+  required bool Function() canUseProFeatures,
+  required int Function() todayMomentCount,
+});
+Future<MomentSendResult> send({
+  required String content,
+  List<File> images = const [],
+  String? audioPath,
+  String? audioTitle,
+  int? audioDuration,
+});
+MomentAudioController({
+  required String? audioPath,
+  required String? baseDir,
+  Duration? initialDuration,
+  MomentAudioGateway? gateway,
+  String Function(String, String)? pathJoiner,
+});
+void initialize(); Future<MomentAudioToggleResult> toggle(); void dispose();
+MomentRecorderController({MomentRecorderGateway? gateway, Stream<void>? tickStream});
+void initialize();
+Future<MomentRecorderResult> start();
+Future<MomentRecorderResult> stop();
+Future<MomentRecorderResult> cancel();
+void deleteAudio();
+Future<MomentRecorderResult> togglePreview();
+void clearAfterSend();
+void dispose();
+
+DiaryTimelineLayoutBuilder.build({required List<DiaryTimelineInput> items, required double width});
+// -> DiaryTimelineLayout(units, monthTargetMap, itemYearMap)；列数 >1100→3 / >700→2 / 其余→1
+DiaryAnnouncementCoordinator({DiaryAnnouncementGateway? gateway});
+Future<DiaryAnnouncementOutcome> prepare(); // Pending(currentVersion) | None | Failure
+Future<DiaryAnnouncementOutcome> resolve(DiaryAnnouncementPending pending); // Show(info) | None | Failure
+
+SyncSettingsFormController({required SyncConfig config}); // owns exactly 8 TextEditingController
+void hydrate(SyncConfig config);
+SyncConfig buildConfig({required SyncConfig base, required bool enabled});
+bool validate();
+Future<SyncFormActionOutcome> saveAndTest(SyncProviderGateway gateway);
+Future<SyncFormActionOutcome> disableSync(SyncProviderGateway gateway);
+// manual sync remains in SyncSettingsPage because SyncUiCoordinator owns BuildContext/UI feedback.
+
+LockController({LockAuthGateway? gateway, LockScreenMode mode = LockScreenMode.unlock});
+Future<void> initialize();
+PinKeyResult appendDigit(String value);
+PinKeyResult delete();
+Future<LockSubmitResult> submit();
+Future<LockBiometricResult> authenticateBiometric();
+void setUseBiometric(bool value);
+void dispose();
+
+UpdateDownloadController({UpdateDownloadGateway? gateway});
+Future<void> start(UpdateInfo info);
+void cancel();
+Future<void> install();
+Future<bool> fallback(UpdateInfo info, {bool useBackup = false});
+void dispose();
+// state: UpdateDownloadState{phase, received, total, path, error, installMessage, progress}
+
+SettingsPermissionController({SettingsPermissionGateway? gateway}); // load/request/isHarmonyOS
+SettingsStorageController({required SettingsStorageGateway gateway}); // load/clean*/formatSize/dispose
+SettingsUpdateController({UpdateCheckCoordinator? coordinator}); // manualCheck/currentVersion/checking/dispose
+```
+
+### 3. Contracts
+
+- **Application 边界不持有 BuildContext。** `UpdateCheckCoordinator`、`PermissionCoordinator`、`SaveSyncCoordinator`、`ExportPathResolver`、`SyncStatusFormatter` 以及全部页面控制器只返回 typed outcome / snapshot / 状态流，不构建 Widget、不弹 Toast/Dialog、不导航。
+- **页面翻译 UI intent。** Toast、Dialog、Navigator、错误动画、`openAppSettings` 等留在页面或 presentation 协调器（`SyncUiCoordinator`）。页面是薄壳：装配 section、绑定状态、翻译 typed 结果。
+- **owned / injected dispose。** Widget/Page 自建的控制器由自身 `dispose()`；外部注入的控制器仍由注入方释放。控制器内部创建的 TextEditingController、Timer、AudioPlayer/Recorder、CancelToken 与订阅必须全部释放；应用级共享的 SyncProvider、UpdateService、AuthService 不由页面控制器释放。
+- **Provider 不替换。** 跨页响应式状态仍在 `SyncProvider` / `DiaryProvider` / `SettingsProvider`；控制器经构造或 Provider 获取，不新增状态管理库，不为短生命周期状态新增 Provider。
+- **动态主题 Map 留在页面。** 拆分出的控制器与纯函数不读取 `AppTheme.getXxxTheme()`；主题 Map 强转属于阶段 5 范围，本阶段不迁移。
+- **<1000 行约束。** 页面超过 1000 行必须先拆分再增加行为。当前基线：settings 944、moments 907、diary_list 881、sync_settings 764、editor 581。
+- **去重语义已定义。** `UpdateCheckCoordinator.checkAuto` 对同一 purpose 开始即置位、失败回滚；这有意修复 Moments 失败后永久跳过，并把 DiaryList 自动检查收敛为进程内一次。`SaveSyncCoordinator` 三分支与 `SyncStatusFormatter` 的全部 `SyncTrustState` 文案必须保持当前测试契约。
+- 新类型直接落入所属 feature；通用类型只有出现多个真实消费方时才进入 shared/core（本阶段 `ExportPathResolver` 为 `features/export/`，无新 shared 层）。
+
+### 4. Validation & Error Matrix
+
+| Condition | Required behavior |
+|---|---|
+| 自动更新检查期间重复触发同一 purpose | 返回 `UpdateCheckSkipped`，不重复网络请求 |
+| 自动更新检查网络异常 | 返回 `UpdateCheckFailure` 并回滚去重标记，不永久锁死后续检查 |
+| 手动检查不受去重限制 | `checkManual` 总是执行并返回 `UpdateCheckUpToDate` / `UpdateCheckAvailable` / `UpdateCheckFailure` |
+| 权限请求被永久拒绝 | 返回 `permanentlyDenied`，页面提示跳系统设置 |
+| 权限请求被拒绝（可再请求） | 返回 `denied`，页面保留重试入口 |
+| 保存后启用自动同步 | 返回 `SaveSyncAutoSync`，页面展示准备文案并走通知权限 + `requestAutoSync` |
+| 保存后未启用自动同步但 pending>0 | 返回 `SaveSyncPending(pendingCount)`，页面提示 N 项待同步 |
+| 保存后无待同步内容 | 返回 `SaveSyncSaved`，仅提示保存成功 |
+| Android 且存储已授权 | 导出目录为 `/storage/emulated/0/Pictures/PaperWhisper` |
+| Android 未授权 | 外部目录 `Exports`，无则 documents `Exports` 兜底 |
+| 非 Android | documents `PaperWhisper_Exports` |
+| PIN setup 两次不一致 | `LockMismatch`，重置回 setup 模式并清空输入 |
+| 下载中取消 | 回 idle 并取消 CancelToken，后台工作不越过 dialog 生命周期 |
+| 录音被拒权限 | `MomentRecorderPermissionDenied`，页面提示，不崩溃 |
+| 播放文件缺失 | `MomentAudioToggleMissing`，页面提示 `音频文件丢失`，不抛未处理异步异常 |
+| UpdateDialog 错误态且 changelog 很长 | 操作区可滚动，360×600 视口不得 RenderFlex overflow |
+
+### 5. Good / Base / Bad Cases
+
+- Good: 用户在设置页手动检查更新 → `checkManual` 返回 `UpdateCheckAvailable` → 页面打开 `UpdateDialog` → 下载阶段经 `UpdateDownloadController` 状态流驱动进度条，取消后回 idle。
+- Base: 随心记发送成功后 `MomentSendPipeline` 返回成功 → 页面刷新列表并调用 `SaveSyncCoordinator.decideAfterSave` → 按三分支展示对应 Toast。
+- Bad: 把 `BuildContext`、Toast、Navigator、`GlobalKey` 移入协调器/控制器以压缩页面行数；或页面直接 new `UpdateService()` 绕过注入。
+
+### 6. Tests Required
+
+- 协调器/纯函数单元测试：`test/features/{update,permissions,sync,export}/` — 去重回滚、权限三分支、SaveSync 三分支、导出路径三分支、Formatter 全部状态文案。
+- 页面控制器测试：`test/features/{moments,diary,sync_settings,security,settings}/` — 日期换算、index 分组、send pipeline 额度、表单校验、Lock PIN 状态机、录音/播放状态流。
+- 页面行为刻画测试：`test/pages/{settings,moments,diary_list}_page_test.dart` + `test/widgets/sync_settings_page_test.dart` — 主链路交互断言。
+- 双平台 widget smoke：14 个文件覆盖 `TargetPlatform.android` 与桌面视口，断言 `tester.takeException()` 为 null。
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```dart
+// 协调器里弹 Toast / 持有 context
+class UpdateCheckCoordinator {
+  final BuildContext context; // ❌
+  Future<void> check() async {
+    final info = await UpdateService().checkForUpdate();
+    if (info == null) {
+      ScaffoldMessenger.of(context).showSnackBar(...); // ❌
+    }
+  }
+}
+```
+
+#### Correct
+
+```dart
+await Future<void>.delayed(const Duration(seconds: 2));
+if (!mounted) return; // delay 后、网络请求前检查页面生命周期
+
+final outcome = await updateCoordinator.checkAuto(purpose: 'moments');
+if (!mounted) return;
+switch (outcome) {
+  case UpdateCheckAvailable(:final info, :final currentVersion):
+    showUpdateDialog(context, info, currentVersion); // 页面翻译
+  case UpdateCheckUpToDate():
+  case UpdateCheckFailure():
+  case UpdateCheckSkipped():
+    break;
+}
+```
+
+---
+
 ## Real Code Examples
 
 - [`editor_page.dart`](../../paper_whisper_flutter/lib/pages/editor_page.dart) — compatibility shell that owns route/lifecycle/UI intent translation and composes editor feature boundaries

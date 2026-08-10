@@ -25,12 +25,32 @@ paper_whisper_flutter/
 │   ├── features/               # Feature-first boundaries for extracted domains
 │   │   ├── sync/
 │   │   │   ├── data/           # Config/scope/trust persistence
-│   │   │   ├── application/    # Runner, trust, progress, scheduling
-│   │   │   └── presentation/   # Notification and UI coordinators
-│   │   └── editor/
-│   │       ├── data/           # Export stitching/path/file persistence
-│   │       ├── application/    # Session and save coordination
-│   │       └── presentation/   # Editor-specific widgets and painters
+│   │   │   ├── application/    # Runner, trust, progress, scheduling, save-sync policy
+│   │   │   └── presentation/   # Notification, UI coordinators, status formatter
+│   │   ├── editor/
+│   │   │   ├── data/           # Export stitching/path/file persistence
+│   │   │   ├── application/    # Session and save coordination
+│   │   │   └── presentation/   # Editor-specific widgets and painters
+│   │   ├── export/             # Cross-page export directory resolution
+│   │   │   └── data/           # ExportPathResolver
+│   │   ├── permissions/        # Cross-page permission state/request
+│   │   │   └── application/    # PermissionCoordinator
+│   │   ├── update/             # Update check and download state machines
+│   │   │   └── application/    # UpdateCheckCoordinator, UpdateDownloadController
+│   │   ├── settings/           # Settings page sections
+│   │   │   ├── application/    # Permission/storage/update controllers
+│   │   │   └── presentation/   # Section and primitive widgets
+│   │   ├── moments/            # Moments timeline/index/send pipeline
+│   │   │   ├── application/    # MomentsTimelineController, MomentIndex, MomentSendPipeline, audio/recorder controllers
+│   │   │   └── presentation/   # Desktop/search/empty/limit widgets, waterfall
+│   │   ├── diary/              # Diary list timeline/announcement
+│   │   │   ├── application/    # DiaryTimelineLayoutBuilder, DiaryAnnouncementCoordinator, filter
+│   │   │   └── presentation/   # Empty state, update dialog widgets
+│   │   ├── sync_settings/      # Sync configuration form
+│   │   │   ├── application/    # SyncSettingsFormController
+│   │   │   └── presentation/   # Form/status widgets
+│   │   └── security/           # Lock screen state machine
+│   │       └── application/    # LockController
 │   ├── models/                 # Plain Dart data classes
 │   │   ├── diary_entry.dart    # DiaryEntry (file-based serialization)
 │   │   ├── moment.dart         # Moment (JSON serialization)
@@ -76,7 +96,7 @@ paper_whisper_flutter/
 ### Rules for new and extracted features:
 
 1. **Feature-owned code** goes directly under `features/<feature>/{data,application,presentation}`; do not stage it in `services/` or `widgets/` for a later move.
-2. **Compatibility page shells** may remain in `pages/` while imports migrate. A page owns route/lifecycle/UI intent translation and composes feature presentation widgets; application and I/O logic belong to the feature.
+2. **Compatibility page shells** may remain in `pages/` while imports migrate. A page owns route/lifecycle/UI intent translation and composes feature presentation widgets; application and I/O logic belong to the feature. `settings_page.dart`、`moments_page.dart`、`diary_list_page.dart`、`sync_settings_page.dart` 已是薄壳（944/907/881/764 行），只装配 section、绑定状态、翻译 typed outcome，不再实现更新/权限/保存后同步/导出路径等横切逻辑。
 3. **Cross-feature reusable widgets** stay in `widgets/`; feature-specific widgets stay in `features/<feature>/presentation/widgets/`.
 4. **Shared data models** stay in `models/`; a model used by one feature only may live under that feature.
 5. **Global reactive state** stays in `providers/`. Local controllers and short-lived state belong to feature application/presentation code, not a new Provider.
@@ -109,6 +129,9 @@ paper_whisper_flutter/
 ## Examples
 
 - **Feature application boundary**: [`editor_session_controller.dart`](../../paper_whisper_flutter/lib/features/editor/application/editor_session_controller.dart) — owns editor controllers, draft debounce, preview state, and lifecycle without holding BuildContext
+- **Cross-page coordinator**: [`save_sync_coordinator.dart`](../../paper_whisper_flutter/lib/features/sync/application/save_sync_coordinator.dart) — decides save-triggered auto-sync policy as typed outcomes, consumed by the page-level `SyncUiCoordinator`
+- **Pure path resolution**: [`export_path_resolver.dart`](../../paper_whisper_flutter/lib/features/export/data/export_path_resolver.dart) — platform/permission seams resolve the export directory without file writes or BuildContext
+- **Page form controller**: [`sync_settings_form_controller.dart`](../../paper_whisper_flutter/lib/features/sync_settings/application/sync_settings_form_controller.dart) — owns the 8 input controllers, validation, and save/test/disable actions behind a provider gateway seam
 - **Feature data boundary**: [`diary_export_service.dart`](../../paper_whisper_flutter/lib/features/editor/data/diary_export_service.dart) — plans chunks, stitches captures, and writes JPEG output through injectable persistence seams
 - **Feature presentation boundary**: [`editor_body.dart`](../../paper_whisper_flutter/lib/features/editor/presentation/widgets/editor_body.dart) — receives explicit controllers, values, and callbacks while keeping save/sync behavior outside the widget
 - **Shared service**: [`diary_service.dart`](../../paper_whisper_flutter/lib/services/diary_service.dart) — shared file-backed service created at the composition root

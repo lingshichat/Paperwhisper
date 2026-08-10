@@ -189,7 +189,17 @@ final coordinator = SyncUiCoordinator(context);
 await coordinator.runManualSync(context.read<SyncProvider>());
 ```
 
-The future phase-4 `SaveSyncCoordinator` may centralize cross-feature save policy, but it must consume these same context-free provider commands instead of moving UI dependencies back into `SyncProvider`.
+The implemented `SaveSyncCoordinator` centralizes cross-feature save policy in `features/sync/application/save_sync_coordinator.dart`. It consumes the same context-free provider commands instead of moving UI dependencies back into `SyncProvider`:
+
+```dart
+await SyncUiCoordinator(context).handleSaveAutoSync(
+  provider: context.read<SyncProvider>(),
+  savedToast: '日记已保存',
+  preparingToast: '日记已保存，准备同步...',
+);
+```
+
+`SyncUiCoordinator` 内部调用 `SaveSyncCoordinator.decideAfterSave(provider)`，再把 `SaveSyncAutoSync` / `SaveSyncPending(pendingCount)` / `SaveSyncSaved` 翻译为权限请求与既有 Toast。页面不直接重复 pending/auto-sync 判定。
 
 ### UI rules
 
@@ -204,6 +214,24 @@ The future phase-4 `SaveSyncCoordinator` may centralize cross-feature save polic
 - Good: After switching back to a previously synced S3 target, UI returns to `Synced Successfully` with the S3 badge in the success line
 - Base: A brand new WebDAV target shows `Local Changes Pending` until its first successful sync
 - Bad: UI says `尚有内容待同步` only because the user switched away from and back to a different provider that already had its own clean baseline
+
+## Page Coordinator & Controller Ownership
+
+页面横切职责（更新检查、权限、保存后同步、导出路径）由 `features/{update,permissions,sync,export}/` 下的 context-free 协调器承担，返回 typed outcome（`UpdateCheckOutcome`、`PermissionSnapshot`/`PermissionRequestOutcome`、`SaveSyncDecision`、`Directory`）。它们不持有 BuildContext，页面负责 Toast/Dialog/Navigator 翻译。
+
+短生命周期控制器属于 feature application 层或页面自身，**不为它们新增 Provider**：
+
+| 控制器 | 归属 | 生命周期 |
+|---|---|---|
+| `MomentsTimelineController` | `features/moments/application/` | 页面 owned，释放 Page/Ruler controllers |
+| `MomentIndex` / `MomentSendPipeline` | `features/moments/application/` | 纯索引 / 单次动作对象，无 Widget 生命周期 |
+| `DiaryTimelineLayoutBuilder` / `DiaryAnnouncementCoordinator` | `features/diary/application/` | 纯函数 / 页面 owned |
+| `SyncSettingsFormController` | `features/sync_settings/application/` | 页面 owned，持有 8 个输入 Controller |
+| `LockController` | `features/security/application/` | 页面 owned |
+| `UpdateDownloadController` / `SettingsUpdateController` 等 | `features/{update,settings}/application/` | 页面 owned，随 dialog/页面销毁 |
+| `MomentAudioController` / `MomentRecorderController` | `features/moments/application/` | 组件 owned，`dispose()` 释放播放器/录音器 |
+
+Ownership rule: Widget/Page 自建的控制器由自身 `dispose()`；外部注入的控制器由注入方释放。控制器内部创建的 TextEditingController、Timer、AudioPlayer/Recorder、CancelToken 与订阅必须全部释放；应用级共享的 SyncProvider、UpdateService、AuthService 不由页面控制器释放。
 
 ---
 
