@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../config/app_theme.dart';
+import '../config/theme/theme_registry.dart';
+import '../config/theme/components/statistics_theme_data.dart';
 
 /// 拟物化统计卡片
 /// 根据主题展示不同的质感效果
@@ -24,7 +26,7 @@ class SkeuomorphicStatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeConfig = AppTheme.getStatisticsTheme(theme);
+    final themeConfig = ThemeRegistry.get(theme).statistics;
 
     return GestureDetector(
       onTap: onTap,
@@ -44,7 +46,7 @@ class SkeuomorphicStatCard extends StatelessWidget {
               style: GoogleFonts.notoSerifSc(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
-                color: themeConfig['textColor'],
+                color: themeConfig.textColor,
               ),
             ),
             const SizedBox(height: 4),
@@ -53,7 +55,7 @@ class SkeuomorphicStatCard extends StatelessWidget {
               label,
               style: GoogleFonts.notoSerifSc(
                 fontSize: 13,
-                color: themeConfig['secondaryTextColor'],
+                color: themeConfig.secondaryTextColor,
               ),
             ),
           ],
@@ -63,8 +65,8 @@ class SkeuomorphicStatCard extends StatelessWidget {
   }
 
   /// 构建卡片装饰
-  BoxDecoration _buildCardDecoration(Map<String, dynamic> themeConfig) {
-    final baseDecoration = themeConfig['cardBackground'] as BoxDecoration;
+  BoxDecoration _buildCardDecoration(StatisticsThemeData themeConfig) {
+    final baseDecoration = themeConfig.cardBackground;
 
     // 根据主题添加特殊效果
     if (theme == AppTheme.themeDefault) {
@@ -150,7 +152,7 @@ class SkeuomorphicStatCard extends StatelessWidget {
   }
 
   /// 构建图标徽章
-  Widget _buildIconBadge(Map<String, dynamic> themeConfig) {
+  Widget _buildIconBadge(StatisticsThemeData themeConfig) {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: _buildBadgeDecoration(),
@@ -253,7 +255,7 @@ class SkeuomorphicScrollBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeConfig = AppTheme.getStatisticsTheme(theme);
+    final themeConfig = ThemeRegistry.get(theme).statistics;
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
@@ -274,7 +276,7 @@ class SkeuomorphicScrollBanner extends StatelessWidget {
                       Icons.local_fire_department,
                       color: days > 0
                           ? const Color(0xFFFF6B35)
-                          : themeConfig['secondaryTextColor'],
+                          : themeConfig.secondaryTextColor,
                       size: 32,
                     ),
                     const SizedBox(width: 12),
@@ -283,7 +285,7 @@ class SkeuomorphicScrollBanner extends StatelessWidget {
                       style: GoogleFonts.notoSerifSc(
                         fontSize: 48,
                         fontWeight: FontWeight.bold,
-                        color: themeConfig['textColor'],
+                        color: themeConfig.textColor,
                         shadows: days > 0
                             ? [
                                 Shadow(
@@ -300,7 +302,7 @@ class SkeuomorphicScrollBanner extends StatelessWidget {
                       '天',
                       style: GoogleFonts.notoSerifSc(
                         fontSize: 18,
-                        color: themeConfig['secondaryTextColor'],
+                        color: themeConfig.secondaryTextColor,
                       ),
                     ),
                   ],
@@ -310,7 +312,7 @@ class SkeuomorphicScrollBanner extends StatelessWidget {
                   message,
                   style: GoogleFonts.notoSerifSc(
                     fontSize: 14,
-                    color: themeConfig['secondaryTextColor'],
+                    color: themeConfig.secondaryTextColor,
                     fontStyle: FontStyle.italic,
                   ),
                   textAlign: TextAlign.center,
@@ -326,7 +328,7 @@ class SkeuomorphicScrollBanner extends StatelessWidget {
     );
   }
 
-  BoxDecoration _buildScrollDecoration(Map<String, dynamic> themeConfig) {
+  BoxDecoration _buildScrollDecoration(StatisticsThemeData themeConfig) {
     if (theme == AppTheme.themeDefault) {
       // Vintage: 羊皮纸卷轴
       return BoxDecoration(
@@ -357,15 +359,15 @@ class SkeuomorphicScrollBanner extends StatelessWidget {
 
     // 其他主题使用玻璃效果
     return BoxDecoration(
-      color: themeConfig['cardBackground'].color?.withValues(alpha: 0.8) ??
+      color: themeConfig.cardBackground.color?.withValues(alpha: 0.8) ??
           Colors.white.withValues(alpha: 0.1),
       borderRadius: BorderRadius.circular(16),
-      border: themeConfig['cardBorder'],
-      boxShadow: [themeConfig['cardShadow']],
+      border: themeConfig.cardBorder,
+      boxShadow: [themeConfig.cardShadow],
     );
   }
 
-  Widget _buildScrollEnd(Map<String, dynamic> themeConfig, {required bool isLeft}) {
+  Widget _buildScrollEnd(StatisticsThemeData themeConfig, {required bool isLeft}) {
     if (theme == AppTheme.themeDefault) {
       // Vintage: 木质卷轴轴头
       return Container(
@@ -401,7 +403,7 @@ class SkeuomorphicScrollBanner extends StatelessWidget {
       width: 4,
       height: 60,
       decoration: BoxDecoration(
-        color: themeConfig['accentColor'].withValues(alpha: 0.5),
+        color: themeConfig.accentColor.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(2),
       ),
     );

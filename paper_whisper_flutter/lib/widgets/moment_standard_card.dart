@@ -5,7 +5,7 @@ import 'package:path/path.dart' as path;
 import 'package:provider/provider.dart';
 import '../models/moment.dart';
 import '../providers/settings_provider.dart';
-import '../config/app_theme.dart';
+import '../config/theme/theme_registry.dart';
 
 class MomentStandardCard extends StatelessWidget {
   final Moment moment;
@@ -28,11 +28,11 @@ class MomentStandardCard extends StatelessWidget {
 
     final settings = Provider.of<SettingsProvider>(context);
     final theme = settings.currentTheme;
-    final tc = AppTheme.getMomentStandardCardTheme(theme);
+    final cardTheme = ThemeRegistry.get(theme).momentStandardCard;
 
-    final Color cardBg = tc['cardBg'] as Color;
-    final Color textColor = tc['textColor'] as Color;
-    final Color metaColor = tc['metaColor'] as Color;
+    final Color cardBg = cardTheme.cardBg;
+    final Color textColor = cardTheme.textColor;
+    final Color metaColor = cardTheme.metaColor;
 
     return Container(
       width: 400, // Fixed width for export consistency

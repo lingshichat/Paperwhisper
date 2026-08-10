@@ -1,6 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import '../config/app_theme.dart';
+import '../config/theme/theme_registry.dart';
 import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart';
 
@@ -22,15 +22,15 @@ class PaperSheetWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context);
     final theme = settings.currentTheme;
-    final tc = AppTheme.getPaperSheetTheme(theme);
+    final tc = ThemeRegistry.get(theme).paperSheet;
 
     // 从主题配置中读取样式
-    final Color paperColor = tc['paperColor'] as Color;
-    final Color accentColor = tc['accentColor'] as Color;
-    final BoxBorder border = tc['border'] as BoxBorder;
-    final List<BoxShadow> shadows = tc['shadows'] as List<BoxShadow>;
-    final double borderRadius = tc['borderRadius'] as double;
-    final bool useGlassEffect = tc['useGlassEffect'] as bool;
+    final Color paperColor = tc.paperColor;
+    final Color accentColor = tc.accentColor;
+    final BoxBorder border = tc.border;
+    final List<BoxShadow> shadows = tc.shadows;
+    final double borderRadius = tc.borderRadius;
+    final bool useGlassEffect = tc.useGlassEffect;
 
     Widget paperContent = Container(
       width: width,

@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../services/hitokoto_service.dart';
 import '../config/app_theme.dart';
+import '../config/theme/theme_registry.dart';
 import '../app/navigation/app_routes.dart';
 import '../providers/settings_provider.dart';
 import '../widgets/skeuomorphic_search_bar.dart';
@@ -78,17 +79,17 @@ class _SidebarWidgetState extends State<SidebarWidget> {
     );
 
     // Theme Configs
-    final config = AppTheme.getSidebarTheme(theme);
-    BoxDecoration bgDecor = config['bgDecoration'];
-    Color textColor = config['textColor'];
-    Color activeTextColor = config['activeTextColor'];
-    Color subTextColor = config['subTextColor'];
-    Color hitokotoBackgroundColor = config['hitokotoBackgroundColor'];
-    Color hitokotoBorderColor = config['hitokotoBorderColor'];
-    Color dividerColor = config['dividerColor'];
-    Color pillColor = config['pillColor'];
-    List<BoxShadow> pillShadows = config['pillShadows'];
-    BoxBorder? pillBorder = config['pillBorder'];
+    final config = ThemeRegistry.get(theme).sidebar;
+    BoxDecoration bgDecor = config.bgDecoration;
+    Color textColor = config.textColor;
+    Color activeTextColor = config.activeTextColor;
+    Color subTextColor = config.subTextColor;
+    Color hitokotoBackgroundColor = config.hitokotoBackgroundColor;
+    Color hitokotoBorderColor = config.hitokotoBorderColor;
+    Color dividerColor = config.dividerColor;
+    Color pillColor = config.pillColor;
+    List<BoxShadow> pillShadows = config.pillShadows;
+    BoxBorder? pillBorder = config.pillBorder;
 
     final bool prefersBlur =
         theme == AppTheme.themeSeaFlower ||
@@ -188,13 +189,13 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         decoration: BoxDecoration(
                           // Solid-like look but with gradient to simulate lighting (Bevel)
-                          gradient: config['buttonGradient'],
+                          gradient: config.buttonGradient,
 
                           // Rounded Corners (Restore)
                           borderRadius: BorderRadius.circular(10),
 
                           boxShadow: [
-                            config['buttonShadow'] as BoxShadow? ??
+                            config.buttonShadow ??
                                 BoxShadow(
                                   color: Colors.black.withValues(alpha: 0.3),
                                   offset: const Offset(0, 3), // Bottom shadow

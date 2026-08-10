@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/services.dart'; // For HapticFeedback
-import '../config/app_theme.dart';
+import '../config/theme/theme_registry.dart';
 import '../providers/settings_provider.dart';
 import 'skeuomorphic_dialog.dart';
 
@@ -96,17 +96,17 @@ class _SkeuomorphicDatePickerState extends State<SkeuomorphicDatePicker> {
   @override
   Widget build(BuildContext context) {
     final theme = Provider.of<SettingsProvider>(context).currentTheme;
-    final tc = AppTheme.getDatePickerTheme(theme);
+    final tc = ThemeRegistry.get(theme).datePicker;
 
     // Theme Colors
-    final Color dialogBg = tc['dialogBg'] as Color;
-    final Color headerBg = tc['headerBg'] as Color;
-    final Color headerText = tc['headerText'] as Color;
-    final Color bodyText = tc['bodyText'] as Color;
-    final Color accentColor = tc['accentColor'] as Color;
-    final Color weekDayColor = tc['weekDayColor'] as Color;
-    final BoxBorder? border = tc['border'] as BoxBorder?;
-    final List<BoxShadow> shadows = tc['shadows'] as List<BoxShadow>;
+    final Color dialogBg = tc.dialogBg;
+    final Color headerBg = tc.headerBg;
+    final Color headerText = tc.headerText;
+    final Color bodyText = tc.bodyText;
+    final Color accentColor = tc.accentColor;
+    final Color weekDayColor = tc.weekDayColor;
+    final BoxBorder border = tc.border;
+    final List<BoxShadow> shadows = tc.shadows;
 
     return Dialog(
       backgroundColor: Colors.transparent,

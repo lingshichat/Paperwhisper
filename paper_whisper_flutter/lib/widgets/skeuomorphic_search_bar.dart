@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../config/app_theme.dart';
+import '../config/theme/theme_registry.dart';
 import '../providers/settings_provider.dart';
 
 class SkeuomorphicSearchBar extends StatefulWidget {
@@ -58,11 +59,10 @@ class _SkeuomorphicSearchBarState extends State<SkeuomorphicSearchBar> {
     final theme = Provider.of<SettingsProvider>(context).currentTheme;
 
     // Theme Configuration
-    final themeConfig = AppTheme.getSearchTheme(theme);
+    final searchTheme = ThemeRegistry.get(theme).search;
 
-    Color bgColor = themeConfig.isNotEmpty
-        ? themeConfig['bgColor']
-        : (theme == AppTheme.themeSeaFlower
+    Color bgColor = searchTheme.bgColor
+        ?? (theme == AppTheme.themeSeaFlower
               ? const Color(0xFFF8BBD0).withValues(alpha: 0.3)
               : (theme == AppTheme.themeMidnight
                     ? const Color(0xFF010409)
@@ -71,9 +71,8 @@ class _SkeuomorphicSearchBarState extends State<SkeuomorphicSearchBar> {
                           : (theme == AppTheme.themeTwilight
                                 ? const Color(0xFF352044).withValues(alpha: 0.4)
                                 : const Color(0xFF2D1E1B)))));
-    Color textColor = themeConfig.isNotEmpty
-        ? themeConfig['textColor']
-        : (theme == AppTheme.themeSeaFlower
+    Color textColor = searchTheme.textColor
+        ?? (theme == AppTheme.themeSeaFlower
               ? const Color(0xFF880E4F)
               : (theme == AppTheme.themeMidnight
                     ? const Color(0xFFc9d1d9)
@@ -82,9 +81,8 @@ class _SkeuomorphicSearchBarState extends State<SkeuomorphicSearchBar> {
                           : (theme == AppTheme.themeTwilight
                                 ? const Color(0xFFE4E0EC)
                                 : const Color(0xFFD7CCC8)))));
-    Color hintColor = themeConfig.isNotEmpty
-        ? themeConfig['hintColor']
-        : (theme == AppTheme.themeSeaFlower
+    Color hintColor = searchTheme.hintColor
+        ?? (theme == AppTheme.themeSeaFlower
               ? const Color(0xFFAD1457).withValues(alpha: 0.5)
               : (theme == AppTheme.themeMidnight
                     ? const Color(0xFF8b949e)
@@ -93,9 +91,8 @@ class _SkeuomorphicSearchBarState extends State<SkeuomorphicSearchBar> {
                           : (theme == AppTheme.themeTwilight
                                 ? const Color(0xFFE4E0EC).withValues(alpha: 0.5)
                                 : const Color(0xFFA1887F)))));
-    Color iconColor = themeConfig.isNotEmpty
-        ? themeConfig['iconColor']
-        : (theme == AppTheme.themeSeaFlower
+    Color iconColor = searchTheme.iconColor
+        ?? (theme == AppTheme.themeSeaFlower
               ? const Color(0xFF880E4F)
               : (theme == AppTheme.themeMidnight
                     ? const Color(0xFF7986cb)
@@ -104,9 +101,8 @@ class _SkeuomorphicSearchBarState extends State<SkeuomorphicSearchBar> {
                           : (theme == AppTheme.themeTwilight
                                 ? const Color(0xFFFF5252)
                                 : const Color(0xFFD7CCC8)))));
-    Border? border = themeConfig.isNotEmpty
-        ? themeConfig['border']
-        : (theme == AppTheme.themeSeaFlower
+    Border? border = searchTheme.border
+        ?? (theme == AppTheme.themeSeaFlower
               ? Border.all(color: Colors.white.withValues(alpha: 0.4), width: 1)
               : (theme == AppTheme.themeMidnight
                     ? Border.all(color: Colors.white10)

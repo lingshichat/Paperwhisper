@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../config/app_theme.dart';
+import '../config/theme/theme_registry.dart';
 import '../providers/settings_provider.dart';
 
 /// 拟物风格 Toast 工具类
@@ -40,22 +41,20 @@ class SkeuomorphicToast {
   static _ToastColors _getThemeColors(BuildContext context, _ToastType type) {
     final settings = Provider.of<SettingsProvider>(context, listen: false);
     final theme = settings.currentTheme;
-    final themeConfig = AppTheme.getToastTheme(theme);
+    final themeConfig = ThemeRegistry.get(theme).toast;
+    final style = switch (type) {
+      _ToastType.success => themeConfig.success,
+      _ToastType.error => themeConfig.error,
+      _ToastType.warning => themeConfig.warning,
+      _ToastType.info => themeConfig.info,
+    };
 
-    if (themeConfig.isNotEmpty) {
-      String key;
-      switch (type) {
-        case _ToastType.success: key = 'success'; break;
-        case _ToastType.error: key = 'error'; break;
-        case _ToastType.warning: key = 'warning'; break;
-        case _ToastType.info: key = 'info'; break;
-      }
-      final colorMap = themeConfig[key];
+    if (style != null) {
       return _ToastColors(
-        background: colorMap['bg'],
-        border: colorMap['border'],
-        icon: colorMap['icon'],
-        text: colorMap['text'],
+        background: style.bg,
+        border: style.border,
+        icon: style.icon,
+        text: style.text,
       );
     }
 

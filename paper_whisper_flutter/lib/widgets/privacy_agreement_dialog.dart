@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart';
-import '../config/app_theme.dart';
+import '../config/theme/theme_registry.dart';
 import 'skeuomorphic_dialog.dart';
 import 'skeuomorphic_toast.dart';
 
@@ -24,9 +24,9 @@ class PrivacyAgreementDialog extends StatelessWidget {
     // 获取当前主题颜色用于链接高亮
     final settings = Provider.of<SettingsProvider>(context, listen: false);
     final theme = settings.currentTheme;
-    final tc = AppTheme.getPrivacyDialogTheme(theme);
+    final tc = ThemeRegistry.get(theme).privacyDialog;
 
-    final linkColor = tc['linkColor'] as Color;
+    final linkColor = tc.linkColor;
 
     return PopScope(
       canPop: false, // 禁止返回键关闭
@@ -47,7 +47,7 @@ class PrivacyAgreementDialog extends StatelessWidget {
                 style: GoogleFonts.notoSerifSc(
                   fontSize: 15,
                   height: 1.6,
-                  color: tc['contentTextColor'] as Color,
+                  color: tc.contentTextColor,
                 ),
                 children: [
                   const TextSpan(text: '请您在使用前仔细阅读并同意'),
@@ -73,7 +73,7 @@ class PrivacyAgreementDialog extends StatelessWidget {
               '如您同意以上协议，请点击“同意并继续”开始使用我们的服务。如不同意，很遗憾我们将无法为您提供服务。',
               style: GoogleFonts.notoSerifSc(
                 fontSize: 14,
-                color: tc['disclaimerTextColor'] as Color,
+                color: tc.disclaimerTextColor,
               ),
             ),
           ],

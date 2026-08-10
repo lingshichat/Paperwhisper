@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../config/app_theme.dart';
+import '../config/theme/theme_registry.dart';
 import '../providers/settings_provider.dart';
 
 /// 拟物风格弹窗 - 支持多主题适配
@@ -139,17 +140,17 @@ class SkeuomorphicDialog extends StatelessWidget {
 
   /// 根据主题获取颜色配置
   _DialogColors _getThemeColors(String theme) {
-    final themeConfig = AppTheme.getDialogTheme(theme);
+    final dialogTheme = ThemeRegistry.get(theme).dialog;
     
-    if (themeConfig.isNotEmpty) {
+    if (dialogTheme.paper != null) {
       return _DialogColors(
-        paper: themeConfig['paper'],
-        title: themeConfig['title'],
-        text: themeConfig['text'],
-        icon: themeConfig['icon'],
-        tape: themeConfig['tape'],
-        shadow: themeConfig['shadow'],
-        border: themeConfig['border'],
+        paper: dialogTheme.paper!,
+        title: dialogTheme.title!,
+        text: dialogTheme.text!,
+        icon: dialogTheme.icon!,
+        tape: dialogTheme.tape!,
+        shadow: dialogTheme.shadow!,
+        border: dialogTheme.border,
       );
     } else if (theme == AppTheme.themeMidnight) {
         return _DialogColors(
@@ -294,14 +295,14 @@ class SkeuomorphicDialogButton extends StatelessWidget {
 
   /// 根据主题获取按钮颜色
   _ButtonColors _getButtonColors(String theme) {
-    final themeConfig = AppTheme.getDialogTheme(theme);
+    final dialogTheme = ThemeRegistry.get(theme).dialog;
     
-    if (themeConfig.isNotEmpty) {
+    if (dialogTheme.primaryBtn != null) {
       return _ButtonColors(
-        primary: themeConfig['primaryBtn'],
-        primaryText: themeConfig['primaryBtnText'],
-        primaryShadow: themeConfig['shadow'],
-        secondary: themeConfig['secondaryBtn'],
+        primary: dialogTheme.primaryBtn!,
+        primaryText: dialogTheme.primaryBtnText!,
+        primaryShadow: dialogTheme.shadow!,
+        secondary: dialogTheme.secondaryBtn!,
       );
     } else if (theme == AppTheme.themeMidnight) {
         return _ButtonColors(

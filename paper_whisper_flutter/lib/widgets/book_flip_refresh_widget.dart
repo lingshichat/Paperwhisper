@@ -2,7 +2,7 @@ import 'dart:math' as math;
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../config/app_theme.dart';
+import '../config/theme/theme_registry.dart';
 
 /// 刷新状态
 enum BookRefreshStatus {
@@ -180,10 +180,10 @@ class _BookFlipRefreshWidgetState extends State<BookFlipRefreshWidget>
 
   @override
   Widget build(BuildContext context) {
-    final tc = AppTheme.getRefreshIndicatorTheme(widget.theme);
-    final Color bookColor = tc['bookColor'] as Color;
-    final Color pageColor = tc['pageColor'] as Color;
-    final Color textColor = tc['textColor'] as Color;
+    final refreshTheme = ThemeRegistry.get(widget.theme).refreshIndicator;
+    final Color bookColor = refreshTheme.bookColor;
+    final Color pageColor = refreshTheme.pageColor;
+    final Color textColor = refreshTheme.textColor;
 
     final double progress = (_dragOffset / _triggerOffset).clamp(0.0, 1.0);
 
