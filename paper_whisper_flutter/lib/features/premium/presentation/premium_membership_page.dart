@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import '../services/payment_service.dart';
-import '../widgets/skeuomorphic_toast.dart';
-import '../widgets/stamp_animation.dart';
-import '../widgets/visual_effects.dart'; // PetalRainWidget
-import '../services/analytics_service.dart';
+import 'package:paper_whisper_flutter/services/analytics_service.dart';
+import 'package:paper_whisper_flutter/services/payment_service.dart';
+import 'package:paper_whisper_flutter/widgets/skeuomorphic_toast.dart';
+import 'package:paper_whisper_flutter/widgets/visual_effects.dart';
+
+import 'widgets/stamp_animation.dart';
 
 class PremiumMembershipPage extends StatefulWidget {
   const PremiumMembershipPage({super.key});
@@ -30,11 +31,12 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage> {
 
     // Trigger local state update
     Provider.of<PaymentService>(context, listen: false).markAsSponsor();
-    
+
     // Track Event
-    AnalyticsService().trackEvent('action_donate', metadata: {
-      'source': 'stamp_click',
-    });
+    AnalyticsService().trackEvent(
+      'action_donate',
+      metadata: {'source': 'stamp_click'},
+    );
 
     setState(() {
       _justStamped = true;
@@ -42,10 +44,12 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage> {
 
     // Sound effect could be added here
     HapticFeedback.heavyImpact();
-    
+
     // Delayed toast
     Future.delayed(const Duration(milliseconds: 800), () {
-      if (mounted) SkeuomorphicToast.success(context, '感谢您的支持，PaperWhisper 因您而更有温度！');
+      if (mounted) {
+        SkeuomorphicToast.success(context, '感谢您的支持，PaperWhisper 因您而更有温度！');
+      }
     });
   }
 
@@ -68,8 +72,11 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage> {
       backgroundColor: const Color(0xFF2D2D2D), // The Desk
       appBar: AppBar(
         title: Text(
-          'Developer\'s Letter', 
-          style: GoogleFonts.cinzel(color: const Color(0xFFE0E0E0), fontWeight: FontWeight.bold)
+          'Developer\'s Letter',
+          style: GoogleFonts.cinzel(
+            color: const Color(0xFFE0E0E0),
+            fontWeight: FontWeight.bold,
+          ),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -106,9 +113,9 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage> {
                       child: Column(
                         children: [
                           Icon(
-                            isSponsor ? Icons.favorite : Icons.favorite_border, 
-                            size: 36, 
-                            color: const Color(0xFFB71C1C)
+                            isSponsor ? Icons.favorite : Icons.favorite_border,
+                            size: 36,
+                            color: const Color(0xFFB71C1C),
                           ),
                           const SizedBox(height: 16),
                           Text(
@@ -146,9 +153,16 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Text("支持开发者 (Voluntary Support)", textAlign: TextAlign.center, style: GoogleFonts.notoSerifSc(fontSize: 12, color: Colors.black38)),
+                          Text(
+                            "支持开发者 (Voluntary Support)",
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.notoSerifSc(
+                              fontSize: 12,
+                              color: Colors.black38,
+                            ),
+                          ),
                           const SizedBox(height: 20),
-                          
+
                           // Button: Donate
                           GestureDetector(
                             onTap: _showDonationSheet,
@@ -162,13 +176,17 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage> {
                                     color: Colors.black.withValues(alpha: 0.1),
                                     blurRadius: 4,
                                     offset: const Offset(0, 2),
-                                  )
-                                ]
+                                  ),
+                                ],
                               ),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Icon(Icons.coffee, color: Colors.white, size: 20),
+                                  const Icon(
+                                    Icons.coffee,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
                                   const SizedBox(width: 8),
                                   Text(
                                     "请我喝杯咖啡 / 加个鸡腿",
@@ -192,84 +210,105 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage> {
                     // --- FOOTER / STAMP AREA ---
                     Container(
                       width: double.infinity,
-                      color: const Color(0xFFF0EAE0), // Slightly darker footer area
+                      color: const Color(
+                        0xFFF0EAE0,
+                      ), // Slightly darker footer area
                       padding: const EdgeInsets.all(32),
                       child: Stack(
                         alignment: Alignment.center,
                         children: [
-                           Column(
-                             children: [
-                               Text(
-                                 "PaperWhisper Team", 
-                                 style: GoogleFonts.dancingScript(fontSize: 24, color: const Color(0xFF3E2723))
-                               ),
-                               const SizedBox(height: 16),
-                               if (!showStamp)
-                                 GestureDetector(
-                                   onTap: _handleMarkAsSponsor,
-                                   child: Column(
-                                     children: [
-                                       Text(
-                                         "我已支持 · 点亮勋章",
-                                         style: GoogleFonts.notoSerifSc(
-                                           fontSize: 12,
-                                           color: const Color(0xFFB71C1C),
-                                           fontWeight: FontWeight.bold,
-                                           decoration: TextDecoration.underline
-                                         ),
-                                       ),
-                                        Text(
-                                         "Click here if you supported",
-                                         style: GoogleFonts.cinzel(
-                                           fontSize: 10,
-                                           color: const Color(0xFFB71C1C).withValues(alpha: 0.6),
-                                         ),
-                                       ),
-                                     ],
-                                   ),
-                                 )
-                               else
-                                 Text(
-                                   "THANK YOU",
-                                   style: GoogleFonts.cinzel(
-                                     fontSize: 12,
-                                     color: const Color(0xFF3E2723).withValues(alpha: 0.5),
-                                     letterSpacing: 2
-                                   ),
-                                 )
-                             ],
-                           ),
-                           
-                           // The Stamp
-                           if (showStamp)
-                             Positioned.fill(
-                               child: IgnorePointer(
-                                 child: Transform.translate(
-                                   offset: const Offset(0, -10),
-                                   child: Transform.rotate(
-                                     angle: -0.2,
-                                     child: StampAnimation(
-                                       isStamped: true,
-                                       child: Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                          decoration: BoxDecoration(
-                                            border: Border.all(color: const Color(0xFFB71C1C).withValues(alpha: 0.8), width: 4),
-                                            borderRadius: BorderRadius.circular(8),
+                          Column(
+                            children: [
+                              Text(
+                                "PaperWhisper Team",
+                                style: GoogleFonts.dancingScript(
+                                  fontSize: 24,
+                                  color: const Color(0xFF3E2723),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              if (!showStamp)
+                                GestureDetector(
+                                  onTap: _handleMarkAsSponsor,
+                                  child: Column(
+                                    children: [
+                                      Text(
+                                        "我已支持 · 点亮勋章",
+                                        style: GoogleFonts.notoSerifSc(
+                                          fontSize: 12,
+                                          color: const Color(0xFFB71C1C),
+                                          fontWeight: FontWeight.bold,
+                                          decoration: TextDecoration.underline,
+                                        ),
+                                      ),
+                                      Text(
+                                        "Click here if you supported",
+                                        style: GoogleFonts.cinzel(
+                                          fontSize: 10,
+                                          color: const Color(
+                                            0xFFB71C1C,
+                                          ).withValues(alpha: 0.6),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              else
+                                Text(
+                                  "THANK YOU",
+                                  style: GoogleFonts.cinzel(
+                                    fontSize: 12,
+                                    color: const Color(
+                                      0xFF3E2723,
+                                    ).withValues(alpha: 0.5),
+                                    letterSpacing: 2,
+                                  ),
+                                ),
+                            ],
+                          ),
+
+                          // The Stamp
+                          if (showStamp)
+                            Positioned.fill(
+                              child: IgnorePointer(
+                                child: Transform.translate(
+                                  offset: const Offset(0, -10),
+                                  child: Transform.rotate(
+                                    angle: -0.2,
+                                    child: StampAnimation(
+                                      isStamped: true,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 8,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          border: Border.all(
+                                            color: const Color(
+                                              0xFFB71C1C,
+                                            ).withValues(alpha: 0.8),
+                                            width: 4,
                                           ),
-                                          child: Text(
-                                            'SPONSORED',
-                                            style: GoogleFonts.blackOpsOne(
-                                              fontSize: 32,
-                                              color: const Color(0xFFB71C1C).withValues(alpha: 0.8),
-                                              letterSpacing: 2,
-                                            ),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
                                           ),
-                                       ),
-                                     ),
-                                   ),
-                                 ),
-                               ),
-                             ),
+                                        ),
+                                        child: Text(
+                                          'SPONSORED',
+                                          style: GoogleFonts.blackOpsOne(
+                                            fontSize: 32,
+                                            color: const Color(
+                                              0xFFB71C1C,
+                                            ).withValues(alpha: 0.8),
+                                            letterSpacing: 2,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
                         ],
                       ),
                     ),
@@ -296,9 +335,7 @@ class _DonationBottomSheet extends StatelessWidget {
       decoration: const BoxDecoration(
         color: Color(0xFFF9F4E6), // Paper color
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-        boxShadow: [
-          BoxShadow(blurRadius: 20, color: Colors.black26),
-        ],
+        boxShadow: [BoxShadow(blurRadius: 20, color: Colors.black26)],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -306,15 +343,23 @@ class _DonationBottomSheet extends StatelessWidget {
         children: [
           Center(
             child: Container(
-              width: 40, height: 4, 
-              decoration: BoxDecoration(color: Colors.grey[400], borderRadius: BorderRadius.circular(2))
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[400],
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
           ),
           const SizedBox(height: 24),
           Text(
             "选择支持方式",
             textAlign: TextAlign.center,
-            style: GoogleFonts.notoSerifSc(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF3E2723)),
+            style: GoogleFonts.notoSerifSc(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF3E2723),
+            ),
           ),
           const SizedBox(height: 8),
           Text(
@@ -323,47 +368,67 @@ class _DonationBottomSheet extends StatelessWidget {
             style: GoogleFonts.cinzel(fontSize: 12, color: Colors.black38),
           ),
           const SizedBox(height: 32),
-          
+
           // Alipay
           _buildOption(
             context,
-            icon: Icons.qr_code, 
+            icon: Icons.qr_code,
             color: const Color(0xFF1677FF),
             label: "支付宝 (Alipay)",
             desc: "推荐 · 直接唤起支付宝",
             onTap: () {
               Navigator.pop(context);
-              Provider.of<PaymentService>(context, listen: false).donateViaAlipay();
-            }
+              Provider.of<PaymentService>(
+                context,
+                listen: false,
+              ).donateViaAlipay();
+            },
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // WeChat
           _buildOption(
             context,
-            icon: Icons.chat_bubble_outline, 
+            icon: Icons.chat_bubble_outline,
             color: const Color(0xFF07C160),
             label: "微信支付 (WeChat)",
             desc: "保存二维码 -> 打开微信扫一扫",
             onTap: () async {
               Navigator.pop(context); // Close sheet first
               try {
-                final msg = await Provider.of<PaymentService>(context, listen: false).donateViaWeChat();
-                if (context.mounted) SkeuomorphicToast.success(context, msg);
+                final msg = await Provider.of<PaymentService>(
+                  context,
+                  listen: false,
+                ).donateViaWeChat();
+                if (context.mounted) {
+                  SkeuomorphicToast.success(context, msg);
+                }
               } catch (e) {
-                if (context.mounted) SkeuomorphicToast.error(context, e.toString().replaceAll("Exception: ", ""));
+                if (context.mounted) {
+                  SkeuomorphicToast.error(
+                    context,
+                    e.toString().replaceAll("Exception: ", ""),
+                  );
+                }
               }
-            }
+            },
           ),
-          
+
           const SizedBox(height: 32),
         ],
       ),
     );
   }
 
-  Widget _buildOption(BuildContext context, {required IconData icon, required Color color, required String label, required String desc, required VoidCallback onTap}) {
+  Widget _buildOption(
+    BuildContext context, {
+    required IconData icon,
+    required Color color,
+    required String label,
+    required String desc,
+    required VoidCallback onTap,
+  }) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
@@ -378,7 +443,10 @@ class _DonationBottomSheet extends StatelessWidget {
           children: [
             Container(
               padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
               child: Icon(icon, color: color, size: 24),
             ),
             const SizedBox(width: 16),
@@ -386,12 +454,29 @@ class _DonationBottomSheet extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(label, style: GoogleFonts.notoSerifSc(fontSize: 15, fontWeight: FontWeight.bold, color: const Color(0xFF3E2723))),
-                  Text(desc, style: GoogleFonts.notoSerifSc(fontSize: 11, color: Colors.black45)),
+                  Text(
+                    label,
+                    style: GoogleFonts.notoSerifSc(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF3E2723),
+                    ),
+                  ),
+                  Text(
+                    desc,
+                    style: GoogleFonts.notoSerifSc(
+                      fontSize: 11,
+                      color: Colors.black45,
+                    ),
+                  ),
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.black26),
+            const Icon(
+              Icons.arrow_forward_ios,
+              size: 14,
+              color: Colors.black26,
+            ),
           ],
         ),
       ),

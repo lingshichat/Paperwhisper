@@ -58,7 +58,7 @@
 - **加载进度条**：检查 `LinearProgressIndicator` 的 `color` 属性。
 - **状态栏适配**：同上。
 
-### 2.5 书架目录页面 (`lib/pages/book_directory_page.dart`)
+### 2.5 书架目录页面 (`lib/features/library/presentation/book_directory_page.dart`)
 
 - **标题颜色**：检查 `appBarColor` 的判断逻辑。
 
@@ -151,7 +151,7 @@ lib/pages/diary_list_page.dart
 lib/pages/editor_page.dart
 lib/pages/settings_page.dart
 lib/pages/sync_settings_page.dart
-lib/pages/book_directory_page.dart
+lib/features/library/presentation/book_directory_page.dart
 lib/pages/focus_writing_page.dart
 lib/pages/moments_page.dart
 lib/widgets/paper_sheet_widget.dart

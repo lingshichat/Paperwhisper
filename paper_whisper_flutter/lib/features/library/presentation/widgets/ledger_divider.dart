@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../config/app_theme.dart';
+import 'package:paper_whisper_flutter/config/app_theme.dart';
 
 /// 手账分隔线组件
 /// 模拟手账本中的虚线分隔效果
@@ -26,10 +26,7 @@ class LedgerDivider extends StatelessWidget {
       // 纯虚线
       return CustomPaint(
         size: const Size(double.infinity, 24),
-        painter: _DashedLinePainter(
-          color: color,
-          strokeWidth: thickness,
-        ),
+        painter: _DashedLinePainter(color: color, strokeWidth: thickness),
       );
     }
 
@@ -41,10 +38,7 @@ class LedgerDivider extends StatelessWidget {
           Expanded(
             child: CustomPaint(
               size: const Size(double.infinity, 24),
-              painter: _DashedLinePainter(
-                color: color,
-                strokeWidth: thickness,
-              ),
+              painter: _DashedLinePainter(color: color, strokeWidth: thickness),
             ),
           ),
           Container(
@@ -53,20 +47,13 @@ class LedgerDivider extends StatelessWidget {
             decoration: BoxDecoration(
               color: _getBackgroundColor(),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: color.withValues(alpha: 0.3),
-                width: 1,
-              ),
+              border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (icon != null) ...[
-                  Icon(
-                    icon,
-                    size: 14,
-                    color: color,
-                  ),
+                  Icon(icon, size: 14, color: color),
                   const SizedBox(width: 6),
                 ],
                 if (label != null)
@@ -84,10 +71,7 @@ class LedgerDivider extends StatelessWidget {
           Expanded(
             child: CustomPaint(
               size: const Size(double.infinity, 24),
-              painter: _DashedLinePainter(
-                color: color,
-                strokeWidth: thickness,
-              ),
+              painter: _DashedLinePainter(color: color, strokeWidth: thickness),
             ),
           ),
         ],
@@ -139,11 +123,7 @@ class DecorativeDivider extends StatelessWidget {
   final String theme;
   final String? label;
 
-  const DecorativeDivider({
-    super.key,
-    required this.theme,
-    this.label,
-  });
+  const DecorativeDivider({super.key, required this.theme, this.label});
 
   @override
   Widget build(BuildContext context) {
@@ -178,11 +158,7 @@ class DecorativeDivider extends StatelessWidget {
                       color: color.withValues(alpha: 0.6),
                     ),
                     const SizedBox(width: 8),
-                    Icon(
-                      Icons.star,
-                      size: 12,
-                      color: color,
-                    ),
+                    Icon(Icons.star, size: 12, color: color),
                     const SizedBox(width: 8),
                     Icon(
                       Icons.favorite,
@@ -248,10 +224,7 @@ class _DashedLinePainter extends CustomPainter {
   final Color color;
   final double strokeWidth;
 
-  _DashedLinePainter({
-    required this.color,
-    required this.strokeWidth,
-  });
+  _DashedLinePainter({required this.color, required this.strokeWidth});
 
   @override
   void paint(Canvas canvas, Size size) {

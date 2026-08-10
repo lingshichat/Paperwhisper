@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../config/app_theme.dart';
+import 'package:paper_whisper_flutter/config/app_theme.dart';
 
 /// 火漆印章徽章组件
 /// 用于展示高光数据，如连续写作天数
@@ -246,19 +246,19 @@ class _WaxSealPainter extends CustomPainter {
       ..color = waxColor.withValues(alpha: 0.4)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
-    
+
     final serratedPath = Path();
     const serratedCount = 24;
     for (int i = 0; i < serratedCount; i++) {
       final angle = (i * 2 * math.pi) / serratedCount;
       final innerRadius = radius * 0.88;
       final outerRadius = radius * 0.92;
-      
+
       final x1 = center.dx + innerRadius * math.cos(angle);
       final y1 = center.dy + innerRadius * math.sin(angle);
       final x2 = center.dx + outerRadius * math.cos(angle);
       final y2 = center.dy + outerRadius * math.sin(angle);
-      
+
       if (i == 0) {
         serratedPath.moveTo(x1, y1);
       } else {
@@ -286,7 +286,7 @@ class _WaxSealPainter extends CustomPainter {
     final noisePaint = Paint()
       ..color = waxColor.withValues(alpha: 0.2)
       ..style = PaintingStyle.fill;
-    
+
     final random = math.Random(42);
     for (int i = 0; i < 30; i++) {
       final angle = random.nextDouble() * 2 * math.pi;
