@@ -137,9 +137,7 @@ class EditorExportSurface extends StatelessWidget {
                         child: Container(
                           width: 60,
                           height: 2,
-                          color: tc.cursorColor.withValues(
-                            alpha: 0.5,
-                          ),
+                          color: tc.cursorColor.withValues(alpha: 0.5),
                         ),
                       ),
                       const SizedBox(

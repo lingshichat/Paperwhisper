@@ -27,13 +27,13 @@
 
 ## 二、页面适配清单
 
-### 2.1 日记列表页 (`lib/pages/diary_list_page.dart`)
+### 2.1 日记列表页 (`lib/features/diary/presentation/diary_list_page.dart`)
 
 - **顶部栏 (Header)**：检查 `AppTheme.getMobileHeaderColors()` 是否覆盖新主题。
 - **空状态图标/文字**：检查 `_buildEmptyState()` 方法中的颜色判断。
 - **下拉刷新动画**：见组件适配部分。
 
-### 2.2 编辑器页面 (`lib/pages/editor_page.dart`)
+### 2.2 编辑器页面 (`lib/features/editor/presentation/editor_page.dart`)
 
 - **光标颜色**：检查 `_buildHeader()` 和 `_buildContentArea()` 中的 `cursorColor`。
 - **装饰线颜色**：检查 `_buildAdaptiveContent()` 中的 `color` 定义。
@@ -81,7 +81,7 @@
 
 ## 三、组件适配清单
 
-### 3.1 纸张组件 (`lib/widgets/paper_sheet_widget.dart`)
+### 3.1 纸张组件 (`lib/features/editor/presentation/widgets/paper_sheet_widget.dart`)
 
 - **书签/丝带颜色**：在 `build()` 方法中添加新主题的分支。
 
@@ -95,11 +95,11 @@
 - **图标与光标**：确保 `iconColor` 和 `cursorColor` 使用了主题强调色（如 Musubi Red）。
 - **内发光 (Glow)**：检查 `Stack` 中对于 `gradient` 的定义，确保发光颜色与主题匹配。
 
-### 3.4 下拉刷新 (`lib/widgets/book_flip_refresh_widget.dart`)
+### 3.4 下拉刷新 (`lib/features/diary/presentation/widgets/book_flip_refresh_widget.dart`)
 
 - **书本动画颜色**：`bookColor`, `pageColor`, `textColor`。
 
-### 3.5 月份分割线 (`lib/widgets/month_divider.dart`)
+### 3.5 月份分割线 (`lib/features/diary/presentation/widgets/month_divider.dart`)
 
 - **颜色配置**：`ThemeRegistry.get(theme).monthDivider`。
 
@@ -147,18 +147,18 @@
 
 ```
 lib/config/app_theme.dart
-lib/pages/diary_list_page.dart
-lib/pages/editor_page.dart
+lib/features/diary/presentation/diary_list_page.dart
+lib/features/editor/presentation/editor_page.dart
 lib/pages/settings_page.dart
 lib/pages/sync_settings_page.dart
 lib/features/library/presentation/book_directory_page.dart
 lib/pages/focus_writing_page.dart
 lib/features/moments/presentation/moments_page.dart
-lib/widgets/paper_sheet_widget.dart
+lib/features/editor/presentation/widgets/paper_sheet_widget.dart
 lib/widgets/skeuomorphic_date_picker.dart
 lib/widgets/skeuomorphic_search_bar.dart
-lib/widgets/book_flip_refresh_widget.dart
-lib/widgets/month_divider.dart
+lib/features/diary/presentation/widgets/book_flip_refresh_widget.dart
+lib/features/diary/presentation/widgets/month_divider.dart
 lib/widgets/skeuomorphic_dialog.dart
 lib/app/navigation/route_transitions.dart
 lib/features/moments/presentation/widgets/moment_input_widget.dart

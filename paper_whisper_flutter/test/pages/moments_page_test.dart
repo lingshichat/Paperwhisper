@@ -6,7 +6,7 @@ import 'package:paper_whisper_flutter/config/theme/theme_registry.dart';
 import 'package:paper_whisper_flutter/models/moment.dart';
 import 'package:paper_whisper_flutter/models/sync_config.dart';
 import 'package:paper_whisper_flutter/models/sync_trust_snapshot.dart';
-import 'package:paper_whisper_flutter/pages/diary_list_page.dart';
+import 'package:paper_whisper_flutter/features/diary/presentation/diary_list_page.dart';
 import 'package:paper_whisper_flutter/features/moments/presentation/moments_page.dart';
 import 'package:paper_whisper_flutter/providers/diary_provider.dart';
 import 'package:paper_whisper_flutter/providers/settings_provider.dart';

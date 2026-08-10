@@ -1,25 +1,28 @@
 import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter/rendering.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../providers/diary_provider.dart';
-import '../providers/sync_provider.dart';
-import '../models/diary_entry.dart';
-import '../config/app_theme.dart';
-import '../providers/settings_provider.dart';
-import '../widgets/skeuomorphic_dialog.dart';
-import '../widgets/skeuomorphic_toast.dart';
-import '../services/draft_service.dart'; // Added
-import '../app/navigation/app_routes.dart';
-import '../features/editor/application/editor_save_coordinator.dart';
-import '../features/editor/application/editor_session_controller.dart';
-import '../features/editor/data/diary_export_service.dart';
-import '../features/editor/presentation/widgets/editor_body.dart';
-import '../features/editor/presentation/widgets/editor_export_surface.dart';
-import '../features/editor/presentation/widgets/editor_top_bar.dart';
-import '../features/sync/presentation/sync_ui_coordinator.dart';
-import '../widgets/export_success_dialog.dart';
-import 'package:flutter/rendering.dart'; // For RenderRepaintBoundary
+import 'package:provider/provider.dart';
+
+import 'package:paper_whisper_flutter/app/navigation/app_routes.dart';
+import 'package:paper_whisper_flutter/config/app_theme.dart';
+import 'package:paper_whisper_flutter/features/sync/presentation/sync_ui_coordinator.dart';
+import 'package:paper_whisper_flutter/models/diary_entry.dart';
+import 'package:paper_whisper_flutter/providers/diary_provider.dart';
+import 'package:paper_whisper_flutter/providers/settings_provider.dart';
+import 'package:paper_whisper_flutter/providers/sync_provider.dart';
+import 'package:paper_whisper_flutter/services/draft_service.dart';
+import 'package:paper_whisper_flutter/widgets/export_success_dialog.dart';
+import 'package:paper_whisper_flutter/widgets/skeuomorphic_dialog.dart';
+import 'package:paper_whisper_flutter/widgets/skeuomorphic_toast.dart';
+
+import '../application/editor_save_coordinator.dart';
+import '../application/editor_session_controller.dart';
+import '../data/diary_export_service.dart';
+import 'widgets/editor_body.dart';
+import 'widgets/editor_export_surface.dart';
+import 'widgets/editor_top_bar.dart';
 
 class EditorPage extends StatefulWidget {
   final DiaryEntry? entry;

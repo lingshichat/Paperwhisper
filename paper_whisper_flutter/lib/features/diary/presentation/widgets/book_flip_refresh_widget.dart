@@ -2,27 +2,20 @@ import 'dart:math' as math;
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../config/theme/theme_registry.dart';
+import 'package:paper_whisper_flutter/config/theme/theme_registry.dart';
 
 /// 刷新状态
-enum BookRefreshStatus {
-  idle,
-  pulling,
-  armed,
-  refreshing,
-  done,
-  failed,
-}
+enum BookRefreshStatus { idle, pulling, armed, refreshing, done, failed }
 
 /// 下拉二楼刷新组件
-/// 
+///
 /// 效果：下拉时内容下沉，顶部露出刷新区域展示翻书动画
 class BookFlipRefreshWidget extends StatefulWidget {
   final Widget child;
   final Future<void> Function() onRefresh;
   final String theme;
   final VoidCallback? onLongRefreshTap; // Callback for the link
-  
+
   const BookFlipRefreshWidget({
     super.key,
     required this.child,
@@ -37,7 +30,6 @@ class BookFlipRefreshWidget extends StatefulWidget {
 
 class _BookFlipRefreshWidgetState extends State<BookFlipRefreshWidget>
     with TickerProviderStateMixin {
-  
   // 下拉偏移量
   double _dragOffset = 0.0;
   // 刷新状态
@@ -47,15 +39,16 @@ class _BookFlipRefreshWidgetState extends State<BookFlipRefreshWidget>
   // 回弹动画控制器
   late AnimationController _bounceController;
   late Animation<double> _bounceAnimation;
-  
+
   // Long refresh state
   bool _showLongRefreshLink = false;
   Timer? _longRefreshTimer;
-  
+
   // 阈值
   static const double _triggerOffset = 100.0;
   static const double _maxDragOffset = 180.0;
-  static const double _refreshAreaHeight = 150.0; // Increased height for link space
+  static const double _refreshAreaHeight =
+      150.0; // Increased height for link space
 
   @override
   void initState() {
@@ -66,7 +59,10 @@ class _BookFlipRefreshWidgetState extends State<BookFlipRefreshWidget>
       vsync: this,
     );
     _bounceController = AnimationController(vsync: this);
-    _bounceAnimation = Tween<double>(begin: 0, end: 0).animate(_bounceController);
+    _bounceAnimation = Tween<double>(
+      begin: 0,
+      end: 0,
+    ).animate(_bounceController);
   }
 
   @override
@@ -76,33 +72,33 @@ class _BookFlipRefreshWidgetState extends State<BookFlipRefreshWidget>
     _longRefreshTimer?.cancel();
     super.dispose();
   }
-  
-  // ... (overscroll/scrollEnd untouched logic implicitly via keeping it or see next replace) 
+
+  // ... (overscroll/scrollEnd untouched logic implicitly via keeping it or see next replace)
   // Simplified replacement: I am replacing fields and initState/dispose only here.
   // Wait, I need to modify _startRefresh too. I'll do that in next chunk to be safe.
-  
+
   // ... keeping _onOverscroll and _onScrollEnd same for now ...
-  
-   void _onOverscroll(double overscroll) {
-    if (_status == BookRefreshStatus.refreshing || 
+
+  void _onOverscroll(double overscroll) {
+    if (_status == BookRefreshStatus.refreshing ||
         _status == BookRefreshStatus.done) {
       return;
     }
-    
+
     setState(() {
       _dragOffset = (_dragOffset - overscroll).clamp(0.0, _maxDragOffset);
-      _status = _dragOffset >= _triggerOffset 
-          ? BookRefreshStatus.armed 
+      _status = _dragOffset >= _triggerOffset
+          ? BookRefreshStatus.armed
           : BookRefreshStatus.pulling;
     });
   }
 
   void _onScrollEnd() {
-    if (_status == BookRefreshStatus.refreshing || 
+    if (_status == BookRefreshStatus.refreshing ||
         _status == BookRefreshStatus.done) {
       return;
     }
-    
+
     if (_status == BookRefreshStatus.armed) {
       _startRefresh();
     } else {
@@ -115,7 +111,7 @@ class _BookFlipRefreshWidgetState extends State<BookFlipRefreshWidget>
       _status = BookRefreshStatus.refreshing;
       _showLongRefreshLink = false;
     });
-    
+
     // Start 5s timer
     _longRefreshTimer?.cancel();
     _longRefreshTimer = Timer(const Duration(seconds: 5), () {
@@ -123,18 +119,17 @@ class _BookFlipRefreshWidgetState extends State<BookFlipRefreshWidget>
         setState(() => _showLongRefreshLink = true);
       }
     });
-    
+
     _animateTo(_refreshAreaHeight);
     _pageFlipController.repeat();
-    
+
     try {
       await widget.onRefresh();
       setState(() => _status = BookRefreshStatus.done);
       _pageFlipController.stop();
-      
+
       // 停留展示完成状态
       await Future.delayed(const Duration(milliseconds: 800));
-      
     } catch (e) {
       setState(() => _status = BookRefreshStatus.failed);
       _pageFlipController.stop();
@@ -143,7 +138,7 @@ class _BookFlipRefreshWidgetState extends State<BookFlipRefreshWidget>
       _longRefreshTimer?.cancel();
       _showLongRefreshLink = false;
     }
-    
+
     // 收起
     _animateTo(0);
     await Future.delayed(const Duration(milliseconds: 300));
@@ -156,21 +151,17 @@ class _BookFlipRefreshWidgetState extends State<BookFlipRefreshWidget>
   }
 
   void _animateTo(double target) {
-    _bounceAnimation = Tween<double>(
-      begin: _dragOffset,
-      end: target,
-    ).animate(CurvedAnimation(
-      parent: _bounceController,
-      curve: Curves.easeOutCubic,
-    ));
-    
+    _bounceAnimation = Tween<double>(begin: _dragOffset, end: target).animate(
+      CurvedAnimation(parent: _bounceController, curve: Curves.easeOutCubic),
+    );
+
     _bounceController.duration = const Duration(milliseconds: 300);
     _bounceController.forward(from: 0).then((_) {
       if (mounted) {
         setState(() => _dragOffset = target);
       }
     });
-    
+
     _bounceController.addListener(_onBounceUpdate);
   }
 
@@ -224,7 +215,7 @@ class _BookFlipRefreshWidgetState extends State<BookFlipRefreshWidget>
               ),
             ),
           ),
-          
+
           // 主内容（下移）
           Transform.translate(
             offset: Offset(0, _dragOffset),
@@ -246,7 +237,7 @@ class _RefreshAreaWidget extends StatelessWidget {
   final BookRefreshStatus status;
   final bool showLink;
   final VoidCallback? onLinkTap;
-  
+
   const _RefreshAreaWidget({
     required this.bookColor,
     required this.pageColor,
@@ -280,7 +271,7 @@ class _RefreshAreaWidget extends StatelessWidget {
     const double bookWidth = 50.0;
     const double bookHeight = 38.0;
     const double spineWidth = 4.0;
-    
+
     final bool isFlipping = status == BookRefreshStatus.refreshing;
     final double scale = 0.6 + (progress * 0.4);
     final double opacity = progress.clamp(0.0, 1.0);
@@ -304,12 +295,24 @@ class _RefreshAreaWidget extends StatelessWidget {
                     // 左页
                     Positioned(
                       left: 0,
-                      child: _buildPage(bookWidth, bookHeight, true, pageColor, textColor),
+                      child: _buildPage(
+                        bookWidth,
+                        bookHeight,
+                        true,
+                        pageColor,
+                        textColor,
+                      ),
                     ),
                     // 右页
                     Positioned(
                       right: 0,
-                      child: _buildPage(bookWidth, bookHeight, false, pageColor, textColor),
+                      child: _buildPage(
+                        bookWidth,
+                        bookHeight,
+                        false,
+                        pageColor,
+                        textColor,
+                      ),
                     ),
                     // 翻动页 - 使用多层叠加实现连续翻页效果
                     if (isFlipping)
@@ -341,9 +344,9 @@ class _RefreshAreaWidget extends StatelessWidget {
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 12),
-            
+
             // 状态文字
             Text(
               statusText,
@@ -353,7 +356,7 @@ class _RefreshAreaWidget extends StatelessWidget {
                 fontWeight: FontWeight.w500,
               ),
             ),
-            
+
             // 完成/失败图标
             if (status == BookRefreshStatus.done)
               Padding(
@@ -365,34 +368,41 @@ class _RefreshAreaWidget extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 4),
                 child: Icon(Icons.error, color: Colors.red, size: 18),
               ),
-              
+
             // Long Refresh Link
             if (showLink && onLinkTap != null)
               Padding(
-                 padding: const EdgeInsets.only(top: 8),
-                 child: InkWell(
-                   onTap: onLinkTap,
-                   borderRadius: BorderRadius.circular(12),
-                   child: Padding(
-                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                     child: Row(
-                       mainAxisSize: MainAxisSize.min,
-                       children: [
-                         Text(
-                           '查看进度详情',
-                           style: GoogleFonts.notoSerifSc(
-                             color: textColor.withValues(alpha: 1.0),
-                             fontSize: 12,
-                             decoration: TextDecoration.underline,
-                             fontWeight: FontWeight.bold,
-                           ),
-                         ),
-                         const SizedBox(width: 2),
-                         Icon(Icons.arrow_forward_ios, size: 10, color: textColor),
-                       ],
-                     ),
-                   ),
-                 ),
+                padding: const EdgeInsets.only(top: 8),
+                child: InkWell(
+                  onTap: onLinkTap,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '查看进度详情',
+                          style: GoogleFonts.notoSerifSc(
+                            color: textColor.withValues(alpha: 1.0),
+                            fontSize: 12,
+                            decoration: TextDecoration.underline,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(width: 2),
+                        Icon(
+                          Icons.arrow_forward_ios,
+                          size: 10,
+                          color: textColor,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
           ],
         ),
@@ -400,7 +410,13 @@ class _RefreshAreaWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildPage(double w, double h, bool isLeft, Color pageColor, Color lineColor) {
+  Widget _buildPage(
+    double w,
+    double h,
+    bool isLeft,
+    Color pageColor,
+    Color lineColor,
+  ) {
     return Container(
       width: w,
       height: h,
@@ -421,11 +437,13 @@ class _RefreshAreaWidget extends StatelessWidget {
         ],
       ),
       child: CustomPaint(
-        painter: _PageLinesPainter(color: lineColor.withValues(alpha: 0.2), isLeft: isLeft),
+        painter: _PageLinesPainter(
+          color: lineColor.withValues(alpha: 0.2),
+          isLeft: isLeft,
+        ),
       ),
     );
   }
-
 }
 
 /// 翻页动画组件 - 实现从右往左翻页效果
@@ -435,7 +453,7 @@ class _FlippingPage extends StatelessWidget {
   final Color pageColor;
   final Color lineColor;
   final double progress; // 0.0 -> 1.0
-  
+
   const _FlippingPage({
     required this.width,
     required this.height,
@@ -443,15 +461,15 @@ class _FlippingPage extends StatelessWidget {
     required this.lineColor,
     required this.progress,
   });
-  
+
   @override
   Widget build(BuildContext context) {
     // 使用缓动曲线使动画更自然
     final easedProgress = Curves.easeInOutCubic.transform(progress);
-    
+
     // 翻页角度: 0° -> 180°
     final angle = easedProgress * math.pi;
-    
+
     // 动态调整透明度，避免突兀消失
     double opacity = 1.0;
     if (easedProgress < 0.1) {
@@ -459,13 +477,13 @@ class _FlippingPage extends StatelessWidget {
     } else if (easedProgress > 0.9) {
       opacity = (1.0 - easedProgress) / 0.1; // 淡出
     }
-    
+
     // 翻页到一半时显示反面（更深的颜色）
     final bool showBackSide = angle > math.pi / 2;
-    final displayColor = showBackSide 
+    final displayColor = showBackSide
         ? Color.lerp(pageColor, lineColor.withValues(alpha: 0.1), 0.2)!
         : pageColor;
-    
+
     return Positioned(
       right: 0,
       child: Opacity(
@@ -486,7 +504,9 @@ class _FlippingPage extends StatelessWidget {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.15 * (1 - easedProgress)),
+                  color: Colors.black.withValues(
+                    alpha: 0.15 * (1 - easedProgress),
+                  ),
                   blurRadius: 3,
                   offset: Offset(2 * (1 - easedProgress), 1),
                 ),
@@ -508,23 +528,25 @@ class _FlippingPage extends StatelessWidget {
 class _PageLinesPainter extends CustomPainter {
   final Color color;
   final bool isLeft;
-  
+
   _PageLinesPainter({required this.color, required this.isLeft});
-  
+
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = color..strokeWidth = 0.6;
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 0.6;
     const lineCount = 4;
     final lineSpacing = size.height / (lineCount + 1);
     final startX = isLeft ? 5.0 : 4.0;
     final endX = isLeft ? size.width - 3 : size.width - 5;
-    
+
     for (int i = 1; i <= lineCount; i++) {
       final y = lineSpacing * i;
       canvas.drawLine(Offset(startX, y), Offset(endX, y), paint);
     }
   }
-  
+
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

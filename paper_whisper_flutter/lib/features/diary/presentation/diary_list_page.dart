@@ -1,37 +1,40 @@
-import 'dart:ui';
 import 'dart:async';
+import 'dart:io' show Platform;
+import 'dart:ui';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
-import '../providers/settings_provider.dart';
-import '../models/diary_entry.dart';
-import '../config/app_theme.dart';
-import '../config/theme/theme_registry.dart';
-import '../widgets/sidebar_widget.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../providers/diary_provider.dart';
-import '../providers/sync_provider.dart';
-import '../widgets/book_flip_refresh_widget.dart';
-import '../widgets/skeuomorphic_dialog.dart'; // Updated import
-import '../widgets/skeuomorphic_search_bar.dart';
-import '../widgets/month_divider.dart';
-import '../widgets/skeuomorphic_toast.dart';
-import '../features/sync/presentation/sync_ui_coordinator.dart';
-import 'diary_card.dart';
-import 'dart:io' show Platform;
-import '../models/update_info.dart';
-import '../services/update_service.dart';
-import '../features/update/application/update_check_coordinator.dart';
-import '../features/permissions/application/permission_coordinator.dart';
-import '../features/diary/application/diary_announcement_coordinator.dart';
-import '../features/diary/application/diary_list_filter.dart';
-import '../features/diary/application/diary_timeline_layout_builder.dart';
-import '../features/diary/presentation/widgets/diary_empty_state.dart';
-import '../features/diary/presentation/widgets/diary_update_dialog.dart';
-import '../app/navigation/app_routes.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:provider/provider.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'package:paper_whisper_flutter/app/navigation/app_routes.dart';
+import 'package:paper_whisper_flutter/config/app_theme.dart';
+import 'package:paper_whisper_flutter/config/theme/theme_registry.dart';
+import 'package:paper_whisper_flutter/features/diary/application/diary_announcement_coordinator.dart';
+import 'package:paper_whisper_flutter/features/diary/application/diary_list_filter.dart';
+import 'package:paper_whisper_flutter/features/diary/application/diary_timeline_layout_builder.dart';
+import 'package:paper_whisper_flutter/features/permissions/application/permission_coordinator.dart';
+import 'package:paper_whisper_flutter/features/sync/presentation/sync_ui_coordinator.dart';
+import 'package:paper_whisper_flutter/features/update/application/update_check_coordinator.dart';
+import 'package:paper_whisper_flutter/models/diary_entry.dart';
+import 'package:paper_whisper_flutter/models/update_info.dart';
+import 'package:paper_whisper_flutter/providers/diary_provider.dart';
+import 'package:paper_whisper_flutter/providers/settings_provider.dart';
+import 'package:paper_whisper_flutter/providers/sync_provider.dart';
+import 'package:paper_whisper_flutter/services/update_service.dart';
+import 'package:paper_whisper_flutter/widgets/sidebar_widget.dart';
+import 'package:paper_whisper_flutter/widgets/skeuomorphic_dialog.dart';
+import 'package:paper_whisper_flutter/widgets/skeuomorphic_search_bar.dart';
+import 'package:paper_whisper_flutter/widgets/skeuomorphic_toast.dart';
+
+import 'widgets/book_flip_refresh_widget.dart';
+import 'widgets/diary_card.dart';
+import 'widgets/diary_empty_state.dart';
+import 'widgets/diary_update_dialog.dart';
+import 'widgets/month_divider.dart';
 
 class DiaryListPage extends StatefulWidget {
   final int? initialYear;

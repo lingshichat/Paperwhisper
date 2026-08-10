@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:paper_whisper_flutter/features/diary/presentation/widgets/diary_empty_state.dart';
-import 'package:paper_whisper_flutter/widgets/dashed_line_painter.dart';
+import 'package:paper_whisper_flutter/features/diary/presentation/widgets/dashed_line_painter.dart';
 
 /// DiaryEmptyState 组件测试：搜索无结果 / 普通空态两分支的文案、回调、
 /// 蜘蛛网与虚线 painter，以及 Windows / Android 360 视口无溢出。

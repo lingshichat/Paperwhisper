@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../config/theme/theme_registry.dart';
 import '../../../../models/diary_entry.dart';
-import '../../../../widgets/paper_sheet_widget.dart';
+import 'paper_sheet_widget.dart';
 import 'editor_branding_footer.dart';
 import 'editor_meta_selector.dart';
 import 'lined_paper_painter.dart';
@@ -121,9 +121,7 @@ class EditorBody extends StatelessWidget {
                     child: Container(
                       width: 60,
                       height: 2,
-                      color: tc.cursorColor.withValues(
-                        alpha: 0.5,
-                      ),
+                      color: tc.cursorColor.withValues(alpha: 0.5),
                     ),
                   ),
                 ),

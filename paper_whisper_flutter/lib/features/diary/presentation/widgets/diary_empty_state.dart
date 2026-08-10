@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../../widgets/dashed_line_painter.dart';
+import 'dashed_line_painter.dart';
 
 /// 日记列表空态组件（搜索无结果 / 普通空态）。
 ///

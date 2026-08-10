@@ -1,8 +1,8 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import '../config/theme/theme_registry.dart';
+import 'package:paper_whisper_flutter/config/theme/theme_registry.dart';
+import 'package:paper_whisper_flutter/providers/settings_provider.dart';
 import 'package:provider/provider.dart';
-import '../providers/settings_provider.dart';
 
 class PaperSheetWidget extends StatelessWidget {
   final Widget child;
@@ -62,13 +62,9 @@ class PaperSheetWidget extends StatelessWidget {
           clipBehavior: Clip.none,
           children: [
             paperContent,
-            
+
             if (showRibbon)
-              Positioned(
-                right: 40,
-                top: -8,
-                child: _buildRibbon(accentColor),
-              ),
+              Positioned(right: 40, top: -8, child: _buildRibbon(accentColor)),
           ],
         ),
       ),
@@ -79,9 +75,7 @@ class PaperSheetWidget extends StatelessWidget {
     return SizedBox(
       width: 50, // 稍微加宽以容纳阴影
       height: 90, // 稍微加高以容纳阴影
-      child: CustomPaint(
-        painter: _RibbonPainter(color: color),
-      ),
+      child: CustomPaint(painter: _RibbonPainter(color: color)),
     );
   }
 }
@@ -89,9 +83,9 @@ class PaperSheetWidget extends StatelessWidget {
 /// 书签绘制器：统一绘制阴影、本体和虚线装饰
 class _RibbonPainter extends CustomPainter {
   final Color color;
-  
+
   _RibbonPainter({required this.color});
-  
+
   @override
   void paint(Canvas canvas, Size size) {
     // 书签尺寸和位置（居中，留出阴影空间）
@@ -99,7 +93,7 @@ class _RibbonPainter extends CustomPainter {
     const double ribbonHeight = 80;
     const double offsetX = 5; // 左侧留出空间
     const double offsetY = 0;
-    
+
     // 创建书签路径（燕尾形）
     final ribbonPath = Path();
     ribbonPath.moveTo(offsetX, offsetY);
@@ -108,7 +102,7 @@ class _RibbonPainter extends CustomPainter {
     ribbonPath.lineTo(offsetX + ribbonWidth / 2, offsetY + ribbonHeight - 20);
     ribbonPath.lineTo(offsetX, offsetY + ribbonHeight);
     ribbonPath.close();
-    
+
     // 1. 绘制阴影
     canvas.save();
     canvas.translate(2, 5); // 阴影偏移
@@ -117,12 +111,12 @@ class _RibbonPainter extends CustomPainter {
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
     canvas.drawPath(ribbonPath, shadowPaint);
     canvas.restore();
-    
+
     // 2. 绘制书签本体
     final ribbonPaint = Paint()
       ..color = color
       ..style = PaintingStyle.fill;
-    
+
     // 需要重新创建路径（因为 translate 只影响 canvas）
     final mainPath = Path();
     mainPath.moveTo(offsetX, offsetY);
@@ -132,19 +126,19 @@ class _RibbonPainter extends CustomPainter {
     mainPath.lineTo(offsetX, offsetY + ribbonHeight);
     mainPath.close();
     canvas.drawPath(mainPath, ribbonPaint);
-    
+
     // 3. 绘制两侧虚线装饰
     final stitchPaint = Paint()
       ..color = Colors.white.withValues(alpha: 0.4)
       ..strokeWidth = 1
       ..style = PaintingStyle.stroke;
-    
+
     const dashHeight = 4.0;
     const dashGap = 3.0;
     const stitchMargin = 5.0;
     const stitchTop = 0.0;
     const stitchBottom = ribbonHeight - 25; // 留出燕尾区域
-    
+
     // 左侧虚线
     double y = stitchTop;
     while (y < stitchBottom) {
@@ -155,7 +149,7 @@ class _RibbonPainter extends CustomPainter {
       );
       y += dashHeight + dashGap;
     }
-    
+
     // 右侧虚线
     y = stitchTop;
     while (y < stitchBottom) {
@@ -167,7 +161,7 @@ class _RibbonPainter extends CustomPainter {
       y += dashHeight + dashGap;
     }
   }
-  
+
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
