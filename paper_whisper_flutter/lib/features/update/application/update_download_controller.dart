@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import '../../../models/update_info.dart';
-import '../../../services/update_service.dart';
+import 'package:paper_whisper_flutter/features/update/data/update_info.dart';
+import 'package:paper_whisper_flutter/features/update/data/update_service.dart';
 
 /// 下载阶段。
 enum UpdateDownloadPhase { idle, downloading, downloaded, error }

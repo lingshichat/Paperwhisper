@@ -1,4 +1,4 @@
-import '../../../models/diary_entry.dart';
+import 'package:paper_whisper_flutter/features/diary/data/diary_entry.dart';
 
 /// 日记列表搜索过滤（纯函数）。
 ///

@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../models/diary_entry.dart';
+import 'package:paper_whisper_flutter/features/diary/data/diary_entry.dart';
 
 class DraftService {
   static const String _draftPrefix = 'draft_';
@@ -11,7 +11,7 @@ class DraftService {
   Future<void> saveDraft(String id, DiaryEntry entry) async {
     final prefs = await SharedPreferences.getInstance();
     final key = '$_draftPrefix$id';
-    
+
     // 我们只保存关键内容字段，不保存完整的文件结构（如META行），转为JSON存
     // 这里为了方便，可以复用 DiaryEntry.toJson 如果有的话，或者手动组装
     // DiaryEntry 目前主要是 toFileContent，我们这里存个简单的 Map
@@ -19,11 +19,11 @@ class DraftService {
       'title': entry.title,
       'content': entry.content,
       'weather': entry.weather.name, // Convert to String
-      'mood': entry.mood.name,       // Convert to String
+      'mood': entry.mood.name, // Convert to String
       'date': entry.dateString,
       'timestamp': DateTime.now().millisecondsSinceEpoch,
     };
-    
+
     await prefs.setString(key, jsonEncode(data));
     debugPrint('Draft saved for $id');
   }
@@ -33,22 +33,22 @@ class DraftService {
     final prefs = await SharedPreferences.getInstance();
     final key = '$_draftPrefix$id';
     final jsonStr = prefs.getString(key);
-    
+
     if (jsonStr == null || jsonStr.isEmpty) return null;
-    
+
     try {
       final data = jsonDecode(jsonStr);
       // Parse Enums
       final weatherStr = data['weather'] as String? ?? 'sunny';
       final moodStr = data['mood'] as String? ?? 'calm';
-      
+
       final weather = WeatherType.values.firstWhere(
-        (e) => e.name == weatherStr, 
-        orElse: () => WeatherType.sunny
+        (e) => e.name == weatherStr,
+        orElse: () => WeatherType.sunny,
       );
       final mood = MoodType.values.firstWhere(
-        (e) => e.name == moodStr, 
-        orElse: () => MoodType.calm
+        (e) => e.name == moodStr,
+        orElse: () => MoodType.calm,
       );
 
       // 构造临时 Entry

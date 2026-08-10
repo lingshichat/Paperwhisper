@@ -2,8 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 
-import '../../../models/moment.dart';
-import '../../../services/moment_service.dart';
+import 'package:paper_whisper_flutter/features/moments/data/moment.dart';
+import 'package:paper_whisper_flutter/features/moments/data/moment_service.dart';
 
 /// 发送随心记结果（sealed typed outcome，context-free）。
 ///

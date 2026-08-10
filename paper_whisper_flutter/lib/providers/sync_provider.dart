@@ -16,12 +16,12 @@ import '../features/sync/presentation/sync_notification_service.dart';
 import '../models/sync_config.dart';
 import '../models/sync_trust_snapshot.dart';
 import '../services/cloud_storage_service.dart';
-import '../services/moment_service.dart';
-import '../services/payment_service.dart';
+import 'package:paper_whisper_flutter/features/moments/data/moment_service.dart';
+import 'package:paper_whisper_flutter/features/premium/data/payment_service.dart';
 import '../services/s3_sync_service.dart';
 import '../services/sync_secret_store.dart';
 import '../services/webdav_sync_service.dart';
-import 'diary_provider.dart';
+import 'package:paper_whisper_flutter/features/diary/application/diary_provider.dart';
 
 enum SyncStatus { none, syncing, success, failed }
 

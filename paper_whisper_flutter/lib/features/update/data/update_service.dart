@@ -9,7 +9,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:url_launcher/url_launcher.dart';
-import '../models/update_info.dart';
+import 'package:paper_whisper_flutter/features/update/data/update_info.dart';
 
 /// 安装结果状态
 enum UpdateInstallStatus {
@@ -40,8 +40,7 @@ class UpdateService {
   UpdateService._internal();
 
   // 远程版本配置 URL
-  static const String _versionUrl =
-      'https://pwdl.lingshichat.cn/version.json';
+  static const String _versionUrl = 'https://pwdl.lingshichat.cn/version.json';
 
   // 请求超时时间
   static const Duration _timeout = Duration(seconds: 10);
@@ -200,10 +199,9 @@ class UpdateService {
   }) async {
     // 从 URL 中提取文件名，保留原始后缀
     final uri = Uri.parse(url);
-    final fileName =
-        uri.pathSegments.isNotEmpty
-            ? uri.pathSegments.last
-            : (Platform.isAndroid ? 'update.apk' : 'update.exe');
+    final fileName = uri.pathSegments.isNotEmpty
+        ? uri.pathSegments.last
+        : (Platform.isAndroid ? 'update.apk' : 'update.exe');
 
     // 获取临时目录并构建保存路径
     final tempDir = await getTemporaryDirectory();

@@ -10,8 +10,8 @@ import 'package:paper_whisper_flutter/features/settings/presentation/settings_pa
 import 'package:paper_whisper_flutter/features/sync_settings/presentation/sync_settings_page.dart';
 import 'package:paper_whisper_flutter/providers/settings_provider.dart';
 import 'package:paper_whisper_flutter/providers/sync_provider.dart';
-import 'package:paper_whisper_flutter/services/moment_service.dart';
-import 'package:paper_whisper_flutter/services/payment_service.dart';
+import 'package:paper_whisper_flutter/features/moments/data/moment_service.dart';
+import 'package:paper_whisper_flutter/features/premium/data/payment_service.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

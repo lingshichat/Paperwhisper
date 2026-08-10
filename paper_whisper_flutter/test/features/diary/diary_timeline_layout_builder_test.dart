@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:paper_whisper_flutter/features/diary/application/diary_timeline_layout_builder.dart';
-import 'package:paper_whisper_flutter/models/diary_entry.dart';
+import 'package:paper_whisper_flutter/features/diary/data/diary_entry.dart';
 
 /// DiaryTimelineLayoutBuilder 单元测试（阶段 4 L0 第四批）。
 ///

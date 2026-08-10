@@ -5,17 +5,17 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:paper_whisper_flutter/core/theme/theme_registry.dart';
-import 'package:paper_whisper_flutter/models/diary_entry.dart';
-import 'package:paper_whisper_flutter/providers/diary_provider.dart';
+import 'package:paper_whisper_flutter/features/diary/data/diary_entry.dart';
+import 'package:paper_whisper_flutter/features/diary/application/diary_provider.dart';
 import 'package:paper_whisper_flutter/providers/settings_provider.dart';
 import 'package:paper_whisper_flutter/providers/sync_provider.dart';
 import 'package:paper_whisper_flutter/services/analytics_service.dart';
-import 'package:paper_whisper_flutter/services/auth_service.dart';
-import 'package:paper_whisper_flutter/services/diary_service.dart';
-import 'package:paper_whisper_flutter/services/hitokoto_service.dart';
-import 'package:paper_whisper_flutter/services/moment_service.dart';
-import 'package:paper_whisper_flutter/services/payment_service.dart';
-import 'package:paper_whisper_flutter/services/trial_service.dart';
+import 'package:paper_whisper_flutter/features/auth/data/auth_service.dart';
+import 'package:paper_whisper_flutter/features/diary/data/diary_service.dart';
+import 'package:paper_whisper_flutter/app/shell/data/hitokoto_service.dart';
+import 'package:paper_whisper_flutter/features/moments/data/moment_service.dart';
+import 'package:paper_whisper_flutter/features/premium/data/payment_service.dart';
+import 'package:paper_whisper_flutter/features/premium/data/trial_service.dart';
 
 import 'app.dart';
 

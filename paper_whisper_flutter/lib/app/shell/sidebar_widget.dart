@@ -5,9 +5,9 @@ import 'package:provider/provider.dart';
 import 'package:paper_whisper_flutter/app/navigation/app_routes.dart';
 import 'package:paper_whisper_flutter/core/theme/app_theme.dart';
 import 'package:paper_whisper_flutter/core/theme/theme_registry.dart';
-import 'package:paper_whisper_flutter/providers/diary_provider.dart';
+import 'package:paper_whisper_flutter/features/diary/application/diary_provider.dart';
 import 'package:paper_whisper_flutter/providers/settings_provider.dart';
-import 'package:paper_whisper_flutter/services/hitokoto_service.dart';
+import 'package:paper_whisper_flutter/app/shell/data/hitokoto_service.dart';
 import 'package:paper_whisper_flutter/shared/widgets/skeuomorphic_search_bar.dart';
 
 enum SidebarSection { writer, moments, statistics, none }

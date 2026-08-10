@@ -1,5 +1,5 @@
-import '../../../models/diary_entry.dart';
-import '../../../providers/diary_provider.dart';
+import 'package:paper_whisper_flutter/features/diary/data/diary_entry.dart';
+import 'package:paper_whisper_flutter/features/diary/application/diary_provider.dart';
 import 'editor_session_controller.dart';
 
 /// 保存编排结果（穷尽分支：validation / success / failure）。

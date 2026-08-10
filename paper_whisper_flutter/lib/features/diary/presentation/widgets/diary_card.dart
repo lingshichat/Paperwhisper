@@ -7,7 +7,7 @@ import 'package:paper_whisper_flutter/app/navigation/route_transitions.dart'
     show getWidgetRect;
 import 'package:paper_whisper_flutter/core/theme/app_theme.dart';
 import 'package:paper_whisper_flutter/core/theme/theme_registry.dart';
-import 'package:paper_whisper_flutter/models/diary_entry.dart';
+import 'package:paper_whisper_flutter/features/diary/data/diary_entry.dart';
 import 'package:paper_whisper_flutter/shared/widgets/skeuomorphic_container.dart';
 
 import 'dashed_line_painter.dart';

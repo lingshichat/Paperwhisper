@@ -1,6 +1,7 @@
 import 'package:intl/intl.dart';
 
 enum WeatherType { sunny, cloudy, rainy, snowy, windy }
+
 enum MoodType { happy, calm, sad, excited, tired }
 
 class DiaryEntry {
@@ -25,7 +26,11 @@ class DiaryEntry {
   });
 
   // 从文件内容解析
-  factory DiaryEntry.fromFileContent(String filename, String rawContent, {DateTime? lastModified}) {
+  factory DiaryEntry.fromFileContent(
+    String filename,
+    String rawContent, {
+    DateTime? lastModified,
+  }) {
     List<String> lines = rawContent.split('\n');
     String title = '无题';
     WeatherType weather = WeatherType.sunny;
@@ -41,13 +46,14 @@ class DiaryEntry {
 
     // 解析 META Line
     if (lines.length > 1 && lines[1].startsWith("META|")) {
-      contentStartIndex = 2; // 跳过 META 行和其后的空行(如果有的话，但在 Python 代码里 META 后紧接着是 \n\n，所以通常是 lines[2] 开始为空行，lines[3] 为正文)
+      contentStartIndex =
+          2; // 跳过 META 行和其后的空行(如果有的话，但在 Python 代码里 META 后紧接着是 \n\n，所以通常是 lines[2] 开始为空行，lines[3] 为正文)
       // Python: file_content = f"{title}\n{meta_line}\n\n{content}"
       // line 0: title
       // line 1: META...
       // line 2: (empty)
       // line 3: content start...
-      
+
       // 但由于 split('\n')，我们要小心处理
       try {
         String metaLine = lines[1].trim();
@@ -64,7 +70,7 @@ class DiaryEntry {
             isMarkdown = val.toLowerCase() == 'true';
           }
         }
-        
+
         // 修正 contentStartIndex
         // split 之后的数组，如果原文件是 title\nMeta\n\nContent
         // lines[0] = title
@@ -108,15 +114,15 @@ class DiaryEntry {
     // Python: content = content.replace('\r\n', '\n')
     // Python: meta_line = f"META|weather:{weather}|mood:{mood}|markdown:{is_markdown}"
     // Python: file_content = f"{title}\n{meta_line}\n\n{content}"
-    
+
     String wStr = _weatherToString(weather);
     String mStr = _moodToString(mood);
     String mdStr = isMarkdown ? 'true' : 'false';
-    
+
     String metaLine = "META|weather:$wStr|mood:$mStr|markdown:$mdStr";
     // 确保 content 换行符归一化， though Dart strings are usually \n
     String normalizedContent = content.replaceAll('\r\n', '\n');
-    
+
     return "$title\n$metaLine\n\n$normalizedContent";
   }
 
@@ -160,7 +166,9 @@ class DiaryEntry {
       mood: _parseMood(json['mood'] ?? ''),
       content: json['content'] ?? '',
       isMarkdown: json['isMarkdown'] ?? false,
-      lastModified: json['lastModified'] != null ? DateTime.tryParse(json['lastModified']) : null,
+      lastModified: json['lastModified'] != null
+          ? DateTime.tryParse(json['lastModified'])
+          : null,
     );
   }
 }

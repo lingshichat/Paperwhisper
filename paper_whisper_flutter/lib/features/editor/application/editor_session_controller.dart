@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../../../models/diary_entry.dart';
-import '../../../services/draft_service.dart';
+import 'package:paper_whisper_flutter/features/diary/data/diary_entry.dart';
+import 'package:paper_whisper_flutter/features/editor/data/draft_service.dart';
 
 /// 草稿恢复判定结果（纯数据，由页面决定如何展示与执行）。
 class DraftRestoreInfo {

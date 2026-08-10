@@ -6,8 +6,8 @@ import 'package:path/path.dart' as path;
 
 import '../../../models/sync_manifest.dart';
 import '../../../services/cloud_storage_service.dart';
-import '../../../services/diary_service.dart';
-import '../../../services/moment_service.dart';
+import 'package:paper_whisper_flutter/features/diary/data/diary_service.dart';
+import 'package:paper_whisper_flutter/features/moments/data/moment_service.dart';
 import '../../../services/webdav_sync_service.dart';
 import '../data/sync_scope_cache_store.dart';
 import 'sync_error_classifier.dart';

@@ -3,8 +3,8 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:paper_whisper_flutter/features/update/application/update_download_controller.dart';
-import 'package:paper_whisper_flutter/models/update_info.dart';
-import 'package:paper_whisper_flutter/services/update_service.dart';
+import 'package:paper_whisper_flutter/features/update/data/update_info.dart';
+import 'package:paper_whisper_flutter/features/update/data/update_service.dart';
 
 /// UpdateDownloadController 行为刻画测试。
 ///

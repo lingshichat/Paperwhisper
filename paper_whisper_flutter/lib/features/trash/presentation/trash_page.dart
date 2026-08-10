@@ -6,11 +6,11 @@ import 'package:provider/provider.dart';
 import 'package:paper_whisper_flutter/core/theme/app_theme.dart';
 import 'package:paper_whisper_flutter/core/theme/components/trash_page_theme_data.dart';
 import 'package:paper_whisper_flutter/core/theme/theme_registry.dart';
-import 'package:paper_whisper_flutter/models/diary_entry.dart';
+import 'package:paper_whisper_flutter/features/diary/data/diary_entry.dart';
 import 'package:paper_whisper_flutter/models/trash_record.dart';
-import 'package:paper_whisper_flutter/providers/diary_provider.dart';
+import 'package:paper_whisper_flutter/features/diary/application/diary_provider.dart';
 import 'package:paper_whisper_flutter/providers/settings_provider.dart';
-import 'package:paper_whisper_flutter/services/moment_service.dart';
+import 'package:paper_whisper_flutter/features/moments/data/moment_service.dart';
 import 'package:paper_whisper_flutter/shared/widgets/skeuomorphic_dialog.dart';
 import 'package:paper_whisper_flutter/shared/widgets/skeuomorphic_toast.dart';
 

@@ -1,4 +1,4 @@
-import '../../../models/moment.dart';
+import 'package:paper_whisper_flutter/features/moments/data/moment.dart';
 
 /// 随心记按天索引（不可变视图）。
 ///

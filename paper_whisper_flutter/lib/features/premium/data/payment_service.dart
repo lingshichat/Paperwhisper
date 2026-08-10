@@ -12,18 +12,19 @@ class PaymentService extends ChangeNotifier {
   PaymentService._internal();
 
   late SharedPreferences _prefs;
-  
+
   // 仅用于 UI 展示 "已赞助" 勋章，不影响功能使用
-  bool _isSponsor = false; 
+  bool _isSponsor = false;
   bool get isSponsor => _isSponsor;
 
   // 核心功能锁：对所有人永久开放
-  bool get canUseProFeatures => true; 
+  bool get canUseProFeatures => true;
 
   static const String _kSponsorKey = 'pw_user_is_sponsored_v2';
-  
+
   // 支付宝收款码 URL (解析自二维码)
-  static const String _alipayQrCode = 'https://qr.alipay.com/fkx187002hv2e7taukh965a'; 
+  static const String _alipayQrCode =
+      'https://qr.alipay.com/fkx187002hv2e7taukh965a';
 
   Future<void> init(SharedPreferences prefs) async {
     _prefs = prefs;
@@ -41,7 +42,7 @@ class PaymentService extends ChangeNotifier {
   /// 支付宝：一键跳转
   Future<void> donateViaAlipay() async {
     final Uri alipayScheme = Uri.parse(
-      'alipays://platformapi/startapp?saId=10000007&clientVersion=3.7.0.0718&qrcode=${Uri.encodeComponent(_alipayQrCode)}'
+      'alipays://platformapi/startapp?saId=10000007&clientVersion=3.7.0.0718&qrcode=${Uri.encodeComponent(_alipayQrCode)}',
     );
 
     try {
@@ -62,14 +63,16 @@ class PaymentService extends ChangeNotifier {
     // 1. 请求权限 (Android 10+ 不需要 WRITE_STORAGE，但为了兼容旧版本还是申请一下)
     // Gal 库内部会自动处理部分权限，但在某些设备上显式请求更稳妥
     if (Platform.isAndroid) {
-       await Permission.storage.request(); 
-       // For Android 13+ photos permission
-       await Permission.photos.request();
+      await Permission.storage.request();
+      // For Android 13+ photos permission
+      await Permission.photos.request();
     }
 
     try {
       // 2. 读取资源文件
-      final ByteData bytes = await rootBundle.load('assets/images/donate_wechat.png');
+      final ByteData bytes = await rootBundle.load(
+        'assets/images/donate_wechat.png',
+      );
       final Uint8List list = bytes.buffer.asUint8List();
 
       // 3. 保存到相册 (使用 gal 库)
@@ -81,13 +84,13 @@ class PaymentService extends ChangeNotifier {
       if (await canLaunchUrl(wechatScheme)) {
         await launchUrl(wechatScheme, mode: LaunchMode.externalApplication);
       }
-      
+
       return "二维码已保存至相册，正在前往微信...";
     } catch (e) {
       debugPrint("WeChat donation failed: $e");
       // 如果 Gal 抛出特定异常，可以在这里处理
       if (e.toString().contains("ACCESS_DENIED")) {
-         throw Exception("请授予相册访问权限以保存二维码");
+        throw Exception("请授予相册访问权限以保存二维码");
       }
       throw Exception("操作失败: $e");
     }
@@ -99,4 +102,3 @@ class PaymentService extends ChangeNotifier {
     notifyListeners();
   }
 }
-

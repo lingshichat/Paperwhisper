@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:paper_whisper_flutter/features/update/application/update_check_coordinator.dart';
-import 'package:paper_whisper_flutter/models/update_info.dart';
+import 'package:paper_whisper_flutter/features/update/data/update_info.dart';
 
 /// UpdateCheckCoordinator 行为刻画测试。
 ///

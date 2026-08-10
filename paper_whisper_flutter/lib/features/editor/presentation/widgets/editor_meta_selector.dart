@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:paper_whisper_flutter/core/theme/theme_registry.dart';
-import '../../../../models/diary_entry.dart';
+import 'package:paper_whisper_flutter/features/diary/data/diary_entry.dart';
 import 'package:paper_whisper_flutter/shared/widgets/skeuomorphic_date_picker.dart';
 
 /// 编辑器元信息选择器：日期 / 天气 / 心情。

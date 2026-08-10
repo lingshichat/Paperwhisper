@@ -2,8 +2,8 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:paper_whisper_flutter/features/moments/application/moment_send_pipeline.dart';
-import 'package:paper_whisper_flutter/models/moment.dart';
-import 'package:paper_whisper_flutter/services/moment_service.dart';
+import 'package:paper_whisper_flutter/features/moments/data/moment.dart';
+import 'package:paper_whisper_flutter/features/moments/data/moment_service.dart';
 
 /// 内存版 MomentService 替身：记录调用计数，按 seam 抛错。
 class _FakeMomentService extends MomentService {

@@ -5,9 +5,9 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:paper_whisper_flutter/core/theme/app_theme.dart';
 import 'package:paper_whisper_flutter/providers/settings_provider.dart';
-import 'package:paper_whisper_flutter/services/diary_service.dart';
-import 'package:paper_whisper_flutter/services/moment_service.dart';
-import 'package:paper_whisper_flutter/services/statistics_service.dart';
+import 'package:paper_whisper_flutter/features/diary/data/diary_service.dart';
+import 'package:paper_whisper_flutter/features/moments/data/moment_service.dart';
+import 'package:paper_whisper_flutter/features/statistics/data/statistics_service.dart';
 
 import 'widgets/mood_badge_ring.dart';
 import 'widgets/vintage_stamp.dart';

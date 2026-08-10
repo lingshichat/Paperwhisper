@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:paper_whisper_flutter/features/diary/application/diary_announcement_coordinator.dart';
-import 'package:paper_whisper_flutter/models/update_info.dart';
+import 'package:paper_whisper_flutter/features/update/data/update_info.dart';
 
 /// DiaryAnnouncementCoordinator 单元测试（阶段 4 Wave B1，两阶段 typed 协议）。
 ///

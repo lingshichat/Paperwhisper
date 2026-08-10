@@ -8,7 +8,7 @@ class UpdateInfo {
   final bool isForceUpdate;
   final List<String> changelog;
   final Map<String, String>? downloadUrl; // Changed to nullable
-  final Map<String, String>? backupUrl; 
+  final Map<String, String>? backupUrl;
   final String? minSupportedVersion;
 
   UpdateInfo({
@@ -27,15 +27,19 @@ class UpdateInfo {
   factory UpdateInfo.fromJson(Map<String, dynamic> json) {
     return UpdateInfo(
       latestVersion: json['latestVersion'] as String,
-      buildNumber: json['latestBuildNumber'] as int? ?? json['buildNumber'] as int?,
+      buildNumber:
+          json['latestBuildNumber'] as int? ?? json['buildNumber'] as int?,
       releaseDate: json['releaseDate'] as String?,
       title: json['title'] as String?,
       isForceUpdate: json['isForceUpdate'] as bool? ?? false,
-      changelog: (json['changelog'] as List<dynamic>?)
+      changelog:
+          (json['changelog'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
           [],
-      downloadUrl: json['downloadUrl'] != null ? Map<String, String>.from(json['downloadUrl'] as Map) : null,
+      downloadUrl: json['downloadUrl'] != null
+          ? Map<String, String>.from(json['downloadUrl'] as Map)
+          : null,
       backupUrl: json['backupUrl'] != null
           ? Map<String, String>.from(json['backupUrl'] as Map)
           : null,

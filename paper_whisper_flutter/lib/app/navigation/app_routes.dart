@@ -2,8 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
-import '../../models/diary_entry.dart';
-import '../../models/moment.dart';
+import 'package:paper_whisper_flutter/features/diary/data/diary_entry.dart';
+import 'package:paper_whisper_flutter/features/moments/data/moment.dart';
 import '../../features/about/presentation/about_page.dart';
 import '../../features/library/presentation/book_directory_page.dart';
 import '../../features/library/presentation/bookshelf_page.dart';

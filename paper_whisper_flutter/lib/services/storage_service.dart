@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
-import 'moment_service.dart';
+import 'package:paper_whisper_flutter/features/moments/data/moment_service.dart';
 import 'thumbnail_cache_service.dart';
 import 'package:flutter/painting.dart';
 

@@ -19,12 +19,12 @@ import 'package:paper_whisper_flutter/features/diary/application/diary_timeline_
 import 'package:paper_whisper_flutter/features/permissions/application/permission_coordinator.dart';
 import 'package:paper_whisper_flutter/features/sync/presentation/sync_ui_coordinator.dart';
 import 'package:paper_whisper_flutter/features/update/application/update_check_coordinator.dart';
-import 'package:paper_whisper_flutter/models/diary_entry.dart';
-import 'package:paper_whisper_flutter/models/update_info.dart';
-import 'package:paper_whisper_flutter/providers/diary_provider.dart';
+import 'package:paper_whisper_flutter/features/diary/data/diary_entry.dart';
+import 'package:paper_whisper_flutter/features/update/data/update_info.dart';
+import 'package:paper_whisper_flutter/features/diary/application/diary_provider.dart';
 import 'package:paper_whisper_flutter/providers/settings_provider.dart';
 import 'package:paper_whisper_flutter/providers/sync_provider.dart';
-import 'package:paper_whisper_flutter/services/update_service.dart';
+import 'package:paper_whisper_flutter/features/update/data/update_service.dart';
 import 'package:paper_whisper_flutter/app/shell/sidebar_widget.dart';
 import 'package:paper_whisper_flutter/shared/widgets/skeuomorphic_dialog.dart';
 import 'package:paper_whisper_flutter/shared/widgets/skeuomorphic_search_bar.dart';

@@ -1,4 +1,4 @@
-import 'package:paper_whisper_flutter/services/auth_service.dart';
+import 'package:paper_whisper_flutter/features/auth/data/auth_service.dart';
 
 /// 认证域的锁屏模式。
 ///

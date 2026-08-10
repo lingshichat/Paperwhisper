@@ -4,8 +4,8 @@ import 'package:path/path.dart' as path;
 
 import '../../../models/sync_config.dart';
 import '../../../models/sync_manifest.dart';
-import '../../../services/diary_service.dart';
-import '../../../services/moment_service.dart';
+import 'package:paper_whisper_flutter/features/diary/data/diary_service.dart';
+import 'package:paper_whisper_flutter/features/moments/data/moment_service.dart';
 import '../data/sync_scope_cache_store.dart';
 
 /// 按类别划分的待同步计数（原 `SyncProvider._PendingCounts`）。

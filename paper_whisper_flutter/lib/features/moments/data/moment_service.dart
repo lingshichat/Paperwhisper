@@ -3,12 +3,12 @@ import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 import 'package:permission_handler/permission_handler.dart';
-import '../models/moment.dart';
-import '../models/diary_entry.dart';
-import '../models/trash_record.dart';
-import '../services/diary_service.dart';
-import 'manifest_service.dart';
-import 'trash_service.dart';
+import 'package:paper_whisper_flutter/features/moments/data/moment.dart';
+import 'package:paper_whisper_flutter/features/diary/data/diary_entry.dart';
+import 'package:paper_whisper_flutter/models/trash_record.dart';
+import 'package:paper_whisper_flutter/services/manifest_service.dart';
+import 'package:paper_whisper_flutter/services/trash_service.dart';
+import 'package:paper_whisper_flutter/features/diary/data/diary_service.dart';
 
 class MomentService {
   MomentService({Directory? debugDataDir, DiaryService? diaryService})

@@ -1,4 +1,4 @@
-import '../../../models/diary_entry.dart';
+import 'package:paper_whisper_flutter/features/diary/data/diary_entry.dart';
 
 /// 时间线输入节点（最小 feature model，供页面扁平列表适配）。
 ///

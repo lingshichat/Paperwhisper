@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
-import '../models/diary_entry.dart';
-import '../models/moment.dart';
-import 'diary_service.dart';
-import 'moment_service.dart';
+import 'package:paper_whisper_flutter/features/diary/data/diary_entry.dart';
+import 'package:paper_whisper_flutter/features/moments/data/moment.dart';
+import 'package:paper_whisper_flutter/features/diary/data/diary_service.dart';
+import 'package:paper_whisper_flutter/features/moments/data/moment_service.dart';
 
 class DiaryRecord {
   final String title;

@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:paper_whisper_flutter/features/editor/application/editor_session_controller.dart';
-import 'package:paper_whisper_flutter/models/diary_entry.dart';
-import 'package:paper_whisper_flutter/services/draft_service.dart';
+import 'package:paper_whisper_flutter/features/diary/data/diary_entry.dart';
+import 'package:paper_whisper_flutter/features/editor/data/draft_service.dart';
 
 /// EditorSessionController 单元测试（阶段 3 测试 lane 第二批）。
 ///

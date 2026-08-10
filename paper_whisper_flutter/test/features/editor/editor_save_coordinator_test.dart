@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:paper_whisper_flutter/features/editor/application/editor_save_coordinator.dart';
 import 'package:paper_whisper_flutter/features/editor/application/editor_session_controller.dart';
-import 'package:paper_whisper_flutter/models/diary_entry.dart';
-import 'package:paper_whisper_flutter/providers/diary_provider.dart';
-import 'package:paper_whisper_flutter/services/diary_service.dart';
+import 'package:paper_whisper_flutter/features/diary/data/diary_entry.dart';
+import 'package:paper_whisper_flutter/features/diary/application/diary_provider.dart';
+import 'package:paper_whisper_flutter/features/diary/data/diary_service.dart';
 
 // 复用批次二测试的构造 helper（buildController/entry）与 FakeDraftService
 // 基类，避免重复 fake 定义；GatedFakeDraftService 在其上增加挂起门与

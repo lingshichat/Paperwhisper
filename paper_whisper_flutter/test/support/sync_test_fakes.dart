@@ -2,11 +2,11 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:path/path.dart' as path;
-import 'package:paper_whisper_flutter/models/diary_entry.dart';
+import 'package:paper_whisper_flutter/features/diary/data/diary_entry.dart';
 import 'package:paper_whisper_flutter/services/cloud_storage_service.dart';
-import 'package:paper_whisper_flutter/services/diary_service.dart';
+import 'package:paper_whisper_flutter/features/diary/data/diary_service.dart';
 import 'package:paper_whisper_flutter/services/manifest_service.dart';
-import 'package:paper_whisper_flutter/services/moment_service.dart';
+import 'package:paper_whisper_flutter/features/moments/data/moment_service.dart';
 import 'package:paper_whisper_flutter/services/trash_service.dart';
 
 /// 内存版云端存储替身：实现 [CloudStorageService] 接口，

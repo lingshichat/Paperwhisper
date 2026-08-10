@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:paper_whisper_flutter/features/moments/application/moment_index.dart';
-import 'package:paper_whisper_flutter/models/moment.dart';
+import 'package:paper_whisper_flutter/features/moments/data/moment.dart';
 
 /// MomentIndex 单元测试（阶段 4 L0 第三批）。
 ///

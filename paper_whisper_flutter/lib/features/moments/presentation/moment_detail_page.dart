@@ -8,7 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:path/path.dart' as path;
 import 'package:paper_whisper_flutter/features/export/data/export_path_resolver.dart';
-import 'package:paper_whisper_flutter/models/moment.dart';
+import 'package:paper_whisper_flutter/features/moments/data/moment.dart';
 import 'package:paper_whisper_flutter/providers/settings_provider.dart';
 import 'package:paper_whisper_flutter/shared/widgets/export_success_dialog.dart';
 import 'package:paper_whisper_flutter/shared/widgets/skeuomorphic_dialog.dart';

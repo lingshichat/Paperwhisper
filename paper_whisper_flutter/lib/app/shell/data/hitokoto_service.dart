@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 
 class HitokotoService {
   static const String _baseUrl = 'https://v1.hitokoto.cn';
-  
+
   // 静态缓存，使预热结果可被多个实例复用
   static HitokotoLine? _cachedResult;
   static bool _isFetching = false;
@@ -15,7 +15,7 @@ class HitokotoService {
     if (_cachedResult != null) {
       return _cachedResult;
     }
-    
+
     // 如果正在请求中，等待完成
     if (_isFetching) {
       // 等待最多 3 秒
@@ -26,12 +26,14 @@ class HitokotoService {
       }
       return _cachedResult;
     }
-    
+
     _isFetching = true;
     try {
       final response = await http.get(Uri.parse(_baseUrl));
       if (response.statusCode == 200) {
-        final Map<String, dynamic> data = json.decode(utf8.decode(response.bodyBytes));
+        final Map<String, dynamic> data = json.decode(
+          utf8.decode(response.bodyBytes),
+        );
         _cachedResult = HitokotoLine(
           hitokoto: data['hitokoto'] ?? '获取失败',
           from: data['from'] ?? '未知',

@@ -12,12 +12,12 @@ import 'package:paper_whisper_flutter/features/moments/application/moment_send_p
 import 'package:paper_whisper_flutter/features/moments/application/moments_timeline_controller.dart';
 import 'package:paper_whisper_flutter/features/sync/presentation/sync_ui_coordinator.dart';
 import 'package:paper_whisper_flutter/features/update/application/update_check_coordinator.dart';
-import 'package:paper_whisper_flutter/models/moment.dart';
-import 'package:paper_whisper_flutter/providers/diary_provider.dart';
+import 'package:paper_whisper_flutter/features/moments/data/moment.dart';
+import 'package:paper_whisper_flutter/features/diary/application/diary_provider.dart';
 import 'package:paper_whisper_flutter/providers/settings_provider.dart';
 import 'package:paper_whisper_flutter/providers/sync_provider.dart';
-import 'package:paper_whisper_flutter/services/moment_service.dart';
-import 'package:paper_whisper_flutter/services/payment_service.dart';
+import 'package:paper_whisper_flutter/features/moments/data/moment_service.dart';
+import 'package:paper_whisper_flutter/features/premium/data/payment_service.dart';
 import 'package:paper_whisper_flutter/app/shell/sidebar_widget.dart';
 import 'package:paper_whisper_flutter/shared/widgets/skeuomorphic_dialog.dart';
 import 'package:paper_whisper_flutter/shared/widgets/skeuomorphic_search_bar.dart';

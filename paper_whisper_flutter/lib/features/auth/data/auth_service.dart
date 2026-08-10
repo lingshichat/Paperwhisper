@@ -1,4 +1,3 @@
-
 import 'dart:convert';
 import 'dart:io' show Platform;
 import 'package:crypto/crypto.dart';
@@ -14,15 +13,15 @@ class AuthService {
 
   final LocalAuthentication _localAuth = LocalAuthentication();
   late SharedPreferences _prefs;
-  
+
   // Keys for SharedPreferences
   static const String _keyPinHash = 'auth_pin_hash';
   static const String _keyBiometricEnabled = 'auth_biometric_enabled';
-  
+
   // In-memory state
   bool _isLocked = false;
   bool get isLocked => _isLocked;
-  
+
   // Prevent duplicate lock screens (especially during bio auth on Android which triggers lifecycle changes)
   bool isLockScreenVisible = false;
 
@@ -48,7 +47,7 @@ class AuthService {
     // But since we require init, just use _prefs
     return _prefs.containsKey(_keyPinHash);
   }
-  
+
   bool isLockEnabledSync() {
     return _prefs.containsKey(_keyPinHash);
   }
@@ -81,7 +80,7 @@ class AuthService {
   Future<bool> verifyPin(String pin) async {
     final storedHash = _prefs.getString(_keyPinHash);
     if (storedHash == null) return false;
-    
+
     final inputHash = sha256.convert(utf8.encode(pin)).toString();
     return inputHash == storedHash;
   }
@@ -109,7 +108,7 @@ class AuthService {
         debugPrint('Biometrics not available');
         return false;
       }
-      
+
       debugPrint('Invoking _localAuth.authenticate');
 
       // Windows 上允许 PIN 认证（Windows Hello），移动端仅生物识别

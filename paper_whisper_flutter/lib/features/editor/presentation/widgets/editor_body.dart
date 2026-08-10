@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:paper_whisper_flutter/core/theme/theme_registry.dart';
-import '../../../../models/diary_entry.dart';
+import 'package:paper_whisper_flutter/features/diary/data/diary_entry.dart';
 import 'paper_sheet_widget.dart';
 import 'editor_branding_footer.dart';
 import 'editor_meta_selector.dart';

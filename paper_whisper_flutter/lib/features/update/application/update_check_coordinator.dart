@@ -1,5 +1,5 @@
-import '../../../models/update_info.dart';
-import '../../../services/update_service.dart';
+import 'package:paper_whisper_flutter/features/update/data/update_info.dart';
+import 'package:paper_whisper_flutter/features/update/data/update_service.dart';
 
 /// 更新检查结果（sealed typed outcome，context-free）。
 sealed class UpdateCheckOutcome {

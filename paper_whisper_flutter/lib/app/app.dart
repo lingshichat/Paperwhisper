@@ -11,8 +11,8 @@ import 'package:paper_whisper_flutter/features/auth/presentation/splash_page.dar
 import 'package:paper_whisper_flutter/features/auth/presentation/widgets/lock_screen.dart';
 import 'package:paper_whisper_flutter/providers/settings_provider.dart';
 import 'package:paper_whisper_flutter/providers/sync_provider.dart';
-import 'package:paper_whisper_flutter/services/auth_service.dart';
-import 'package:paper_whisper_flutter/services/moment_service.dart';
+import 'package:paper_whisper_flutter/features/auth/data/auth_service.dart';
+import 'package:paper_whisper_flutter/features/moments/data/moment_service.dart';
 import 'package:paper_whisper_flutter/services/storage_service.dart';
 
 import 'app_lifecycle_observer.dart';

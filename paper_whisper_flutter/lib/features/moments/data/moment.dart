@@ -69,7 +69,11 @@ class Moment {
     return Moment(
       uuid: json['uuid'] as String,
       content: json['content'] as String,
-      images: (json['images'] as List<dynamic>?)?.map((e) => e as String).toList() ?? [],
+      images:
+          (json['images'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          [],
       createdAt: DateTime.parse(json['createdAt'] as String),
       weather: json['weather'] as String?,
       mood: json['mood'] as String?,
@@ -79,8 +83,9 @@ class Moment {
       audioDuration: json['audioDuration'] as int?,
     );
   }
-  
+
   String toJsonString() => json.encode(toJson());
-  
-  factory Moment.fromJsonString(String jsonString) => Moment.fromJson(json.decode(jsonString));
+
+  factory Moment.fromJsonString(String jsonString) =>
+      Moment.fromJson(json.decode(jsonString));
 }
