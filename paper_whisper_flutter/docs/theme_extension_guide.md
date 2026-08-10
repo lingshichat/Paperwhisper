@@ -107,7 +107,7 @@
 
 - **背景/按钮颜色**：检查 `build()` 中的颜色判断。
 
-### 3.7 过渡动画 (`lib/widgets/paper_fold_page_route.dart`)
+### 3.7 过渡动画 (`lib/app/navigation/route_transitions.dart`)
 
 - **信纸颜色**：`_getThemeColors()` 中的 `_LetterColors` 配置（信纸背景、折痕、阴影）。
 
@@ -160,7 +160,7 @@ lib/widgets/skeuomorphic_search_bar.dart
 lib/widgets/book_flip_refresh_widget.dart
 lib/widgets/month_divider.dart
 lib/widgets/skeuomorphic_dialog.dart
-lib/widgets/paper_fold_page_route.dart
+lib/app/navigation/route_transitions.dart
 lib/widgets/moment_input_widget.dart
 assets/textures/
 ```

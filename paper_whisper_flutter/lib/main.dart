@@ -9,6 +9,7 @@ import 'services/diary_service.dart';
 import 'services/moment_service.dart';
 import 'providers/settings_provider.dart';
 import 'providers/sync_provider.dart';
+import 'app/navigation/app_routes.dart';
 import 'config/app_theme.dart';
 import 'config/theme/theme_registry.dart';
 import 'services/storage_service.dart';
@@ -170,9 +171,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   void _showLockScreen() {
     if (AuthService().isLockScreenVisible) return;
     navigatorKey.currentState?.push(
-      PageRouteBuilder(
-        opaque: false,
-        pageBuilder: (_, _, _) => LockScreen(
+      AppRoutes.transparent(
+        LockScreen(
           enableBack: false,
           onUnlocked: () => navigatorKey.currentState?.pop(),
         ),

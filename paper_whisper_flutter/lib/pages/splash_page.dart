@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import '../app/navigation/app_routes.dart';
 import '../config/app_theme.dart';
 import '../features/update/application/update_check_coordinator.dart';
 import '../widgets/update_dialog.dart';
-import 'diary_list_page.dart';
-import 'intro_page.dart';
-import 'moments_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/settings_provider.dart';
 import '../widgets/privacy_agreement_dialog.dart';
@@ -70,48 +68,23 @@ class _SplashPageState extends State<SplashPage> {
 
     if (!mounted) return;
 
-    // 1. 导航到目标页面
-    Widget targetPage;
-
-    if (widget.showIntro) {
-      targetPage = const IntroPage();
-    } else {
-      switch (widget.startupPage) {
-        case 'moments':
-          targetPage = const MomentsPage();
-          break;
-        case 'writer':
-          targetPage = const DiaryListPage();
-          break;
-        case 'last':
-        default:
-          targetPage = const DiaryListPage();
-          break;
-      }
-    }
-
     final bool isLocked = AuthService().isLocked;
 
-    // 如果锁定，导航到锁屏页面 (替换 Splash)
-    // 解锁后的回调导航到 targetPage
+    // 如果锁定，导航到锁屏页面 (替换 Splash)；解锁后的回调导航到同一
+    // startup route（_startupRoute 工厂按 showIntro / startup_page 字符串
+    // 分发，持久化字符串 'moments'/'writer'/'last' 逐字保留）。
     if (isLocked) {
+      // 使用惰性 builder：LockScreen 在 route 的 pageBuilder 阶段构造，
+      // 拿到的是该 route 自身的有效 context（而非即将被替换销毁的
+      // Splash context），解锁回调经 route context 导航到 startup route。
       Navigator.of(context).pushReplacement(
-        PageRouteBuilder(
-          pageBuilder: (ctx, _, _) => _buildLockScreenWrapper(ctx, targetPage),
-          transitionsBuilder: (_, animation, _, child) =>
-              FadeTransition(opacity: animation, child: child),
-          transitionDuration: const Duration(milliseconds: 300), // 加快转场
+        AppRoutes.pageFadeBuilder(
+          (routeContext) =>
+              _buildLockScreenWrapper(routeContext, _startupRoute),
         ),
       );
     } else {
-      Navigator.of(context).pushReplacement(
-        PageRouteBuilder(
-          pageBuilder: (_, _, _) => targetPage,
-          transitionsBuilder: (_, animation, _, child) =>
-              FadeTransition(opacity: animation, child: child),
-          transitionDuration: const Duration(milliseconds: 300), // 加快转场
-        ),
-      );
+      Navigator.of(context).pushReplacement(_startupRoute());
 
       // 3. 启动时自动检测更新（仅非引导页时检查）
       if (!widget.showIntro) {
@@ -120,20 +93,23 @@ class _SplashPageState extends State<SplashPage> {
     }
   }
 
-  Widget _buildLockScreenWrapper(BuildContext context, Widget targetPage) {
+  /// 启动目标路由工厂：showIntro 优先返回 IntroPage，否则按
+  /// startup_page 持久化字符串（'moments'/'writer'/'last'）逐字分发。
+  Route<void> _startupRoute() => AppRoutes.startup(
+    showIntro: widget.showIntro,
+    startupPage: widget.startupPage,
+  );
+
+  Widget _buildLockScreenWrapper(
+    BuildContext context,
+    Route<void> Function() startupRoute,
+  ) {
     // 引入锁屏组件
     return LockScreen(
       enableBack: false,
       onUnlocked: () {
-        // 解锁成功，替换为目标页面
-        Navigator.of(context).pushReplacement(
-          PageRouteBuilder(
-            pageBuilder: (_, _, _) => targetPage,
-            transitionsBuilder: (_, animation, _, child) =>
-                FadeTransition(opacity: animation, child: child),
-            transitionDuration: const Duration(milliseconds: 300),
-          ),
-        );
+        // 解锁成功，替换为同一 startup route
+        Navigator.of(context).pushReplacement(startupRoute());
 
         // 检测更新
         if (!widget.showIntro) {

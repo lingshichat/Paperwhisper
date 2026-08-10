@@ -9,6 +9,7 @@ import 'package:paper_whisper_flutter/pages/book_directory_page.dart';
 import 'package:paper_whisper_flutter/pages/bookshelf_page.dart';
 import 'package:paper_whisper_flutter/pages/diary_list_page.dart';
 import 'package:paper_whisper_flutter/pages/editor_page.dart';
+import 'package:paper_whisper_flutter/pages/intro_page.dart';
 import 'package:paper_whisper_flutter/pages/moment_detail_page.dart';
 import 'package:paper_whisper_flutter/pages/moments_page.dart';
 import 'package:paper_whisper_flutter/pages/premium_membership_page.dart';
@@ -56,13 +57,177 @@ void main() {
       );
     });
 
-    testWidgets('fade 工厂：opaque=false、默认 300ms（momentDetail 语义）', (
+    testWidgets('pageFade 工厂：opaque=true、默认 300ms/300ms，可传 forward', (
       tester,
     ) async {
       await tester.pumpWidget(harness(const Scaffold(body: Text('x'))));
       const page = Text('p');
 
-      final route = AppRoutes.fade<void>(page) as PageRouteBuilder<void>;
+      final route = AppRoutes.pageFade<void>(page) as PageRouteBuilder<void>;
+      expect(route.opaque, isTrue);
+      expect(route.transitionDuration, const Duration(milliseconds: 300));
+      expect(
+        route.reverseTransitionDuration,
+        const Duration(milliseconds: 300),
+      );
+      final built = route.pageBuilder(
+        tester.element(find.byType(MaterialApp)),
+        kAlwaysCompleteAnimation,
+        kAlwaysCompleteAnimation,
+      );
+      expect(built, same(page));
+
+      // forward 可覆盖，reverse 保留 Flutter 默认 300ms
+      final long =
+          AppRoutes.pageFade<void>(
+                page,
+                forward: const Duration(milliseconds: 800),
+              )
+              as PageRouteBuilder<void>;
+      expect(long.transitionDuration, const Duration(milliseconds: 800));
+      expect(long.reverseTransitionDuration, const Duration(milliseconds: 300));
+    });
+
+    testWidgets('pageFadeBuilder：惰性执行且拿到与 pageBuilder 相同的 route context', (
+      tester,
+    ) async {
+      await tester.pumpWidget(harness(const Scaffold(body: Text('x'))));
+      final context = tester.element(find.byType(MaterialApp));
+
+      var builderCalls = 0;
+      BuildContext? captured;
+      final route =
+          AppRoutes.pageFadeBuilder<void>((ctx) {
+                builderCalls++;
+                captured = ctx;
+                return const Text('lazy');
+              })
+              as PageRouteBuilder<void>;
+
+      // 构造阶段不执行 builder（惰性）
+      expect(builderCalls, 0);
+      expect(route.opaque, isTrue);
+      expect(route.transitionDuration, const Duration(milliseconds: 300));
+      expect(
+        route.reverseTransitionDuration,
+        const Duration(milliseconds: 300),
+      );
+
+      final built = route.pageBuilder(
+        context,
+        kAlwaysCompleteAnimation,
+        kAlwaysCompleteAnimation,
+      );
+      expect(builderCalls, 1);
+      expect(captured, same(context));
+      expect(built, isA<Text>());
+    });
+
+    testWidgets('pageFade 委托 pageFadeBuilder：构建结果与 forward 语义等价', (
+      tester,
+    ) async {
+      await tester.pumpWidget(harness(const Scaffold(body: Text('x'))));
+      final context = tester.element(find.byType(MaterialApp));
+      const page = Text('p');
+
+      final direct = AppRoutes.pageFade<void>(page) as PageRouteBuilder<void>;
+      final delegated =
+          AppRoutes.pageFadeBuilder<void>((_) => page)
+              as PageRouteBuilder<void>;
+      expect(direct.opaque, delegated.opaque);
+      expect(direct.transitionDuration, delegated.transitionDuration);
+      expect(
+        direct.pageBuilder(
+          context,
+          kAlwaysCompleteAnimation,
+          kAlwaysCompleteAnimation,
+        ),
+        same(page),
+      );
+      expect(
+        delegated.pageBuilder(
+          context,
+          kAlwaysCompleteAnimation,
+          kAlwaysCompleteAnimation,
+        ),
+        same(page),
+      );
+
+      final long =
+          AppRoutes.pageFadeBuilder<void>(
+                (_) => page,
+                forward: const Duration(milliseconds: 800),
+              )
+              as PageRouteBuilder<void>;
+      expect(long.transitionDuration, const Duration(milliseconds: 800));
+      expect(long.reverseTransitionDuration, const Duration(milliseconds: 300));
+    });
+
+    testWidgets(
+      'pageFadeBuilder：外层 route 被替换后 route context 仍可导航（无 deactivated 异常）',
+      (tester) async {
+        // 复现 Splash locked 场景：外层页面被 pushReplacement 替换销毁，
+        // 锁屏 route 的 pageBuilder 捕获到的是 route 自身 context，
+        // 后续经该 context 导航不得触发 deactivated context 异常。
+        late BuildContext routeContext;
+        var navigated = false;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Builder(
+              builder: (outerContext) => Scaffold(
+                body: Center(
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.of(outerContext).pushReplacement(
+                        AppRoutes.pageFadeBuilder<void>((ctx) {
+                          routeContext = ctx;
+                          return Scaffold(
+                            body: Center(
+                              child: TextButton(
+                                onPressed: () {
+                                  // 外层已被替换销毁，此处必须使用 route context
+                                  Navigator.of(routeContext).push(
+                                    MaterialPageRoute<void>(
+                                      builder: (_) =>
+                                          const Scaffold(body: Text('target')),
+                                    ),
+                                  );
+                                  navigated = true;
+                                },
+                                child: const Text('go'),
+                              ),
+                            ),
+                          );
+                        }),
+                      );
+                    },
+                    child: const Text('start'),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('start'));
+        await tester.pumpAndSettle();
+        expect(find.text('go'), findsOneWidget);
+
+        await tester.tap(find.text('go'));
+        await tester.pumpAndSettle();
+        expect(navigated, isTrue);
+        expect(find.text('target'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets('overlayFade 工厂：opaque=false、默认 300ms（momentDetail 语义）', (
+      tester,
+    ) async {
+      await tester.pumpWidget(harness(const Scaffold(body: Text('x'))));
+      const page = Text('p');
+
+      final route = AppRoutes.overlayFade<void>(page) as PageRouteBuilder<void>;
       expect(route.opaque, isFalse);
       expect(route.transitionDuration, const Duration(milliseconds: 300));
       expect(
@@ -76,6 +241,38 @@ void main() {
       );
       expect(built, same(page));
     });
+
+    testWidgets(
+      'transparent 工厂：opaque=false、无 Fade transitionsBuilder（main resume 锁屏）',
+      (tester) async {
+        await tester.pumpWidget(harness(const Scaffold(body: Text('x'))));
+        const page = Text('p');
+
+        final route =
+            AppRoutes.transparent<void>(page) as PageRouteBuilder<void>;
+        expect(route.opaque, isFalse);
+        expect(route.transitionDuration, const Duration(milliseconds: 300));
+        expect(
+          route.reverseTransitionDuration,
+          const Duration(milliseconds: 300),
+        );
+        // 无 Fade：transitionsBuilder 直接透传 child，不包 FadeTransition
+        final transitioned = route.transitionsBuilder(
+          tester.element(find.byType(MaterialApp)),
+          kAlwaysCompleteAnimation,
+          kAlwaysCompleteAnimation,
+          const Text('child'),
+        );
+        expect(transitioned, isA<Text>());
+        expect(transitioned, isNot(isA<FadeTransition>()));
+        final built = route.pageBuilder(
+          tester.element(find.byType(MaterialApp)),
+          kAlwaysCompleteAnimation,
+          kAlwaysCompleteAnimation,
+        );
+        expect(built, same(page));
+      },
+    );
 
     testWidgets('shellFade 工厂：opaque=true、500ms/300ms（sidebar 语义）', (
       tester,
@@ -115,6 +312,51 @@ void main() {
   });
 
   group('页面工厂：route 目标 Widget 参数可达', () {
+    testWidgets('introCompleted：DiaryListPage、800ms/300ms、opaque=true', (
+      tester,
+    ) async {
+      await tester.pumpWidget(harness(const Scaffold(body: Text('x'))));
+      final context = tester.element(find.byType(MaterialApp));
+
+      final route = AppRoutes.introCompleted();
+      expect(route, isA<PageRouteBuilder<void>>());
+      final r = route as PageRouteBuilder<void>;
+      expect(r.opaque, isTrue);
+      expect(r.transitionDuration, const Duration(milliseconds: 800));
+      expect(
+        r.reverseTransitionDuration,
+        const Duration(milliseconds: 300),
+        reason: 'intro 现状仅设 transitionDuration=800，reverse 保留 Flutter 默认 300ms',
+      );
+      expect(buildPage(route, context), isA<DiaryListPage>());
+    });
+
+    testWidgets('startup：showIntro 优先 IntroPage，其余按 startup_page 字符串分发', (
+      tester,
+    ) async {
+      await tester.pumpWidget(harness(const Scaffold(body: Text('x'))));
+      final context = tester.element(find.byType(MaterialApp));
+
+      Widget targetOf(bool showIntro, String startupPage) => buildPage(
+        AppRoutes.startup(showIntro: showIntro, startupPage: startupPage),
+        context,
+      );
+
+      expect(targetOf(true, 'writer'), isA<IntroPage>());
+      expect(targetOf(false, 'moments'), isA<MomentsPage>());
+      expect(targetOf(false, 'writer'), isA<DiaryListPage>());
+      expect(targetOf(false, 'last'), isA<DiaryListPage>());
+      expect(targetOf(false, 'unknown'), isA<DiaryListPage>());
+      expect(targetOf(false, ''), isA<DiaryListPage>());
+
+      // 300ms/300ms、opaque=true（splash 现状）
+      final route = AppRoutes.startup(showIntro: false, startupPage: 'last');
+      final r = route as PageRouteBuilder<void>;
+      expect(r.opaque, isTrue);
+      expect(r.transitionDuration, const Duration(milliseconds: 300));
+      expect(r.reverseTransitionDuration, const Duration(milliseconds: 300));
+    });
+
     testWidgets('无参页面工厂构建正确页面类型', (tester) async {
       await tester.pumpWidget(harness(const Scaffold(body: Text('x'))));
       final context = tester.element(find.byType(MaterialApp));

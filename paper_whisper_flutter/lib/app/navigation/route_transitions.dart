@@ -10,8 +10,7 @@ import '../../providers/settings_provider.dart';
 /// slide / fade-slide / unfold / smooth-cover / book-flip / letter-fold）。
 ///
 /// 本文件是跨页转场的唯一真实实现，供 [AppRoutes] 与后续导航消费方
-/// 复用。`lib/widgets/*_page_route.dart` 目前只是本文件的 re-export 兼容层，
-/// 迁移完成并删除兼容层前，消费者 import 路径保持不变。
+/// 复用。原 `lib/widgets/*_page_route.dart` 兼容层已随导航迁移完成删除。
 ///
 /// 全部类保留原有构造参数、duration、curve、opaque/barrier 语义。
 

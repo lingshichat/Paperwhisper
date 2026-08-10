@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
+import '../app/navigation/app_routes.dart';
 import '../config/app_theme.dart';
 import '../providers/settings_provider.dart';
 import '../services/auth_service.dart';
@@ -48,18 +49,14 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
     if (value) {
       // 启用密码锁时进入设置流程
       await Navigator.of(context).push(
-        PageRouteBuilder(
-          pageBuilder:
-              (context, animation, secondaryAnimation) => LockScreen(
-                mode: LockScreenMode.setup,
-                enableBack: true,
-                onUnlocked: () {
-                  Navigator.pop(context);
-                },
-              ),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            return FadeTransition(opacity: animation, child: child);
-          },
+        AppRoutes.pageFadeBuilder(
+          (routeContext) => LockScreen(
+            mode: LockScreenMode.setup,
+            enableBack: true,
+            onUnlocked: () {
+              Navigator.pop(routeContext);
+            },
+          ),
         ),
       );
       await _loadState();
@@ -68,21 +65,17 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
 
     // 关闭密码锁前先验证一次
     await Navigator.of(context).push(
-      PageRouteBuilder(
-        pageBuilder:
-            (context, animation, secondaryAnimation) => LockScreen(
-              mode: LockScreenMode.verify,
-              enableBack: true,
-              onUnlocked: () async {
-                await _authService.clearLock();
-                if (context.mounted) {
-                  Navigator.pop(context);
-                }
-              },
-            ),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(opacity: animation, child: child);
-        },
+      AppRoutes.pageFadeBuilder(
+        (routeContext) => LockScreen(
+          mode: LockScreenMode.verify,
+          enableBack: true,
+          onUnlocked: () async {
+            await _authService.clearLock();
+            if (routeContext.mounted) {
+              Navigator.pop(routeContext);
+            }
+          },
+        ),
       ),
     );
     await _loadState();
@@ -112,33 +105,25 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
 
   Future<void> _changePin() async {
     await Navigator.of(context).push(
-      PageRouteBuilder(
-        pageBuilder:
-            (context, animation, secondaryAnimation) => LockScreen(
-              mode: LockScreenMode.verify,
-              enableBack: true,
-              onUnlocked: () async {
-                Navigator.pushReplacement(
-                  context,
-                  PageRouteBuilder(
-                    pageBuilder:
-                        (ctx, anim, secAnim) => LockScreen(
-                          mode: LockScreenMode.setup,
-                          enableBack: true,
-                          onUnlocked: () {
-                            Navigator.pop(ctx);
-                          },
-                        ),
-                    transitionsBuilder:
-                        (ctx, anim, secAnim, child) =>
-                            FadeTransition(opacity: anim, child: child),
-                  ),
-                );
-              },
-            ),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(opacity: animation, child: child);
-        },
+      AppRoutes.pageFadeBuilder(
+        (outerRouteContext) => LockScreen(
+          mode: LockScreenMode.verify,
+          enableBack: true,
+          onUnlocked: () async {
+            Navigator.pushReplacement(
+              outerRouteContext,
+              AppRoutes.pageFadeBuilder(
+                (innerRouteContext) => LockScreen(
+                  mode: LockScreenMode.setup,
+                  enableBack: true,
+                  onUnlocked: () {
+                    Navigator.pop(innerRouteContext);
+                  },
+                ),
+              ),
+            );
+          },
+        ),
       ),
     );
     await _loadState();

@@ -7,7 +7,7 @@ import '../models/diary_entry.dart';
 import '../config/app_theme.dart';
 import '../widgets/skeuomorphic_container.dart';
 import '../widgets/dashed_line_painter.dart';
-import '../widgets/unfold_page_route.dart';
+import '../app/navigation/route_transitions.dart' show getWidgetRect;
 
 class DiaryCard extends StatefulWidget {
   final DiaryEntry entry;

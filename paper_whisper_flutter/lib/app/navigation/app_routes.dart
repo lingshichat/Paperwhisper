@@ -9,6 +9,7 @@ import '../../pages/book_directory_page.dart';
 import '../../pages/bookshelf_page.dart';
 import '../../pages/diary_list_page.dart';
 import '../../pages/editor_page.dart';
+import '../../pages/intro_page.dart';
 import '../../pages/moment_detail_page.dart';
 import '../../pages/moments_page.dart';
 import '../../pages/premium_membership_page.dart';
@@ -47,14 +48,45 @@ class AppRoutes {
   /// 平滑平移（700ms / 600ms，easeOutQuart）。
   static Route<T> slide<T>(Widget page) => SlidePageRoute<T>(page: page);
 
-  /// 淡入（opaque=false，默认 300ms；供 MomentDetail 类模态呈现复用，
-  /// 对应 moment_card 现状的 PageRouteBuilder + FadeTransition）。
-  static Route<T> fade<T>(Widget page) => PageRouteBuilder<T>(
+  /// 淡入页面（opaque=true，默认 300ms/300ms，可传 forward duration；
+  /// reverse 保留 Flutter 默认 300ms）。供页面级淡入复用。
+  static Route<T> pageFade<T>(
+    Widget page, {
+    Duration forward = const Duration(milliseconds: 300),
+  }) => pageFadeBuilder<T>((_) => page, forward: forward);
+
+  /// 淡入页面（惰性 builder 版，opaque=true，默认 300ms/300ms，可传
+  /// forward duration；reverse 保留 Flutter 默认 300ms）。
+  ///
+  /// [builder] 在 route 的 pageBuilder 阶段才执行，此时传入的是该
+  /// route 自身的有效 BuildContext，而非调用方（可能即将被替换/销毁）
+  /// 的 context。供 Splash 锁屏、SecuritySettings 锁屏流等在 route
+  /// 内部持有回调导航上下文的场景使用，避免捕获外层将被 dispose 的
+  /// context 导致 deactivated context 异常。
+  static Route<T> pageFadeBuilder<T>(
+    WidgetBuilder builder, {
+    Duration forward = const Duration(milliseconds: 300),
+  }) => PageRouteBuilder<T>(
+    opaque: true,
+    transitionDuration: forward,
+    pageBuilder: (context, _, _) => builder(context),
+    transitionsBuilder: (_, animation, _, child) =>
+        FadeTransition(opacity: animation, child: child),
+  );
+
+  /// 淡入覆盖（opaque=false，默认 300ms/300ms；供 MomentDetail 类模态
+  /// 呈现复用，对应 moment_card 现状的 PageRouteBuilder + FadeTransition）。
+  static Route<T> overlayFade<T>(Widget page) => PageRouteBuilder<T>(
     opaque: false,
     pageBuilder: (_, _, _) => page,
     transitionsBuilder: (_, animation, _, child) =>
         FadeTransition(opacity: animation, child: child),
   );
+
+  /// 透明覆盖（opaque=false、无 Fade transitionsBuilder，300ms/300ms；
+  /// 对应 main resume 锁屏现状：仅 opaque=false，无转场动画）。
+  static Route<T> transparent<T>(Widget page) =>
+      PageRouteBuilder<T>(opaque: false, pageBuilder: (_, _, _) => page);
 
   /// 淡入 shell 切换（opaque=true，500ms / 300ms；供 Sidebar 主页面切换
   /// 复用，对应 sidebar_widget 现状的 PageRouteBuilder + FadeTransition：
@@ -128,6 +160,37 @@ class AppRoutes {
   /// 日记列表页（现状：自定义 PageRouteBuilder 淡入 500ms opaque，sidebar）。
   static Route<void> diaryList() => shellFade(const DiaryListPage());
 
+  /// 引导页完成 → 日记列表（现状：intro 800ms Fade 淡入；reverse 保留
+  /// Flutter 默认 300ms）。
+  static Route<void> introCompleted() => pageFade<void>(
+    const DiaryListPage(),
+    forward: const Duration(milliseconds: 800),
+  );
+
+  /// 启动页分发（现状：splash 300ms Fade 淡入，300ms/300ms）。
+  ///
+  /// showIntro 优先返回 IntroPage；否则按 startup_page 持久化字符串
+  /// （'moments' / 'writer' / 'last' / default）逐字分发，字符串不变。
+  static Route<void> startup({
+    required bool showIntro,
+    required String startupPage,
+  }) {
+    final Widget target;
+    if (showIntro) {
+      target = const IntroPage();
+    } else {
+      switch (startupPage) {
+        case 'moments':
+          target = const MomentsPage();
+        case 'writer':
+        case 'last':
+        default:
+          target = const DiaryListPage();
+      }
+    }
+    return pageFade<void>(target);
+  }
+
   /// 书架页（现状：SmoothCoverPageRoute，book_directory）。
   ///
   /// 保持旧调用 `SmoothCoverPageRoute(page: BookshelfPage(...))` 推断出的
@@ -146,7 +209,7 @@ class AppRoutes {
     required Directory? baseDir,
     required String heroTag,
     int initialIndex = 0,
-  }) => fade(
+  }) => overlayFade<void>(
     MomentDetailPage(
       moment: moment,
       baseDir: baseDir,

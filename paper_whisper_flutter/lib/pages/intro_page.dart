@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../app/navigation/app_routes.dart';
 import '../widgets/visual_effects.dart';
-import 'diary_list_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class IntroPage extends StatefulWidget {
@@ -281,18 +281,8 @@ class _EnterButtonState extends State<_EnterButton>
 
         if (!context.mounted) return;
 
-        // 导航到主页，并使用淡入淡出动画
-        Navigator.of(context).pushReplacement(
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                const DiaryListPage(),
-            transitionsBuilder:
-                (context, animation, secondaryAnimation, child) {
-                  return FadeTransition(opacity: animation, child: child);
-                },
-            transitionDuration: const Duration(milliseconds: 800),
-          ),
-        );
+        // 导航到主页，使用淡入淡出动画（800ms forward，reverse 保留默认 300ms）
+        Navigator.of(context).pushReplacement(AppRoutes.introCompleted());
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 100),
