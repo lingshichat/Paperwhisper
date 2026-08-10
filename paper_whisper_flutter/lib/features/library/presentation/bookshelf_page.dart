@@ -7,7 +7,7 @@ import 'package:paper_whisper_flutter/app/navigation/app_routes.dart';
 import 'package:paper_whisper_flutter/config/theme/theme_registry.dart';
 import 'package:paper_whisper_flutter/providers/diary_provider.dart';
 import 'package:paper_whisper_flutter/providers/settings_provider.dart';
-import 'package:paper_whisper_flutter/widgets/skeuomorphic_dialog.dart';
+import 'package:paper_whisper_flutter/shared/widgets/skeuomorphic_dialog.dart';
 
 import 'widgets/skeuomorphic_book.dart';
 

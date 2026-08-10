@@ -85,11 +85,11 @@
 
 - **书签/丝带颜色**：在 `build()` 方法中添加新主题的分支。
 
-### 3.2 日期选择器 (`lib/widgets/skeuomorphic_date_picker.dart`)
+### 3.2 日期选择器 (`lib/shared/widgets/skeuomorphic_date_picker.dart`)
 
 - **整体配色**：`dialogBg`, `headerBg`, `accentColor` 等。
 
-### 3.3 搜索栏 (`lib/widgets/skeuomorphic_search_bar.dart`)
+### 3.3 搜索栏 (`lib/shared/widgets/skeuomorphic_search_bar.dart`)
 
 - **背景/边框**：检查 `build()` 中的颜色定义。
 - **图标与光标**：确保 `iconColor` 和 `cursorColor` 使用了主题强调色（如 Musubi Red）。
@@ -103,7 +103,7 @@
 
 - **颜色配置**：`ThemeRegistry.get(theme).monthDivider`。
 
-### 3.6 对话框 (`lib/widgets/skeuomorphic_dialog.dart`)
+### 3.6 对话框 (`lib/shared/widgets/skeuomorphic_dialog.dart`)
 
 - **背景/按钮颜色**：检查 `build()` 中的颜色判断。
 
@@ -155,11 +155,11 @@ lib/features/library/presentation/book_directory_page.dart
 lib/pages/focus_writing_page.dart
 lib/features/moments/presentation/moments_page.dart
 lib/features/editor/presentation/widgets/paper_sheet_widget.dart
-lib/widgets/skeuomorphic_date_picker.dart
-lib/widgets/skeuomorphic_search_bar.dart
+lib/shared/widgets/skeuomorphic_date_picker.dart
+lib/shared/widgets/skeuomorphic_search_bar.dart
 lib/features/diary/presentation/widgets/book_flip_refresh_widget.dart
 lib/features/diary/presentation/widgets/month_divider.dart
-lib/widgets/skeuomorphic_dialog.dart
+lib/shared/widgets/skeuomorphic_dialog.dart
 lib/app/navigation/route_transitions.dart
 lib/features/moments/presentation/widgets/moment_input_widget.dart
 assets/textures/

@@ -29,7 +29,7 @@ import '../components/paper_sheet_theme_data.dart';
 import '../components/diary_list_page_theme_data.dart';
 import '../components/moment_standard_card_theme_data.dart';
 import '../components/date_picker_theme_data.dart';
-import '../../../widgets/visual_effects.dart';
+import 'package:paper_whisper_flutter/shared/widgets/visual_effects.dart';
 
 // Midnight palette constants
 const Color _midnightBgCenter = Color(0xFF1a237e);

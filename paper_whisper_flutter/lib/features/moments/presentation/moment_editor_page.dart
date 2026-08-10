@@ -9,7 +9,7 @@ import 'package:paper_whisper_flutter/models/moment.dart';
 import 'package:paper_whisper_flutter/providers/settings_provider.dart';
 import 'package:paper_whisper_flutter/providers/sync_provider.dart';
 import 'package:paper_whisper_flutter/services/moment_service.dart';
-import 'package:paper_whisper_flutter/widgets/skeuomorphic_dialog.dart';
+import 'package:paper_whisper_flutter/shared/widgets/skeuomorphic_dialog.dart';
 
 class MomentEditorPage extends StatefulWidget {
   const MomentEditorPage({super.key});

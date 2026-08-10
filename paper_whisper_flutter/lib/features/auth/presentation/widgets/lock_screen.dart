@@ -9,7 +9,7 @@ import 'package:paper_whisper_flutter/config/app_theme.dart';
 import 'package:paper_whisper_flutter/config/theme/theme_registry.dart';
 import 'package:paper_whisper_flutter/features/auth/application/lock_controller.dart';
 import 'package:paper_whisper_flutter/providers/settings_provider.dart';
-import 'package:paper_whisper_flutter/widgets/skeuomorphic_toast.dart';
+import 'package:paper_whisper_flutter/shared/widgets/skeuomorphic_toast.dart';
 import 'animated_fingerprint.dart';
 
 // LockScreenMode 所有权位于 features/auth/application/，此处 re-export

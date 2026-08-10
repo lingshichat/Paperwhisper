@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../models/update_info.dart';
-import '../../../../widgets/skeuomorphic_dialog.dart';
+import 'package:paper_whisper_flutter/shared/widgets/skeuomorphic_dialog.dart';
 
 /// 日记列表统一更新/公告弹窗组件。
 ///

@@ -5,8 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../../../providers/sync_provider.dart';
-import '../../../widgets/skeuomorphic_dialog.dart';
-import '../../../widgets/skeuomorphic_toast.dart';
+import 'package:paper_whisper_flutter/shared/widgets/skeuomorphic_dialog.dart';
+import 'package:paper_whisper_flutter/shared/widgets/skeuomorphic_toast.dart';
 import '../application/save_sync_coordinator.dart';
 import '../application/sync_run_result.dart';
 

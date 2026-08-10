@@ -16,7 +16,7 @@ import 'package:paper_whisper_flutter/features/editor/presentation/widgets/expor
 import 'package:paper_whisper_flutter/features/editor/presentation/widgets/lined_paper_painter.dart';
 import 'package:paper_whisper_flutter/models/diary_entry.dart';
 import 'package:paper_whisper_flutter/providers/settings_provider.dart';
-import 'package:paper_whisper_flutter/widgets/skeuomorphic_date_picker.dart';
+import 'package:paper_whisper_flutter/shared/widgets/skeuomorphic_date_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

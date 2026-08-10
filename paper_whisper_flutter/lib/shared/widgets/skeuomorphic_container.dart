@@ -46,18 +46,20 @@ class SkeuomorphicContainer extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(4),
       color: bgColor,
-      shadows: shadows ?? const [
-         BoxShadow(
-          color: Color.fromRGBO(0, 0, 0, 0.3),
-          blurRadius: 20,
-          offset: Offset(0, 10),
-          spreadRadius: -5,
-        ),
-      ],
+      shadows:
+          shadows ??
+          const [
+            BoxShadow(
+              color: Color.fromRGBO(0, 0, 0, 0.3),
+              blurRadius: 20,
+              offset: Offset(0, 10),
+              spreadRadius: -5,
+            ),
+          ],
       child: child,
     );
   }
-  
+
   factory SkeuomorphicContainer.inset({
     required Widget child,
     double? width,
@@ -94,14 +96,11 @@ class SkeuomorphicContainer extends StatelessWidget {
       ),
       child: child,
     );
-    
+
     if (onTap != null) {
-      return GestureDetector(
-        onTap: onTap,
-        child: content,
-      );
+      return GestureDetector(onTap: onTap, child: content);
     }
-    
+
     return content;
   }
 }

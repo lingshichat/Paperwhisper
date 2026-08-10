@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import '../config/app_theme.dart';
-import '../config/theme/theme_registry.dart';
-import '../providers/settings_provider.dart';
+import 'package:paper_whisper_flutter/config/app_theme.dart';
+import 'package:paper_whisper_flutter/config/theme/theme_registry.dart';
+import 'package:paper_whisper_flutter/providers/settings_provider.dart';
 
 /// 拟物风格弹窗 - 支持多主题适配
 class SkeuomorphicDialog extends StatelessWidget {
@@ -47,7 +47,7 @@ class SkeuomorphicDialog extends StatelessWidget {
             decoration: BoxDecoration(
               color: colors.paper,
               borderRadius: BorderRadius.circular(2),
-              border: colors.border != null 
+              border: colors.border != null
                   ? Border.all(color: colors.border!, width: 1)
                   : null,
               boxShadow: [
@@ -78,7 +78,7 @@ class SkeuomorphicDialog extends StatelessWidget {
                   ),
                   textAlign: TextAlign.center,
                 ),
-                
+
                 // 内容
                 if (content != null) ...[
                   const SizedBox(height: 15),
@@ -98,21 +98,24 @@ class SkeuomorphicDialog extends StatelessWidget {
 
                 // 自定义底部 (优先于 actions)
                 if (footer != null) ...[
-                   const SizedBox(height: 30),
-                   footer!,
+                  const SizedBox(height: 30),
+                  footer!,
                 ] else if (actions != null && actions!.isNotEmpty) ...[
                   const SizedBox(height: 30),
                   Row(
-                    children: actions!.map((action) {
-                      return Expanded(child: action);
-                    }).expand((widget) => [widget, const SizedBox(width: 10)])
-                     .take(actions!.length * 2 - 1).toList(),
+                    children: actions!
+                        .map((action) {
+                          return Expanded(child: action);
+                        })
+                        .expand((widget) => [widget, const SizedBox(width: 10)])
+                        .take(actions!.length * 2 - 1)
+                        .toList(),
                   ),
                 ],
               ],
             ),
           ),
-          
+
           // 2. 胶带装饰
           if (showTape)
             Positioned(
@@ -128,7 +131,7 @@ class SkeuomorphicDialog extends StatelessWidget {
                       color: Color.fromRGBO(0, 0, 0, 0.1),
                       offset: Offset(0, 2),
                       blurRadius: 4,
-                    )
+                    ),
                   ],
                 ),
               ),
@@ -141,7 +144,7 @@ class SkeuomorphicDialog extends StatelessWidget {
   /// 根据主题获取颜色配置
   _DialogColors _getThemeColors(String theme) {
     final dialogTheme = ThemeRegistry.get(theme).dialog;
-    
+
     if (dialogTheme.paper != null) {
       return _DialogColors(
         paper: dialogTheme.paper!,
@@ -153,56 +156,57 @@ class SkeuomorphicDialog extends StatelessWidget {
         border: dialogTheme.border,
       );
     } else if (theme == AppTheme.themeMidnight) {
-        return _DialogColors(
-          paper: const Color(0xFF161b22),
-          title: const Color(0xFFe6edf3),
-          text: const Color(0xFFc9d1d9),
-          icon: const Color(0xFF7986cb),
-          tape: const Color(0xFF30363d),
-          shadow: const Color.fromRGBO(0, 0, 0, 0.6),
-          border: const Color(0xFF30363d),
-        );
+      return _DialogColors(
+        paper: const Color(0xFF161b22),
+        title: const Color(0xFFe6edf3),
+        text: const Color(0xFFc9d1d9),
+        icon: const Color(0xFF7986cb),
+        tape: const Color(0xFF30363d),
+        shadow: const Color.fromRGBO(0, 0, 0, 0.6),
+        border: const Color(0xFF30363d),
+      );
     } else if (theme == AppTheme.themeAfterRain) {
-        // Fallback or Explicit Override
-        return _DialogColors(
-          paper: const Color(0xFFF0F8FF).withValues(alpha: 0.95), // Alice Blue
-          title: const Color(0xFF455A64),
-          text: const Color(0xFF455A64),
-          icon: const Color(0xFF0288D1),
-          tape: const Color(0xFFB3E5FC).withValues(alpha: 0.5),
-          shadow: const Color(0xFF0288D1).withValues(alpha: 0.15),
-          border: Colors.white,
-        );
+      // Fallback or Explicit Override
+      return _DialogColors(
+        paper: const Color(0xFFF0F8FF).withValues(alpha: 0.95), // Alice Blue
+        title: const Color(0xFF455A64),
+        text: const Color(0xFF455A64),
+        icon: const Color(0xFF0288D1),
+        tape: const Color(0xFFB3E5FC).withValues(alpha: 0.5),
+        shadow: const Color(0xFF0288D1).withValues(alpha: 0.15),
+        border: Colors.white,
+      );
     } else if (theme == AppTheme.themeTwilight) {
-        return _DialogColors(
-          paper: const Color(0xFF352044).withValues(alpha: 0.9),
-          title: const Color(0xFFe6edf3),
-          text: const Color(0xFFc9d1d9),
-          icon: const Color(0xFFEF5350),
-          tape: const Color(0xFFEF5350).withValues(alpha: 0.5),
-          shadow: const Color(0xFFEF5350).withValues(alpha: 0.15),
-          border: const Color(0xFFEF5350).withValues(alpha: 0.3),
-        );
+      return _DialogColors(
+        paper: const Color(0xFF352044).withValues(alpha: 0.9),
+        title: const Color(0xFFe6edf3),
+        text: const Color(0xFFc9d1d9),
+        icon: const Color(0xFFEF5350),
+        tape: const Color(0xFFEF5350).withValues(alpha: 0.5),
+        shadow: const Color(0xFFEF5350).withValues(alpha: 0.15),
+        border: const Color(0xFFEF5350).withValues(alpha: 0.3),
+      );
     } else if (theme == AppTheme.themeSeaFlower) {
-        return _DialogColors(
-          paper: const Color(0xFFFCE4EC),
-          title: const Color(0xFF880E4F),
-          text: const Color(0xFFAD1457),
-          icon: const Color(0xFFF06292),
-          tape: const Color(0xFFF8BBD0),
-          shadow: const Color.fromRGBO(173, 20, 87, 0.25),
-          border: const Color(0xFFF48FB1),
-        );
-    } else { // 时光旧物
-        return _DialogColors(
-          paper: const Color(0xFFF4ECD8),
-          title: const Color(0xFF2d241f),
-          text: const Color(0xFF5D4037),
-          icon: const Color(0xFF5D4037),
-          tape: const Color(0xD9E0E0E0),
-          shadow: const Color.fromRGBO(0, 0, 0, 0.4),
-          border: null,
-        );
+      return _DialogColors(
+        paper: const Color(0xFFFCE4EC),
+        title: const Color(0xFF880E4F),
+        text: const Color(0xFFAD1457),
+        icon: const Color(0xFFF06292),
+        tape: const Color(0xFFF8BBD0),
+        shadow: const Color.fromRGBO(173, 20, 87, 0.25),
+        border: const Color(0xFFF48FB1),
+      );
+    } else {
+      // 时光旧物
+      return _DialogColors(
+        paper: const Color(0xFFF4ECD8),
+        title: const Color(0xFF2d241f),
+        text: const Color(0xFF5D4037),
+        icon: const Color(0xFF5D4037),
+        tape: const Color(0xD9E0E0E0),
+        shadow: const Color.fromRGBO(0, 0, 0, 0.4),
+        border: null,
+      );
     }
   }
 }
@@ -235,8 +239,8 @@ class SkeuomorphicDialogButton extends StatelessWidget {
   final bool isPrimary;
 
   const SkeuomorphicDialogButton({
-    super.key, 
-    required this.label, 
+    super.key,
+    required this.label,
     required this.onPressed,
     this.isPrimary = true,
   });
@@ -278,7 +282,7 @@ class SkeuomorphicDialogButton extends StatelessWidget {
               color: colors.primaryShadow,
               offset: const Offset(0, 4),
               blurRadius: 8,
-            )
+            ),
           ],
         ),
         alignment: Alignment.center,
@@ -296,7 +300,7 @@ class SkeuomorphicDialogButton extends StatelessWidget {
   /// 根据主题获取按钮颜色
   _ButtonColors _getButtonColors(String theme) {
     final dialogTheme = ThemeRegistry.get(theme).dialog;
-    
+
     if (dialogTheme.primaryBtn != null) {
       return _ButtonColors(
         primary: dialogTheme.primaryBtn!,
@@ -305,40 +309,41 @@ class SkeuomorphicDialogButton extends StatelessWidget {
         secondary: dialogTheme.secondaryBtn!,
       );
     } else if (theme == AppTheme.themeMidnight) {
-        return _ButtonColors(
-          primary: const Color(0xFF5C6BC0),
-          primaryText: const Color(0xFFe6edf3),
-          primaryShadow: const Color.fromRGBO(92, 107, 192, 0.4),
-          secondary: const Color(0xFF8b949e),
-        );
+      return _ButtonColors(
+        primary: const Color(0xFF5C6BC0),
+        primaryText: const Color(0xFFe6edf3),
+        primaryShadow: const Color.fromRGBO(92, 107, 192, 0.4),
+        secondary: const Color(0xFF8b949e),
+      );
     } else if (theme == AppTheme.themeAfterRain) {
-        return const _ButtonColors(
-          primary: Color(0xFF0288D1),
-          primaryText: Colors.white,
-          primaryShadow: Color.fromRGBO(2, 136, 209, 0.3),
-          secondary: Color(0xFF455A64),
-        );
+      return const _ButtonColors(
+        primary: Color(0xFF0288D1),
+        primaryText: Colors.white,
+        primaryShadow: Color.fromRGBO(2, 136, 209, 0.3),
+        secondary: Color(0xFF455A64),
+      );
     } else if (theme == AppTheme.themeTwilight) {
-        return _ButtonColors(
-          primary: const Color(0xFFEF5350),
-          primaryText: const Color(0xFF352044),
-          primaryShadow: const Color(0xFFEF5350).withValues(alpha: 0.3),
-          secondary: const Color(0xFF9E9E9E),
-        );
+      return _ButtonColors(
+        primary: const Color(0xFFEF5350),
+        primaryText: const Color(0xFF352044),
+        primaryShadow: const Color(0xFFEF5350).withValues(alpha: 0.3),
+        secondary: const Color(0xFF9E9E9E),
+      );
     } else if (theme == AppTheme.themeSeaFlower) {
-        return _ButtonColors(
-          primary: const Color(0xFFEC407A),
-          primaryText: Colors.white,
-          primaryShadow: const Color.fromRGBO(236, 64, 122, 0.4),
-          secondary: const Color(0xFFAD1457),
-        );
-    } else { // 时光旧物
-        return _ButtonColors(
-          primary: const Color(0xFF5D4037),
-          primaryText: const Color(0xFFF4ECD8),
-          primaryShadow: const Color.fromRGBO(93, 64, 55, 0.4),
-          secondary: const Color(0xFF8D6E63),
-        );
+      return _ButtonColors(
+        primary: const Color(0xFFEC407A),
+        primaryText: Colors.white,
+        primaryShadow: const Color.fromRGBO(236, 64, 122, 0.4),
+        secondary: const Color(0xFFAD1457),
+      );
+    } else {
+      // 时光旧物
+      return _ButtonColors(
+        primary: const Color(0xFF5D4037),
+        primaryText: const Color(0xFFF4ECD8),
+        primaryShadow: const Color.fromRGBO(93, 64, 55, 0.4),
+        secondary: const Color(0xFF8D6E63),
+      );
     }
   }
 }

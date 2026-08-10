@@ -19,9 +19,9 @@ import 'package:paper_whisper_flutter/services/moment_service.dart';
 import 'package:paper_whisper_flutter/services/payment_service.dart';
 import 'package:paper_whisper_flutter/services/storage_service.dart';
 import 'package:paper_whisper_flutter/services/update_service.dart';
-import 'package:paper_whisper_flutter/widgets/skeuomorphic_dialog.dart';
-import 'package:paper_whisper_flutter/widgets/skeuomorphic_toast.dart';
-import 'package:paper_whisper_flutter/widgets/visual_effects.dart';
+import 'package:paper_whisper_flutter/shared/widgets/skeuomorphic_dialog.dart';
+import 'package:paper_whisper_flutter/shared/widgets/skeuomorphic_toast.dart';
+import 'package:paper_whisper_flutter/shared/widgets/visual_effects.dart';
 
 import '../application/settings_permission_controller.dart';
 import '../application/settings_storage_controller.dart';

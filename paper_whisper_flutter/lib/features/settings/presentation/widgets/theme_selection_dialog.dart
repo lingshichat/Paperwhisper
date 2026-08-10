@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:paper_whisper_flutter/config/app_theme.dart';
 import 'package:paper_whisper_flutter/config/theme/theme_registry.dart';
 import 'package:paper_whisper_flutter/providers/settings_provider.dart';
-import 'package:paper_whisper_flutter/widgets/skeuomorphic_container.dart';
+import 'package:paper_whisper_flutter/shared/widgets/skeuomorphic_container.dart';
 
 class ThemeSelectionDialog extends StatelessWidget {
   const ThemeSelectionDialog({super.key});

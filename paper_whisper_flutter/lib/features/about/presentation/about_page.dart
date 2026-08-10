@@ -7,8 +7,8 @@ import 'package:paper_whisper_flutter/config/app_theme.dart';
 import 'package:paper_whisper_flutter/config/theme/theme_registry.dart';
 import 'package:paper_whisper_flutter/providers/settings_provider.dart';
 import 'package:paper_whisper_flutter/services/update_service.dart';
-import 'package:paper_whisper_flutter/widgets/skeuomorphic_toast.dart';
-import 'package:paper_whisper_flutter/widgets/visual_effects.dart';
+import 'package:paper_whisper_flutter/shared/widgets/skeuomorphic_toast.dart';
+import 'package:paper_whisper_flutter/shared/widgets/visual_effects.dart';
 
 /// 关于纸语页面
 /// 信纸风格展示项目信息、外部链接和开源协议

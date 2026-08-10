@@ -2,13 +2,13 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import '../services/hitokoto_service.dart';
-import '../config/app_theme.dart';
-import '../config/theme/theme_registry.dart';
-import '../app/navigation/app_routes.dart';
-import '../providers/settings_provider.dart';
-import '../widgets/skeuomorphic_search_bar.dart';
-import '../providers/diary_provider.dart';
+import 'package:paper_whisper_flutter/app/navigation/app_routes.dart';
+import 'package:paper_whisper_flutter/config/app_theme.dart';
+import 'package:paper_whisper_flutter/config/theme/theme_registry.dart';
+import 'package:paper_whisper_flutter/providers/diary_provider.dart';
+import 'package:paper_whisper_flutter/providers/settings_provider.dart';
+import 'package:paper_whisper_flutter/services/hitokoto_service.dart';
+import 'package:paper_whisper_flutter/shared/widgets/skeuomorphic_search_bar.dart';
 
 enum SidebarSection { writer, moments, statistics, none }
 

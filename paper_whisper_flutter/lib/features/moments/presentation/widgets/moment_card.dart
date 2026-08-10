@@ -15,9 +15,9 @@ import 'package:paper_whisper_flutter/config/theme/components/moment_card_theme_
 import 'package:paper_whisper_flutter/config/theme/theme_registry.dart';
 import 'package:paper_whisper_flutter/models/moment.dart';
 import 'package:paper_whisper_flutter/providers/settings_provider.dart';
-import 'package:paper_whisper_flutter/widgets/export_success_dialog.dart';
-import 'package:paper_whisper_flutter/widgets/skeuomorphic_dialog.dart';
-import 'package:paper_whisper_flutter/widgets/skeuomorphic_toast.dart';
+import 'package:paper_whisper_flutter/shared/widgets/export_success_dialog.dart';
+import 'package:paper_whisper_flutter/shared/widgets/skeuomorphic_dialog.dart';
+import 'package:paper_whisper_flutter/shared/widgets/skeuomorphic_toast.dart';
 
 class MomentCard extends StatefulWidget {
   final Moment moment;

@@ -11,8 +11,8 @@ import 'package:paper_whisper_flutter/models/trash_record.dart';
 import 'package:paper_whisper_flutter/providers/diary_provider.dart';
 import 'package:paper_whisper_flutter/providers/settings_provider.dart';
 import 'package:paper_whisper_flutter/services/moment_service.dart';
-import 'package:paper_whisper_flutter/widgets/skeuomorphic_dialog.dart';
-import 'package:paper_whisper_flutter/widgets/skeuomorphic_toast.dart';
+import 'package:paper_whisper_flutter/shared/widgets/skeuomorphic_dialog.dart';
+import 'package:paper_whisper_flutter/shared/widgets/skeuomorphic_toast.dart';
 
 class TrashPage extends StatefulWidget {
   const TrashPage({super.key});

@@ -10,9 +10,9 @@ import 'package:path/path.dart' as path;
 import 'package:paper_whisper_flutter/features/export/data/export_path_resolver.dart';
 import 'package:paper_whisper_flutter/models/moment.dart';
 import 'package:paper_whisper_flutter/providers/settings_provider.dart';
-import 'package:paper_whisper_flutter/widgets/export_success_dialog.dart';
-import 'package:paper_whisper_flutter/widgets/skeuomorphic_dialog.dart';
-import 'package:paper_whisper_flutter/widgets/skeuomorphic_toast.dart';
+import 'package:paper_whisper_flutter/shared/widgets/export_success_dialog.dart';
+import 'package:paper_whisper_flutter/shared/widgets/skeuomorphic_dialog.dart';
+import 'package:paper_whisper_flutter/shared/widgets/skeuomorphic_toast.dart';
 
 import 'widgets/moment_standard_card.dart';
 import 'widgets/postmark_stamp.dart';

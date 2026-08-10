@@ -6,7 +6,7 @@ import 'package:paper_whisper_flutter/config/app_theme.dart';
 import 'package:paper_whisper_flutter/config/theme/theme_registry.dart';
 import 'package:paper_whisper_flutter/providers/diary_provider.dart';
 import 'package:paper_whisper_flutter/providers/settings_provider.dart';
-import 'package:paper_whisper_flutter/widgets/skeuomorphic_dialog.dart';
+import 'package:paper_whisper_flutter/shared/widgets/skeuomorphic_dialog.dart';
 
 class BookDirectoryPage extends StatelessWidget {
   final int year;

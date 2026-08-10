@@ -12,7 +12,8 @@ class PetalRainWidget extends StatefulWidget {
   State<PetalRainWidget> createState() => _PetalRainWidgetState();
 }
 
-class _PetalRainWidgetState extends State<PetalRainWidget> with SingleTickerProviderStateMixin {
+class _PetalRainWidgetState extends State<PetalRainWidget>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   final List<Petal> _petals = [];
   int _frameId = 0; // 帧计数器，用于优化 shouldRepaint
@@ -21,7 +22,7 @@ class _PetalRainWidgetState extends State<PetalRainWidget> with SingleTickerProv
   @override
   void initState() {
     super.initState();
-    
+
     // 初始化
     if (widget.burst) {
       // 侧边爆炸模式 (Confetti Cannons)
@@ -40,22 +41,21 @@ class _PetalRainWidgetState extends State<PetalRainWidget> with SingleTickerProv
     } else {
       // 普通模式：均匀分布
       for (int i = 0; i < 25; i++) {
-          _petals.add(_generatePetal(true));
+        _petals.add(_generatePetal(true));
       }
     }
 
-    _controller = AnimationController(
-             vsync: this, 
-             duration: const Duration(seconds: 1)
-           )..addListener(_updatePetals)
-            ..repeat();
+    _controller =
+        AnimationController(vsync: this, duration: const Duration(seconds: 1))
+          ..addListener(_updatePetals)
+          ..repeat();
   }
 
   void _updatePetals() {
     _frameId++; // 递增帧号
     // 持续生成新花瓣逻辑 (Rain)
     if (_random.nextDouble() < 0.05 && _petals.length < 100) {
-       _petals.add(_generatePetal(false));
+      _petals.add(_generatePetal(false));
     }
 
     for (var petal in _petals) {
@@ -64,34 +64,34 @@ class _PetalRainWidgetState extends State<PetalRainWidget> with SingleTickerProv
         // 物理模拟
         petal.x += petal.vx;
         petal.y += petal.vy;
-        
+
         // 重力
         petal.vy += 0.0005; // Gravity
-        
+
         // 空气阻力
         petal.vx *= 0.98;
         petal.vy *= 0.98;
-        
+
         // 旋转跟随速度
         petal.rotation += _random.nextDouble() * 0.1;
-        
+
         // 渐隐
         if (petal.opacity < petal.maxOpacity) {
-            petal.opacity += 0.05;
+          petal.opacity += 0.05;
         }
         // 如果落到底部或飞出边界，重置为普通下落花瓣
         if (petal.y > 1.2 || petal.x < -0.2 || petal.x > 1.2) {
-           _resetPetal(petal);
+          _resetPetal(petal);
         }
       } else {
         // 普通下落逻辑
         // 1. 更新Y轴下落 (Linear)
         petal.y += petal.speed;
-        
+
         // 计算进度 (Progress 0.0 -> 1.0)
         // Range: -0.2 (Start) to 1.15 (End) -> span = 1.35
         final double progress = (petal.y - (-0.2)) / 1.35;
-        
+
         // 2. 复刻 CSS Keyframes: Sway (X轴偏移)
         if (progress < 0.25) {
           petal.swayX = _lerp(0, 25, progress / 0.25);
@@ -102,10 +102,10 @@ class _PetalRainWidgetState extends State<PetalRainWidget> with SingleTickerProv
         } else {
           petal.swayX = _lerp(30, 0, (progress - 0.75) / 0.25);
         }
-        
+
         // 3. 复刻 CSS Keyframes: Rotation (0 -> 360deg)
         petal.rotation = progress * 2 * pi;
-        
+
         // 4. 复刻 CSS Keyframes: Opacity
         if (progress < 0.05) {
           petal.opacity = _lerp(0, petal.maxOpacity, progress / 0.05);
@@ -117,7 +117,7 @@ class _PetalRainWidgetState extends State<PetalRainWidget> with SingleTickerProv
 
         // 超出边界时重置
         if (petal.y > 1.2) {
-           _resetPetal(petal);
+          _resetPetal(petal);
         }
       }
     }
@@ -132,11 +132,12 @@ class _PetalRainWidgetState extends State<PetalRainWidget> with SingleTickerProv
     final startY = initial ? (_random.nextDouble() * 1.4 - 0.2) : -0.2;
     return Petal(
       x: _random.nextDouble(),
-      y: startY, 
-      size: 20 + _random.nextDouble() * 20, 
+      y: startY,
+      size: 20 + _random.nextDouble() * 20,
       // 保持极慢速度: 0.0003 ~ 0.0008
       speed: 0.0003 + _random.nextDouble() * 0.0005,
-      maxOpacity: 0.4 + _random.nextDouble() * 0.4, // Increased opacity slightly
+      maxOpacity:
+          0.4 + _random.nextDouble() * 0.4, // Increased opacity slightly
       color: _getRandomColor(),
       vx: 0,
       vy: 0,
@@ -147,22 +148,23 @@ class _PetalRainWidgetState extends State<PetalRainWidget> with SingleTickerProv
     // 侧边大炮：从屏幕两侧下方 (Y=0.7) 向内上方发射
     final double startX = isLeft ? -0.1 : 1.1;
     final double startY = 0.6 + _random.nextDouble() * 0.2; // 0.6 ~ 0.8
-    
+
     // 发射角度：
     // 左侧: -80度(向上) ~ -10度(向右) -> rad: -1.4 ~ -0.2
     // 右侧: -170度(向左) ~ -100度(向上) -> rad: -3.0 ~ -1.7
-    final double angle = isLeft 
+    final double angle = isLeft
         ? -1.4 + _random.nextDouble() * 1.2
         : -3.0 + _random.nextDouble() * 1.3;
-        
-    final double speed = 0.015 + _random.nextDouble() * 0.025; // High initial speed
-    
+
+    final double speed =
+        0.015 + _random.nextDouble() * 0.025; // High initial speed
+
     return Petal(
       x: startX,
-      y: startY, 
-      size: 20 + _random.nextDouble() * 30, 
-      speed: 0, 
-      maxOpacity: 0.8 + _random.nextDouble() * 0.2, 
+      y: startY,
+      size: 20 + _random.nextDouble() * 30,
+      speed: 0,
+      maxOpacity: 0.8 + _random.nextDouble() * 0.2,
       color: _getRandomColor(),
       vx: cos(angle) * speed * 0.6, // Aspect ratio fix
       vy: sin(angle) * speed,
@@ -182,11 +184,16 @@ class _PetalRainWidgetState extends State<PetalRainWidget> with SingleTickerProv
   }
 
   Color _getRandomColor() {
-     const colors = [
-        Color(0xFFF8BBD0), Color(0xFFF48FB1), Color(0xFFE1BEE7),
-        Color(0xFFCE93D8), Color(0xFFFFE5F1), Color(0xFFF3E5F5), Color(0xFFEC407A),
-     ];
-     return colors[_random.nextInt(colors.length)];
+    const colors = [
+      Color(0xFFF8BBD0),
+      Color(0xFFF48FB1),
+      Color(0xFFE1BEE7),
+      Color(0xFFCE93D8),
+      Color(0xFFFFE5F1),
+      Color(0xFFF3E5F5),
+      Color(0xFFEC407A),
+    ];
+    return colors[_random.nextInt(colors.length)];
   }
 
   @override
@@ -197,7 +204,7 @@ class _PetalRainWidgetState extends State<PetalRainWidget> with SingleTickerProv
 
   @override
   Widget build(BuildContext context) {
-    return IgnorePointer( 
+    return IgnorePointer(
       child: AnimatedBuilder(
         animation: _controller,
         builder: (context, child) {
@@ -217,24 +224,24 @@ class Petal {
   double size;
   double speed;
   Color color;
-  
+
   // Dynamic properties
   double opacity = 0;
   double maxOpacity;
   double rotation = 0;
   double swayX = 0; // Pixel offset
-  
+
   // Physics for explosion
   double vx = 0; // Velocity X
   double vy = 0; // Velocity Y
 
   Petal({
-    required this.x, 
-    required this.y, 
-    required this.size, 
-    required this.speed, 
-    required this.maxOpacity, 
-    required this.color, 
+    required this.x,
+    required this.y,
+    required this.size,
+    required this.speed,
+    required this.maxOpacity,
+    required this.color,
     this.vx = 0,
     this.vy = 0,
   });
@@ -249,32 +256,32 @@ class PetalPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint();
-    
+
     for (var petal in petals) {
       if (petal.opacity <= 0.01) continue;
 
       canvas.save();
-      
+
       // 位置计算
       final dx = petal.x * size.width + petal.swayX;
       final dy = petal.y * size.height;
-      
+
       canvas.translate(dx, dy);
       canvas.rotate(petal.rotation);
-      
+
       // 获取缓存的 TextPainter
       // 优化：使用简单的几何图形代替 TextPainter 绘制花瓣
       // TextPainter 在每一帧大量创建会导致 Texture 上传开销
-      
+
       final double petalSize = petal.size;
       final double radius = petalSize / 2;
       final double petalRadius = radius * 0.4;
       final double centerRadius = radius * 0.25;
-      
+
       // 花瓣颜色 (带透明度)
       paint.color = petal.color.withValues(alpha: petal.opacity);
       paint.style = PaintingStyle.fill;
-      
+
       // 绘制5片花瓣
       for (int i = 0; i < 5; i++) {
         final double angle = (i * 72) * pi / 180;
@@ -282,7 +289,7 @@ class PetalPainter extends CustomPainter {
         final double oy = sin(angle) * (radius * 0.5);
         canvas.drawCircle(Offset(ox, oy), petalRadius, paint);
       }
-      
+
       // 绘制花蕊 (稍微浅一点的颜色)
       paint.color = Colors.white.withValues(alpha: petal.opacity * 0.8);
       canvas.drawCircle(Offset.zero, centerRadius, paint);
@@ -325,11 +332,12 @@ class StarrySkyWidget extends StatefulWidget {
   State<StarrySkyWidget> createState() => _StarrySkyWidgetState();
 }
 
-class _StarrySkyWidgetState extends State<StarrySkyWidget> with SingleTickerProviderStateMixin {
+class _StarrySkyWidgetState extends State<StarrySkyWidget>
+    with SingleTickerProviderStateMixin {
   final List<Star> _stars = [];
   final List<HangingStar> _hangingStars = [];
-  final Random _random = Random(42); 
-  
+  final Random _random = Random(42);
+
   // 使用 AnimationController 替代 Ticker + setState
   late AnimationController _controller;
   int _frameId = 0; // 帧计数器，用于 shouldRepaint 优化
@@ -339,44 +347,48 @@ class _StarrySkyWidgetState extends State<StarrySkyWidget> with SingleTickerProv
     super.initState();
     // 1. 初始化背景闪烁星星 (Twinkling Background Stars)
     for (int i = 0; i < 100; i++) {
-       _stars.add(Star(
-         x: _random.nextDouble(),
-         y: _random.nextDouble(),
-         radius: _random.nextDouble() * 1.5 + 0.5,
-         baseOpacity: _random.nextDouble() * 0.4 + 0.1,
-         twinkleOffset: _random.nextDouble() * 2 * pi,
-         twinkleSpeed: 0.5 + _random.nextDouble() * 1.5,
-       ));
+      _stars.add(
+        Star(
+          x: _random.nextDouble(),
+          y: _random.nextDouble(),
+          radius: _random.nextDouble() * 1.5 + 0.5,
+          baseOpacity: _random.nextDouble() * 0.4 + 0.1,
+          twinkleOffset: _random.nextDouble() * 2 * pi,
+          twinkleSpeed: 0.5 + _random.nextDouble() * 1.5,
+        ),
+      );
     }
 
     // 2. 初始化悬挂星星 (Hanging Stars) - 均匀分布
     int starCount = 8;
     for (int i = 0; i < starCount; i++) {
-        // 将屏幕水平分为 8 等份，每个星星占据一份
-        double segmentWidth = 1.0 / starCount;
-        double startX = i * segmentWidth;
-        
-        // 在该份内随机偏移 (留出 10% 边距避免太靠边)
-        double validWidth = segmentWidth * 0.8;
-        double offset = segmentWidth * 0.1;
-        
-        _hangingStars.add(HangingStar(
-            x: startX + offset + _random.nextDouble() * validWidth, 
-            y: 0.1 + _random.nextDouble() * 0.5, 
-            size: 8.0 + _random.nextDouble() * 6.0,
-            swaySpeed: 0.5 + _random.nextDouble() * 0.5,
-            swayOffset: _random.nextDouble() * 2 * pi,
-            lineLength: 0.0, 
-      ));
+      // 将屏幕水平分为 8 等份，每个星星占据一份
+      double segmentWidth = 1.0 / starCount;
+      double startX = i * segmentWidth;
+
+      // 在该份内随机偏移 (留出 10% 边距避免太靠边)
+      double validWidth = segmentWidth * 0.8;
+      double offset = segmentWidth * 0.1;
+
+      _hangingStars.add(
+        HangingStar(
+          x: startX + offset + _random.nextDouble() * validWidth,
+          y: 0.1 + _random.nextDouble() * 0.5,
+          size: 8.0 + _random.nextDouble() * 6.0,
+          swaySpeed: 0.5 + _random.nextDouble() * 0.5,
+          swayOffset: _random.nextDouble() * 2 * pi,
+          lineLength: 0.0,
+        ),
+      );
     }
 
     // 3. 使用 AnimationController 实现无缝循环
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 1),
-    )..addListener(() {
-      _frameId++; // 仅递增帧号，不调用 setState
-    })..repeat();
+    _controller =
+        AnimationController(vsync: this, duration: const Duration(seconds: 1))
+          ..addListener(() {
+            _frameId++; // 仅递增帧号，不调用 setState
+          })
+          ..repeat();
   }
 
   @override
@@ -412,9 +424,9 @@ class Star {
   final double twinkleSpeed;
 
   Star({
-    required this.x, 
-    required this.y, 
-    required this.radius, 
+    required this.x,
+    required this.y,
+    required this.radius,
     required this.baseOpacity,
     required this.twinkleOffset,
     required this.twinkleSpeed,
@@ -423,17 +435,17 @@ class Star {
 
 class HangingStar {
   final double x;
-  final double y; 
+  final double y;
   final double size;
   final double swaySpeed;
   final double swayOffset;
-  final double lineLength; 
+  final double lineLength;
 
   HangingStar({
-    required this.x, 
-    required this.y, 
-    required this.size, 
-    required this.swaySpeed, 
+    required this.x,
+    required this.y,
+    required this.size,
+    required this.swaySpeed,
     required this.swayOffset,
     required this.lineLength,
   });
@@ -453,14 +465,21 @@ class StarPainter extends CustomPainter {
 
     // 1. Draw Background Stars (Small 5-pointed stars)
     for (var star in stars) {
-       // Continuous sine wave: 0.5 * (1 + sin) -> range 0.0 ~ 1.0. 
-       // Scaled to 0.4 ~ 1.0 logic similar to SVG
-       final double wave = sin(time * star.twinkleSpeed + star.twinkleOffset);
-       final double opacityRatio = 0.5 * (1 + wave); 
-       final double currentOpacity = star.baseOpacity + (opacityRatio * (1.0 - star.baseOpacity)); 
-       
-       // Draw with glow (Anti-aliasing and Blur)
-       _drawGlowingStar(canvas, Offset(star.x * size.width, star.y * size.height), star.radius, paint, currentOpacity.clamp(0.0, 1.0));
+      // Continuous sine wave: 0.5 * (1 + sin) -> range 0.0 ~ 1.0.
+      // Scaled to 0.4 ~ 1.0 logic similar to SVG
+      final double wave = sin(time * star.twinkleSpeed + star.twinkleOffset);
+      final double opacityRatio = 0.5 * (1 + wave);
+      final double currentOpacity =
+          star.baseOpacity + (opacityRatio * (1.0 - star.baseOpacity));
+
+      // Draw with glow (Anti-aliasing and Blur)
+      _drawGlowingStar(
+        canvas,
+        Offset(star.x * size.width, star.y * size.height),
+        star.radius,
+        paint,
+        currentOpacity.clamp(0.0, 1.0),
+      );
     }
 
     // 2. Draw Hanging Stars
@@ -471,27 +490,43 @@ class StarPainter extends CustomPainter {
 
     for (var hStar in hangingStars) {
       // Gentle sway: 5px max
-      final double sway = sin(time * hStar.swaySpeed + hStar.swayOffset) * 5.0; 
-      
+      final double sway = sin(time * hStar.swaySpeed + hStar.swayOffset) * 5.0;
+
       final double startX = hStar.x * size.width;
       final double targetX = startX + sway;
       final double targetY = hStar.y * size.height;
 
       // Draw Thread
-      canvas.drawLine(Offset(startX, 0), Offset(targetX, targetY - hStar.size), linePaint);
-      
+      canvas.drawLine(
+        Offset(startX, 0),
+        Offset(targetX, targetY - hStar.size),
+        linePaint,
+      );
+
       // Calculate opacity for hanging star
       // Slower blink for hanging stars: speed ~ 0.5-1.0
-      final double wave = sin(time * 0.8 + hStar.swayOffset); 
+      final double wave = sin(time * 0.8 + hStar.swayOffset);
       // Mapped to 0.5 ~ 1.0
-      final double starOpacity = 0.75 + 0.25 * wave; 
+      final double starOpacity = 0.75 + 0.25 * wave;
 
       // Draw Star with Glow
-      _drawGlowingStar(canvas, Offset(targetX, targetY), hStar.size, paint, starOpacity.clamp(0.0, 1.0));
+      _drawGlowingStar(
+        canvas,
+        Offset(targetX, targetY),
+        hStar.size,
+        paint,
+        starOpacity.clamp(0.0, 1.0),
+      );
     }
   }
 
-  void _drawGlowingStar(Canvas canvas, Offset center, double radius, Paint paint, double opacity) {
+  void _drawGlowingStar(
+    Canvas canvas,
+    Offset center,
+    double radius,
+    Paint paint,
+    double opacity,
+  ) {
     // 1. Draw Glow using RadialGradient (Restored per user request, visuals > perf)
     final glowRadius = radius * 3.0;
     final glowPaint = Paint()
@@ -509,7 +544,7 @@ class StarPainter extends CustomPainter {
     paint.color = Colors.white.withValues(alpha: opacity);
     paint.maskFilter = null; // Ensure no blur
     // Use fill for core
-    
+
     final path = _createStarPath(center, radius, radius * 0.4);
     canvas.drawPath(path, paint);
   }
@@ -519,22 +554,19 @@ class StarPainter extends CustomPainter {
     final double rot = -pi / 2; // Start at top
     final double step = pi / 5;
 
-    path.moveTo(
-      center.dx + cos(rot) * radius, 
-      center.dy + sin(rot) * radius
-    );
+    path.moveTo(center.dx + cos(rot) * radius, center.dy + sin(rot) * radius);
 
     for (int i = 1; i <= 5; i++) {
-       double angle = rot + step * (2 * i - 1);
-       path.lineTo(
-         center.dx + cos(angle) * innerRadius,
-         center.dy + sin(angle) * innerRadius
-       );
-       angle = rot + step * 2 * i;
-       path.lineTo(
-         center.dx + cos(angle) * radius,
-         center.dy + sin(angle) * radius
-       );
+      double angle = rot + step * (2 * i - 1);
+      path.lineTo(
+        center.dx + cos(angle) * innerRadius,
+        center.dy + sin(angle) * innerRadius,
+      );
+      angle = rot + step * 2 * i;
+      path.lineTo(
+        center.dx + cos(angle) * radius,
+        center.dy + sin(angle) * radius,
+      );
     }
     path.close();
     return path;

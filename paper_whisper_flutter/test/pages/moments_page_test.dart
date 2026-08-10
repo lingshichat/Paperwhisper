@@ -15,7 +15,7 @@ import 'package:paper_whisper_flutter/services/moment_service.dart';
 import 'package:paper_whisper_flutter/services/payment_service.dart';
 import 'package:paper_whisper_flutter/features/moments/presentation/widgets/moment_input_widget.dart';
 import 'package:paper_whisper_flutter/features/moments/presentation/widgets/ruler_date_picker.dart';
-import 'package:paper_whisper_flutter/widgets/skeuomorphic_dialog.dart';
+import 'package:paper_whisper_flutter/shared/widgets/skeuomorphic_dialog.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

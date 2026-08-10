@@ -4,8 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:paper_whisper_flutter/services/analytics_service.dart';
 import 'package:paper_whisper_flutter/services/payment_service.dart';
-import 'package:paper_whisper_flutter/widgets/skeuomorphic_toast.dart';
-import 'package:paper_whisper_flutter/widgets/visual_effects.dart';
+import 'package:paper_whisper_flutter/shared/widgets/skeuomorphic_toast.dart';
+import 'package:paper_whisper_flutter/shared/widgets/visual_effects.dart';
 
 import 'widgets/stamp_animation.dart';
 

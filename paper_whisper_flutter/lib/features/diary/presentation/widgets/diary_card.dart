@@ -8,7 +8,7 @@ import 'package:paper_whisper_flutter/app/navigation/route_transitions.dart'
 import 'package:paper_whisper_flutter/config/app_theme.dart';
 import 'package:paper_whisper_flutter/config/theme/theme_registry.dart';
 import 'package:paper_whisper_flutter/models/diary_entry.dart';
-import 'package:paper_whisper_flutter/widgets/skeuomorphic_container.dart';
+import 'package:paper_whisper_flutter/shared/widgets/skeuomorphic_container.dart';
 
 import 'dashed_line_painter.dart';
 

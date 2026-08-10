@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../config/app_theme.dart';
-import '../config/theme/theme_registry.dart';
-import '../config/theme/components/statistics_theme_data.dart';
+import 'package:paper_whisper_flutter/config/app_theme.dart';
+import 'package:paper_whisper_flutter/config/theme/components/statistics_theme_data.dart';
+import 'package:paper_whisper_flutter/config/theme/theme_registry.dart';
 
 /// 拟物化统计卡片
 /// 根据主题展示不同的质感效果
@@ -156,11 +156,7 @@ class SkeuomorphicStatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: _buildBadgeDecoration(),
-      child: Icon(
-        icon,
-        size: 24,
-        color: accentColor,
-      ),
+      child: Icon(icon, size: 24, color: accentColor),
     );
   }
 
@@ -289,7 +285,9 @@ class SkeuomorphicScrollBanner extends StatelessWidget {
                         shadows: days > 0
                             ? [
                                 Shadow(
-                                  color: const Color(0xFFFF6B35).withValues(alpha: 0.3),
+                                  color: const Color(
+                                    0xFFFF6B35,
+                                  ).withValues(alpha: 0.3),
                                   blurRadius: 10,
                                   offset: const Offset(0, 2),
                                 ),
@@ -359,7 +357,8 @@ class SkeuomorphicScrollBanner extends StatelessWidget {
 
     // 其他主题使用玻璃效果
     return BoxDecoration(
-      color: themeConfig.cardBackground.color?.withValues(alpha: 0.8) ??
+      color:
+          themeConfig.cardBackground.color?.withValues(alpha: 0.8) ??
           Colors.white.withValues(alpha: 0.1),
       borderRadius: BorderRadius.circular(16),
       border: themeConfig.cardBorder,
@@ -367,7 +366,10 @@ class SkeuomorphicScrollBanner extends StatelessWidget {
     );
   }
 
-  Widget _buildScrollEnd(StatisticsThemeData themeConfig, {required bool isLeft}) {
+  Widget _buildScrollEnd(
+    StatisticsThemeData themeConfig, {
+    required bool isLeft,
+  }) {
     if (theme == AppTheme.themeDefault) {
       // Vintage: 木质卷轴轴头
       return Container(

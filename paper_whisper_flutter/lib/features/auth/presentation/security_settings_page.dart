@@ -9,8 +9,8 @@ import 'package:paper_whisper_flutter/config/theme/theme_registry.dart';
 import 'package:paper_whisper_flutter/providers/settings_provider.dart';
 import 'package:paper_whisper_flutter/services/auth_service.dart';
 import 'package:paper_whisper_flutter/services/payment_service.dart';
-import 'package:paper_whisper_flutter/widgets/skeuomorphic_toast.dart';
-import 'package:paper_whisper_flutter/widgets/visual_effects.dart';
+import 'package:paper_whisper_flutter/shared/widgets/skeuomorphic_toast.dart';
+import 'package:paper_whisper_flutter/shared/widgets/visual_effects.dart';
 
 import 'widgets/lock_screen.dart';
 

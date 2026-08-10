@@ -12,7 +12,7 @@ import 'package:paper_whisper_flutter/features/editor/presentation/editor_page.d
 import 'package:paper_whisper_flutter/providers/diary_provider.dart';
 import 'package:paper_whisper_flutter/providers/settings_provider.dart';
 import 'package:paper_whisper_flutter/providers/sync_provider.dart';
-import 'package:paper_whisper_flutter/widgets/skeuomorphic_date_picker.dart';
+import 'package:paper_whisper_flutter/shared/widgets/skeuomorphic_date_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import '../config/app_theme.dart';
-import '../config/theme/theme_registry.dart';
-import '../providers/settings_provider.dart';
+import 'package:paper_whisper_flutter/config/app_theme.dart';
+import 'package:paper_whisper_flutter/config/theme/theme_registry.dart';
+import 'package:paper_whisper_flutter/providers/settings_provider.dart';
 
 /// 拟物风格 Toast 工具类
 /// 提供成功、错误、信息等样式的通知提示
@@ -13,28 +13,60 @@ class SkeuomorphicToast {
   static void success(BuildContext context, String message) {
     if (!context.mounted) return;
     final colors = _getThemeColors(context, _ToastType.success);
-    _show(context, message: message, icon: Icons.check_circle_outline, colors: colors);
+    _show(
+      context,
+      message: message,
+      icon: Icons.check_circle_outline,
+      colors: colors,
+    );
   }
 
   /// 显示错误提示
   static void error(BuildContext context, String message) {
     if (!context.mounted) return;
     final colors = _getThemeColors(context, _ToastType.error);
-    _show(context, message: message, icon: Icons.error_outline, colors: colors, duration: const Duration(seconds: 4));
+    _show(
+      context,
+      message: message,
+      icon: Icons.error_outline,
+      colors: colors,
+      duration: const Duration(seconds: 4),
+    );
   }
 
   /// 显示信息提示
-  static void info(BuildContext context, String message, {SnackBarAction? action}) {
+  static void info(
+    BuildContext context,
+    String message, {
+    SnackBarAction? action,
+  }) {
     if (!context.mounted) return;
     final colors = _getThemeColors(context, _ToastType.info);
-    _show(context, message: message, icon: Icons.info_outline, colors: colors, action: action);
+    _show(
+      context,
+      message: message,
+      icon: Icons.info_outline,
+      colors: colors,
+      action: action,
+    );
   }
 
   /// 显示警告提示
-  static void warning(BuildContext context, String message, {SnackBarAction? action}) {
+  static void warning(
+    BuildContext context,
+    String message, {
+    SnackBarAction? action,
+  }) {
     if (!context.mounted) return;
     final colors = _getThemeColors(context, _ToastType.warning);
-    _show(context, message: message, icon: Icons.warning_amber_outlined, colors: colors, duration: const Duration(seconds: 4), action: action);
+    _show(
+      context,
+      message: message,
+      icon: Icons.warning_amber_outlined,
+      colors: colors,
+      duration: const Duration(seconds: 4),
+      action: action,
+    );
   }
 
   /// 获取当前主题对应的颜色配置
@@ -73,7 +105,7 @@ class SkeuomorphicToast {
   static _ToastColors _getVintageColors(_ToastType type) {
     const bgColor = Color(0xFFF4ECD8); // 复古纸张色
     const textColor = Color(0xFF3E2723);
-    
+
     switch (type) {
       case _ToastType.success:
         return _ToastColors(
@@ -110,7 +142,7 @@ class SkeuomorphicToast {
   static _ToastColors _getMidnightColors(_ToastType type) {
     const bgColor = Color(0xFF161b22); // 深色背景
     const textColor = Color(0xFFe6edf3);
-    
+
     switch (type) {
       case _ToastType.success:
         return _ToastColors(
@@ -147,7 +179,7 @@ class SkeuomorphicToast {
   static _ToastColors _getSeaFlowerColors(_ToastType type) {
     const bgColor = Color(0xFFFCE4EC); // 淡粉背景
     const textColor = Color(0xFF880E4F);
-    
+
     switch (type) {
       case _ToastType.success:
         return _ToastColors(
