@@ -62,7 +62,7 @@
 
 - **标题颜色**：检查 `appBarColor` 的判断逻辑。
 
-### 2.6 回收站页面 (`lib/pages/trash_page.dart`)
+### 2.6 回收站页面 (`lib/features/trash/presentation/trash_page.dart`)
 
 - **列表项颜色**：检查 `_buildTrashItem()` 中对不同主题的适配。
 - **状态栏适配**：同上。

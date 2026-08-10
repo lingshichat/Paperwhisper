@@ -3,16 +3,16 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:path/path.dart' as path;
 import 'package:provider/provider.dart';
 
-import '../config/app_theme.dart';
-import '../config/theme/components/trash_page_theme_data.dart';
-import '../config/theme/theme_registry.dart';
-import '../models/diary_entry.dart';
-import '../models/trash_record.dart';
-import '../providers/diary_provider.dart';
-import '../providers/settings_provider.dart';
-import '../services/moment_service.dart';
-import '../widgets/skeuomorphic_dialog.dart';
-import '../widgets/skeuomorphic_toast.dart';
+import 'package:paper_whisper_flutter/config/app_theme.dart';
+import 'package:paper_whisper_flutter/config/theme/components/trash_page_theme_data.dart';
+import 'package:paper_whisper_flutter/config/theme/theme_registry.dart';
+import 'package:paper_whisper_flutter/models/diary_entry.dart';
+import 'package:paper_whisper_flutter/models/trash_record.dart';
+import 'package:paper_whisper_flutter/providers/diary_provider.dart';
+import 'package:paper_whisper_flutter/providers/settings_provider.dart';
+import 'package:paper_whisper_flutter/services/moment_service.dart';
+import 'package:paper_whisper_flutter/widgets/skeuomorphic_dialog.dart';
+import 'package:paper_whisper_flutter/widgets/skeuomorphic_toast.dart';
 
 class TrashPage extends StatefulWidget {
   const TrashPage({super.key});

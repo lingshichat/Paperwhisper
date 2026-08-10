@@ -3,12 +3,12 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../config/app_theme.dart';
-import '../config/theme/theme_registry.dart';
-import '../providers/settings_provider.dart';
-import '../services/update_service.dart';
-import '../widgets/visual_effects.dart';
-import '../widgets/skeuomorphic_toast.dart';
+import 'package:paper_whisper_flutter/config/app_theme.dart';
+import 'package:paper_whisper_flutter/config/theme/theme_registry.dart';
+import 'package:paper_whisper_flutter/providers/settings_provider.dart';
+import 'package:paper_whisper_flutter/services/update_service.dart';
+import 'package:paper_whisper_flutter/widgets/skeuomorphic_toast.dart';
+import 'package:paper_whisper_flutter/widgets/visual_effects.dart';
 
 /// 关于纸语页面
 /// 信纸风格展示项目信息、外部链接和开源协议
@@ -109,9 +109,7 @@ class _AboutPageState extends State<AboutPage> {
         decoration: BoxDecoration(
           color: bgColor,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          boxShadow: const [
-            BoxShadow(blurRadius: 20, color: Colors.black26),
-          ],
+          boxShadow: const [BoxShadow(blurRadius: 20, color: Colors.black26)],
         ),
         padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
         child: Column(
@@ -306,9 +304,8 @@ class _AboutPageState extends State<AboutPage> {
                         accentColor: sheetTitleColor,
                         textColor: sheetTitleColor,
                         secondaryColor: sheetTextColor,
-                        onTap: () => _launchUrl(
-                          'https://paperwhisper.lingshichat.top/',
-                        ),
+                        onTap: () =>
+                            _launchUrl('https://paperwhisper.lingshichat.top/'),
                       ),
                       _buildLinkItem(
                         icon: Icons.code,

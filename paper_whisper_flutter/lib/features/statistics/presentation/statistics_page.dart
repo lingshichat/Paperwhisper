@@ -3,13 +3,14 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import '../services/diary_service.dart';
-import '../services/moment_service.dart';
-import '../services/statistics_service.dart';
-import '../providers/settings_provider.dart';
-import '../config/app_theme.dart';
-import '../widgets/vintage_stamp.dart';
-import '../widgets/mood_badge_ring.dart';
+import 'package:paper_whisper_flutter/config/app_theme.dart';
+import 'package:paper_whisper_flutter/providers/settings_provider.dart';
+import 'package:paper_whisper_flutter/services/diary_service.dart';
+import 'package:paper_whisper_flutter/services/moment_service.dart';
+import 'package:paper_whisper_flutter/services/statistics_service.dart';
+
+import 'widgets/mood_badge_ring.dart';
+import 'widgets/vintage_stamp.dart';
 
 class StatisticsPage extends StatefulWidget {
   const StatisticsPage({super.key});

@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../models/diary_entry.dart';
 import '../../models/moment.dart';
-import '../../pages/about_page.dart';
+import '../../features/about/presentation/about_page.dart';
 import '../../pages/book_directory_page.dart';
 import '../../pages/bookshelf_page.dart';
 import '../../pages/diary_list_page.dart';
@@ -15,9 +15,9 @@ import '../../pages/moments_page.dart';
 import '../../pages/premium_membership_page.dart';
 import '../../pages/security_settings_page.dart';
 import '../../pages/settings_page.dart';
-import '../../pages/statistics_page.dart';
+import '../../features/statistics/presentation/statistics_page.dart';
 import '../../pages/sync_settings_page.dart';
-import '../../pages/trash_page.dart';
+import '../../features/trash/presentation/trash_page.dart';
 import 'route_transitions.dart';
 
 /// 编辑器多动画场景的转场选择器。

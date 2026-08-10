@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../config/app_theme.dart';
+import 'package:paper_whisper_flutter/config/app_theme.dart';
 
 /// 复古邮票组件
 /// 用于天气分布、标签展示等
@@ -53,10 +53,7 @@ class VintageStamp extends StatelessWidget {
                 end: Alignment.bottomRight,
                 colors: colors.bgColors,
               ),
-              border: Border.all(
-                color: colors.borderColor,
-                width: 1.5,
-              ),
+              border: Border.all(color: colors.borderColor, width: 1.5),
             ),
             child: Stack(
               children: [
@@ -172,7 +169,10 @@ class VintageStamp extends StatelessWidget {
         );
       case AppTheme.themeAfterRain:
         return _StampColors(
-          bgColors: [Colors.white.withValues(alpha: 0.9), const Color(0xFFF0F8FF)],
+          bgColors: [
+            Colors.white.withValues(alpha: 0.9),
+            const Color(0xFFF0F8FF),
+          ],
           borderColor: const Color(0xFF4FC3F7).withValues(alpha: 0.5),
           accentColor: const Color(0xFF0288D1),
           textColor: const Color(0xFF455A64),
@@ -285,18 +285,15 @@ class _PaperTexturePainter extends CustomPainter {
       ..style = PaintingStyle.fill;
 
     final random = math.Random(123);
-    
+
     // 绘制随机纤维纹理
     for (int i = 0; i < 50; i++) {
       final x = random.nextDouble() * size.width;
       final y = random.nextDouble() * size.height;
       final width = random.nextDouble() * 3 + 1;
       final height = random.nextDouble() * 0.5 + 0.2;
-      
-      canvas.drawRect(
-        Rect.fromLTWH(x, y, width, height),
-        paint,
-      );
+
+      canvas.drawRect(Rect.fromLTWH(x, y, width, height), paint);
     }
 
     // 绘制一些噪点
@@ -304,12 +301,8 @@ class _PaperTexturePainter extends CustomPainter {
       final x = random.nextDouble() * size.width;
       final y = random.nextDouble() * size.height;
       final radius = random.nextDouble() * 0.8 + 0.2;
-      
-      canvas.drawCircle(
-        Offset(x, y),
-        radius,
-        paint,
-      );
+
+      canvas.drawCircle(Offset(x, y), radius, paint);
     }
   }
 
