@@ -2,20 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
-import '../config/app_theme.dart';
-import '../config/theme/components/sync_settings_theme_data.dart';
-import '../config/theme/theme_registry.dart';
-import '../models/sync_config.dart';
-import '../models/sync_trust_snapshot.dart';
-import '../providers/settings_provider.dart';
-import '../providers/sync_provider.dart';
-import '../services/payment_service.dart';
-import '../features/sync/presentation/sync_ui_coordinator.dart';
-import '../features/sync/presentation/sync_status_formatter.dart';
-import '../features/sync_settings/application/sync_settings_form_controller.dart';
-import '../features/sync_settings/presentation/widgets/sync_settings_widgets.dart';
-import '../app/navigation/app_routes.dart';
-import '../widgets/skeuomorphic_toast.dart';
+import 'package:paper_whisper_flutter/app/navigation/app_routes.dart';
+import 'package:paper_whisper_flutter/config/app_theme.dart';
+import 'package:paper_whisper_flutter/config/theme/components/sync_settings_theme_data.dart';
+import 'package:paper_whisper_flutter/config/theme/theme_registry.dart';
+import 'package:paper_whisper_flutter/features/sync/presentation/sync_status_formatter.dart';
+import 'package:paper_whisper_flutter/features/sync/presentation/sync_ui_coordinator.dart';
+import 'package:paper_whisper_flutter/models/sync_config.dart';
+import 'package:paper_whisper_flutter/models/sync_trust_snapshot.dart';
+import 'package:paper_whisper_flutter/providers/settings_provider.dart';
+import 'package:paper_whisper_flutter/providers/sync_provider.dart';
+import 'package:paper_whisper_flutter/services/payment_service.dart';
+import 'package:paper_whisper_flutter/widgets/skeuomorphic_toast.dart';
+
+import '../application/sync_settings_form_controller.dart';
+import 'widgets/sync_settings_widgets.dart';
 
 class SyncSettingsPage extends StatefulWidget {
   const SyncSettingsPage({super.key});
@@ -248,9 +249,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
           body: canUse
               ? (_isBootstrapping
                     ? Center(
-                        child: CircularProgressIndicator(
-                          color: tc.accentColor,
-                        ),
+                        child: CircularProgressIndicator(color: tc.accentColor),
                       )
                     : SingleChildScrollView(
                         padding: const EdgeInsets.all(24),
@@ -505,14 +504,10 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                                       label: '测试连接',
                                       onTap: _isLoading ? null : _saveAndTest,
                                       isPrimary: false,
-                                      primaryGradient:
-                                          tc.primaryGradient,
-                                      primaryBtnColor:
-                                          tc.primaryBtnColor,
-                                      primaryShadowColor:
-                                          tc.primaryShadowColor,
-                                      secondaryBtnColor:
-                                          tc.secondaryBtnColor,
+                                      primaryGradient: tc.primaryGradient,
+                                      primaryBtnColor: tc.primaryBtnColor,
+                                      primaryShadowColor: tc.primaryShadowColor,
+                                      secondaryBtnColor: tc.secondaryBtnColor,
                                       secondaryBtnTextColor:
                                           tc.secondaryBtnTextColor,
                                       secondaryBorderColor:
@@ -525,14 +520,10 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                                       label: '立即同步',
                                       onTap: _isLoading ? null : _syncNow,
                                       isPrimary: true,
-                                      primaryGradient:
-                                          tc.primaryGradient,
-                                      primaryBtnColor:
-                                          tc.primaryBtnColor,
-                                      primaryShadowColor:
-                                          tc.primaryShadowColor,
-                                      secondaryBtnColor:
-                                          tc.secondaryBtnColor,
+                                      primaryGradient: tc.primaryGradient,
+                                      primaryBtnColor: tc.primaryBtnColor,
+                                      primaryShadowColor: tc.primaryShadowColor,
+                                      secondaryBtnColor: tc.secondaryBtnColor,
                                       secondaryBtnTextColor:
                                           tc.secondaryBtnTextColor,
                                       secondaryBorderColor:
@@ -548,18 +539,13 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                                   label: '停用同步',
                                   onTap: _isLoading ? null : _disableSync,
                                   isPrimary: false,
-                                  primaryGradient:
-                                      tc.primaryGradient,
-                                  primaryBtnColor:
-                                      tc.primaryBtnColor,
-                                  primaryShadowColor:
-                                      tc.primaryShadowColor,
-                                  secondaryBtnColor:
-                                      tc.secondaryBtnColor,
+                                  primaryGradient: tc.primaryGradient,
+                                  primaryBtnColor: tc.primaryBtnColor,
+                                  primaryShadowColor: tc.primaryShadowColor,
+                                  secondaryBtnColor: tc.secondaryBtnColor,
                                   secondaryBtnTextColor:
                                       tc.secondaryBtnTextColor,
-                                  secondaryBorderColor:
-                                      tc.secondaryBorderColor,
+                                  secondaryBorderColor: tc.secondaryBorderColor,
                                 ),
                               ],
 

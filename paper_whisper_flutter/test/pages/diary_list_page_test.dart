@@ -12,7 +12,7 @@ import 'package:paper_whisper_flutter/models/sync_trust_snapshot.dart';
 import 'package:paper_whisper_flutter/features/diary/presentation/diary_list_page.dart';
 import 'package:paper_whisper_flutter/features/diary/presentation/widgets/diary_card.dart';
 import 'package:paper_whisper_flutter/features/editor/presentation/editor_page.dart';
-import 'package:paper_whisper_flutter/pages/settings_page.dart';
+import 'package:paper_whisper_flutter/features/settings/presentation/settings_page.dart';
 import 'package:paper_whisper_flutter/providers/diary_provider.dart';
 import 'package:paper_whisper_flutter/providers/settings_provider.dart';
 import 'package:paper_whisper_flutter/providers/sync_provider.dart';

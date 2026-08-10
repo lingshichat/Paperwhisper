@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../models/update_info.dart';
-import '../features/update/application/update_download_controller.dart';
+import 'package:paper_whisper_flutter/features/update/application/update_download_controller.dart';
+import 'package:paper_whisper_flutter/models/update_info.dart';
 
 /// 拟物化更新弹窗
 /// 显示新版本信息，提供应用内下载、安装和备用下载选项

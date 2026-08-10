@@ -43,7 +43,7 @@
 - **导出长图样式**：检查 `_buildExportChunks()` 中的 `borderColor`（用于长图顶部/底部的装饰边框）。
 - **桌面端顶栏**：检查 `_buildDesktopHeader()` 中的 `iconColor` 和 `textColor`。
 
-### 2.3 设置页面 (`lib/pages/settings_page.dart`)
+### 2.3 设置页面 (`lib/features/settings/presentation/settings_page.dart`)
 
 - **标题阴影**：检查 `titleShadow` 的定义。
 - **底部弹窗样式**：检查 `_buildSkeuomorphicBottomSheet()` 和相关方法。
@@ -51,7 +51,7 @@
 - **主题名称显示**：直接读取 `ThemeRegistry.get(theme).name`；展示顺序由设置页显式 ID 列表固定。
 - **状态栏适配**：检查 `AppBar` 是否设置了 `systemOverlayStyle`。
 
-### 2.4 数据同步页面 (`lib/pages/sync_settings_page.dart`)
+### 2.4 数据同步页面 (`lib/features/sync_settings/presentation/sync_settings_page.dart`)
 
 - **按钮样式**：检查 `_buildButton()` 方法中的主题判断。
 - **输入框样式**：检查 `_buildTextField()` 方法。
@@ -149,8 +149,8 @@
 lib/config/app_theme.dart
 lib/features/diary/presentation/diary_list_page.dart
 lib/features/editor/presentation/editor_page.dart
-lib/pages/settings_page.dart
-lib/pages/sync_settings_page.dart
+lib/features/settings/presentation/settings_page.dart
+lib/features/sync_settings/presentation/sync_settings_page.dart
 lib/features/library/presentation/book_directory_page.dart
 lib/pages/focus_writing_page.dart
 lib/features/moments/presentation/moments_page.dart

@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:paper_whisper_flutter/features/update/application/update_download_controller.dart';
 import 'package:paper_whisper_flutter/models/update_info.dart';
 import 'package:paper_whisper_flutter/services/update_service.dart';
-import 'package:paper_whisper_flutter/widgets/update_dialog.dart';
+import 'package:paper_whisper_flutter/features/update/presentation/update_dialog.dart';
 
 void main() {
   testWidgets('UpdateDialog renders basic update info', (

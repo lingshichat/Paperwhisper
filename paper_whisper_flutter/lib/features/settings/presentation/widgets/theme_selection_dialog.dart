@@ -2,11 +2,10 @@ import 'package:flutter/material.dart'; // Added
 import 'package:google_fonts/google_fonts.dart'; // Added
 import 'dart:ui'; // Added
 import 'package:provider/provider.dart';
-import '../providers/settings_provider.dart';
-import '../config/app_theme.dart';
-import '../config/theme/theme_registry.dart';
-import 'skeuomorphic_container.dart'; // Added
-
+import 'package:paper_whisper_flutter/config/app_theme.dart';
+import 'package:paper_whisper_flutter/config/theme/theme_registry.dart';
+import 'package:paper_whisper_flutter/providers/settings_provider.dart';
+import 'package:paper_whisper_flutter/widgets/skeuomorphic_container.dart';
 
 class ThemeSelectionDialog extends StatelessWidget {
   const ThemeSelectionDialog({super.key});
@@ -30,13 +29,17 @@ class ThemeSelectionDialog extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           color: bg,
           shadows: [
-             dialogTheme.shadow != null
-                 ? BoxShadow(color: dialogTheme.shadow!, blurRadius: 30, offset: const Offset(0, 10))
-                 : const BoxShadow(
-                      color: Color.fromRGBO(0, 0, 0, 0.5),
-                      offset: Offset(0, 20),
-                      blurRadius: 60,
-                   ),
+            dialogTheme.shadow != null
+                ? BoxShadow(
+                    color: dialogTheme.shadow!,
+                    blurRadius: 30,
+                    offset: const Offset(0, 10),
+                  )
+                : const BoxShadow(
+                    color: Color.fromRGBO(0, 0, 0, 0.5),
+                    offset: Offset(0, 20),
+                    blurRadius: 60,
+                  ),
           ],
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -45,7 +48,7 @@ class ThemeSelectionDialog extends StatelessWidget {
               Stack(
                 alignment: Alignment.center,
                 children: [
-                   Align(
+                  Align(
                     alignment: Alignment.centerRight,
                     child: MouseRegion(
                       cursor: SystemMouseCursors.click,
@@ -70,15 +73,15 @@ class ThemeSelectionDialog extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 20),
-              
+
               // Grid
               SizedBox(
-                height: 300, 
+                height: 300,
                 child: GridView.count(
                   crossAxisCount: 2,
                   crossAxisSpacing: 20,
                   mainAxisSpacing: 20,
-                  childAspectRatio: 1.2, 
+                  childAspectRatio: 1.2,
                   children: [
                     _buildThemeCard(
                       context,
@@ -98,7 +101,9 @@ class ThemeSelectionDialog extends StatelessWidget {
                       AppTheme.themeAmberLens, // Correct key: 'amber_lens'
                       '琥珀光圈',
                       '深邃皮革，暖橙微光',
-                      const SolidColor(Color(0xFF2C2C2C)), // Dark grey leather base
+                      const SolidColor(
+                        Color(0xFF2C2C2C),
+                      ), // Dark grey leather base
                       currentTheme == AppTheme.themeAmberLens,
                     ),
                     _buildThemeCard(
@@ -108,9 +113,9 @@ class ThemeSelectionDialog extends StatelessWidget {
                       '海底花海',
                       '深邃梦境，繁花相拥',
                       const LinearGradient(
-                         colors: [Color(0xFFF6D9E6), Color(0xFFDBBAD0)],
-                         begin: Alignment.topLeft,
-                         end: Alignment.bottomRight,
+                        colors: [Color(0xFFF6D9E6), Color(0xFFDBBAD0)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
                       currentTheme == AppTheme.themeSeaFlower,
                     ),
@@ -143,7 +148,11 @@ class ThemeSelectionDialog extends StatelessWidget {
                       '黄昏之时',
                       '逢魔时刻，梦幻交织',
                       const LinearGradient(
-                        colors: [Color(0xFF352044), Color(0xFF7B1FA2), Color(0xFFFF6F00)],
+                        colors: [
+                          Color(0xFF352044),
+                          Color(0xFF7B1FA2),
+                          Color(0xFFFF6F00),
+                        ],
                         begin: Alignment.topCenter,
                         end: Alignment.bottomRight,
                       ),
@@ -156,7 +165,10 @@ class ThemeSelectionDialog extends StatelessWidget {
                       '言叶之庭',
                       '隐约雷鸣，阴霾天空',
                       const LinearGradient(
-                        colors: [Color(0xFF37474F), Color(0xFF263238)], // Rainy Sky -> Wet Stone
+                        colors: [
+                          Color(0xFF37474F),
+                          Color(0xFF263238),
+                        ], // Rainy Sky -> Wet Stone
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                       ),
@@ -173,14 +185,14 @@ class ThemeSelectionDialog extends StatelessWidget {
   }
 
   Widget _buildThemeCard(
-      BuildContext context,
-      SettingsProvider settings,
-      String id, 
-      String name, 
-      String desc, 
-      Object background,
-      bool isActive) {
-
+    BuildContext context,
+    SettingsProvider settings,
+    String id,
+    String name,
+    String desc,
+    Object background,
+    bool isActive,
+  ) {
     final cardAccent = AppTheme.getAccentColor(id);
     final backgroundColor = switch (background) {
       SolidColor(:final color) => color,
@@ -192,7 +204,7 @@ class ThemeSelectionDialog extends StatelessWidget {
       SolidColor() => null,
       _ => throw ArgumentError.value(background, 'background'),
     };
-      
+
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
@@ -204,16 +216,18 @@ class ThemeSelectionDialog extends StatelessWidget {
             color: const Color.fromRGBO(0, 0, 0, 0.05),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-                color: isActive ? cardAccent : Colors.transparent, 
-                width: 2
-            ), 
-            boxShadow: isActive ? [
-                BoxShadow(
-                    color: cardAccent.withValues(alpha: 0.2),
-                    blurRadius: 8,
-                    spreadRadius: 1
-                )
-            ] : [],
+              color: isActive ? cardAccent : Colors.transparent,
+              width: 2,
+            ),
+            boxShadow: isActive
+                ? [
+                    BoxShadow(
+                      color: cardAccent.withValues(alpha: 0.2),
+                      blurRadius: 8,
+                      spreadRadius: 1,
+                    ),
+                  ]
+                : [],
           ),
           padding: const EdgeInsets.all(15),
           child: Column(
@@ -222,15 +236,15 @@ class ThemeSelectionDialog extends StatelessWidget {
                 child: Container(
                   width: double.infinity,
                   decoration: BoxDecoration(
-                     color: backgroundColor,
-                     gradient: backgroundGradient,
-                     borderRadius: BorderRadius.circular(4),
-                     boxShadow: const [
-                       BoxShadow(
-                         color: Color.fromRGBO(0, 0, 0, 0.2),
-                         blurRadius: 10,
-                       )
-                     ],
+                    color: backgroundColor,
+                    gradient: backgroundGradient,
+                    borderRadius: BorderRadius.circular(4),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color.fromRGBO(0, 0, 0, 0.2),
+                        blurRadius: 10,
+                      ),
+                    ],
                   ),
                 ),
               ),

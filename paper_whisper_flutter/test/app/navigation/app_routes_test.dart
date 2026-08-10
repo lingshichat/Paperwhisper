@@ -14,9 +14,9 @@ import 'package:paper_whisper_flutter/features/moments/presentation/moment_detai
 import 'package:paper_whisper_flutter/features/moments/presentation/moments_page.dart';
 import 'package:paper_whisper_flutter/features/premium/presentation/premium_membership_page.dart';
 import 'package:paper_whisper_flutter/features/auth/presentation/security_settings_page.dart';
-import 'package:paper_whisper_flutter/pages/settings_page.dart';
+import 'package:paper_whisper_flutter/features/settings/presentation/settings_page.dart';
 import 'package:paper_whisper_flutter/features/statistics/presentation/statistics_page.dart';
-import 'package:paper_whisper_flutter/pages/sync_settings_page.dart';
+import 'package:paper_whisper_flutter/features/sync_settings/presentation/sync_settings_page.dart';
 import 'package:paper_whisper_flutter/features/trash/presentation/trash_page.dart';
 import 'package:paper_whisper_flutter/providers/settings_provider.dart';
 import 'package:provider/provider.dart';

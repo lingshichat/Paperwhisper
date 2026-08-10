@@ -14,9 +14,9 @@ import '../../features/moments/presentation/moment_detail_page.dart';
 import '../../features/moments/presentation/moments_page.dart';
 import '../../features/premium/presentation/premium_membership_page.dart';
 import '../../features/auth/presentation/security_settings_page.dart';
-import '../../pages/settings_page.dart';
+import '../../features/settings/presentation/settings_page.dart';
 import '../../features/statistics/presentation/statistics_page.dart';
-import '../../pages/sync_settings_page.dart';
+import '../../features/sync_settings/presentation/sync_settings_page.dart';
 import '../../features/trash/presentation/trash_page.dart';
 import 'route_transitions.dart';
 

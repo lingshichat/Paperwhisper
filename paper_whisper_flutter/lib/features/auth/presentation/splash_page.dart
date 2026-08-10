@@ -6,7 +6,7 @@ import 'package:paper_whisper_flutter/config/app_theme.dart';
 import 'package:paper_whisper_flutter/features/update/application/update_check_coordinator.dart';
 import 'package:paper_whisper_flutter/providers/settings_provider.dart';
 import 'package:paper_whisper_flutter/services/auth_service.dart';
-import 'package:paper_whisper_flutter/widgets/update_dialog.dart';
+import 'package:paper_whisper_flutter/features/update/presentation/update_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'widgets/lock_screen.dart';
 import 'widgets/privacy_agreement_dialog.dart';

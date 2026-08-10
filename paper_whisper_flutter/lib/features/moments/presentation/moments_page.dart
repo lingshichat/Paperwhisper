@@ -22,7 +22,7 @@ import 'package:paper_whisper_flutter/widgets/sidebar_widget.dart';
 import 'package:paper_whisper_flutter/widgets/skeuomorphic_dialog.dart';
 import 'package:paper_whisper_flutter/widgets/skeuomorphic_search_bar.dart';
 import 'package:paper_whisper_flutter/widgets/skeuomorphic_toast.dart';
-import 'package:paper_whisper_flutter/widgets/update_dialog.dart';
+import 'package:paper_whisper_flutter/features/update/presentation/update_dialog.dart';
 
 import 'widgets/moment_card.dart';
 import 'widgets/moment_input_widget.dart';
