@@ -41,6 +41,7 @@ config.json
 .opencode/
 .rtk/
 AGENTS.md
+.kimi-code/
 
 # 本地 MCP 配置（含密钥）
 .mcp.json
