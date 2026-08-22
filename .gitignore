@@ -37,6 +37,7 @@ config.json
 .agent/
 .agents/
 .claude/
+.grok/
 .opencode/
 .rtk/
 AGENTS.md
