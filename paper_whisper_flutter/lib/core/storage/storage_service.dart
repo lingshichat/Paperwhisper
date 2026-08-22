@@ -57,7 +57,7 @@ class StorageService {
       await _momentService.init();
       final dataDir = _momentService.dataDir;
       if (dataDir == null) return 0;
-      return _getDirSize(dataDir);
+      return await _getDirSize(dataDir);
     } catch (e) {
       debugPrint("Error getting user data size: $e");
       return 0;

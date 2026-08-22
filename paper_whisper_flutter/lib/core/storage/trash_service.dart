@@ -78,7 +78,7 @@ class TrashService {
   Future<List<File>> listValidTrashFiles() async {
     if (_trashDir == null) return [];
     try {
-      return _trashDir!
+      return await _trashDir!
           .list()
           .where((e) => e is File && e.path.endsWith('.txt'))
           .cast<File>()

@@ -50,8 +50,8 @@
 ## 🚀 快速开始
 
 ### 环境要求
-- Flutter SDK 3.7.0+
-- Dart SDK 3.0.0+
+- Flutter SDK 3.47.1（当前开发基线；锁定依赖最低要求 3.44.0）
+- Dart SDK 3.13.1（随 Flutter 提供；锁定依赖最低要求 3.12.0）
 - Windows 10/11 或 Android 环境
 
 ### 运行项目

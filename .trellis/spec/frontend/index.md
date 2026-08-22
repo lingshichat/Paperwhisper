@@ -8,7 +8,7 @@
 
 | Category | Choice |
 |----------|--------|
-| Framework | Flutter 3.44.x stable (Dart 3.10+; dev baseline 3.12.2) |
+| Framework | Flutter 3.47.1 stable (Dart 3.13.1; locked dependency floor Flutter 3.44 / Dart 3.12) |
 | State management | Provider (`ChangeNotifier` / `ChangeNotifierProvider`) |
 | Animations | `simple_animations`, custom `PageRouteBuilder` transitions |
 | UI paradigm | **Skeuomorphism** — realistic textures, shadows, gradients |
