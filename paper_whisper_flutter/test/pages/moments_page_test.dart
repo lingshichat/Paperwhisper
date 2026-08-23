@@ -2,8 +2,10 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:paper_whisper_flutter/app/shell/sidebar_widget.dart';
 import 'package:paper_whisper_flutter/core/theme/app_theme.dart';
 import 'package:paper_whisper_flutter/core/theme/theme_registry.dart';
+import 'package:paper_whisper_flutter/features/moments/application/moment_index.dart';
 import 'package:paper_whisper_flutter/features/moments/data/moment.dart';
 import 'package:paper_whisper_flutter/features/sync/data/sync_config.dart';
 import 'package:paper_whisper_flutter/features/sync/data/sync_trust_snapshot.dart';
@@ -528,6 +530,425 @@ void main() {
       expect(find.text('生成成功，正在跳转...'), findsOneWidget);
       // pushReplacement 到日记列表页（其更新检查 timer 由 tearDown 消化）
       expect(find.byType(DiaryListPage), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('MomentsPage 顶栏月历', () {
+    DateTime dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
+
+    Future<void> openCalendar(WidgetTester tester) async {
+      await tester.tap(find.byKey(const ValueKey('moments_date_title')));
+      await tester.pumpAndSettle();
+    }
+
+    Future<void> revealMonthOf(WidgetTester tester, DateTime date) async {
+      final now = DateTime.now();
+      var cursor = DateTime(now.year, now.month);
+      final target = DateTime(date.year, date.month);
+      while (cursor.isAfter(target)) {
+        await tester.tap(find.byIcon(Icons.chevron_left));
+        await tester.pumpAndSettle();
+        cursor = DateTime(cursor.year, cursor.month - 1);
+      }
+      while (cursor.isBefore(target)) {
+        await tester.tap(find.byIcon(Icons.chevron_right));
+        await tester.pumpAndSettle();
+        cursor = DateTime(cursor.year, cursor.month + 1);
+      }
+    }
+
+    DateTime firstEmptyDay(DateTime month, List<DateTime> occupied) {
+      for (var day = 1; day <= 28; day++) {
+        final candidate = DateTime(month.year, month.month, day);
+        final hit = occupied.any(
+          (o) =>
+              o.year == candidate.year &&
+              o.month == candidate.month &&
+              o.day == candidate.day,
+        );
+        if (!hit) return candidate;
+      }
+      throw StateError('当月找不到无记录日');
+    }
+
+    testWidgets('默认无月历，点标题展开再点收起', (tester) async {
+      final syncProvider = makeSyncProvider();
+      await pumpMomentsPage(
+        tester,
+        syncProvider: syncProvider,
+        physicalSize: const Size(1080, 2400),
+        devicePixelRatio: 3.0,
+      );
+
+      expect(
+        find.byKey(const ValueKey('moments_month_calendar')),
+        findsNothing,
+      );
+
+      await openCalendar(tester);
+      expect(
+        find.byKey(const ValueKey('moments_month_calendar')),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.byKey(const ValueKey('moments_date_title')));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('moments_month_calendar')),
+        findsNothing,
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('占用标记 Key：昨天有点、无记录日无点', (tester) async {
+      final today = dateOnly(todayDate());
+      final yesterday = dateOnly(yesterdayDate());
+      momentService.seedMoments(<Moment>[
+        momentAt(today, '今天的内容'),
+        momentAt(yesterday, '昨天的内容'),
+      ]);
+      final syncProvider = makeSyncProvider();
+      await pumpMomentsPage(
+        tester,
+        syncProvider: syncProvider,
+        physicalSize: const Size(1080, 2400),
+        devicePixelRatio: 3.0,
+      );
+
+      await openCalendar(tester);
+      await revealMonthOf(tester, yesterday);
+
+      expect(
+        find.byKey(
+          ValueKey('moments_cal_mark_${MomentIndex.dayKey(yesterday)}'),
+        ),
+        findsOneWidget,
+      );
+      final empty = firstEmptyDay(DateTime(yesterday.year, yesterday.month), [
+        today,
+        yesterday,
+      ]);
+      expect(
+        find.byKey(ValueKey('moments_cal_mark_${MomentIndex.dayKey(empty)}')),
+        findsNothing,
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('点昨天格子：列表与尺子 selectedItem 对齐，月历收起', (tester) async {
+      final today = dateOnly(todayDate());
+      final yesterday = dateOnly(yesterdayDate());
+      momentService.seedMoments(<Moment>[
+        momentAt(today, '今天的内容'),
+        momentAt(yesterday, '昨天的内容'),
+      ]);
+      final syncProvider = makeSyncProvider();
+      await pumpMomentsPage(
+        tester,
+        syncProvider: syncProvider,
+        physicalSize: const Size(1080, 2400),
+        devicePixelRatio: 3.0,
+      );
+
+      await openCalendar(tester);
+      await revealMonthOf(tester, yesterday);
+      await tester.tap(
+        find.byKey(ValueKey('moments_cal_${MomentIndex.dayKey(yesterday)}')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('昨天的内容'), findsOneWidget);
+      expect(find.text('今天的内容'), findsNothing);
+      expect(
+        find.byKey(const ValueKey('moments_month_calendar')),
+        findsNothing,
+      );
+
+      final ruler = tester.widget<RulerDatePicker>(
+        find.byType(RulerDatePicker),
+      );
+      final now = DateTime.now();
+      final start = DateTime(
+        now.year,
+        now.month,
+        now.day,
+      ).subtract(const Duration(days: 365 * 5));
+      expect(
+        ruler.controller!.selectedItem,
+        yesterday.difference(start).inDays,
+      );
+      final pageView = tester.widget<PageView>(find.byType(PageView));
+      expect(
+        pageView.controller!.page!.round(),
+        yesterday.difference(start).inDays,
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('点已选日只收起月历，不换日', (tester) async {
+      momentService.seedMoments(<Moment>[momentAt(todayDate(), '今天的内容')]);
+      final syncProvider = makeSyncProvider();
+      await pumpMomentsPage(
+        tester,
+        syncProvider: syncProvider,
+        physicalSize: const Size(1080, 2400),
+        devicePixelRatio: 3.0,
+      );
+
+      await openCalendar(tester);
+      final today = dateOnly(todayDate());
+      await tester.tap(
+        find.byKey(ValueKey('moments_cal_${MomentIndex.dayKey(today)}')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('今天的内容'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('moments_month_calendar')),
+        findsNothing,
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('移动搜索开启后标题打不开月历，已打开则收起且退出搜索不弹开', (tester) async {
+      final syncProvider = makeSyncProvider();
+      await pumpMomentsPage(
+        tester,
+        syncProvider: syncProvider,
+        physicalSize: const Size(1080, 2400),
+        devicePixelRatio: 3.0,
+      );
+
+      await openCalendar(tester);
+      expect(
+        find.byKey(const ValueKey('moments_month_calendar')),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.byIcon(Icons.search));
+      await tester.pump();
+      expect(
+        find.byKey(const ValueKey('moments_month_calendar')),
+        findsNothing,
+      );
+
+      await tester.tap(find.byIcon(Icons.arrow_back));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('moments_month_calendar')),
+        findsNothing,
+      );
+      expect(find.byKey(const ValueKey('moments_date_title')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('桌面侧栏搜索 guard：有 query 时点标题不打开，已打开则收起', (tester) async {
+      final syncProvider = makeSyncProvider();
+      await pumpMomentsPage(
+        tester,
+        syncProvider: syncProvider,
+        platform: TargetPlatform.windows,
+        physicalSize: const Size(1280, 720),
+      );
+
+      await openCalendar(tester);
+      expect(
+        find.byKey(const ValueKey('moments_month_calendar')),
+        findsOneWidget,
+      );
+
+      final sidebarSearch = find.descendant(
+        of: find.byType(SidebarWidget),
+        matching: find.byType(TextField),
+      );
+      await tester.enterText(sidebarSearch, '侧栏关键词');
+      await tester.pump();
+      await tester.pump();
+      expect(
+        find.byKey(const ValueKey('moments_month_calendar')),
+        findsNothing,
+      );
+
+      await tester.tap(find.byKey(const ValueKey('moments_date_title')));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('moments_month_calendar')),
+        findsNothing,
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('输入条聚焦时收起月历', (tester) async {
+      final syncProvider = makeSyncProvider();
+      await pumpMomentsPage(
+        tester,
+        syncProvider: syncProvider,
+        physicalSize: const Size(1080, 2400),
+        devicePixelRatio: 3.0,
+      );
+
+      await openCalendar(tester);
+      expect(
+        find.byKey(const ValueKey('moments_month_calendar')),
+        findsOneWidget,
+      );
+
+      final inputField = find.descendant(
+        of: find.byType(MomentInputWidget),
+        matching: find.byType(TextField),
+      );
+      await tester.tap(inputField.first);
+      await tester.pump();
+      await tester.pump();
+
+      expect(
+        find.byKey(const ValueKey('moments_month_calendar')),
+        findsNothing,
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('键盘从收起到弹出时收起月历', (tester) async {
+      final syncProvider = makeSyncProvider();
+      await pumpMomentsPage(
+        tester,
+        syncProvider: syncProvider,
+        physicalSize: const Size(1080, 2400),
+        devicePixelRatio: 3.0,
+      );
+
+      await openCalendar(tester);
+      expect(
+        find.byKey(const ValueKey('moments_month_calendar')),
+        findsOneWidget,
+      );
+
+      addTearDown(tester.view.resetViewInsets);
+      tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+      await tester.pump();
+      await tester.pump();
+
+      expect(
+        find.byKey(const ValueKey('moments_month_calendar')),
+        findsNothing,
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('Android 360×800 展开无溢出，日历在 AppBar 下方', (tester) async {
+      final syncProvider = makeSyncProvider();
+      await pumpMomentsPage(
+        tester,
+        syncProvider: syncProvider,
+        physicalSize: const Size(1080, 2400),
+        devicePixelRatio: 3.0,
+      );
+
+      await openCalendar(tester);
+      expect(tester.takeException(), isNull);
+
+      final appBar = tester.getRect(find.byType(AppBar));
+      final cal = tester.getRect(
+        find.byKey(const ValueKey('moments_month_calendar')),
+      );
+      expect(cal.top, closeTo(appBar.bottom, 1.0));
+    });
+
+    testWidgets('Windows 1280×720 可展开且尺子仍可点', (tester) async {
+      final syncProvider = makeSyncProvider();
+      await pumpMomentsPage(
+        tester,
+        syncProvider: syncProvider,
+        platform: TargetPlatform.windows,
+        physicalSize: const Size(1280, 720),
+      );
+
+      await openCalendar(tester);
+      expect(
+        find.byKey(const ValueKey('moments_month_calendar')),
+        findsOneWidget,
+      );
+      expect(find.byType(RulerDatePicker), findsOneWidget);
+      expect(find.byType(RulerDatePicker).hitTestable(), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('桌面跳到空的非今天显示「这天没有留下记录」', (tester) async {
+      final syncProvider = makeSyncProvider();
+      await pumpMomentsPage(
+        tester,
+        syncProvider: syncProvider,
+        platform: TargetPlatform.windows,
+        physicalSize: const Size(1280, 720),
+      );
+      expect(find.text('这一天不仅是空白，更是无限可能'), findsOneWidget);
+
+      final yesterday = dateOnly(yesterdayDate());
+      await openCalendar(tester);
+      await revealMonthOf(tester, yesterday);
+      await tester.tap(
+        find.byKey(ValueKey('moments_cal_${MomentIndex.dayKey(yesterday)}')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('这天没有留下记录'), findsOneWidget);
+      expect(find.text('这一天不仅是空白，更是无限可能'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('从今天跳 ≥90 天前：pump 后 page 已是目标 index', (tester) async {
+      final syncProvider = makeSyncProvider();
+      await pumpMomentsPage(
+        tester,
+        syncProvider: syncProvider,
+        physicalSize: const Size(1080, 2400),
+        devicePixelRatio: 3.0,
+      );
+
+      final today = dateOnly(todayDate());
+      final target = today.subtract(const Duration(days: 90));
+      await openCalendar(tester);
+      await revealMonthOf(tester, target);
+      await tester.tap(
+        find.byKey(ValueKey('moments_cal_${MomentIndex.dayKey(target)}')),
+      );
+      await tester.pump();
+
+      final start = today.subtract(const Duration(days: 365 * 5));
+      final expected = target.difference(start).inDays;
+      final pageView = tester.widget<PageView>(find.byType(PageView));
+      expect(pageView.controller!.page!.round(), expected);
+      final ruler = tester.widget<RulerDatePicker>(
+        find.byType(RulerDatePicker),
+      );
+      expect(ruler.controller!.selectedItem, expected);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('日历打开时返回只收起日历，仍停在随心记页', (tester) async {
+      final syncProvider = makeSyncProvider();
+      await pumpMomentsPage(
+        tester,
+        syncProvider: syncProvider,
+        physicalSize: const Size(1080, 2400),
+        devicePixelRatio: 3.0,
+      );
+
+      await openCalendar(tester);
+      expect(
+        find.byKey(const ValueKey('moments_month_calendar')),
+        findsOneWidget,
+      );
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('moments_month_calendar')),
+        findsNothing,
+      );
+      expect(find.byType(MomentsPage), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   });

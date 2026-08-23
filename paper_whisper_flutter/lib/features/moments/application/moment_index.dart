@@ -35,7 +35,7 @@ class MomentIndex {
     final imageCountByDay = <String, int>{};
 
     for (final moment in moments) {
-      final key = _dayKey(moment.createdAt);
+      final key = dayKey(moment.createdAt);
       momentsByDay.putIfAbsent(key, () => <Moment>[]).add(moment);
       imageCountByDay[key] = (imageCountByDay[key] ?? 0) + moment.images.length;
     }
@@ -55,16 +55,21 @@ class MomentIndex {
     );
   }
 
-  static String _dayKey(DateTime date) =>
+  /// 未补零 yyyy-M-d，与 [momentsByDay] 的 map key 以及月历 ValueKey 共用。
+  static String dayKey(DateTime date) =>
       '${date.year}-${date.month}-${date.day}';
+
+  /// 指定日期是否存在至少一条随心记（含纯图片、纯音频）。
+  bool hasContentOnDate(DateTime date) =>
+      momentsByDay.containsKey(dayKey(date));
 
   /// 指定日期的随心记列表（无则返回空列表）。
   List<Moment> momentsForDate(DateTime date) {
-    return momentsByDay[_dayKey(date)] ?? const [];
+    return momentsByDay[dayKey(date)] ?? const [];
   }
 
   /// 指定日期的图片总数（无则返回 0）。
   int imageCountForDate(DateTime date) {
-    return imageCountByDay[_dayKey(date)] ?? 0;
+    return imageCountByDay[dayKey(date)] ?? 0;
   }
 }

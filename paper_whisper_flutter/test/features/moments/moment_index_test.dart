@@ -98,6 +98,53 @@ void main() {
     });
   });
 
+  group('dayKey / hasContentOnDate', () {
+    test('dayKey 未补零 yyyy-M-d（含 2026-11-3）', () {
+      expect(MomentIndex.dayKey(DateTime(2026, 11, 3)), '2026-11-3');
+      expect(MomentIndex.dayKey(DateTime(2026, 3, 5, 23, 59)), '2026-3-5');
+    });
+
+    test('有记录日 true、缺省日 false；与 momentsForDate.isNotEmpty 一致', () {
+      final index = MomentIndex.build([
+        moment('a', DateTime(2026, 3, 5, 9, 0)),
+        moment('d', DateTime(2026, 11, 3, 7, 0)),
+        Moment(
+          uuid: 'img',
+          content: '',
+          images: const ['pic.jpg'],
+          createdAt: DateTime(2026, 3, 6),
+        ),
+        Moment(
+          uuid: 'audio',
+          content: '',
+          images: const [],
+          createdAt: DateTime(2026, 3, 7),
+          audioPath: 'a.m4a',
+        ),
+      ]);
+
+      expect(index.hasContentOnDate(DateTime(2026, 3, 5)), isTrue);
+      expect(index.hasContentOnDate(DateTime(2026, 11, 3)), isTrue);
+      // 纯图片 / 纯音频也算有随心记
+      expect(index.hasContentOnDate(DateTime(2026, 3, 6)), isTrue);
+      expect(index.hasContentOnDate(DateTime(2026, 3, 7)), isTrue);
+      expect(index.hasContentOnDate(DateTime(2026, 1, 1)), isFalse);
+
+      for (final date in [
+        DateTime(2026, 3, 5),
+        DateTime(2026, 3, 6),
+        DateTime(2026, 3, 7),
+        DateTime(2026, 11, 3),
+        DateTime(2026, 1, 1),
+      ]) {
+        expect(
+          index.hasContentOnDate(date),
+          index.momentsForDate(date).isNotEmpty,
+        );
+      }
+    });
+  });
+
   group('输出不可变', () {
     test('latest / byDay / 组内列表 / imageCount 修改均抛错', () {
       final index = MomentIndex.build([

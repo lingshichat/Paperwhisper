@@ -26,9 +26,11 @@ import 'package:paper_whisper_flutter/features/update/presentation/update_dialog
 
 import 'widgets/moment_card.dart';
 import 'widgets/moment_input_widget.dart';
+import 'widgets/moments_date_title.dart';
 import 'widgets/moments_desktop_header.dart';
 import 'widgets/moments_empty_state.dart';
 import 'widgets/moments_limit_banner.dart';
+import 'widgets/moments_month_calendar.dart';
 import 'widgets/moments_search_results.dart';
 import 'widgets/moments_waterfall.dart';
 import 'widgets/ruler_date_picker.dart';
@@ -55,6 +57,15 @@ class _MomentsPageState extends State<MomentsPage> {
   // Search State
   bool _isSearching = false;
 
+  // 月历展开态（页面 ephemeral UI，不进 Provider）
+  bool _isCalendarOpen = false;
+
+  // 侧栏搜索 query 变化时收起月历（Provider 不走 didChangeDependencies）
+  late final DiaryProvider _diaryProvider;
+
+  // 用于把 viewInsets 收起做成 0→>0 边沿，避免关键盘过程中误关刚打开的月历
+  double _lastViewInsetsBottom = 0;
+
   // Focus Management
   final FocusNode _inputFocusNode = FocusNode();
 
@@ -65,12 +76,19 @@ class _MomentsPageState extends State<MomentsPage> {
   void initState() {
     super.initState();
     _momentService = context.read<MomentService>();
+    _diaryProvider = context.read<DiaryProvider>();
+    _diaryProvider.addListener(_onMomentsSearchQueryChanged);
     _timeline = MomentsTimelineController();
     _loadData();
 
-    // Listen to focus changes to rebuild UI (toggle dismiss layer)
+    // 聚焦时收起月历，并重建 dismiss 层
     _inputFocusNode.addListener(() {
-      if (mounted) setState(() {});
+      if (!mounted) return;
+      setState(() {
+        if (_inputFocusNode.hasFocus) {
+          _isCalendarOpen = false;
+        }
+      });
     });
 
     // Check for updates once
@@ -109,7 +127,29 @@ class _MomentsPageState extends State<MomentsPage> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 键盘从收起到弹出时收起月历；禁止在 build 里赋值 _isCalendarOpen
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final keyboardOpening = _lastViewInsetsBottom <= 0 && bottomInset > 0;
+    _lastViewInsetsBottom = bottomInset;
+    if (keyboardOpening && _isCalendarOpen) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _collapseCalendar();
+      });
+    }
+  }
+
+  void _onMomentsSearchQueryChanged() {
+    if (!mounted) return;
+    if (_diaryProvider.momentsSearchQuery.isNotEmpty) {
+      _collapseCalendar();
+    }
+  }
+
+  @override
   void dispose() {
+    _diaryProvider.removeListener(_onMomentsSearchQueryChanged);
     _timeline.dispose();
     _inputFocusNode.dispose(); // Dispose focus node
     super.dispose();
@@ -133,7 +173,113 @@ class _MomentsPageState extends State<MomentsPage> {
     return filteredMoments;
   }
 
+  void _toggleCalendar() {
+    final searching =
+        _isSearching ||
+        context.read<DiaryProvider>().momentsSearchQuery.isNotEmpty;
+    if (searching) return;
+    if (_inputFocusNode.hasFocus) {
+      _inputFocusNode.unfocus();
+    }
+    setState(() => _isCalendarOpen = !_isCalendarOpen);
+  }
+
+  void _collapseCalendar() {
+    if (!_isCalendarOpen) return;
+    setState(() => _isCalendarOpen = false);
+  }
+
+  void _onCalendarDateSelected(DateTime date) {
+    if (!_timeline.isSameDay(date, _timeline.selectedDate)) {
+      _timeline.jumpToDate(date);
+    }
+    setState(() => _isCalendarOpen = false);
+  }
+
+  Widget _buildCalendarSlot() {
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOutCubic,
+      alignment: Alignment.topCenter,
+      clipBehavior: Clip.hardEdge,
+      child: _isCalendarOpen
+          ? MomentsMonthCalendar(
+              key: const ValueKey('moments_month_calendar'),
+              selectedDate: _timeline.selectedDate,
+              startDate: _timeline.startDate,
+              endDate: _timeline.endDate,
+              hasContentOnDate: _index.hasContentOnDate,
+              onDateSelected: _onCalendarDateSelected,
+              onJumpToToday: () => _onCalendarDateSelected(DateTime.now()),
+            )
+          : const SizedBox(width: double.infinity, height: 0),
+    );
+  }
+
+  Widget _buildRuler({required bool hide, required bool isDesktop}) {
+    final settings = context.read<SettingsProvider>();
+    final theme = settings.currentTheme;
+    final tc = ThemeRegistry.get(theme).moments;
+    final rulerAccent = AppTheme.getAccentColor(theme);
+
+    Widget picker = NotificationListener<ScrollNotification>(
+      onNotification: (notification) {
+        if (isDesktop) {
+          if (notification is ScrollUpdateNotification) {
+            return false;
+          }
+          return false;
+        }
+        if (notification.depth == 0 &&
+            notification is ScrollUpdateNotification) {
+          if (!_timeline.shouldProcessRulerScroll()) return false;
+          if (_timeline.pageController.hasClients &&
+              _timeline.rulerController.hasClients) {
+            double rulerOffset = _timeline.rulerController.offset;
+            double page = _timeline.pageForRulerOffset(rulerOffset);
+            double pageWidth =
+                _timeline.pageController.position.viewportDimension;
+            _timeline.pageController.jumpTo(page * pageWidth);
+          }
+        } else if (notification is ScrollEndNotification) {
+          _timeline.rulerScrollEnded();
+        }
+        return false;
+      },
+      child: RulerDatePicker(
+        selectedDate: _timeline.selectedDate,
+        onDateChanged: (d) => _onDateChanged(d, animate: !isDesktop),
+        controller: _timeline.rulerController,
+        accentColor: rulerAccent,
+        backgroundColor: tc.rulerBg,
+        textColor: tc.rulerTextColor,
+        inactiveTextColor: tc.rulerInactiveTextColor,
+        subTextColor: tc.rulerSubTextColor,
+        inactiveSubTextColor: tc.rulerInactiveSubTextColor,
+        indicatorColor: tc.rulerIndicatorColor,
+        shadowColor: tc.rulerShadowColor,
+        borderColor: tc.rulerBorderColor,
+      ),
+    );
+
+    picker = SizedBox(height: 85, child: picker);
+    if (!isDesktop) {
+      picker = IgnorePointer(ignoring: hide, child: picker);
+    }
+
+    return ClipRect(
+      child: AnimatedAlign(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
+        alignment: Alignment.topCenter,
+        heightFactor: hide ? 0.0 : 1.0,
+        child: picker,
+      ),
+    );
+  }
+
   void _onDateChanged(DateTime date, {bool animate = true}) {
+    if (_timeline.isJumping) return;
     if (_timeline.isSameDay(date, _timeline.selectedDate)) return;
 
     setState(() {
@@ -378,18 +524,7 @@ class _MomentsPageState extends State<MomentsPage> {
 
     final Color appBarIconColor = tc.appBarIconColor;
     final Color appBarTextColor = tc.appBarTextColor;
-
-    final Color rulerAccent = AppTheme.getAccentColor(theme);
-
-    // Ruler Colors Configuration
-    final Color rulerBg = tc.rulerBg;
     final Color rulerTextColor = tc.rulerTextColor;
-    final Color rulerInactiveTextColor = tc.rulerInactiveTextColor;
-    final Color rulerSubTextColor = tc.rulerSubTextColor;
-    final Color rulerInactiveSubTextColor = tc.rulerInactiveSubTextColor;
-    final Color rulerIndicatorColor = tc.rulerIndicatorColor;
-    final Color rulerShadowColor = tc.rulerShadowColor;
-    final Color rulerBorderColor = tc.rulerBorderColor;
 
     // Search Integration
     final String searchQuery = context.select<DiaryProvider, String>(
@@ -417,55 +552,23 @@ class _MomentsPageState extends State<MomentsPage> {
           bottom: isDesktop,
           child: Column(
             children: [
-              // On Desktop, we need a Header (replacement for AppBar)
               if (isDesktop)
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    MomentsDesktopHeader(
-                      selectedDate: _timeline.selectedDate,
-                      imageCount: _index.imageCountForDate(
-                        _timeline.selectedDate,
-                      ),
-                      textColor: appBarTextColor,
-                      iconColor: appBarIconColor,
-                      onGenerate: _handleAggregation,
-                    ),
-                    // 恢复尺子
-                    SizedBox(
-                      height: 85,
-                      child: NotificationListener<ScrollNotification>(
-                        onNotification: (notification) {
-                          if (notification is ScrollUpdateNotification) {
-                            // 仅处理尺子自身的滚动，不与列表联动(因为列表是全量的)
-                            // 这里主要依靠 RulerDatePicker 内部或者 controller 变动来触发 _onDateChanged
-                            // 但原逻辑是靠 PageView 驱动 Ruler，或 Ruler 驱动 PageView
-                            // 这里我们让 Ruler 独立工作，只改变 _selectedDate
-                            return false;
-                          }
-                          return false;
-                        },
-                        child: RulerDatePicker(
-                          selectedDate: _timeline.selectedDate,
-                          onDateChanged: (d) =>
-                              _onDateChanged(d, animate: false), // 不驱动 PageView
-                          controller: _timeline.rulerController,
-                          accentColor: rulerAccent,
-                          backgroundColor: rulerBg,
-                          textColor: rulerTextColor,
-                          inactiveTextColor: rulerInactiveTextColor,
-                          subTextColor: rulerSubTextColor,
-                          inactiveSubTextColor: rulerInactiveSubTextColor,
-                          indicatorColor: rulerIndicatorColor,
-                          shadowColor: rulerShadowColor,
-                          borderColor: rulerBorderColor,
-                        ),
-                      ),
-                    ),
-                  ],
+                MomentsDesktopHeader(
+                  selectedDate: _timeline.selectedDate,
+                  textColor: appBarTextColor,
+                  iconColor: appBarIconColor,
+                  onGenerate: _handleAggregation,
+                  expanded: _isCalendarOpen,
+                  onTitleTap: _toggleCalendar,
                 ),
-
-              // If searching, show result list. Else show regular layout.
+              // extendBodyBehindAppBar 时 _BodyBuilder 已把 AppBar 高度
+              // 写入 MediaQuery.padding.top，SafeArea 足够让月历紧贴顶栏。
+              // 再垫 kToolbarHeight 会多出一段空隙。
+              _buildCalendarSlot(),
+              _buildRuler(
+                hide: !isDesktop && _isCalendarOpen,
+                isDesktop: isDesktop,
+              ),
               if (isSearchActive)
                 Expanded(
                   child: MomentsSearchResults(
@@ -484,7 +587,7 @@ class _MomentsPageState extends State<MomentsPage> {
                       // Grid - 联动尺子日期
                       _index.momentsForDate(_timeline.selectedDate).isEmpty
                           ? MomentsEmptyState(
-                              date: DateTime.now(),
+                              date: _timeline.selectedDate,
                               theme: theme,
                             )
                           : MomentsWaterfall(
@@ -533,7 +636,10 @@ class _MomentsPageState extends State<MomentsPage> {
                                   borderRadius: BorderRadius.circular(
                                     24,
                                   ), // Rounded corners for the widget
-                                  child: MomentInputWidget(onSend: _handleSend),
+                                  child: MomentInputWidget(
+                                    onSend: _handleSend,
+                                    focusNode: _inputFocusNode,
+                                  ),
                                 ),
                               ),
                             ],
@@ -543,44 +649,7 @@ class _MomentsPageState extends State<MomentsPage> {
                     ],
                   ),
                 )
-              else ...[
-                // Mobile Layout (Ruler + List)
-                // Ruler with Sync Listener
-                NotificationListener<ScrollNotification>(
-                  onNotification: (notification) {
-                    if (notification.depth == 0 &&
-                        notification is ScrollUpdateNotification) {
-                      if (!_timeline.shouldProcessRulerScroll()) return false;
-                      if (_timeline.pageController.hasClients &&
-                          _timeline.rulerController.hasClients) {
-                        double rulerOffset = _timeline.rulerController.offset;
-                        double page = _timeline.pageForRulerOffset(rulerOffset);
-                        double pageWidth =
-                            _timeline.pageController.position.viewportDimension;
-                        _timeline.pageController.jumpTo(page * pageWidth);
-                      }
-                    } else if (notification is ScrollEndNotification) {
-                      _timeline.rulerScrollEnded();
-                    }
-                    return false;
-                  },
-                  child: RulerDatePicker(
-                    selectedDate: _timeline.selectedDate,
-                    onDateChanged: (d) => _onDateChanged(d),
-                    controller: _timeline.rulerController,
-                    accentColor: rulerAccent,
-                    backgroundColor: rulerBg,
-                    textColor: rulerTextColor,
-                    inactiveTextColor: rulerInactiveTextColor,
-                    subTextColor: rulerSubTextColor,
-                    inactiveSubTextColor: rulerInactiveSubTextColor,
-                    indicatorColor: rulerIndicatorColor,
-                    shadowColor: rulerShadowColor,
-                    borderColor: rulerBorderColor,
-                  ),
-                ),
-
-                // List (PageView)
+              else
                 Expanded(
                   child: NotificationListener<ScrollNotification>(
                     onNotification: (notification) {
@@ -652,242 +721,215 @@ class _MomentsPageState extends State<MomentsPage> {
                     ),
                   ),
                 ),
-              ],
             ],
           ),
         );
 
         if (isDesktop) {
-          return Scaffold(
-            backgroundColor: Colors.transparent,
-            body: Stack(
-              children: [
-                // 1. Background
-                Container(decoration: AppTheme.getBackground(theme)),
+          return PopScope(
+            canPop: !_isCalendarOpen,
+            onPopInvokedWithResult: (didPop, result) {
+              if (didPop) return;
+              _collapseCalendar();
+            },
+            child: Scaffold(
+              backgroundColor: Colors.transparent,
+              body: Stack(
+                children: [
+                  // 1. Background
+                  Container(decoration: AppTheme.getBackground(theme)),
 
-                // 2. Visual Effects
-                ...AppTheme.getBackgroundOverlays(theme),
+                  // 2. Visual Effects
+                  ...AppTheme.getBackgroundOverlays(theme),
 
-                // 3. Main Layout
-                Row(
-                  children: [
-                    const SizedBox(
-                      width: 300,
-                      child: SidebarWidget(
-                        activeSection: SidebarSection.moments,
+                  // 3. Main Layout
+                  Row(
+                    children: [
+                      const SizedBox(
+                        width: 300,
+                        child: SidebarWidget(
+                          activeSection: SidebarSection.moments,
+                        ),
                       ),
-                    ),
-                    Expanded(child: content),
-                  ],
-                ),
-              ],
+                      Expanded(child: content),
+                    ],
+                  ),
+                ],
+              ),
             ),
           );
         }
 
         // Mobile Header Logic
-        Widget headerTitle;
-        if (_isSearching) {
-          headerTitle = SkeuomorphicSearchBar(
-            value: searchQuery,
-            onChanged: (val) =>
-                context.read<DiaryProvider>().setMomentsSearchQuery(val),
-            autoFocus: true,
-          );
-        } else {
-          final imageCount = _index.imageCountForDate(_timeline.selectedDate);
-          headerTitle = Column(
-            children: [
-              Text(
-                "${_timeline.selectedDate.year}年${_timeline.selectedDate.month}月",
-                style: GoogleFonts.notoSerifSc(
-                  color: appBarTextColor.withValues(alpha: 0.8),
-                  fontSize: 13,
-                ),
-              ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    "随心记",
-                    style: GoogleFonts.notoSerifSc(
-                      color: appBarTextColor,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                  if (imageCount > 0) ...[
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: appBarIconColor.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.image, size: 10, color: appBarIconColor),
-                          const SizedBox(width: 2),
-                          Text(
-                            '$imageCount',
-                            style: GoogleFonts.notoSerifSc(
-                              color: appBarIconColor,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ],
-          );
-        }
+        final Widget headerTitle = _isSearching
+            ? SkeuomorphicSearchBar(
+                value: searchQuery,
+                onChanged: (val) =>
+                    context.read<DiaryProvider>().setMomentsSearchQuery(val),
+                autoFocus: true,
+              )
+            : MomentsDateTitle(
+                selectedDate: _timeline.selectedDate,
+                textColor: appBarTextColor,
+                iconColor: appBarIconColor,
+                expanded: _isCalendarOpen,
+                onTap: _toggleCalendar,
+              );
 
-        return Scaffold(
-          extendBodyBehindAppBar: true,
-          backgroundColor: Colors.transparent,
-          resizeToAvoidBottomInset: false,
-          drawerScrimColor: tc.drawerScrimColor, // 统一遮罩逻辑
-          drawer: const Drawer(
-            width: 300,
-            elevation: 0,
+        return PopScope(
+          canPop: !_isCalendarOpen,
+          onPopInvokedWithResult: (didPop, result) {
+            if (didPop) return;
+            _collapseCalendar();
+          },
+          child: Scaffold(
+            extendBodyBehindAppBar: true,
             backgroundColor: Colors.transparent,
-            child: SidebarWidget(activeSection: SidebarSection.moments),
-          ),
-          appBar: AppBar(
-            backgroundColor: tc.appBarBg,
-            elevation: 0,
-            surfaceTintColor: Colors.transparent,
-            shadowColor: Colors.transparent,
-            scrolledUnderElevation: 0,
-            systemOverlayStyle: AppTheme.getSystemUiOverlayStyle(theme),
-            // 关闭横向滚动触发的 AppBar “scrolled under” 状态，保持首帧与切页后颜色一致
-            notificationPredicate: (_) => false,
-            leading: Builder(
-              builder: (context) {
-                if (_isSearching) {
+            resizeToAvoidBottomInset: false,
+            drawerScrimColor: tc.drawerScrimColor, // 统一遮罩逻辑
+            drawer: const Drawer(
+              width: 300,
+              elevation: 0,
+              backgroundColor: Colors.transparent,
+              child: SidebarWidget(activeSection: SidebarSection.moments),
+            ),
+            appBar: AppBar(
+              backgroundColor: tc.appBarBg,
+              elevation: 0,
+              surfaceTintColor: Colors.transparent,
+              shadowColor: Colors.transparent,
+              scrolledUnderElevation: 0,
+              systemOverlayStyle: AppTheme.getSystemUiOverlayStyle(theme),
+              // 关闭横向滚动触发的 AppBar “scrolled under” 状态，保持首帧与切页后颜色一致
+              notificationPredicate: (_) => false,
+              leading: Builder(
+                builder: (context) {
+                  if (_isSearching) {
+                    return IconButton(
+                      icon: Icon(Icons.arrow_back, color: appBarIconColor),
+                      onPressed: () {
+                        setState(() {
+                          _isSearching = false;
+                        });
+                        context.read<DiaryProvider>().setMomentsSearchQuery('');
+                      },
+                    );
+                  }
                   return IconButton(
-                    icon: Icon(Icons.arrow_back, color: appBarIconColor),
-                    onPressed: () {
-                      setState(() {
-                        _isSearching = false;
-                      });
-                      context.read<DiaryProvider>().setMomentsSearchQuery('');
-                    },
+                    icon: Icon(Icons.menu, color: appBarIconColor),
+                    onPressed: () => Scaffold.of(context).openDrawer(),
                   );
-                }
-                return IconButton(
-                  icon: Icon(Icons.menu, color: appBarIconColor),
-                  onPressed: () => Scaffold.of(context).openDrawer(),
-                );
-              },
+                },
+              ),
+              title: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                child: headerTitle,
+              ),
+              centerTitle: true,
+              actions: [
+                if (!_isSearching)
+                  IconButton(
+                    icon: Icon(Icons.search, color: appBarIconColor),
+                    onPressed: () => setState(() {
+                      _isSearching = true;
+                      _isCalendarOpen = false;
+                    }),
+                  ),
+
+                if (!_isSearching)
+                  IconButton(
+                    key: const ValueKey('mobile_generate_btn'),
+                    icon: Icon(
+                      Icons.description_outlined,
+                      color: appBarIconColor,
+                    ),
+                    tooltip: '生成今日日记',
+                    onPressed: _handleAggregation,
+                  ),
+              ],
             ),
-            title: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
-              child: headerTitle,
-            ),
-            centerTitle: true,
-            actions: [
-              if (!_isSearching)
-                IconButton(
-                  icon: Icon(Icons.search, color: appBarIconColor),
-                  onPressed: () => setState(() => _isSearching = true),
-                ),
+            body: Builder(
+              builder: (bodyContext) {
+                final bottomInset = MediaQuery.of(
+                  bodyContext,
+                ).viewInsets.bottom;
+                final isKeyboardOpen = bottomInset > 0;
 
-              if (!_isSearching)
-                IconButton(
-                  key: const ValueKey('mobile_generate_btn'),
-                  icon: Icon(
-                    Icons.description_outlined,
-                    color: appBarIconColor,
-                  ),
-                  tooltip: '生成今日日记',
-                  onPressed: _handleAggregation,
-                ),
-            ],
-          ),
-          body: Builder(
-            builder: (bodyContext) {
-              final bottomInset = MediaQuery.of(bodyContext).viewInsets.bottom;
-              final isKeyboardOpen = bottomInset > 0;
-
-              return Stack(
-                children: [
-                  // 0. Background
-                  Positioned.fill(
-                    child: Container(decoration: AppTheme.getBackground(theme)),
-                  ),
-
-                  // 0.5. Visual Effects
-                  ...AppTheme.getBackgroundOverlays(theme),
-
-                  // 1. Main Content
-                  // Use AnimatedPositioned for smooth resizing content area
-                  AnimatedPositioned(
-                    duration: const Duration(milliseconds: 200),
-                    curve: Curves.easeOut,
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: isKeyboardOpen ? bottomInset : 0,
-                    child: content,
-                  ),
-
-                  // 2. Dismiss Layer
-                  if (isKeyboardOpen || _inputFocusNode.hasFocus)
+                return Stack(
+                  children: [
+                    // 0. Background
                     Positioned.fill(
-                      child: GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () {
-                          _inputFocusNode.unfocus();
-                        },
-                        child: Container(color: Colors.transparent),
+                      child: Container(
+                        decoration: AppTheme.getBackground(theme),
                       ),
                     ),
 
-                  // 3. Input Widget
-                  // Use AnimatedPositioned to smooth out the jump if ViewInsets updates late
-                  if (!isSearchActive)
+                    // 0.5. Visual Effects
+                    ...AppTheme.getBackgroundOverlays(theme),
+
+                    // 1. Main Content
+                    // Use AnimatedPositioned for smooth resizing content area
                     AnimatedPositioned(
                       duration: const Duration(milliseconds: 200),
                       curve: Curves.easeOut,
+                      top: 0,
                       left: 0,
                       right: 0,
-                      bottom: bottomInset, // Will animate to this target
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (showLimitBanner)
-                            MomentsLimitBanner(
-                              onUpgrade: _openPremiumMembership,
-                            ),
-                          MomentInputWidget(
-                            onSend: _handleSend,
-                            focusNode: _inputFocusNode,
-                            onHeightChanged: (h) {
-                              if ((_inputHeight - h).abs() > 1) {
-                                // Debounce/Throttling check
-                                WidgetsBinding.instance.addPostFrameCallback((
-                                  _,
-                                ) {
-                                  if (mounted) setState(() => _inputHeight = h);
-                                });
-                              }
-                            },
-                          ),
-                        ],
-                      ),
+                      bottom: isKeyboardOpen ? bottomInset : 0,
+                      child: content,
                     ),
-                ],
-              );
-            },
+
+                    // 2. Dismiss Layer
+                    if (isKeyboardOpen || _inputFocusNode.hasFocus)
+                      Positioned.fill(
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () {
+                            _inputFocusNode.unfocus();
+                          },
+                          child: Container(color: Colors.transparent),
+                        ),
+                      ),
+
+                    // 3. Input Widget
+                    // Use AnimatedPositioned to smooth out the jump if ViewInsets updates late
+                    if (!isSearchActive)
+                      AnimatedPositioned(
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeOut,
+                        left: 0,
+                        right: 0,
+                        bottom: bottomInset, // Will animate to this target
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (showLimitBanner)
+                              MomentsLimitBanner(
+                                onUpgrade: _openPremiumMembership,
+                              ),
+                            MomentInputWidget(
+                              onSend: _handleSend,
+                              focusNode: _inputFocusNode,
+                              onHeightChanged: (h) {
+                                if ((_inputHeight - h).abs() > 1) {
+                                  // Debounce/Throttling check
+                                  WidgetsBinding.instance.addPostFrameCallback((
+                                    _,
+                                  ) {
+                                    if (mounted) {
+                                      setState(() => _inputHeight = h);
+                                    }
+                                  });
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
           ),
         );
       },

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:paper_whisper_flutter/features/moments/application/moments_timeline_controller.dart';
 
@@ -60,6 +61,14 @@ void main() {
     test('indexForDate 早于起点钳制为 0', () {
       final c = buildController();
       expect(c.indexForDate(DateTime(1990, 1, 1)), 0);
+    });
+
+    test('indexForDate 晚于末日钳制为 dayRange-1', () {
+      final c = buildController();
+      expect(
+        c.indexForDate(DateTime(2099, 1, 1)),
+        MomentsTimelineController.dayRange - 1,
+      );
     });
 
     test('rulerOffsetForPage / pageForRulerOffset 互逆（70 单位）', () {
@@ -127,6 +136,64 @@ void main() {
       c.dispose();
       expect(c.pageController.hasClients, isFalse);
       expect(c.rulerController.hasClients, isFalse);
+    });
+  });
+
+  group('范围与 jumpToDate', () {
+    /// 纯 test() 必须注入 seam，禁止走到 WidgetsBinding.instance。
+    MomentsTimelineController jumpingController({
+      DateTime? initialDate,
+      void Function(VoidCallback callback)? scheduleEndJump,
+    }) {
+      return MomentsTimelineController(
+        initialDate: initialDate,
+        clock: () => fixedNow,
+        scheduleEndJump: scheduleEndJump ?? (cb) => cb(),
+      );
+    }
+
+    test('endDate 为起点 + dayRange-1', () {
+      final c = jumpingController();
+      expect(c.endDate, c.dateForIndex(MomentsTimelineController.dayRange - 1));
+    });
+
+    test('isDateInRange 含端点、超出为 false', () {
+      final c = jumpingController();
+      expect(c.isDateInRange(c.startDate), isTrue);
+      expect(c.isDateInRange(c.endDate), isTrue);
+      expect(c.isDateInRange(DateTime(2026, 3, 10, 23, 59)), isTrue);
+      expect(
+        c.isDateInRange(c.startDate.subtract(const Duration(days: 1))),
+        isFalse,
+      );
+      expect(c.isDateInRange(c.endDate.add(const Duration(days: 1))), isFalse);
+    });
+
+    test('jumpToDate 把 selectedDate 钳制到范围内', () {
+      final c = jumpingController();
+      c.jumpToDate(DateTime(2099, 1, 1));
+      expect(c.selectedDate, c.endDate);
+      c.jumpToDate(DateTime(1990, 1, 1));
+      expect(c.selectedDate, c.startDate);
+    });
+
+    test('捕获 scheduleEndJump 时 isJumping 先 true 再 false', () {
+      VoidCallback? pending;
+      final c = jumpingController(scheduleEndJump: (cb) => pending = cb);
+      c.jumpToDate(DateTime(2026, 3, 9));
+      expect(c.isJumping, isTrue);
+      expect(c.selectedDate, DateTime(2026, 3, 9));
+      pending!();
+      expect(c.isJumping, isFalse);
+      expect(c.isPageActive, isFalse);
+      expect(c.isRulerActive, isFalse);
+      c.dispose();
+    });
+
+    test('dispose 后 jumpToDate 不抛（hasClients 守卫）', () {
+      final c = jumpingController();
+      c.dispose();
+      expect(() => c.jumpToDate(DateTime(2026, 3, 9)), returnsNormally);
     });
   });
 }
