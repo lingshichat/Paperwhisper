@@ -112,12 +112,12 @@ class SettingsProvider with ChangeNotifier {
     _followSystemTheme = false; // 手动切换自动关闭跟随
 
     _applySystemUiStyle(theme);
+    notifyListeners();
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_themeKey, theme);
     await prefs.setString(_preferredThemeKey, theme);
     await prefs.setBool(_followSystemThemeKey, false);
-
-    notifyListeners();
   }
 
   Future<void> setFollowSystemTheme(bool enable) async {

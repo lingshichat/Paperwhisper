@@ -10,6 +10,7 @@ import 'package:paper_whisper_flutter/features/sync/data/sync_trust_snapshot.dar
 import 'package:paper_whisper_flutter/features/settings/presentation/settings_page.dart';
 import 'package:paper_whisper_flutter/features/sync_settings/presentation/sync_settings_page.dart';
 import 'package:paper_whisper_flutter/features/settings/application/settings_provider.dart';
+import 'package:paper_whisper_flutter/features/settings/presentation/widgets/settings_primitives.dart';
 import 'package:paper_whisper_flutter/features/sync/application/sync_provider.dart';
 import 'package:paper_whisper_flutter/features/moments/data/moment_service.dart';
 import 'package:paper_whisper_flutter/features/premium/data/payment_service.dart';
@@ -295,6 +296,8 @@ void main() {
         '言叶之庭',
       ];
       final sheet = find.byType(SettingsChoiceSheet<String>);
+      final initialSheet = tester.widget<SettingsChoiceSheet<String>>(sheet);
+      expect(initialSheet.selected, AppTheme.themeDefault);
       for (final name in themeNames) {
         expect(
           find.descendant(of: sheet, matching: find.text(name)),
@@ -320,8 +323,28 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      // 面板选项 + 列表 subtitle 各出现一次
+      final refreshedSheet = tester.widget<SettingsChoiceSheet<String>>(sheet);
+      final midnightSettings = ThemeRegistry.get(
+        AppTheme.themeMidnight,
+      ).settings;
+      final selectedTiles = tester
+          .widgetList<SettingsOptionTile>(find.byType(SettingsOptionTile))
+          .where((tile) => tile.isSelected)
+          .toList();
+
+      // 面板保持打开，并在同一轮交互中同步选中项和主题样式。
       expect(find.text('午夜星尘'), findsNWidgets(2));
+      expect(refreshedSheet.selected, AppTheme.themeMidnight);
+      expect(
+        refreshedSheet.style.backgroundColor,
+        midnightSettings.sheetBackgroundColor,
+      );
+      expect(
+        refreshedSheet.style.selectedBackgroundColor,
+        midnightSettings.optionSelectedBgColor,
+      );
+      expect(selectedTiles, hasLength(1));
+      expect(selectedTiles.single.label, '午夜星尘');
       expect(tester.takeException(), isNull);
     });
 

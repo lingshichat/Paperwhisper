@@ -235,7 +235,7 @@ class _SettingsPageState extends State<SettingsPage>
               title: '主题风格',
               subtitle: _getThemeName(settings.currentTheme),
               textColor: textColor,
-              onTap: () => _showThemePicker(context, settings),
+              onTap: () => _showThemePicker(context),
             ),
             SettingsDivider(color: themeConfig.dividerColor),
             SettingsSwitchItem(
@@ -781,27 +781,27 @@ class _SettingsPageState extends State<SettingsPage>
     }
   }
 
-  void _showThemePicker(BuildContext context, SettingsProvider settings) {
-    final style = _choiceStyle(
-      ThemeRegistry.get(settings.currentTheme).settings,
-    );
+  void _showThemePicker(BuildContext context) {
     final themesById = {
       for (final theme in ThemeRegistry.allThemes) theme.id: theme,
     };
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => SettingsChoiceSheet<String>(
-        title: '选择主题',
-        // Registry 提供名称；显式 ID 列表只固定既有展示顺序。
-        options: [
-          for (final id in _themePickerOrder)
-            SettingsChoiceOption(label: themesById[id]!.name, value: id),
-        ],
-        selected: settings.currentTheme,
-        onSelected: (val) => settings.setTheme(val),
-        closeOnSelect: false,
-        style: style,
+      builder: (ctx) => Selector<SettingsProvider, String>(
+        selector: (_, settings) => settings.currentTheme,
+        builder: (ctx, currentTheme, _) => SettingsChoiceSheet<String>(
+          title: '选择主题',
+          // Registry 提供名称；显式 ID 列表只固定既有展示顺序。
+          options: [
+            for (final id in _themePickerOrder)
+              SettingsChoiceOption(label: themesById[id]!.name, value: id),
+          ],
+          selected: currentTheme,
+          onSelected: (val) => ctx.read<SettingsProvider>().setTheme(val),
+          closeOnSelect: false,
+          style: _choiceStyle(ThemeRegistry.get(currentTheme).settings),
+        ),
       ),
     );
   }

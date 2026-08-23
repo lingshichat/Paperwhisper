@@ -105,6 +105,44 @@ Consumer<SettingsProvider>(
 )
 ```
 
+### Immediate settings preview inside overlays
+
+User-facing settings with live preview update the in-memory source of truth and
+call `notifyListeners()` before awaiting persistence. A dialog or bottom sheet
+that remains open must subscribe inside its own route subtree; passing
+`currentTheme` or derived colors only when opening the route creates a stale
+snapshot.
+
+```dart
+Future<void> setTheme(String theme) async {
+  _currentTheme = theme;
+  notifyListeners();
+
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString('theme', theme);
+}
+
+showModalBottomSheet<void>(
+  context: context,
+  builder: (sheetContext) => Selector<SettingsProvider, String>(
+    selector: (_, settings) => settings.currentTheme,
+    builder: (context, theme, _) => ThemeChoiceSheet(
+      selected: theme,
+      style: ThemeRegistry.get(theme).settings,
+    ),
+  ),
+);
+```
+
+Required regression assertions:
+
+- Immediately after calling the setter, listeners have observed the new value,
+  even before awaiting the returned persistence `Future`.
+- A live-preview overlay remains open, moves its selected marker, and rebuilds
+  its typed theme style after one pump.
+- The persisted theme and related preference flags still match the selected
+  value after the `Future` completes.
+
 ### ProxyProvider (dependent providers):
 ```dart
 ChangeNotifierProxyProvider<DiaryProvider, SyncProvider>(
