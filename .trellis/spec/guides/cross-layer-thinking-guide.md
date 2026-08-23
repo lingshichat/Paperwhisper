@@ -77,6 +77,8 @@ Before implementation:
 - [ ] Identified all layer boundaries
 - [ ] Defined format at each boundary
 - [ ] Decided where validation happens
+- [ ] Occupancy / derived flags come from an existing in-memory index, not a new IO API
+- [ ] Application objects that schedule frames inject a seam (`delay` / `scheduleEndJump`); unit `test()` never hits `WidgetsBinding.instance`
 
 After implementation:
 - [ ] Tested with edge cases (null, empty, invalid)

@@ -279,10 +279,17 @@ SyncStatusCardText buildStatusCard(SyncTrustSnapshot snapshot); // title + lines
 
 ```dart
 // 页面边界控制器（owned/injected，页面负责 UI 翻译）
-MomentsTimelineController({DateTime? initialDate, DateTime Function()? clock});
-// indexForDate/dateForIndex/pageForRulerOffset/rulerOffsetForPage/isSameDay/selectDate
+MomentsTimelineController({
+  DateTime? initialDate,
+  DateTime Function()? clock,
+  void Function(VoidCallback callback)? scheduleEndJump,
+});
+// indexForDate（上下界钳制）/dateForIndex/pageForRulerOffset/rulerOffsetForPage
+// isSameDay/selectDate/endDate/isDateInRange/isJumping/jumpToDate
 // shouldProcessRulerScroll/rulerScrollEnded/shouldProcessPageScroll/pageScrollEnded
-MomentIndex.build(List<Moment> moments); // momentsForDate/imageCountForDate/latest
+MomentIndex.build(List<Moment> moments);
+// dayKey(DateTime) 未补零 yyyy-M-d
+// hasContentOnDate / momentsForDate / imageCountForDate / latestMoments
 MomentSendPipeline({
   required MomentService momentService,
   required bool Function() canUseProFeatures,
@@ -356,7 +363,7 @@ SettingsUpdateController({UpdateCheckCoordinator? coordinator}); // manualCheck/
 - **owned / injected dispose。** Widget/Page 自建的控制器由自身 `dispose()`；外部注入的控制器仍由注入方释放。控制器内部创建的 TextEditingController、Timer、AudioPlayer/Recorder、CancelToken 与订阅必须全部释放；应用级共享的 SyncProvider、UpdateService、AuthService 不由页面控制器释放。
 - **Provider 不替换。** 跨页响应式状态仍在 `SyncProvider` / `DiaryProvider` / `SettingsProvider`；控制器经构造或 Provider 获取，不新增状态管理库，不为短生命周期状态新增 Provider。
 - **控制器不读取主题。** Controller、Coordinator 与纯函数不读取 ThemeRegistry；typed component data 只在 presentation 使用。
-- **<1000 行约束。** 页面超过 1000 行必须先拆分再增加行为。当前基线：settings 944、moments 907、diary_list 881、sync_settings 764、editor 581。
+- **<1000 行约束。** 页面超过 1000 行必须先拆分再增加行为。当前基线：settings 944、moments 939、diary_list 881、sync_settings 764、editor 581。
 - **去重语义已定义。** `UpdateCheckCoordinator.checkAuto` 对同一 purpose 开始即置位、失败回滚；这有意修复 Moments 失败后永久跳过，并把 DiaryList 自动检查收敛为进程内一次。`SaveSyncCoordinator` 三分支与 `SyncStatusFormatter` 的全部 `SyncTrustState` 文案必须保持当前测试契约。
 - 新类型直接落入所属 feature；通用类型只有出现多个真实消费方时才进入 shared/core（本阶段 `ExportPathResolver` 为 `features/export/`，无新 shared 层）。
 
@@ -438,6 +445,8 @@ switch (outcome) {
 - [`editor_export_surface.dart`](../../../paper_whisper_flutter/lib/features/editor/presentation/widgets/editor_export_surface.dart) — renders keyed Header/Body/Footer capture surfaces from explicit props without performing capture or I/O
 - [`skeuomorphic_container.dart`](../../../paper_whisper_flutter/lib/shared/widgets/skeuomorphic_container.dart) — cross-feature tactile primitive with named constructors like `.paper()` and `.inset()`
 - [`moment_input_widget.dart`](../../../paper_whisper_flutter/lib/features/moments/presentation/widgets/moment_input_widget.dart) — reads typed `MomentInputThemeData` and owns its media UI lifecycle
+- [`moments_month_calendar.dart`](../../../paper_whisper_flutter/lib/features/moments/presentation/widgets/moments_month_calendar.dart) — inline occupancy calendar; Sunday-first grid; locked 296px panel
+- [`moments_timeline_controller.dart`](../../../paper_whisper_flutter/lib/features/moments/application/moments_timeline_controller.dart) — `jumpToDate` + injectable `scheduleEndJump`
 - [`update_dialog.dart`](../../../paper_whisper_flutter/lib/features/update/presentation/update_dialog.dart) — custom stateful dialog with mounted guards, download state machine, and bespoke skeuomorphic presentation
 - [`route_transitions.dart`](../../../paper_whisper_flutter/lib/app/navigation/route_transitions.dart) — centralized physical page transitions
 
@@ -454,3 +463,117 @@ switch (outcome) {
 7. **工具栏按钮添加不必要的边框/背景** — 底栏图标按钮应使用 `GestureDetector + Padding + Icon` 的简洁模式，不要用 `Container + Border.all` 包裹，否则违反拟物化简洁风格
 8. **AppTheme 方法中用 boolean 变量 + if-else 判断主题** — 应使用 `switch(theme)` 语句，不要声明 `isMidnight`/`isTwilight` 等布尔变量再用 if-else 链
 9. **滚动页面未固定 AppBar 的 scrolled-under 状态** — 在 `PageView` / `ListView` 等可滚动页面中，如果顶栏颜色需要保持恒定，必须显式设置 `surfaceTintColor`、`scrolledUnderElevation`，必要时通过 `notificationPredicate` 禁用滚动通知驱动的自动变色
+10. **卸载仍需 `jumpToItem` 的尺子** — `RulerDatePicker` 外部 `controller` 的 `initState` 不会按 `selectedDate` 自跳。日历打开时必须 `AnimatedAlign(heightFactor: 0)` 保持挂载，禁止 `if (!open) Ruler`。
+11. **用 `selectedDate` 属性断言尺子对齐** — `selectDate` 会改 prop，但 `jumpToItem` 被跳过时轮子仍停在旧日。对齐 oracle 必须是 `controller.selectedItem`。
+12. **默认 48px `IconButton`/`TextButton` 塞进锁定高度的月历头** — 头栏必须 `SizedBox(height: 40)` + `tapTargetSize: shrinkWrap` 或 `GestureDetector`，否则 296px 面板 overflow。
+13. **`extendBodyBehindAppBar` 后再垫 `kToolbarHeight`** — body 的 `MediaQuery.padding.top` 已是 AppBar 全高，`SafeArea` 足够让月历紧贴顶栏。再垫 56px 会在顶栏和月历之间留出空隙。
+14. **月历标题放进不对称 `Row` 的 `Expanded`** — 左 40px chevron、右「今天」+40px，标题会偏左。标题必须单独铺满宽度居中，控件用 `Stack` 叠在两侧；中间 `IgnorePointer`，否则挡掉横向滑动。
+
+---
+
+## Scenario: Moments Month Calendar
+
+### 1. Scope / Trigger
+
+随心记顶栏展开月历、占用圆点、远跳时间线、或改 `MomentIndex` / `MomentsTimelineController` / `RulerDatePicker` 挂载方式时适用。日历只服务 moments 域，放 `features/moments/presentation/widgets/`，禁止 `shared/widgets`、禁止日历第三方库、禁止改 Moment JSON。
+
+### 2. Signatures
+
+```dart
+static String MomentIndex.dayKey(DateTime date); // 未补零 yyyy-M-d
+bool MomentIndex.hasContentOnDate(DateTime date); // containsKey(dayKey)
+
+MomentsTimelineController({
+  DateTime? initialDate,
+  DateTime Function()? clock,
+  void Function(VoidCallback callback)? scheduleEndJump,
+});
+DateTime get endDate;
+bool isDateInRange(DateTime date);
+bool get isJumping;
+void jumpToDate(DateTime date); // jumpToPage + jumpToItem；seam 清 isJumping
+
+class MomentsMonthCalendar {
+  final DateTime selectedDate;
+  final DateTime startDate;
+  final DateTime endDate;
+  final bool Function(DateTime date) hasContentOnDate;
+  final ValueChanged<DateTime> onDateSelected;
+  final VoidCallback? onJumpToToday;
+}
+```
+
+### 3. Contracts
+
+- 占用只读内存索引，不扫盘。ValueKey 必须用 `MomentIndex.dayKey`：`moments_cal_$key` / `moments_cal_mark_$key`。
+- 展开态是页面 `bool`，不进 Provider。收起发生在 listener / setState / post-frame，不在 `build` 赋值。
+- 远跳用 `jumpToDate`，不走 `_onDateChanged(animate: true)`。`_onDateChanged` 见 `isJumping` 则 return。
+- 生产默认 `scheduleEndJump` 为 post-frame；纯 `test()` 必须注入同步或捕获回调，禁止碰 `WidgetsBinding.instance`。
+- 移动端尺子视觉隐藏但保持挂载：`ClipRect` + `AnimatedAlign(heightFactor: 0)` + `IgnorePointer` + `SizedBox(height: 85)`。
+- `extendBodyBehindAppBar` 时 `_BodyBuilder` 已把 AppBar 全高写入 `MediaQuery.padding.top`，`SafeArea(top: true)` 即可让月历紧贴顶栏。禁止再垫 `kToolbarHeight`，否则会多出一段空隙。
+- 月历几何：`ConstrainedBox(maxHeight: 296)`，头 `SizedBox(height: 40)`，星期 `SizedBox(height: 22)`，`mainAxisExtent: 36`，固定 6 行，`shrinkWrap` + `NeverScrollableScrollPhysics`。周日首列用 `weekday % 7`，不用 `DateUtils.firstDayOffset`。
+- 标题保持 `yyyy年M月` + `Icons.arrow_drop_down`，不展示当日图片计数；展开块内月份走横向 `PageView`（Key `moments_cal_pager`），chevron 与滑动都 `animateToPage` 300ms `easeOutCubic`；标记是数字下 5×5 圆点。
+- 展开块月份标题相对面板几何中心居中。左右 chevron 与「今天」叠在头栏两侧，不进标题 `Row` 布局。禁止 `Expanded` 夹在 40px 左箭头和「今天」+右箭头之间。
+- 桌面空态必须传 `selectedDate`，禁止 `DateTime.now()`。
+- 格子 48×36 是有意低于 48×48 的规范例外（360 宽 + 6 行否则压没 PageView）。
+
+### 4. Validation & Error Matrix
+
+| Condition | Required behavior |
+|---|---|
+| 点非选中日 | `jumpToDate` 后收起；尺子 `controller.selectedItem` 与 Page 同 index |
+| 点当前已选日 | 只收起，不 `jumpToDate` |
+| 日期越出 `[startDate, endDate]` | `indexForDate` 钳制到 `[0, dayRange-1]`，灰显不可点 |
+| 搜索（含 Sidebar `momentsSearchQuery`） | 打不开；已打开则 listener 收起 |
+| 输入聚焦 | 收起 |
+| `viewInsets.bottom` `0 → >0` | post-frame 收起；insets 一直 >0 不重复关 |
+| Android 返回且日历开着 | `PopScope` 只收起，不 pop 路由 |
+| 卸载尺子再 jump | 禁止。`hasClients==false` 会跳过 `jumpToItem`，remount 后尺子错位 |
+
+### 5. Good/Base/Bad Cases
+
+- Good: 打开月历 → 点昨天 → 列表昨天、尺子 `selectedItem == yesterdayIndex`、月历收起。
+- Base: 点标题展开/再点收起；无记录日无 `moments_cal_mark_*`。
+- Bad: `if (!open) RulerDatePicker(...)`；`test()` 不注入 `scheduleEndJump`；`expect(ruler.selectedDate, yesterday)`；`find.text('12')`。
+
+### 6. Tests Required
+
+- `moment_index_test`：`dayKey(DateTime(2026, 11, 3)) == '2026-11-3'`；有记录 true / 缺省 false。
+- `moments_timeline_controller_test`：注入 seam；clamp；`dispose` 后 `jumpToDate` 不抛。禁止断言 `initialPage`。
+- `moments_timeline_controller_jump_test`：有界 `PageView` + `ListWheelScrollView`，`pump()` 后 `page` 与 `selectedItem`。
+- `moments_month_calendar_test`：钉死 `selectedDate: DateTime(2026, 3, 10)`；`ThemeRegistry.init()`；标记 Key；头高 == 40；360×800 无 overflow；月份标题 `center.dx` 对齐面板；滑动 / chevron 切月后新月标题在面板内。
+- `moments_page_test`：尺子对齐用 `controller!.selectedItem`；桌面空的非今天 → 「这天没有留下记录」；90 天远跳无 `animateToPage`；PopScope；聚焦 / 键盘边沿收起。
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```dart
+if (!_isCalendarOpen) RulerDatePicker(...);
+WidgetsBinding.instance.addPostFrameCallback((_) => _isJumping = false); // 写死在控制器里
+expect(find.text('12'), findsOneWidget);
+expect(ruler.selectedDate, yesterday);
+MomentsEmptyState(date: DateTime.now(), theme: theme);
+```
+
+#### Correct
+
+```dart
+ClipRect(
+  child: AnimatedAlign(
+    heightFactor: hide ? 0 : 1,
+    child: IgnorePointer(
+      ignoring: hide,
+      child: SizedBox(height: 85, child: RulerDatePicker(...)),
+    ),
+  ),
+);
+MomentsTimelineController(scheduleEndJump: (cb) => cb()); // 纯单测
+expect(
+  tester.widget<RulerDatePicker>(find.byType(RulerDatePicker))
+      .controller!
+      .selectedItem,
+  yesterdayIndex,
+);
+MomentsEmptyState(date: _timeline.selectedDate, theme: theme);
+```

@@ -113,3 +113,5 @@ HitokotoService().fetchHitokoto(); // 不 await
 4. **Heavy work in `build()`** — Move data processing to `initState` or dedicated methods, not recalculated every frame.
 5. **Not using `const` constructors** — Missed rebuild optimization.
 6. **Using builder-local `context` after an async refresh** — In `ListView.builder` / `PageView.builder` callbacks, `await` may rebuild and deactivate that item subtree. After the async gap, use the owning `State.context` (guarded by `mounted`) or check `context.mounted` before reading `Provider` / showing dialogs / showing toasts.
+7. **在 `build` 里根据 `viewInsets` 或搜索 query 赋值展开态** — 非法副作用，也会在「点标题 unfocus → 键盘下落但 insets 仍 > 0」时立刻把刚打开的面板关掉。键盘收起必须用 `0 → >0` 边沿（记住上一帧 inset），搜索用 Provider listener，禁止 `build` 里 `addPostFrameCallback` 改 `setState`。
+8. **application 控制器写死 `WidgetsBinding.instance.addPostFrameCallback`** — 现有 `test()` 风格单测没有 binding，会抛 `Binding has not yet been initialized`。与 `UpdateCheckCoordinator.delay` 一样注入 scheduling seam（如 `scheduleEndJump`）。
