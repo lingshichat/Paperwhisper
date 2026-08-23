@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:paper_whisper_flutter/core/theme/app_theme.dart';
 import 'package:paper_whisper_flutter/core/theme/theme_registry.dart';
@@ -65,6 +66,8 @@ void main() {
     double height = 800,
     double dpr = 1,
     TargetPlatform platform = TargetPlatform.android,
+    String theme = AppTheme.themeDefault,
+    BackdropKey? backdropKey,
   }) async {
     tester.view.physicalSize = Size(width * dpr, height * dpr);
     tester.view.devicePixelRatio = dpr;
@@ -73,22 +76,27 @@ void main() {
       tester.view.resetDevicePixelRatio();
     });
 
+    final settings = SettingsProvider();
+    if (theme != AppTheme.themeDefault) {
+      await settings.setTheme(theme);
+    }
+    addTearDown(settings.dispose);
+
+    Widget card = MomentCard(
+      moment: moment,
+      baseDir: Directory.systemTemp,
+      controller: controller,
+    );
+    if (backdropKey != null) {
+      card = BackdropGroup(backdropKey: backdropKey, child: card);
+    }
+
     await tester.pumpWidget(
-      ChangeNotifierProvider<SettingsProvider>(
-        create: (_) => SettingsProvider(),
+      ChangeNotifierProvider<SettingsProvider>.value(
+        value: settings,
         child: MaterialApp(
-          theme: AppTheme.getThemeData(
-            AppTheme.themeDefault,
-          ).copyWith(platform: platform),
-          home: Scaffold(
-            body: SingleChildScrollView(
-              child: MomentCard(
-                moment: moment,
-                baseDir: Directory.systemTemp,
-                controller: controller,
-              ),
-            ),
-          ),
+          theme: AppTheme.getThemeData(theme).copyWith(platform: platform),
+          home: Scaffold(body: SingleChildScrollView(child: card)),
         ),
       ),
     );
@@ -131,6 +139,29 @@ void main() {
   });
 
   group('渲染', () {
+    testWidgets('非玻璃主题不创建 BackdropFilter', (tester) async {
+      await pumpCard(tester, moment: moment(audioPath: null));
+
+      expect(find.byType(BackdropFilter), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('玻璃主题使用滚动集合提供的 BackdropKey', (tester) async {
+      final backdropKey = BackdropKey();
+      await pumpCard(
+        tester,
+        moment: moment(audioPath: null),
+        theme: AppTheme.themeSeaFlower,
+        backdropKey: backdropKey,
+      );
+
+      final filter = tester.renderObject<RenderBackdropFilter>(
+        find.byType(BackdropFilter),
+      );
+      expect(filter.backdropKey, same(backdropKey));
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('无音频：不渲染播放器', (tester) async {
       await pumpCard(tester, moment: moment(audioPath: null));
 

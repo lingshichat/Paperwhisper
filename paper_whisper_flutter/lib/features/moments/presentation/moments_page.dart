@@ -698,24 +698,26 @@ class _MomentsPageState extends State<MomentsPage> {
                           return MomentsEmptyState(date: date, theme: theme);
                         }
 
-                        return ListView.builder(
-                          padding: EdgeInsets.only(
-                            top: 20,
-                            bottom: _inputHeight + 20,
+                        return BackdropGroup(
+                          child: ListView.builder(
+                            padding: EdgeInsets.only(
+                              top: 20,
+                              bottom: _inputHeight + 20,
+                            ),
+                            itemCount: moments.length,
+                            itemBuilder: (context, i) {
+                              return MomentCard(
+                                moment: moments[i],
+                                baseDir: _baseDir,
+                                onDelete: () async {
+                                  await _handleMomentDeleted(
+                                    moments[i].uuid,
+                                    showToast: true,
+                                  );
+                                },
+                              );
+                            },
                           ),
-                          itemCount: moments.length,
-                          itemBuilder: (context, i) {
-                            return MomentCard(
-                              moment: moments[i],
-                              baseDir: _baseDir,
-                              onDelete: () async {
-                                await _handleMomentDeleted(
-                                  moments[i].uuid,
-                                  showToast: true,
-                                );
-                              },
-                            );
-                          },
                         );
                       },
                     ),

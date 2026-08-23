@@ -55,6 +55,7 @@ class _DiaryListPageState extends State<DiaryListPage>
   final ItemScrollController _itemScrollController = ItemScrollController();
   final ItemPositionsListener _itemPositionsListener =
       ItemPositionsListener.create();
+  final BackdropKey _diaryCardsBackdropKey = BackdropKey();
 
   // Cache for responsive layout
   List<Widget> _uiItems = [];
@@ -785,11 +786,14 @@ class _DiaryListPageState extends State<DiaryListPage>
                       right: 16,
                       top: 16,
                     ),
-                    child: ScrollablePositionedList.builder(
-                      itemCount: _uiItems.length,
-                      itemScrollController: _itemScrollController,
-                      itemPositionsListener: _itemPositionsListener,
-                      itemBuilder: (context, index) => _uiItems[index],
+                    child: BackdropGroup(
+                      backdropKey: _diaryCardsBackdropKey,
+                      child: ScrollablePositionedList.builder(
+                        itemCount: _uiItems.length,
+                        itemScrollController: _itemScrollController,
+                        itemPositionsListener: _itemPositionsListener,
+                        itemBuilder: (context, index) => _uiItems[index],
+                      ),
                     ),
                   ),
           ),

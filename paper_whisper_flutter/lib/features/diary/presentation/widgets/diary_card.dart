@@ -145,7 +145,7 @@ class _DiaryCardState extends State<DiaryCard> {
 
       containerBody = ClipRRect(
         borderRadius: BorderRadius.circular(borderRadius),
-        child: BackdropFilter(
+        child: BackdropFilter.grouped(
           filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 300),

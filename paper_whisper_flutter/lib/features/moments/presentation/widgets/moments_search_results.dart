@@ -44,16 +44,18 @@ class MomentsSearchResults extends StatelessWidget {
                 ),
               ),
             )
-          : ListView.builder(
-              padding: EdgeInsets.only(top: 20, bottom: bottomPadding),
-              itemCount: moments.length,
-              itemBuilder: (context, i) {
-                return MomentCard(
-                  moment: moments[i],
-                  baseDir: baseDir,
-                  onDelete: () => onDelete(moments[i]),
-                );
-              },
+          : BackdropGroup(
+              child: ListView.builder(
+                padding: EdgeInsets.only(top: 20, bottom: bottomPadding),
+                itemCount: moments.length,
+                itemBuilder: (context, i) {
+                  return MomentCard(
+                    moment: moments[i],
+                    baseDir: baseDir,
+                    onDelete: () => onDelete(moments[i]),
+                  );
+                },
+              ),
             ),
     );
   }

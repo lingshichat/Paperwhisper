@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 
 import 'package:paper_whisper_flutter/features/moments/data/moment.dart';
 import 'moment_card.dart';
@@ -39,43 +40,23 @@ class MomentsWaterfall extends StatelessWidget {
           columnCount = 2;
         }
 
-        // Masonry Logic
-        List<List<Moment>> columns = List.generate(columnCount, (_) => []);
-        for (int i = 0; i < sortedMoments.length; i++) {
-          columns[i % columnCount].add(sortedMoments[i]);
-        }
-
-        return SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(
-            40,
-            20,
-            40,
-            100,
-          ), // Bottom padding for input widget
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              for (int i = 0; i < columnCount; i++)
-                Expanded(
-                  child: Padding(
-                    padding: i < columnCount - 1
-                        ? const EdgeInsets.only(right: 24)
-                        : EdgeInsets.zero,
-                    child: Column(
-                      children: columns[i].map((moment) {
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 24),
-                          child: MomentCard(
-                            moment: moment,
-                            baseDir: baseDir,
-                            onDelete: () => onDelete(moment),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                ),
-            ],
+        return BackdropGroup(
+          child: MasonryGridView.builder(
+            padding: const EdgeInsets.fromLTRB(40, 20, 40, 100),
+            gridDelegate: SliverSimpleGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: columnCount,
+            ),
+            mainAxisSpacing: 24,
+            crossAxisSpacing: 24,
+            itemCount: sortedMoments.length,
+            itemBuilder: (context, index) {
+              final moment = sortedMoments[index];
+              return MomentCard(
+                moment: moment,
+                baseDir: baseDir,
+                onDelete: () => onDelete(moment),
+              );
+            },
           ),
         );
       },

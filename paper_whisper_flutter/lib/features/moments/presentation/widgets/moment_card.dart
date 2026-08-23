@@ -246,11 +246,9 @@ class _MomentCardState extends State<MomentCard> {
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(4),
-                    child: BackdropFilter(
-                      filter: ui.ImageFilter.blur(
-                        sigmaX: useGlassEffect ? cardBlurSigma : 0.001,
-                        sigmaY: useGlassEffect ? cardBlurSigma : 0.001,
-                      ),
+                    child: _buildCardSurface(
+                      useGlassEffect: useGlassEffect,
+                      blurSigma: cardBlurSigma,
                       child: Container(
                         color: useGlassEffect ? cardBg : Colors.transparent,
                         child: Column(
@@ -528,6 +526,19 @@ class _MomentCardState extends State<MomentCard> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildCardSurface({
+    required bool useGlassEffect,
+    required double blurSigma,
+    required Widget child,
+  }) {
+    if (!useGlassEffect) return child;
+
+    return BackdropFilter.grouped(
+      filter: ui.ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
+      child: child,
     );
   }
 

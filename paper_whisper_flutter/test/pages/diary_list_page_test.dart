@@ -167,13 +167,6 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    // 消化 Sidebar（桌面常驻 / 移动端 Drawer 内）首次构建调度的 180ms
-    // 非关键效果延迟（静默开启背景模糊 + 一言拉取）。统一在 helper 内
-    // 消化，避免测试结束遗留 pending timer；后续构建因 static flag 已
-    // 置位不再创建该 timer，此 pump 对无 Sidebar 场景亦无副作用。
-    await tester.pump(const Duration(milliseconds: 200));
-    await tester.pump();
-
     // 收尾销毁整棵 widget 树：dispose 取消刷新动画/滚动监听器，并让
     // SnackBar 计时器随 ScaffoldMessenger 一并释放。
     addTearDown(() async {
@@ -344,6 +337,13 @@ void main() {
       // 约 3 张）。先断言首屏可见 >=3 张，再滚动到第 4 篇验证全量数据
       // 可访问，保持 4 条数据的覆盖，不把断言硬改为 3。
       expect(find.byType(DiaryCard), findsAtLeastNWidgets(3));
+      expect(
+        find.ancestor(
+          of: find.byType(DiaryCard).first,
+          matching: find.byType(BackdropGroup),
+        ),
+        findsOneWidget,
+      );
       await scrollDiaryListUntilVisible(tester, find.text('日记 4'));
       expect(find.text('日记 4'), findsOneWidget);
       expect(tester.takeException(), isNull);

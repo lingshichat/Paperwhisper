@@ -22,42 +22,13 @@ class SidebarWidget extends StatefulWidget {
 }
 
 class _SidebarWidgetState extends State<SidebarWidget> {
-  static bool _hasPrimedFirstSidebarFrame = false;
-
-  HitokotoLine? _hitokoto;
   final HitokotoService _hitokotoService = HitokotoService();
-  late bool _enableBackdropBlur;
+  late final Future<HitokotoLine?> _hitokotoFuture;
 
   @override
   void initState() {
     super.initState();
-    _enableBackdropBlur = _hasPrimedFirstSidebarFrame;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scheduleNonCriticalEffects();
-    });
-  }
-
-  Future<void> _scheduleNonCriticalEffects() async {
-    if (!_hasPrimedFirstSidebarFrame) {
-      await Future<void>.delayed(const Duration(milliseconds: 180));
-      if (!mounted) return;
-
-      setState(() {
-        _enableBackdropBlur = true;
-      });
-      _hasPrimedFirstSidebarFrame = true;
-    }
-
-    await _fetchHitokoto();
-  }
-
-  Future<void> _fetchHitokoto() async {
-    final hitokoto = await _hitokotoService.fetchHitokoto();
-    if (mounted) {
-      setState(() {
-        _hitokoto = hitokoto;
-      });
-    }
+    _hitokotoFuture = _hitokotoService.fetchHitokoto();
   }
 
   @override
@@ -349,46 +320,50 @@ class _SidebarWidgetState extends State<SidebarWidget> {
               const Spacer(),
 
               // Hitokoto
-              Container(
-                padding: const EdgeInsets.all(20),
-                margin: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  color: hitokotoBackgroundColor,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: hitokotoBorderColor),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _hitokoto?.hitokoto ?? '正在获取一言...',
-                      style: GoogleFonts.notoSerifSc(
-                        color: subTextColor, // Adapted
-                        fontSize: 12,
-                        fontStyle: FontStyle.italic,
-                        height: 1.5,
-                      ),
+              FutureBuilder<HitokotoLine?>(
+                future: _hitokotoFuture,
+                builder: (context, snapshot) {
+                  final hitokoto = snapshot.data;
+                  return Container(
+                    padding: const EdgeInsets.all(20),
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
                     ),
-                    if (_hitokoto != null) ...[
-                      const SizedBox(height: 8),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: Text(
-                          '—— ${_hitokoto!.from}',
+                    decoration: BoxDecoration(
+                      color: hitokotoBackgroundColor,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: hitokotoBorderColor),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          hitokoto?.hitokoto ?? '正在获取一言...',
                           style: GoogleFonts.notoSerifSc(
-                            color: subTextColor.withValues(
-                              alpha: 0.8,
-                            ), // Adapted
-                            fontSize: 11,
+                            color: subTextColor,
+                            fontSize: 12,
+                            fontStyle: FontStyle.italic,
+                            height: 1.5,
                           ),
                         ),
-                      ),
-                    ],
-                  ],
-                ),
+                        if (hitokoto != null) ...[
+                          const SizedBox(height: 8),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: Text(
+                              '—— ${hitokoto.from}',
+                              style: GoogleFonts.notoSerifSc(
+                                color: subTextColor.withValues(alpha: 0.8),
+                                fontSize: 11,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  );
+                },
               ),
 
               Divider(color: dividerColor, height: 1),
@@ -418,7 +393,7 @@ class _SidebarWidgetState extends State<SidebarWidget> {
       ),
     );
 
-    if (prefersBlur && _enableBackdropBlur) {
+    if (prefersBlur && !isInDrawer) {
       return ClipRect(
         child: BackdropFilter(
           filter: ImageFilter.blur(

@@ -135,8 +135,8 @@ void main() {
 
     // 必须在测试体内消化 initState postFrame 启动的一次性 timer：
     // 更新检查 2s 延迟（_checkUpdate 的 Future.delayed 无法在 dispose
-    // 时取消）与桌面 Sidebar 180ms 特效延迟。http 在 flutter_test 的
-    // mock 下立即返回 400，失败链路无后续 timer。addTearDown 在
+    // 时取消）。http 在 flutter_test 的 mock 下立即返回 400，失败链路
+    // 无后续 timer。addTearDown 在
     // _verifyInvariants 之后才执行，来不及清理 pending timer，故不能
     // 依赖 teardown 推进时间。
     await tester.pump(const Duration(seconds: 3));
@@ -247,6 +247,13 @@ void main() {
 
       expect(find.text('今天的内容'), findsOneWidget);
       expect(find.text('昨天的内容'), findsNothing);
+      expect(
+        find.ancestor(
+          of: find.text('今天的内容'),
+          matching: find.byType(BackdropGroup),
+        ),
+        findsOneWidget,
+      );
       expect(tester.takeException(), isNull);
     });
 
@@ -276,6 +283,13 @@ void main() {
 
       expect(find.text('苹果的回忆'), findsOneWidget);
       expect(find.text('香蕉的回忆'), findsNothing);
+      expect(
+        find.ancestor(
+          of: find.text('苹果的回忆'),
+          matching: find.byType(BackdropGroup),
+        ),
+        findsOneWidget,
+      );
 
       // 无命中 → 空态
       await tester.enterText(searchField, '不存在的关键词');
