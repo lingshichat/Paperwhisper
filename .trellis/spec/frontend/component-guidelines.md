@@ -113,6 +113,45 @@ All Route classes live in `app/navigation/route_transitions.dart`; cross-page fa
 
 ---
 
+## Scrollable Glass Surfaces
+
+Wrap each scrollable glass-card collection in one `BackdropGroup`, and use
+`BackdropFilter.grouped` in each glass card. Flutter can then share one backdrop
+operation across visible cards.
+
+```dart
+final BackdropKey _cardsBackdropKey = BackdropKey();
+
+BackdropGroup(
+  backdropKey: _cardsBackdropKey,
+  child: ListView.builder(
+    itemCount: entries.length,
+    itemBuilder: (context, index) => GlassCard(entries[index]),
+  ),
+);
+
+if (!useGlassEffect) return child;
+return BackdropFilter.grouped(
+  filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
+  child: child,
+);
+```
+
+Required behavior:
+
+- One independently scrolling collection owns one group. Use a stable explicit key when
+  its owning `State` or tests need to verify group identity.
+- Non-glass cards omit `BackdropFilter`; near-zero sigma still creates a compositing layer.
+- Variable-height collections use builder-backed scrolling. Desktop masonry uses
+  `MasonryGridView.builder`, not eager `SingleChildScrollView -> Row -> Column` trees.
+- Preserve sorting, column thresholds, padding, spacing, callbacks, and theme visuals.
+- A transient full-height `Drawer` must not blur the route while opening; a fixed desktop
+  sidebar may retain blur.
+- Tests cover lazy card counts, no filter in non-glass themes, shared keys, columns, and
+  spacing.
+
+---
+
 ## Scenario: Editor Session, Save, And Export Boundaries
 
 ### 1. Scope / Trigger
