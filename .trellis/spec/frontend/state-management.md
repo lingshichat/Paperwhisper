@@ -43,7 +43,7 @@ MultiProvider(
 
 | Provider | Responsibility |
 |----------|---------------|
-| `SettingsProvider` | Theme, startup page, compatibility mode |
+| `SettingsProvider` | Theme, startup page, compatibility mode, simplified editor transitions |
 | `DiaryProvider` | Diary entries, search queries, book metadata |
 | `SyncProvider` | WebDAV/S3 sync state, sync progress, conflicts |
 | `PaymentService` | Premium membership status |

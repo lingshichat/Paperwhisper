@@ -28,6 +28,7 @@
 | [Component Guidelines](./component-guidelines.md) | Widget patterns, composition, skeuomorphic design | ✅ Filled |
 | [Hook Guidelines](./hook-guidelines.md) | Widget lifecycle, mixins, callbacks | ✅ Filled |
 | [State Management](./state-management.md) | Provider-based state, local vs global | ✅ Filled |
+| [Editor Transitions](./editor-transitions.md) | Persisted simplified-transition contract and long-diary preview coupling | ✅ Filled |
 | [Quality Guidelines](./quality-guidelines.md) | Code standards, forbidden patterns | ✅ Filled |
 | [Type Safety](./type-safety.md) | Dart type patterns, model conventions | ✅ Filled |
 | [Refactoring Roadmap](../refactoring-roadmap.md) | 进度、规划与重构路线图 | ✅ Actionable |
