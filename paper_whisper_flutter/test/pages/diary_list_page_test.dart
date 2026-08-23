@@ -21,6 +21,7 @@ import 'package:paper_whisper_flutter/features/moments/data/moment_service.dart'
 import 'package:paper_whisper_flutter/features/premium/data/payment_service.dart';
 import 'package:paper_whisper_flutter/features/diary/presentation/widgets/book_flip_refresh_widget.dart';
 import 'package:paper_whisper_flutter/app/shell/sidebar_widget.dart';
+import 'package:paper_whisper_flutter/app/navigation/route_transitions.dart';
 import 'package:paper_whisper_flutter/shared/widgets/skeuomorphic_dialog.dart';
 import 'package:provider/provider.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
@@ -511,6 +512,59 @@ void main() {
   });
 
   group('DiaryListPage 打开编辑器导航链', () {
+    testWidgets('关闭多余动画：新建和长日记详情均使用滑动路由', (tester) async {
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        'last_run_version': '1.0.0',
+        'simplify_page_transitions': true,
+      });
+      final longEntry = DiaryEntry(
+        filename: '2026-05-01_long.txt',
+        dateString: '2026-05-01',
+        title: '长日记',
+        content: List<String>.filled(40, '这是一段用于验证完整内容加载的长日记。').join(),
+      );
+      final syncProvider = makeSyncProvider();
+      await pumpDiaryList(
+        tester,
+        syncProvider: syncProvider,
+        seeds: <DiaryEntry>[longEntry],
+        platform: TargetPlatform.android,
+        physicalSize: const Size(1080, 2400),
+        devicePixelRatio: 3.0,
+      );
+
+      final listContext = tester.element(find.byType(DiaryListPage));
+      expect(
+        Provider.of<SettingsProvider>(
+          listContext,
+          listen: false,
+        ).simplifyPageTransitions,
+        isTrue,
+      );
+
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pumpAndSettle();
+      final newEditor = find.byType(EditorPage);
+      final newRoute = ModalRoute.of(tester.element(newEditor));
+      expect(newRoute, isA<SlidePageRoute<void>>());
+      expect(
+        newRoute!.reverseTransitionDuration,
+        const Duration(milliseconds: 600),
+      );
+
+      await tester.tap(find.text('返回列表'));
+      await tester.pumpAndSettle();
+      expect(find.byType(EditorPage), findsNothing);
+
+      await tester.tap(find.byType(DiaryCard).first);
+      await tester.pumpAndSettle();
+      final detailEditor = find.byType(EditorPage);
+      final detailRoute = ModalRoute.of(tester.element(detailEditor));
+      expect(detailRoute, isA<SlidePageRoute<void>>());
+      expect(tester.widget<EditorPage>(detailEditor).usePreviewMode, isFalse);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('FAB 新建：进入编辑器并可返回列表', (tester) async {
       final syncProvider = makeSyncProvider();
       await pumpDiaryList(

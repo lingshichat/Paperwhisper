@@ -223,6 +223,8 @@ class AppRoutes {
   // ---------------------------------------------------------------------------
 
   /// 编辑器页（现状：新建走 LetterFold、点击卡片走 Unfold、降级走 Slide）。
+  /// [simplifyPageTransitions] 开启时统一改用 Slide，并关闭依赖 Unfold
+  /// 完成回调才能解除的长日记预览模式。
   static Route<void> editor({
     DiaryEntry? entry,
     bool lazyLoad = false,
@@ -232,13 +234,17 @@ class AppRoutes {
     Rect? sourceRect,
     bool usePerformanceMode = false,
     VoidCallback? onAnimationComplete,
+    bool simplifyPageTransitions = false,
   }) {
     final page = EditorPage(
       entry: entry,
       lazyLoad: lazyLoad,
       onContentReady: onContentReady,
-      usePreviewMode: usePreviewMode,
+      usePreviewMode: usePreviewMode && !simplifyPageTransitions,
     );
+    if (simplifyPageTransitions) {
+      return slide<void>(page);
+    }
     return switch (transition) {
       AppRouteTransition.letterFold => letterFold<void>(page),
       AppRouteTransition.unfold => unfold<void>(

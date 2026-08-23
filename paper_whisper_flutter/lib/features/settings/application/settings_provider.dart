@@ -8,6 +8,7 @@ const String _preferredThemeKey = 'preferred_theme';
 const String _followSystemThemeKey = 'follow_system_theme';
 const String _startupPageKey = 'startup_page';
 const String _compatibilityModeKey = 'compatibility_mode';
+const String _simplifyPageTransitionsKey = 'simplify_page_transitions';
 
 /// 启动阶段同步读取的设置快照，避免首帧先用默认值构建再整树重建。
 class SettingsBootstrapData {
@@ -16,6 +17,7 @@ class SettingsBootstrapData {
   final bool followSystemTheme;
   final String startupPage;
   final bool compatibilityMode;
+  final bool simplifyPageTransitions;
 
   const SettingsBootstrapData({
     required this.storedTheme,
@@ -23,6 +25,7 @@ class SettingsBootstrapData {
     required this.followSystemTheme,
     required this.startupPage,
     required this.compatibilityMode,
+    required this.simplifyPageTransitions,
   });
 
   factory SettingsBootstrapData.fromPreferences(SharedPreferences prefs) {
@@ -34,6 +37,8 @@ class SettingsBootstrapData {
       followSystemTheme: prefs.getBool(_followSystemThemeKey) ?? false,
       startupPage: prefs.getString(_startupPageKey) ?? 'last',
       compatibilityMode: prefs.getBool(_compatibilityModeKey) ?? false,
+      simplifyPageTransitions:
+          prefs.getBool(_simplifyPageTransitionsKey) ?? false,
     );
   }
 
@@ -54,11 +59,13 @@ class SettingsProvider with ChangeNotifier {
   bool _followSystemTheme = false;
   String _startupPage = 'last';
   bool _compatibilityMode = false;
+  bool _simplifyPageTransitions = false;
 
   String get currentTheme => _currentTheme;
   bool get followSystemTheme => _followSystemTheme;
   String get startupPage => _startupPage;
   bool get compatibilityMode => _compatibilityMode;
+  bool get simplifyPageTransitions => _simplifyPageTransitions;
 
   SettingsProvider({SettingsBootstrapData? bootstrapData}) {
     if (bootstrapData != null) {
@@ -80,6 +87,7 @@ class SettingsProvider with ChangeNotifier {
     _followSystemTheme = bootstrapData.followSystemTheme;
     _startupPage = bootstrapData.startupPage;
     _compatibilityMode = bootstrapData.compatibilityMode;
+    _simplifyPageTransitions = bootstrapData.simplifyPageTransitions;
     _currentTheme = bootstrapData.resolveTheme(
       PlatformDispatcher.instance.platformBrightness,
     );
@@ -146,6 +154,14 @@ class SettingsProvider with ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_compatibilityModeKey, value);
     notifyListeners();
+  }
+
+  Future<void> setSimplifyPageTransitions(bool value) async {
+    _simplifyPageTransitions = value;
+    notifyListeners();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_simplifyPageTransitionsKey, value);
   }
 
   void _applySystemUiStyle(String theme) {

@@ -21,6 +21,7 @@ void main() {
         followSystemTheme: false,
         startupPage: 'last',
         compatibilityMode: false,
+        simplifyPageTransitions: false,
       ),
     );
     var notificationCount = 0;
@@ -37,6 +38,45 @@ void main() {
     expect(preferences.getString('theme'), AppTheme.themeMidnight);
     expect(preferences.getString('preferred_theme'), AppTheme.themeMidnight);
     expect(preferences.getBool('follow_system_theme'), isFalse);
+    expect(notificationCount, 1);
+  });
+
+  test('简化页面过渡默认关闭，变更后立即发布并持久化', () async {
+    final emptyPreferences = await SharedPreferences.getInstance();
+    expect(
+      SettingsBootstrapData.fromPreferences(
+        emptyPreferences,
+      ).simplifyPageTransitions,
+      isFalse,
+    );
+
+    final provider = SettingsProvider(
+      bootstrapData: const SettingsBootstrapData(
+        storedTheme: AppTheme.themeDefault,
+        preferredTheme: AppTheme.themeDefault,
+        followSystemTheme: false,
+        startupPage: 'last',
+        compatibilityMode: false,
+        simplifyPageTransitions: false,
+      ),
+    );
+    var notificationCount = 0;
+    provider.addListener(() => notificationCount++);
+
+    final persistence = provider.setSimplifyPageTransitions(true);
+
+    expect(provider.simplifyPageTransitions, isTrue);
+    expect(notificationCount, 1);
+
+    await persistence;
+    final preferences = await SharedPreferences.getInstance();
+    expect(preferences.getBool('simplify_page_transitions'), isTrue);
+    expect(
+      SettingsBootstrapData.fromPreferences(
+        preferences,
+      ).simplifyPageTransitions,
+      isTrue,
+    );
     expect(notificationCount, 1);
   });
 }

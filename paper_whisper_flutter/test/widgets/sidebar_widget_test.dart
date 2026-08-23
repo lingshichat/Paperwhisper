@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:paper_whisper_flutter/app/navigation/route_transitions.dart';
 import 'package:paper_whisper_flutter/app/shell/data/hitokoto_service.dart';
 import 'package:paper_whisper_flutter/app/shell/sidebar_widget.dart';
 import 'package:paper_whisper_flutter/core/theme/app_theme.dart';
@@ -63,4 +64,55 @@ void main() {
     expect(find.byType(BackdropFilter), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('关闭多余动画后侧边栏写一篇使用滑动路由', (tester) async {
+    tester.view.physicalSize = const Size(700, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    final settings = SettingsProvider(
+      bootstrapData: const SettingsBootstrapData(
+        storedTheme: AppTheme.themeDefault,
+        preferredTheme: AppTheme.themeDefault,
+        followSystemTheme: false,
+        startupPage: 'last',
+        compatibilityMode: false,
+        simplifyPageTransitions: true,
+      ),
+    );
+    addTearDown(settings.dispose);
+    final observer = _RecordingNavigatorObserver();
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider<SettingsProvider>.value(
+        value: settings,
+        child: MaterialApp(
+          navigatorObservers: <NavigatorObserver>[observer],
+          theme: AppTheme.getThemeData(AppTheme.themeDefault),
+          home: const Scaffold(
+            body: SidebarWidget(activeSection: SidebarSection.writer),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.text('写一篇'));
+
+    expect(observer.lastPushedRoute, isA<SlidePageRoute<void>>());
+    await tester.pumpWidget(const SizedBox());
+  });
+}
+
+class _RecordingNavigatorObserver extends NavigatorObserver {
+  Route<dynamic>? lastPushedRoute;
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    lastPushedRoute = route;
+    super.didPush(route, previousRoute);
+  }
 }

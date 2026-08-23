@@ -257,6 +257,17 @@ class _SettingsPageState extends State<SettingsPage>
               onTap: () => _showStartupPagePicker(context, settings),
             ),
             SettingsDivider(color: themeConfig.dividerColor),
+            SettingsSwitchItem(
+              icon: Icons.motion_photos_off_outlined,
+              title: '关闭多余动画',
+              subtitle: '日记详情与撰写页使用简单滑动过渡',
+              value: settings.simplifyPageTransitions,
+              onChanged: settings.setSimplifyPageTransitions,
+              textColor: textColor,
+              activeThumbColor: themeConfig.activeSwitchColor,
+              activeTrackColor: themeConfig.activeTrackColor,
+            ),
+            SettingsDivider(color: themeConfig.dividerColor),
             // Compatibility Mode Switch
             SettingsSwitchItem(
               icon: Icons.layers_clear_outlined,

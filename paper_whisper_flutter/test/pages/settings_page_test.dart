@@ -141,6 +141,11 @@ void main() {
       expect(find.text('支持开发者'), findsOneWidget);
       expect(find.text('数据同步'), findsOneWidget);
       expect(find.text('未启用'), findsOneWidget); // 同步状态：notEnabled
+
+      final permissionEntry = find.text('系统权限管理');
+      await tester.scrollUntilVisible(permissionEntry, 300);
+      await tester.ensureVisible(permissionEntry);
+      await tester.pumpAndSettle();
       expect(find.text('权限状态: 3 / 3 已获取'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
@@ -267,6 +272,48 @@ void main() {
   });
 
   group('SettingsPage 入口与交互', () {
+    testWidgets('关闭多余动画开关立即更新并持久化', (tester) async {
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 3.0;
+
+      final syncProvider = makeSyncProvider();
+      await pumpSettings(
+        tester,
+        syncProvider: syncProvider,
+        platform: TargetPlatform.android,
+      );
+
+      final entry = find.text('关闭多余动画');
+      await tester.scrollUntilVisible(entry, 300);
+      await tester.ensureVisible(entry);
+      await tester.pumpAndSettle();
+
+      expect(find.text('日记详情与撰写页使用简单滑动过渡'), findsOneWidget);
+      final item = find.ancestor(
+        of: entry,
+        matching: find.byType(SettingsSwitchItem),
+      );
+      final toggle = find.descendant(of: item, matching: find.byType(Switch));
+      final settings = Provider.of<SettingsProvider>(
+        tester.element(entry),
+        listen: false,
+      );
+      expect(tester.widget<Switch>(toggle).value, isFalse);
+
+      await tester.tap(toggle);
+      await tester.pump();
+
+      expect(settings.simplifyPageTransitions, isTrue);
+      expect(tester.widget<Switch>(toggle).value, isTrue);
+      final preferences = await SharedPreferences.getInstance();
+      expect(preferences.getBool('simplify_page_transitions'), isTrue);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('数据同步入口经 AppRoutes 导航到同步设置页', (tester) async {
       final syncProvider = makeSyncProvider();
       await pumpSettings(tester, syncProvider: syncProvider);

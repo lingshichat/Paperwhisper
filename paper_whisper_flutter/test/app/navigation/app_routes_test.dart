@@ -308,6 +308,20 @@ void main() {
         AppRoutes.editor(transition: AppRouteTransition.slide),
         isA<SlidePageRoute<void>>(),
       );
+      expect(
+        AppRoutes.editor(
+          transition: AppRouteTransition.letterFold,
+          simplifyPageTransitions: true,
+        ),
+        isA<SlidePageRoute<void>>(),
+      );
+      expect(
+        AppRoutes.editor(
+          transition: AppRouteTransition.unfold,
+          simplifyPageTransitions: true,
+        ),
+        isA<SlidePageRoute<void>>(),
+      );
     });
   });
 
@@ -456,6 +470,17 @@ void main() {
       expect(page.usePreviewMode, isTrue);
       expect(page.onContentReady, isNotNull);
       expect(ready, isNull); // 未触发，仅透传
+
+      final simplifiedRoute = AppRoutes.editor(
+        entry: entry,
+        usePreviewMode: true,
+        transition: AppRouteTransition.unfold,
+        simplifyPageTransitions: true,
+      );
+      expect(simplifiedRoute, isA<SlidePageRoute<void>>());
+      final simplifiedPage = buildPage(simplifiedRoute, context) as EditorPage;
+      expect(simplifiedPage.entry, same(entry));
+      expect(simplifiedPage.usePreviewMode, isFalse);
     });
 
     testWidgets('bookDirectory 工厂参数可达且返回 int 泛型', (tester) async {

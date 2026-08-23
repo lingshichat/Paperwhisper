@@ -423,11 +423,17 @@ class _DiaryListPageState extends State<DiaryListPage>
   }
 
   void _openEditor(DiaryEntry? entry, [Rect? cardRect]) {
+    final simplifyPageTransitions = context
+        .read<SettingsProvider>()
+        .simplifyPageTransitions;
     if (entry == null) {
       // 新建日记：使用信纸对折动画
       Navigator.push(
         context,
-        AppRoutes.editor(transition: AppRouteTransition.letterFold),
+        AppRoutes.editor(
+          transition: AppRouteTransition.letterFold,
+          simplifyPageTransitions: simplifyPageTransitions,
+        ),
       );
     } else if (cardRect != null) {
       // 智能分级：超过 300 字符启用性能模式，优化长日记体验
@@ -454,11 +460,18 @@ class _DiaryListPageState extends State<DiaryListPage>
             // 动画结束后，通知编辑器加载完整内容
             showFullContent?.call();
           },
+          simplifyPageTransitions: simplifyPageTransitions,
         ),
       );
     } else {
       // 降级：使用平滑动画
-      Navigator.push(context, AppRoutes.editor(entry: entry));
+      Navigator.push(
+        context,
+        AppRoutes.editor(
+          entry: entry,
+          simplifyPageTransitions: simplifyPageTransitions,
+        ),
+      );
     }
   }
 

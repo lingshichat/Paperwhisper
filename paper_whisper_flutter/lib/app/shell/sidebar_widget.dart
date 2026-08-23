@@ -152,6 +152,9 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                           context,
                           AppRoutes.editor(
                             transition: AppRouteTransition.letterFold,
+                            simplifyPageTransitions: context
+                                .read<SettingsProvider>()
+                                .simplifyPageTransitions,
                           ),
                         );
                       },
