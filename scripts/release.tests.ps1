@@ -134,15 +134,37 @@ Invoke-TestCase 'converts edited Markdown to client changelog entries' {
     $markdown = @'
 ## 新增功能
 - add focus mode <!-- commit: 1111111 -->
+- 新增简化动效
 
 ## 问题修复
 - 修复：keep remote entries <!-- commit: 2222222 -->
+- 修复日期崩溃
+
+## 体验优化
+- 优化启动速度
 
 ## 自定义分组
 - migration note
 '@
     $actual = @(ConvertFrom-ReleaseDraft -Markdown $markdown)
-    $expected = @('新增：add focus mode', '修复：keep remote entries', '自定义分组：migration note')
+    $expected = @(
+        '新增：add focus mode',
+        '新增：简化动效',
+        '修复：keep remote entries',
+        '修复：日期崩溃',
+        '优化：启动速度',
+        '自定义分组：migration note'
+    )
+    Assert-SequenceEqual -Actual $actual -Expected $expected
+}
+
+Invoke-TestCase 'builds the stable client CDN refresh URL set' {
+    $actual = @(Get-BitifulCdnRefreshUrls)
+    $expected = @(
+        'https://pwdl.lingshichat.cn/version.json',
+        'https://pwdl.lingshichat.cn/Windows/latest.exe',
+        'https://pwdl.lingshichat.cn/Android/latest.apk'
+    )
     Assert-SequenceEqual -Actual $actual -Expected $expected
 }
 

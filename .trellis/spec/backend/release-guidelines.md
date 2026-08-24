@@ -17,6 +17,7 @@
 - `-Resume`：从已存在的版本提交、tag、GitHub draft 和版本化产物继续；不得改写已经推送的历史。
 - 编辑器按 `$env:VISUAL`、`$env:EDITOR`、`notepad.exe` 的顺序选择。
 - Inno Setup 可由 `ISCC_PATH` 显式指定，否则从 `PATH` 和标准安装位置解析。
+- 稳定客户端发布必须提供 `BITIFUL_API_TOKEN`，用于调用 Bitiful CDN 刷新 API。
 
 `releases/version.json` 是版本元数据的唯一源，必须保留以下字段和类型：
 
@@ -43,8 +44,8 @@
 5. 正式稳定版使用共享客户端清单，因此必须同时发布 Windows 和 Android；单平台只适用于不切换客户端通道的场景。
 6. 三份版本状态必须一致：`releases/version.json`、`paper_whisper_flutter/assets/version.json`、`paper_whisper_flutter/pubspec.yaml`。
 7. 正常发布必须从干净的 `main` 执行，且本地 HEAD 与 `origin/main` 一致。恢复模式仅允许 HEAD 比远端多一个匹配的 `chore(release): vX.Y.Z` 提交。
-8. 稳定版顺序固定为：版本化产物 -> GitHub draft 资产 -> R2/S3 版本化产物 -> `latest.exe`/`latest.apk` -> `version.json` -> 公开 GitHub Release。
-9. `version.json` 必须最后上传。它是客户端发现新版本的提交点，上传前所有下载目标必须可用。
+8. 稳定版顺序固定为：版本化产物 -> GitHub draft 资产 -> R2/S3 版本化产物 -> `latest.exe`/`latest.apk` -> `version.json` -> 刷新并验证 Bitiful CDN -> 公开 GitHub Release。
+9. `version.json` 必须最后上传。它是客户端发现新版本的提交点，上传前所有下载目标必须可用；上传后必须刷新 `version.json`、`latest.exe` 和 `latest.apk` 的 CDN 缓存，并确认线上清单版本正确。
 10. `-PreRelease` 和 `-Draft` 不得更新 `latest` 或客户端 `version.json`；`-SkipR2` 也不得声称客户端通道已经发布。
 11. 原生命令的非零退出码必须终止流程。日志不得输出 Android keystore 密码、GitHub token 或 R2 凭据。
 
@@ -59,6 +60,7 @@
 | 构建 | Windows ZIP/EXE 和 Android APK 为本次版本化非空文件 | 停止；不得复用模糊名称或旧文件 |
 | GitHub 恢复 | 同版本 Release 仍为 draft，prerelease 状态匹配 | 拒绝覆盖已公开或状态冲突的 Release |
 | R2/S3 发布 | 版本化文件先成功，客户端清单最后成功 | 保留可恢复状态，使用 `-Resume` 继续 |
+| CDN 刷新 | API 返回 `message=ok`，线上清单返回目标版本 | 保持 GitHub draft，使用 `-Resume` 重试 |
 | 版本提交后失败 | 当前提交/tag 与目标版本一致 | 不 reset、不删除远端 tag，提示恢复命令 |
 
 ## 5. Good, Base, And Bad Examples
@@ -109,7 +111,7 @@ flutter test
 |---|---|
 | 从 `git log` 直接拼一段不可编辑文本 | 生成分组 Markdown，允许编辑，再转成客户端 changelog |
 | 用工作区中任意 APK/EXE 作为发布资产 | 只接受目标版本的确定文件名，并在构建前删除同名旧产物 |
-| 先上传 `version.json` 再上传安装包 | 先验证并上传全部安装包，最后上传 `version.json` |
+| 先上传 `version.json` 再上传安装包 | 先验证并上传全部安装包，最后上传 `version.json`，刷新并验证 CDN |
 | 发布失败后 `reset --hard` 或强制推 tag | 保留已发布状态，用 `-Resume` 幂等继续 |
 | 在脚本中硬编码错误的 GitHub 仓库名 | 从 `origin` URL 解析并校验 `OWNER/REPO` |
 | 兼容脚本复制一套发布逻辑 | 兼容脚本只转发到根发布入口 |

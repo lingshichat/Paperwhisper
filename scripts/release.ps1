@@ -70,6 +70,7 @@ $script:ReleaseConfig = [ordered]@{
     R2Remote         = 'bitiful'
     Domain           = 'https://pwdl.lingshichat.cn'
     BackupDomain     = 'https://paperwhisper.s3.bitiful.net'
+    CdnRefreshApi    = 'https://api.bitiful.com/cdn/cache/refresh'
     GitHubRepository = ''
     ReleaseBranch    = 'main'
     GitRemote        = 'origin'
@@ -483,6 +484,7 @@ function ConvertFrom-ReleaseDraft {
         '新增功能' = '新增'
         '问题修复' = '修复'
         '性能优化' = '优化'
+        '体验优化' = '优化'
         '其他更新' = '更新'
     }
 
@@ -502,8 +504,14 @@ function ConvertFrom-ReleaseDraft {
 
         if ($prefixes.ContainsKey($category)) {
             $prefix = $prefixes[$category]
-            if ($item -notmatch "^$([regex]::Escape($prefix))[：:]\s*") {
-                $item = "${prefix}：$item"
+            $escapedPrefix = [regex]::Escape($prefix)
+            if ($item -notmatch "^${escapedPrefix}[：:]\s*") {
+                if ($item -match "^${escapedPrefix}(?<content>.+)$") {
+                    $item = "${prefix}：$($matches['content'].TrimStart())"
+                }
+                else {
+                    $item = "${prefix}：$item"
+                }
             }
         }
         elseif ($category) {
@@ -706,7 +714,7 @@ function Confirm-Release {
     Write-Host "质量检查：          $(if ($SkipChecks) { '跳过' } else { 'flutter analyze + flutter test' })"
     Write-Host "构建：              $(if ($SkipBuild) { '复用版本化产物' } else { '重新构建 Release' })"
     Write-Host "GitHub：            $(if ($SkipGitHub) { '跳过' } else { '草稿 -> 上传 -> 公开' })"
-    Write-Host "R2/S3：             $(if ($SkipR2) { '跳过' } else { '版本化产物 -> latest -> version.json' })"
+    Write-Host "R2/S3：             $(if ($SkipR2) { '跳过' } else { '版本化产物 -> latest -> version.json -> CDN 刷新' })"
     Write-Host "发布通道：          $(if ($Draft) { '仅草稿' } elseif ($PreRelease) { '预发布' } else { '稳定版' })"
     Write-Host 'Git：               commit + push main + tag'
 
@@ -862,6 +870,14 @@ function Assert-ReleasePrerequisites {
     }
     if (-not $SkipR2 -and -not $PreRelease -and -not $Draft -and $Platform -ne 'all') {
         throw 'A stable client release must build both platforms because version.json is shared.'
+    }
+    if (
+        -not $SkipR2 -and
+        -not $PreRelease -and
+        -not $Draft -and
+        [string]::IsNullOrWhiteSpace($env:BITIFUL_API_TOKEN)
+    ) {
+        throw 'BITIFUL_API_TOKEN is required to refresh the stable client CDN cache.'
     }
 
     Write-Success '本地工具和签名输入可用。'
@@ -1254,6 +1270,67 @@ function Publish-GitHubRelease {
     Write-Success "GitHub Release v$Version 已公开。"
 }
 
+function Get-BitifulCdnRefreshUrls {
+    return @(
+        "$($script:ReleaseConfig.Domain)/version.json",
+        "$($script:ReleaseConfig.Domain)/Windows/latest.exe",
+        "$($script:ReleaseConfig.Domain)/Android/latest.apk"
+    )
+}
+
+function Refresh-BitifulCdnCache {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][string]$Version)
+
+    Write-Section '刷新 Bitiful CDN 缓存'
+    $urls = @(Get-BitifulCdnRefreshUrls)
+    $body = @{
+        type     = 'url'
+        url_list = $urls
+    } | ConvertTo-Json -Compress
+
+    try {
+        $refreshParameters = @{
+            Method      = 'Post'
+            Uri         = $script:ReleaseConfig.CdnRefreshApi
+            Headers     = @{ Authorization = $env:BITIFUL_API_TOKEN }
+            ContentType = 'application/json'
+            Body        = $body
+        }
+        $response = Invoke-RestMethod @refreshParameters
+    }
+    catch {
+        throw "Bitiful CDN cache refresh failed: $($_.Exception.Message)"
+    }
+
+    if ([string]$response.message -cne 'ok') {
+        throw "Bitiful CDN cache refresh returned an unexpected response: $($response | ConvertTo-Json -Compress)"
+    }
+
+    for ($attempt = 1; $attempt -le 10; $attempt++) {
+        Start-Sleep -Seconds 2
+        try {
+            $nonce = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+            $verificationParameters = @{
+                Uri     = "$($script:ReleaseConfig.Domain)/version.json?release_verify=$nonce"
+                Headers = @{ 'Cache-Control' = 'no-cache' }
+            }
+            $onlineManifest = Invoke-RestMethod @verificationParameters
+            if ([string]$onlineManifest.latestVersion -ceq $Version) {
+                Write-Success "CDN 已返回 v$Version，缓存刷新生效。"
+                return
+            }
+        }
+        catch {
+            if ($attempt -eq 10) {
+                throw "Could not verify the refreshed CDN manifest: $($_.Exception.Message)"
+            }
+        }
+    }
+
+    throw "Bitiful CDN did not expose version $Version after the cache refresh."
+}
+
 function Publish-R2Artifacts {
     [CmdletBinding()]
     param(
@@ -1296,6 +1373,7 @@ function Publish-R2Artifacts {
     Invoke-StreamingCommand -Command 'rclone' -Arguments @(
         'copyto', $script:VersionFilePath, "$remoteRoot/version.json", '--progress'
     )
+    Refresh-BitifulCdnCache -Version $Version
     Write-Success "R2/S3 稳定通道已切换到 v$Version。"
 }
 

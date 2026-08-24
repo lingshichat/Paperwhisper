@@ -8,6 +8,7 @@
 - Flutter 和 Dart
 - GitHub CLI，已通过 `gh auth login` 登录
 - rclone，已配置名为 `bitiful` 的 remote
+- 环境变量 `BITIFUL_API_TOKEN`，用于刷新稳定通道的 Bitiful CDN 缓存
 - Windows 构建需要 Inno Setup 6 的 `ISCC.exe` 位于 `PATH`，或设置 `ISCC_PATH`
 - Android 构建需要本机 `android/key.properties` 和对应 keystore
 - 从 `main` 运行，工作区必须干净，且本地 HEAD 必须与 `origin/main` 一致
@@ -45,8 +46,9 @@
 8. 创建 `chore(release): vX.Y.Z` 提交并推送 `main`，创建并推送 tag。
 9. 创建 GitHub draft，上传版本化产物。
 10. 上传 R2/S3 版本化产物，再切换 `latest.exe` / `latest.apk`。
-11. 最后上传根目录 `version.json`，客户端此时才会看到新版本。
-12. 公开 GitHub Release。
+11. 最后上传根目录 `version.json`。
+12. 调用 Bitiful CDN API 刷新 `version.json`、`latest.exe` 和 `latest.apk`，并轮询确认客户端已看到新版本。
+13. 公开 GitHub Release。
 
 不再需要手动上传 `version.json`、APK、EXE 或 ZIP。
 
@@ -92,4 +94,6 @@ R2/S3 稳定通道：
 - `Android/latest.apk`
 - `version.json`
 
-`version.json` 始终最后上传，避免客户端发现新版本时安装包尚未就绪。
+`version.json` 始终最后上传，随后必须刷新并验证 CDN 缓存，避免客户端发现新版本时安装包尚未就绪，或继续读取旧清单。
+
+缓存刷新接口遵循 [Bitiful S4 静态 CDN API](https://docs.bitiful.com/developer/api/cdn)，Token 只从 `BITIFUL_API_TOKEN` 读取，不写入文件或日志。
