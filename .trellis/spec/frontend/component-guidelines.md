@@ -152,6 +152,65 @@ Required behavior:
 
 ---
 
+## High-Frequency CustomPainter Effects
+
+For decorative animations that draw many copies of the same shape every VSync:
+
+- The owning `State` creates one `AnimationController`, one persistent painter, and any
+  native image resources. Drive paint with `CustomPainter(repaint: controller)`; do not
+  rebuild `CustomPaint` or replace the painter on each tick.
+- Pre-rasterize invariant geometry and gradients into a sufficiently high-resolution
+  `ui.Image`, then batch sprites with `Canvas.drawRawAtlas`. Size the texture for the
+  largest logical sprite at the highest supported DPR so mobile output is not upscaled.
+- Allocate `Float32List` transforms/source rects and `Int32List` colors once. Each frame
+  may update transforms and alpha values; reuse mutable `Path` and `Paint` objects.
+- With `BlendMode.srcIn`, encode per-sprite opacity as `alpha << 24`; this preserves the
+  atlas RGB while modulating alpha.
+- Dispose the temporary `Picture` and `Shader` after texture creation and dispose the
+  retained `ui.Image` from the owning `State`.
+- Preserve object counts, random seed, motion formulas, and visual layering. Do not use
+  FPS caps, timer-based frame skipping, or renderer replacement as the first fix.
+
+```dart
+class SpritePainter extends CustomPainter {
+  SpritePainter(this.image, int spriteCount, Listenable repaint)
+      : transforms = Float32List(spriteCount * 4),
+        sourceRects = Float32List(spriteCount * 4),
+        colors = Int32List(spriteCount),
+        super(repaint: repaint);
+
+  final ui.Image image;
+  final Float32List transforms;
+  final Float32List sourceRects;
+  final Int32List colors;
+  final Paint atlasPaint = Paint();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // 只更新固定缓冲，然后一次提交全部 sprite。
+    canvas.drawRawAtlas(
+      image,
+      transforms,
+      sourceRects,
+      colors,
+      BlendMode.srcIn,
+      Offset.zero & size,
+      atlasPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant SpritePainter oldDelegate) => false;
+}
+```
+
+Required validation: a widget test proving painter identity is stable across pumps, a
+desktop/mobile DPR smoke test, visual output inspection, and a profile-mode comparison
+under the default renderer reporting raster P90/P99/max. `RepaintBoundary` alone is not
+evidence of lower raster cost.
+
+---
+
 ## Scenario: Editor Session, Save, And Export Boundaries
 
 ### 1. Scope / Trigger
