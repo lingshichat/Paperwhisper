@@ -1,4 +1,7 @@
 import 'dart:math';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 
 // --- Petal Rain Effect ---
@@ -323,7 +326,12 @@ class AfterRainVisuals extends StatelessWidget {
 
 // --- Starry Sky Effect ---
 
-// --- Starry Sky Effect ---
+const int _backgroundStarCount = 100;
+const int _hangingStarCount = 8;
+const int _starSpriteCount = _backgroundStarCount + _hangingStarCount;
+const int _starTextureSize = 384;
+const double _starTextureCenter = _starTextureSize / 2;
+const double _starTextureCoreRadius = _starTextureSize / 6;
 
 class StarrySkyWidget extends StatefulWidget {
   const StarrySkyWidget({super.key});
@@ -338,15 +346,15 @@ class _StarrySkyWidgetState extends State<StarrySkyWidget>
   final List<HangingStar> _hangingStars = [];
   final Random _random = Random(42);
 
-  // 使用 AnimationController 替代 Ticker + setState
-  late AnimationController _controller;
-  int _frameId = 0; // 帧计数器，用于 shouldRepaint 优化
+  late final AnimationController _controller;
+  late final Stopwatch _clock;
+  late final ui.Image _starTexture;
+  late final StarPainter _painter;
 
   @override
   void initState() {
     super.initState();
-    // 1. 初始化背景闪烁星星 (Twinkling Background Stars)
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < _backgroundStarCount; i++) {
       _stars.add(
         Star(
           x: _random.nextDouble(),
@@ -359,16 +367,13 @@ class _StarrySkyWidgetState extends State<StarrySkyWidget>
       );
     }
 
-    // 2. 初始化悬挂星星 (Hanging Stars) - 均匀分布
-    int starCount = 8;
-    for (int i = 0; i < starCount; i++) {
-      // 将屏幕水平分为 8 等份，每个星星占据一份
-      double segmentWidth = 1.0 / starCount;
-      double startX = i * segmentWidth;
+    for (int i = 0; i < _hangingStarCount; i++) {
+      final segmentWidth = 1.0 / _hangingStarCount;
+      final startX = i * segmentWidth;
 
       // 在该份内随机偏移 (留出 10% 边距避免太靠边)
-      double validWidth = segmentWidth * 0.8;
-      double offset = segmentWidth * 0.1;
+      final validWidth = segmentWidth * 0.8;
+      final offset = segmentWidth * 0.1;
 
       _hangingStars.add(
         HangingStar(
@@ -382,37 +387,92 @@ class _StarrySkyWidgetState extends State<StarrySkyWidget>
       );
     }
 
-    // 3. 使用 AnimationController 实现无缝循环
-    _controller =
-        AnimationController(vsync: this, duration: const Duration(seconds: 1))
-          ..addListener(() {
-            _frameId++; // 仅递增帧号，不调用 setState
-          })
-          ..repeat();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
+    );
+    _clock = Stopwatch()..start();
+    _starTexture = _createStarTexture();
+    _painter = StarPainter(
+      stars: _stars,
+      hangingStars: _hangingStars,
+      starTexture: _starTexture,
+      clock: _clock,
+      repaint: _controller,
+    );
+    _controller.repeat();
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _clock.stop();
+    _starTexture.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return IgnorePointer(
-      child: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, child) {
-          // 计算当前时间（秒）
-          final time = DateTime.now().millisecondsSinceEpoch / 1000.0;
-          return CustomPaint(
-            painter: StarPainter(_stars, _hangingStars, time, _frameId),
-            size: Size.infinite,
-          );
-        },
+      child: RepaintBoundary(
+        child: CustomPaint(painter: _painter, size: Size.infinite),
       ),
     );
   }
+}
+
+ui.Image _createStarTexture() {
+  const center = Offset(_starTextureCenter, _starTextureCenter);
+  const glowRadius = _starTextureCenter;
+  final recorder = ui.PictureRecorder();
+  final canvas = Canvas(recorder);
+  final glowShader = const RadialGradient(
+    colors: [Color.fromRGBO(255, 255, 255, 0.4), Colors.transparent],
+    stops: [0.1, 1.0],
+  ).createShader(Rect.fromCircle(center: center, radius: glowRadius));
+  final glowPaint = Paint()..shader = glowShader;
+
+  canvas.drawCircle(center, glowRadius, glowPaint);
+  canvas.drawPath(
+    _createStarPath(
+      center,
+      _starTextureCoreRadius,
+      _starTextureCoreRadius * 0.4,
+    ),
+    Paint()..color = Colors.white,
+  );
+
+  final picture = recorder.endRecording();
+  try {
+    return picture.toImageSync(_starTextureSize, _starTextureSize);
+  } finally {
+    picture.dispose();
+    glowShader.dispose();
+  }
+}
+
+Path _createStarPath(Offset center, double radius, double innerRadius) {
+  final path = Path();
+  const rotation = -pi / 2;
+  const step = pi / 5;
+
+  path.moveTo(
+    center.dx + cos(rotation) * radius,
+    center.dy + sin(rotation) * radius,
+  );
+  for (int i = 1; i <= 5; i++) {
+    var angle = rotation + step * (2 * i - 1);
+    path.lineTo(
+      center.dx + cos(angle) * innerRadius,
+      center.dy + sin(angle) * innerRadius,
+    );
+    angle = rotation + step * 2 * i;
+    path.lineTo(
+      center.dx + cos(angle) * radius,
+      center.dy + sin(angle) * radius,
+    );
+  }
+  return path..close();
 }
 
 class Star {
@@ -452,129 +512,126 @@ class HangingStar {
 }
 
 class StarPainter extends CustomPainter {
+  StarPainter({
+    required this.stars,
+    required this.hangingStars,
+    required ui.Image starTexture,
+    required Stopwatch clock,
+    required Listenable repaint,
+  }) : _starTexture = starTexture,
+       _clock = clock,
+       _transforms = Float32List(_starSpriteCount * 4),
+       _sourceRects = Float32List(_starSpriteCount * 4),
+       _colors = Int32List(_starSpriteCount),
+       super(repaint: repaint) {
+    for (int i = 0; i < _starSpriteCount; i++) {
+      final offset = i * 4;
+      _sourceRects[offset] = 0;
+      _sourceRects[offset + 1] = 0;
+      _sourceRects[offset + 2] = _starTextureSize.toDouble();
+      _sourceRects[offset + 3] = _starTextureSize.toDouble();
+    }
+  }
+
   final List<Star> stars;
   final List<HangingStar> hangingStars;
-  final double time;
-  final int frameId; // 帧计数器，用于 shouldRepaint 优化
-
-  StarPainter(this.stars, this.hangingStars, this.time, this.frameId);
+  final ui.Image _starTexture;
+  final Stopwatch _clock;
+  final Float32List _transforms;
+  final Float32List _sourceRects;
+  final Int32List _colors;
+  final Path _hangingLines = Path();
+  final Paint _atlasPaint = Paint()..filterQuality = FilterQuality.medium;
+  final Paint _linePaint = Paint()
+    ..color = Colors.white.withValues(alpha: 0.1)
+    ..strokeWidth = 1
+    ..isAntiAlias = true;
+  Size? _layoutSize;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = Colors.white;
+    final time = _clock.elapsedMicroseconds / Duration.microsecondsPerSecond;
+    if (_layoutSize != size) {
+      _updateBackgroundTransforms(size);
+      _layoutSize = size;
+    }
 
-    // 1. Draw Background Stars (Small 5-pointed stars)
-    for (var star in stars) {
-      // Continuous sine wave: 0.5 * (1 + sin) -> range 0.0 ~ 1.0.
-      // Scaled to 0.4 ~ 1.0 logic similar to SVG
+    for (int i = 0; i < stars.length; i++) {
+      final star = stars[i];
       final double wave = sin(time * star.twinkleSpeed + star.twinkleOffset);
       final double opacityRatio = 0.5 * (1 + wave);
       final double currentOpacity =
           star.baseOpacity + (opacityRatio * (1.0 - star.baseOpacity));
-
-      // Draw with glow (Anti-aliasing and Blur)
-      _drawGlowingStar(
-        canvas,
-        Offset(star.x * size.width, star.y * size.height),
-        star.radius,
-        paint,
-        currentOpacity.clamp(0.0, 1.0),
-      );
+      _colors[i] = _alphaColor(currentOpacity);
     }
 
-    // 2. Draw Hanging Stars
-    final linePaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.1)
-      ..strokeWidth = 1.0
-      ..isAntiAlias = true;
-
-    for (var hStar in hangingStars) {
-      // Gentle sway: 5px max
+    _hangingLines.reset();
+    for (int i = 0; i < hangingStars.length; i++) {
+      final hStar = hangingStars[i];
       final double sway = sin(time * hStar.swaySpeed + hStar.swayOffset) * 5.0;
-
       final double startX = hStar.x * size.width;
       final double targetX = startX + sway;
       final double targetY = hStar.y * size.height;
 
-      // Draw Thread
-      canvas.drawLine(
-        Offset(startX, 0),
-        Offset(targetX, targetY - hStar.size),
-        linePaint,
-      );
+      _hangingLines
+        ..moveTo(startX, 0)
+        ..lineTo(targetX, targetY - hStar.size);
 
-      // Calculate opacity for hanging star
-      // Slower blink for hanging stars: speed ~ 0.5-1.0
+      final spriteIndex = stars.length + i;
+      _updateTransform(
+        spriteIndex,
+        centerX: targetX,
+        centerY: targetY,
+        radius: hStar.size,
+      );
       final double wave = sin(time * 0.8 + hStar.swayOffset);
-      // Mapped to 0.5 ~ 1.0
-      final double starOpacity = 0.75 + 0.25 * wave;
+      _colors[spriteIndex] = _alphaColor(0.75 + 0.25 * wave);
+    }
 
-      // Draw Star with Glow
-      _drawGlowingStar(
-        canvas,
-        Offset(targetX, targetY),
-        hStar.size,
-        paint,
-        starOpacity.clamp(0.0, 1.0),
+    canvas.drawPath(_hangingLines, _linePaint);
+    canvas.drawRawAtlas(
+      _starTexture,
+      _transforms,
+      _sourceRects,
+      _colors,
+      BlendMode.srcIn,
+      Offset.zero & size,
+      _atlasPaint,
+    );
+  }
+
+  void _updateBackgroundTransforms(Size size) {
+    for (int i = 0; i < stars.length; i++) {
+      final star = stars[i];
+      _updateTransform(
+        i,
+        centerX: star.x * size.width,
+        centerY: star.y * size.height,
+        radius: star.radius,
       );
     }
   }
 
-  void _drawGlowingStar(
-    Canvas canvas,
-    Offset center,
-    double radius,
-    Paint paint,
-    double opacity,
-  ) {
-    // 1. Draw Glow using RadialGradient (Restored per user request, visuals > perf)
-    final glowRadius = radius * 3.0;
-    final glowPaint = Paint()
-      ..shader = RadialGradient(
-        colors: [
-          Colors.white.withValues(alpha: opacity * 0.4), // Core glow
-          Colors.white.withValues(alpha: 0.0), // Fade out
-        ],
-        stops: const [0.1, 1.0],
-      ).createShader(Rect.fromCircle(center: center, radius: glowRadius));
-
-    canvas.drawCircle(center, glowRadius, glowPaint);
-
-    // 2. Draw Core (Solid)
-    paint.color = Colors.white.withValues(alpha: opacity);
-    paint.maskFilter = null; // Ensure no blur
-    // Use fill for core
-
-    final path = _createStarPath(center, radius, radius * 0.4);
-    canvas.drawPath(path, paint);
+  void _updateTransform(
+    int index, {
+    required double centerX,
+    required double centerY,
+    required double radius,
+  }) {
+    final scale = radius / _starTextureCoreRadius;
+    final halfExtent = _starTextureCenter * scale;
+    final offset = index * 4;
+    _transforms[offset] = scale;
+    _transforms[offset + 1] = 0;
+    _transforms[offset + 2] = centerX - halfExtent;
+    _transforms[offset + 3] = centerY - halfExtent;
   }
 
-  Path _createStarPath(Offset center, double radius, double innerRadius) {
-    final path = Path();
-    final double rot = -pi / 2; // Start at top
-    final double step = pi / 5;
-
-    path.moveTo(center.dx + cos(rot) * radius, center.dy + sin(rot) * radius);
-
-    for (int i = 1; i <= 5; i++) {
-      double angle = rot + step * (2 * i - 1);
-      path.lineTo(
-        center.dx + cos(angle) * innerRadius,
-        center.dy + sin(angle) * innerRadius,
-      );
-      angle = rot + step * 2 * i;
-      path.lineTo(
-        center.dx + cos(angle) * radius,
-        center.dy + sin(angle) * radius,
-      );
-    }
-    path.close();
-    return path;
+  int _alphaColor(double opacity) {
+    final alpha = (opacity.clamp(0.0, 1.0) * 255).round();
+    return alpha << 24;
   }
 
   @override
-  bool shouldRepaint(covariant StarPainter oldDelegate) {
-    // 仅当帧号变化时重绘，避免无效重绘
-    return oldDelegate.frameId != frameId;
-  }
+  bool shouldRepaint(covariant StarPainter oldDelegate) => false;
 }
