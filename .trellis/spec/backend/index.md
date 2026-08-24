@@ -26,6 +26,7 @@
 | [Error Handling](./error-handling.md) | Error types, handling strategies | ✅ Filled |
 | [Quality Guidelines](./quality-guidelines.md) | Code standards, forbidden patterns | ✅ Filled |
 | [Logging Guidelines](./logging-guidelines.md) | Logging and analytics conventions | ✅ Filled |
+| [Release Guidelines](./release-guidelines.md) | Version metadata, build, and publication contracts | ✅ Filled |
 
 ---
 

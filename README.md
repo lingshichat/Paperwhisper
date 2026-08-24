@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="legacy_desktop/icons/icon.svg" alt="PaperWhisper Icon" width="128" height="128">
+  <img src="paper_whisper_flutter/assets/icon.png" alt="PaperWhisper Icon" width="128" height="128">
 </div>
 
 # 纸语 PaperWhisper 📖
@@ -81,7 +81,7 @@
    flutter run -d android
    ```
 
-### 打包构建
+### 本地构建
 
 ```bash
 # 构建 Windows 安装包
@@ -90,6 +90,20 @@ flutter build windows
 # 构建 Android APK
 flutter build apk --release
 ```
+
+### 正式发布
+
+正式版本统一通过仓库根目录下的 PowerShell 脚本发布：
+
+```powershell
+# 只根据上一个正式版本以来的提交预览更新日志，不修改文件或访问远端
+.\scripts\release.ps1 -Preview
+
+# 审阅更新日志和版本信息，确认后发布 Windows 与 Android
+.\scripts\release.ps1
+```
+
+脚本会生成可编辑的更新日志草稿，并要求输入精确确认文本后才执行版本同步、质量检查、构建、Git 提交/tag、GitHub Release 和 R2/S3 上传。完整参数、发布顺序和失败恢复方式见 [`releases/README.md`](releases/README.md)。
 
 ## 📁 目录结构 (Flutter)
 
