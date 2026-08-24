@@ -3,7 +3,7 @@
 
 #define MyAppName "纸语PaperWhisper"
 #define MyAppPublisher "LingshiChat"
-#define MyAppURL "https://dl.lingshichat.top"
+#define MyAppURL "https://pwdl.lingshichat.cn"
 #define MyAppExeName "paper_whisper_flutter.exe"
 #define BuildDir "..\build\windows\x64\runner\Release"
 
@@ -29,7 +29,7 @@ SolidCompression=yes
 WizardStyle=modern
 
 ; Icon configuration
-SetupIconFile=..\..\legacy_desktop\icons\icon.ico
+SetupIconFile=..\windows\runner\resources\app_icon.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
 
 [Languages]
